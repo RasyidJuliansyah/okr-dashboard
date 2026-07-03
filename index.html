@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enterprise OKR & Balanced Scorecard Dashboard</title>
+    <!-- Fonts: Outfit and Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="dark-theme">
+    <div class="app-container">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <div class="logo-area">
+          <div class="logo-icon">
+            <i data-lucide="layers"></i>
+          </div>
+          <div>
+            <h1>AlignCraft</h1>
+            <span class="logo-subtitle">OKR & BSC Suite</span>
+          </div>
+        </div>
+
+        <nav class="nav-menu">
+          <a href="#" class="nav-item active" data-tab="dashboard">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard OKR</span>
+          </a>
+          <a href="#" class="nav-item" data-tab="bsc">
+            <i data-lucide="grid"></i>
+            <span>Balanced Scorecard</span>
+          </a>
+          <a href="#" class="nav-item" data-tab="strategy-map">
+            <i data-lucide="git-fork"></i>
+            <span>Strategy Map</span>
+          </a>
+          <a href="#" class="nav-item admin-only" data-tab="admin">
+            <i data-lucide="sliders"></i>
+            <span>Admin Console</span>
+          </a>
+          <a href="#" class="nav-item" data-tab="audit">
+            <i data-lucide="clipboard-list"></i>
+            <span>Audit Trail</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="role-selector-container">
+            <label for="role-select">
+              <i data-lucide="shield-check"></i> Role Pengguna
+            </label>
+            <select id="role-select" class="role-select">
+              <option value="c-level">C-Level / Executive</option>
+              <option value="manager">Manager (Product & Tech)</option>
+              <option value="employee">Employee (John Doe)</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="theme-toggle" id="theme-toggle-btn">
+            <i data-lucide="sun" class="sun-icon"></i>
+            <i data-lucide="moon" class="moon-icon"></i>
+            <span>Mode Tampilan</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Top Dashboard Header -->
+        <header class="top-header">
+          <div class="header-search">
+            <i data-lucide="search"></i>
+            <input
+              type="text"
+              placeholder="Cari metrik, OKR, atau PIC..."
+              id="search-input"
+            />
+          </div>
+          <div class="header-actions">
+            <!-- Notification Bell -->
+            <div class="notification-wrapper" id="notif-wrapper">
+              <button class="icon-btn" id="notif-btn">
+                <i data-lucide="bell"></i>
+                <span class="badge" id="notif-count">2</span>
+              </button>
+              <div class="notif-dropdown" id="notif-dropdown">
+                <div class="notif-header">
+                  <h3>Notifikasi</h3>
+                  <button id="mark-all-read">Tandai dibaca</button>
+                </div>
+                <div class="notif-list" id="notif-list">
+                  <!-- Dynamic notifications -->
+                </div>
+              </div>
+            </div>
+            <!-- Profile Widget -->
+            <div class="profile-widget">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                alt="Avatar"
+                class="avatar"
+                id="user-avatar"
+              />
+              <div class="profile-info">
+                <span class="profile-name" id="user-name"
+                  >C-Level Executive</span
+                >
+                <span class="profile-role" id="user-role-label"
+                  >Company-wide view</span
+                >
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Dashboard Tab Content -->
+        <div class="content-body">
+          <!-- Tab 1: Dashboard OKR -->
+          <section id="tab-dashboard" class="tab-pane active">
+            <div class="view-header">
+              <div>
+                <h2>Dashboard OKR</h2>
+                <p class="subtitle">
+                  Pemantauan pencapaian target strategis perusahaan secara
+                  real-time
+                </p>
+              </div>
+              <div class="filter-bar">
+                <select id="filter-team" class="styled-select">
+                  <option value="all">Semua Tim</option>
+                  <option value="product">Product & Design</option>
+                  <option value="engineering">Engineering</option>
+                  <option value="finance">Finance</option>
+                  <option value="growth">Growth & Marketing</option>
+                </select>
+                <select id="filter-status" class="styled-select">
+                  <option value="all">Semua Status</option>
+                  <option value="on-track">On Track</option>
+                  <option value="at-risk">At Risk</option>
+                  <option value="off-track">Off Track</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Metrics Stats Grid -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon icon-blue">
+                  <i data-lucide="target"></i>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label">Total Objective</span>
+                  <span class="stat-value" id="stat-total-objectives">4</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon icon-purple">
+                  <i data-lucide="trending-up"></i>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label">Rata-rata Progress</span>
+                  <span class="stat-value" id="stat-avg-progress">76.4%</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon icon-green">
+                  <i data-lucide="check-circle-2"></i>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label">On Track</span>
+                  <span class="stat-value text-green" id="stat-on-track"
+                    >5 / 8 KR</span
+                  >
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon icon-orange">
+                  <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label">At Risk / Off Track</span>
+                  <span class="stat-value text-orange" id="stat-at-risk"
+                    >3 / 8 KR</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- OKRs List Container -->
+            <div class="section-title">
+              <h3>Daftar Objective & Key Results (OKR)</h3>
+            </div>
+            <div id="okr-list-container" class="okr-list">
+              <!-- Dynamic OKRs inserted here -->
+            </div>
+          </section>
+
+          <!-- Tab 2: Balanced Scorecard (BSC) -->
+          <section id="tab-bsc" class="tab-pane">
+            <div class="view-header">
+              <div>
+                <h2>Balanced Scorecard (BSC) Integration</h2>
+                <p class="subtitle">
+                  Pemetaan Key Results ke dalam 4 perspektif kinerja utama
+                  organisasi
+                </p>
+              </div>
+            </div>
+
+            <!-- BSC 4 Quadrants Grid -->
+            <div class="bsc-grid">
+              <!-- Perspective 1: Financial -->
+              <div class="bsc-card" data-perspective="financial">
+                <div class="bsc-card-header">
+                  <div class="bsc-icon-wrapper f-icon">
+                    <i data-lucide="dollar-sign"></i>
+                  </div>
+                  <div>
+                    <h3>Financial Perspective</h3>
+                    <span class="bsc-desc"
+                      >Bagaimana kita memberikan value bagi pemegang
+                      saham?</span
+                    >
+                  </div>
+                  <div class="bsc-badge" id="bsc-progress-financial">0%</div>
+                </div>
+                <div class="bsc-card-body" id="bsc-list-financial">
+                  <!-- Mapped KRs will be rendered here -->
+                </div>
+              </div>
+
+              <!-- Perspective 2: Customer -->
+              <div class="bsc-card" data-perspective="customer">
+                <div class="bsc-card-header">
+                  <div class="bsc-icon-wrapper c-icon">
+                    <i data-lucide="users"></i>
+                  </div>
+                  <div>
+                    <h3>Customer Perspective</h3>
+                    <span class="bsc-desc"
+                      >Bagaimana pelanggan melihat dan menilai performa
+                      kita?</span
+                    >
+                  </div>
+                  <div class="bsc-badge" id="bsc-progress-customer">0%</div>
+                </div>
+                <div class="bsc-card-body" id="bsc-list-customer">
+                  <!-- Mapped KRs will be rendered here -->
+                </div>
+              </div>
+
+              <!-- Perspective 3: Internal Business Process -->
+              <div class="bsc-card" data-perspective="internal-process">
+                <div class="bsc-card-header">
+                  <div class="bsc-icon-wrapper i-icon">
+                    <i data-lucide="cpu"></i>
+                  </div>
+                  <div>
+                    <h3>Internal Business Process</h3>
+                    <span class="bsc-desc"
+                      >Proses bisnis apa saja yang harus kita ungguli?</span
+                    >
+                  </div>
+                  <div class="bsc-badge" id="bsc-progress-internal-process">
+                    0%
+                  </div>
+                </div>
+                <div class="bsc-card-body" id="bsc-list-internal-process">
+                  <!-- Mapped KRs will be rendered here -->
+                </div>
+              </div>
+
+              <!-- Perspective 4: Learning & Growth -->
+              <div class="bsc-card" data-perspective="learning-growth">
+                <div class="bsc-card-header">
+                  <div class="bsc-icon-wrapper l-icon">
+                    <i data-lucide="graduation-cap"></i>
+                  </div>
+                  <div>
+                    <h3>Learning & Growth</h3>
+                    <span class="bsc-desc"
+                      >Bagaimana kita bisa terus belajar, berinovasi, dan
+                      berkembang?</span
+                    >
+                  </div>
+                  <div class="bsc-badge" id="bsc-progress-learning-growth">
+                    0%
+                  </div>
+                </div>
+                <div class="bsc-card-body" id="bsc-list-learning-growth">
+                  <!-- Mapped KRs will be rendered here -->
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Tab 3: Strategy Map -->
+          <section id="tab-strategy-map" class="tab-pane">
+            <div class="view-header">
+              <div>
+                <h2>Strategy Map (Peta Koneksi Metrik)</h2>
+                <p class="subtitle">
+                  Visualisasi hubungan sebab-akibat (driver/outcome) antar Key
+                  Results
+                </p>
+              </div>
+              <div class="disclaimer-badge">
+                <i data-lucide="info"></i>
+                <span
+                  >Hubungan berbasis
+                  <strong>Asumsi Manajemen / Hipotesis</strong> (Phase 1)</span
+                >
+              </div>
+            </div>
+
+            <div class="strategy-map-container">
+              <div class="strategy-canvas-wrapper">
+                <!-- Visual rows corresponding to BSC Perspectives -->
+                <div class="perspective-row" data-row-perspective="financial">
+                  <div class="row-label">FINANCIAL</div>
+                  <div class="nodes-container" id="nodes-financial"></div>
+                </div>
+                <div class="perspective-row" data-row-perspective="customer">
+                  <div class="row-label">CUSTOMER</div>
+                  <div class="nodes-container" id="nodes-customer"></div>
+                </div>
+                <div
+                  class="perspective-row"
+                  data-row-perspective="internal-process"
+                >
+                  <div class="row-label">INTERNAL PROCESS</div>
+                  <div
+                    class="nodes-container"
+                    id="nodes-internal-process"
+                  ></div>
+                </div>
+                <div
+                  class="perspective-row"
+                  data-row-perspective="learning-growth"
+                >
+                  <div class="row-label">LEARNING & GROWTH</div>
+                  <div class="nodes-container" id="nodes-learning-growth"></div>
+                </div>
+
+                <!-- SVG Overlay for drawing connections -->
+                <svg class="connections-overlay" id="connections-svg"></svg>
+              </div>
+            </div>
+          </section>
+
+          <!-- Tab 4: Admin Console -->
+          <section id="tab-admin" class="tab-pane">
+            <div class="view-header">
+              <div>
+                <h2>Admin Console</h2>
+                <p class="subtitle">
+                  Manajemen OKR, Pemetaan BSC, dan Penyelarasan Strategis
+                </p>
+              </div>
+            </div>
+
+            <div class="admin-grid">
+              <!-- Section: Quick Manual Override -->
+              <div class="panel-card">
+                <div class="panel-header">
+                  <i data-lucide="edit-3"></i>
+                  <h3>Quick Update Capaian KR</h3>
+                </div>
+                <form id="override-form" class="admin-form">
+                  <div class="form-group">
+                    <label for="override-kr-select">Pilih Key Result</label>
+                    <select id="override-kr-select" required></select>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="override-current-val"
+                        >Nilai Capaian Saat Ini</label
+                      >
+                      <input
+                        type="number"
+                        id="override-current-val"
+                        step="any"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="override-target-val"
+                        >Target (Read-Only)</label
+                      >
+                      <input
+                        type="number"
+                        id="override-target-val"
+                        readonly
+                        class="readonly-input"
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" class="primary-btn">
+                    <i data-lucide="check"></i> Simpan Capaian & Log Audit
+                  </button>
+                </form>
+              </div>
+
+              <!-- Section: OKR & BSC Builder -->
+              <div class="panel-card span-2">
+                <div class="panel-header">
+                  <i data-lucide="plus-circle"></i>
+                  <h3>Tambah Key Result Baru</h3>
+                </div>
+                <form id="builder-form" class="admin-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="builder-objective-select">Objective</label>
+                      <select id="builder-objective-select" required>
+                        <!-- Dynamic list of Objectives -->
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="builder-bsc-select"
+                        >Balanced Scorecard Perspective</label
+                      >
+                      <select id="builder-bsc-select" required>
+                        <option value="financial">Financial</option>
+                        <option value="customer">Customer</option>
+                        <option value="internal-process">
+                          Internal Business Process
+                        </option>
+                        <option value="learning-growth">
+                          Learning & Growth
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="builder-kr-title">Nama Key Result (KR)</label>
+                    <input
+                      type="text"
+                      id="builder-kr-title"
+                      placeholder="Contoh: Meningkatkan retensi pelanggan menjadi 95%"
+                      required
+                    />
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="builder-owner">PIC / Owner</label>
+                      <input
+                        type="text"
+                        id="builder-owner"
+                        placeholder="Contoh: John Doe"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="builder-team">Tim / Departemen</label>
+                      <select id="builder-team" required>
+                        <option value="product">Product & Design</option>
+                        <option value="engineering">Engineering</option>
+                        <option value="finance">Finance</option>
+                        <option value="growth">Growth & Marketing</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="builder-target">Target Angka</label>
+                      <input
+                        type="number"
+                        id="builder-target"
+                        step="any"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="builder-unit">Satuan (Unit)</label>
+                      <input
+                        type="text"
+                        id="builder-unit"
+                        placeholder="%, USD, Jumlah, dll."
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" class="primary-btn">
+                    <i data-lucide="plus"></i> Tambah Key Result
+                  </button>
+                </form>
+              </div>
+
+              <!-- Data Source Sync (Phase 1 Mock for Phase 2) -->
+              <div class="panel-card span-3">
+                <div class="panel-header">
+                  <i data-lucide="database"></i>
+                  <h3>Data Source Integration Status (Phased Pipeline)</h3>
+                </div>
+                <div class="sync-grid">
+                  <div class="sync-item active">
+                    <div class="sync-icon"><i data-lucide="file-text"></i></div>
+                    <div class="sync-info">
+                      <h4>Manual Entry (Phase 1)</h4>
+                      <p>Status: Terhubung & Aktif</p>
+                    </div>
+                    <span class="sync-badge badge-green">Aktif</span>
+                  </div>
+                  <div class="sync-item disabled">
+                    <div class="sync-icon"><i data-lucide="table"></i></div>
+                    <div class="sync-info">
+                      <h4>Google Sheets Sync (Phase 2)</h4>
+                      <p>Integrasi Terjadwal via Google API</p>
+                    </div>
+                    <span class="sync-badge badge-gray">Segera Hadir</span>
+                  </div>
+                  <div class="sync-item disabled">
+                    <div class="sync-icon"><i data-lucide="server"></i></div>
+                    <div class="sync-info">
+                      <h4>Database & Third-Party API (Phase 3)</h4>
+                      <p>Integrasi Read-Only PostgreSQL/Jira/Hubspot</p>
+                    </div>
+                    <span class="sync-badge badge-gray">Rencana</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Tab 5: Audit Trail -->
+          <section id="tab-audit" class="tab-pane">
+            <div class="view-header">
+              <div>
+                <h2>Audit Trail & Activity Log</h2>
+                <p class="subtitle">
+                  Catatan historis lengkap atas seluruh perubahan data dan
+                  penyesuaian target
+                </p>
+              </div>
+            </div>
+
+            <div class="panel-card full-width">
+              <div class="table-container">
+                <table class="audit-table">
+                  <thead>
+                    <tr>
+                      <th>Waktu</th>
+                      <th>Pengguna (Aktor)</th>
+                      <th>Aksi / Modifikasi</th>
+                      <th>Target Key Result</th>
+                      <th>Nilai Lama</th>
+                      <th>Nilai Baru</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-trail-body">
+                    <!-- Dynamic audit trail rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- Drill-down BSC Modal -->
+    <div class="modal-backdrop" id="bsc-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modal-title">Perspective Details</h3>
+          <button class="close-btn" id="close-modal-btn">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="modal-content">
+          <!-- Drilldown details -->
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "okr-dashboard-bsc",
+  "version": "1.0.0",
+  "description": "Interactive Enterprise Dashboard (OKR & Balanced Scorecard Integration)",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y http-server -p 3000"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
