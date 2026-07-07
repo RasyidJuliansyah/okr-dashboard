@@ -1,0 +1,76 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       String   @default("EMPLOYEE") // ADMIN, MANAGER, C_LEVEL, EMPLOYEE
+  teamId     String?
+  team       Team?    @relation(fields: [teamId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Team {
+  id        String  @id @default(uuid())
+  name      String
+  managerId String?
+  users     User[]
+}
+
+model Objective {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  quarter     String      // contoh: "Q3-2026"
+  ownerId     String?     // user atau team, simplifikasi: user id
+  keyResults  KeyResult[]
+  createdAt   DateTime    @default(now())
+}
+
+model KeyResult {
+  id             String        @id @default(uuid())
+  objectiveId    String
+  objective      Objective     @relation(fields: [objectiveId], references: [id])
+  title          String
+  targetValue    Float
+  currentValue   Float         @default(0)
+  unit           String        // contoh: "%", "IDR", "users"
+  bscPerspective String        // FINANCIAL, CUSTOMER, INTERNAL_PROCESS, LEARNING_GROWTH
+  status         String        @default("ON_TRACK") // ON_TRACK, AT_RISK, OFF_TRACK
+  updates        KrUpdate[]
+  sourceLinksA   CausalLink[]  @relation("SourceKR")
+  sourceLinksB   CausalLink[]  @relation("TargetKR")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model KrUpdate {
+  id          String    @id @default(uuid())
+  keyResultId String
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
+  oldValue    Float
+  newValue    Float
+  note        String?
+  updatedBy   String    // user id admin
+  updatedAt   DateTime  @default(now())
+}
+
+model CausalLink {
+  id           String    @id @default(uuid())
+  sourceKrId   String
+  sourceKr     KeyResult @relation("SourceKR", fields: [sourceKrId], references: [id])
+  targetKrId   String
+  targetKr     KeyResult @relation("TargetKR", fields: [targetKrId], references: [id])
+  relationship String    // "driver" | "outcome"
+  note         String?
+  createdBy    String
+  createdAt    DateTime  @default(now())
+}
