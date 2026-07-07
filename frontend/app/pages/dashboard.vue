@@ -1,67 +1,35 @@
 <template>
   <div class="dashboard-root">
-    <!-- Navbar / Header -->
-    <header class="header">
-      <div class="header-brand">
-        <NuxtLink to="/" class="back-link">
-          <span class="back-icon">←</span> Profil
-        </NuxtLink>
-        <h1>OKR & BSC Dashboard</h1>
-      </div>
-      
-      <div class="header-actions">
-        <ThemeToggle />
-        <NuxtLink to="/bsc-view" class="header-btn">
-          📊 Kuadran BSC
-        </NuxtLink>
-        <NuxtLink to="/strategy-map" class="header-btn">
-          🗺️ Strategy Map
-        </NuxtLink>
-        <!-- Quick links for Admins -->
-        <NuxtLink v-if="auth.user?.role === 'ADMIN'" to="/admin/objectives" class="header-btn">
-          📂 Builder
-        </NuxtLink>
-        <NuxtLink v-if="auth.user?.role === 'ADMIN'" to="/admin/update-progress" class="header-btn secondary">
-          ✍️ Update
-        </NuxtLink>
-        
-        <div class="header-user">
-          <span class="user-badge" :class="auth.user?.role?.toLowerCase().replace('_', '')">
-            {{ auth.user?.role?.replace('_', ' ') }}
-          </span>
-          <span class="user-name">{{ auth.user?.name }}</span>
-        </div>
-      </div>
-    </header>
-
     <div class="dashboard-container">
       <!-- Controls & Filter Row -->
       <section class="controls-card card">
         <div class="controls-content">
           <h2>Ringkasan Progres OKR</h2>
-          
+
           <!-- Scope Selector (Visible to Admin, C-Level, Manager) -->
           <div v-if="showScopeSelector" class="scope-selector">
             <span class="scope-label">Lingkup (Scope):</span>
             <div class="scope-buttons">
-              <button 
-                @click="changeScope('self')" 
+              <button
+                @click="changeScope('self')"
                 :class="{ active: currentScope === 'self' }"
                 class="scope-btn"
               >
                 Pribadi (Self)
               </button>
-              <button 
+              <button
                 v-if="auth.user?.role !== 'EMPLOYEE'"
-                @click="changeScope('team')" 
+                @click="changeScope('team')"
                 :class="{ active: currentScope === 'team' }"
                 class="scope-btn"
               >
                 Tim (Team)
               </button>
-              <button 
-                v-if="auth.user?.role === 'C_LEVEL' || auth.user?.role === 'ADMIN'"
-                @click="changeScope('company')" 
+              <button
+                v-if="
+                  auth.user?.role === 'C_LEVEL' || auth.user?.role === 'ADMIN'
+                "
+                @click="changeScope('company')"
                 :class="{ active: currentScope === 'company' }"
                 class="scope-btn"
               >
@@ -78,12 +46,21 @@
         <div class="kpi-card card">
           <span class="kpi-label">Rata-Rata Progres</span>
           <div class="kpi-value-row">
-            <span class="kpi-value">{{ summaryData.metrics?.averageProgress || 0 }}%</span>
+            <span class="kpi-value"
+              >{{ summaryData.metrics?.averageProgress || 0 }}%</span
+            >
             <div class="progress-ring-placeholder">
-              <div class="progress-ring-fill" :style="{ width: (summaryData.metrics?.averageProgress || 0) + '%' }"></div>
+              <div
+                class="progress-ring-fill"
+                :style="{
+                  width: (summaryData.metrics?.averageProgress || 0) + '%',
+                }"
+              ></div>
             </div>
           </div>
-          <p class="kpi-desc">Agregat progres seluruh Key Results dalam scope terpilih.</p>
+          <p class="kpi-desc">
+            Agregat progres seluruh Key Results dalam scope terpilih.
+          </p>
         </div>
 
         <!-- OKR Status Counts -->
@@ -91,19 +68,27 @@
           <span class="kpi-label">Status Key Results</span>
           <div class="status-summary-row">
             <div class="status-count-item">
-              <span class="count-val ontrack">{{ summaryData.metrics?.onTrackCount || 0 }}</span>
+              <span class="count-val ontrack">{{
+                summaryData.metrics?.onTrackCount || 0
+              }}</span>
               <span class="count-lbl">On Track</span>
             </div>
             <div class="status-count-item">
-              <span class="count-val atrisk">{{ summaryData.metrics?.atRiskCount || 0 }}</span>
+              <span class="count-val atrisk">{{
+                summaryData.metrics?.atRiskCount || 0
+              }}</span>
               <span class="count-lbl">At Risk</span>
             </div>
             <div class="status-count-item">
-              <span class="count-val offtrack">{{ summaryData.metrics?.offTrackCount || 0 }}</span>
+              <span class="count-val offtrack">{{
+                summaryData.metrics?.offTrackCount || 0
+              }}</span>
               <span class="count-lbl">Off Track</span>
             </div>
           </div>
-          <p class="kpi-desc">Status otomatis berdasarkan capaian vs target harian.</p>
+          <p class="kpi-desc">
+            Status otomatis berdasarkan capaian vs target harian.
+          </p>
         </div>
       </section>
 
@@ -111,7 +96,9 @@
       <section class="objectives-section">
         <div class="section-title-row">
           <h2>Daftar Target (Objectives)</h2>
-          <span class="count-badge">{{ summaryData.objectives?.length || 0 }} Objectives</span>
+          <span class="count-badge"
+            >{{ summaryData.objectives?.length || 0 }} Objectives</span
+          >
         </div>
 
         <div v-if="loading" class="skeleton-grid">
@@ -128,18 +115,29 @@
           </div>
         </div>
 
-        <div v-else-if="!summaryData.objectives || summaryData.objectives.length === 0" class="empty-state">
+        <div
+          v-else-if="
+            !summaryData.objectives || summaryData.objectives.length === 0
+          "
+          class="empty-state"
+        >
           Belum ada OKR yang terdaftar pada lingkup ini.
         </div>
 
         <div v-else class="objectives-grid">
           <!-- Objective Card -->
-          <div v-for="obj in summaryData.objectives" :key="obj.id" class="objective-card card">
+          <div
+            v-for="obj in summaryData.objectives"
+            :key="obj.id"
+            class="objective-card card"
+          >
             <div class="obj-card-header">
               <div>
                 <span class="obj-quarter">{{ obj.quarter }}</span>
                 <h3>{{ obj.title }}</h3>
-                <p v-if="obj.description" class="obj-desc">{{ obj.description }}</p>
+                <p v-if="obj.description" class="obj-desc">
+                  {{ obj.description }}
+                </p>
               </div>
               <div class="obj-progress-badge">
                 <span>{{ Math.round(obj.progress || 0) }}%</span>
@@ -149,7 +147,10 @@
 
             <!-- Objective Progress Bar -->
             <div class="obj-progress-track">
-              <div class="obj-progress-bar" :style="{ width: (obj.progress || 0) + '%' }"></div>
+              <div
+                class="obj-progress-bar"
+                :style="{ width: (obj.progress || 0) + '%' }"
+              ></div>
             </div>
 
             <!-- Key Results nested list -->
@@ -159,7 +160,10 @@
                 <div v-for="kr in obj.keyResults" :key="kr.id" class="kr-item">
                   <div class="kr-header-row">
                     <span class="kr-title">{{ kr.title }}</span>
-                    <span class="perspective-badge" :class="kr.bscPerspective.toLowerCase()">
+                    <span
+                      class="perspective-badge"
+                      :class="kr.bscPerspective.toLowerCase()"
+                    >
                       {{ formatPerspective(kr.bscPerspective) }}
                     </span>
                   </div>
@@ -167,25 +171,37 @@
                   <!-- KR Progress Bar -->
                   <div class="kr-progress-container">
                     <div class="kr-progress-track">
-                      <div 
-                        class="kr-progress-bar" 
+                      <div
+                        class="kr-progress-bar"
                         :class="kr.status.toLowerCase().replace('_', '')"
                         :style="{ width: kr.progress + '%' }"
                       ></div>
                     </div>
-                    <span class="kr-progress-val">{{ Math.round(kr.progress) }}%</span>
+                    <span class="kr-progress-val"
+                      >{{ Math.round(kr.progress) }}%</span
+                    >
                   </div>
 
                   <!-- Details -->
                   <div class="kr-details-row">
                     <span class="kr-values">
-                      Nilai: <strong>{{ kr.currentValue }}</strong> / {{ kr.targetValue }} {{ kr.unit }}
+                      Nilai: <strong>{{ kr.currentValue }}</strong> /
+                      {{ kr.targetValue }} {{ kr.unit }}
                     </span>
-                    <span class="kr-source-tooltip" :title="'Input Manual — Diperbarui pada: ' + formatDate(kr.updatedAt)">
+                    <span
+                      class="kr-source-tooltip"
+                      :title="
+                        'Input Manual — Diperbarui pada: ' +
+                        formatDate(kr.updatedAt)
+                      "
+                    >
                       ℹ️ Input Manual
                     </span>
-                    <span class="status-badge" :class="kr.status.toLowerCase().replace('_', '')">
-                      {{ kr.status.replace('_', ' ') }}
+                    <span
+                      class="status-badge"
+                      :class="kr.status.toLowerCase().replace('_', '')"
+                    >
+                      {{ kr.status.replace("_", " ") }}
                     </span>
                   </div>
                 </div>
@@ -199,34 +215,37 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 const summaryData = ref({});
-const currentScope = ref('self');
+const currentScope = ref("self");
 const loading = ref(false);
 
 const showScopeSelector = computed(() => {
-  return auth.user?.role && auth.user.role !== 'EMPLOYEE';
+  return auth.user?.role && auth.user.role !== "EMPLOYEE";
 });
 
 function formatPerspective(p) {
-  if (!p) return '';
-  return p.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  if (!p) return "";
+  return p
+    .split("_")
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '-';
+  if (!dateStr) return "-";
   const d = new Date(dateStr);
-  return d.toLocaleString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return d.toLocaleString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -238,14 +257,17 @@ async function changeScope(scope) {
 async function fetchDashboardData() {
   loading.value = true;
   try {
-    const response = await $fetch(`${config.public.apiBase}/dashboard/summary?scope=${currentScope.value}`, {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    });
+    const response = await $fetch(
+      `${config.public.apiBase}/dashboard/summary?scope=${currentScope.value}`,
+      {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+      },
+    );
     summaryData.value = response;
   } catch (err) {
-    console.error('Error fetching dashboard summary:', err);
+    console.error("Error fetching dashboard summary:", err);
   } finally {
     loading.value = false;
   }
@@ -253,22 +275,22 @@ async function fetchDashboardData() {
 
 onMounted(() => {
   // Default scope for C_LEVEL / ADMIN is company, for MANAGER is team, for EMPLOYEE is self
-  if (auth.user?.role === 'ADMIN' || auth.user?.role === 'C_LEVEL') {
-    currentScope.value = 'company';
-  } else if (auth.user?.role === 'MANAGER') {
-    currentScope.value = 'team';
+  if (auth.user?.role === "ADMIN" || auth.user?.role === "C_LEVEL") {
+    currentScope.value = "company";
+  } else if (auth.user?.role === "MANAGER") {
+    currentScope.value = "team";
   } else {
-    currentScope.value = 'self';
+    currentScope.value = "self";
   }
   fetchDashboardData();
 });
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
 
 .dashboard-root {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   min-height: 100vh;
   background: var(--bg-gradient);
   color: var(--text-color);
@@ -491,7 +513,7 @@ onMounted(() => {
 .kpi-label {
   font-size: 12px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: #0f1623;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -506,9 +528,7 @@ onMounted(() => {
 .kpi-value {
   font-size: 36px;
   font-weight: 700;
-  background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #0e97d6;
 }
 
 .progress-ring-placeholder {
@@ -543,19 +563,25 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.count-val.ontrack { color: #88ff88; }
-.count-val.atrisk { color: #ffcc66; }
-.count-val.offtrack { color: #ff8888; }
+.count-val.ontrack {
+  color: #88ff88;
+}
+.count-val.atrisk {
+  color: #ffcc66;
+}
+.count-val.offtrack {
+  color: #ff8888;
+}
 
 .count-lbl {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #0f1623;
   margin-top: 2px;
 }
 
 .kpi-desc {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #0f1623;
   margin: 0;
 }
 
@@ -673,7 +699,7 @@ onMounted(() => {
 
 /* Key Results List inside Objective */
 .krs-section {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid #3d4a5c;
   padding-top: 16px;
 }
 
@@ -721,9 +747,9 @@ onMounted(() => {
 }
 
 .kr-progress-track {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 2px;
+  height: 6px;
+  background: #f0f3f9;
+  border-radius: 3px #f0f3f9;
   flex-grow: 1;
   overflow: hidden;
 }
@@ -733,9 +759,15 @@ onMounted(() => {
   border-radius: 2px;
 }
 
-.kr-progress-bar.ontrack { background: #88ff88; }
-.kr-progress-bar.atrisk { background: #ffcc66; }
-.kr-progress-bar.offtrack { background: #ff8888; }
+.kr-progress-bar.ontrack {
+  background: #88ff88;
+}
+.kr-progress-bar.atrisk {
+  background: #ffcc66;
+}
+.kr-progress-bar.offtrack {
+  background: #ff8888;
+}
 
 .kr-progress-val {
   font-size: 12px;
@@ -750,14 +782,15 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
+  color: #5e718d;
 }
 
 .kr-values {
-  color: rgba(255, 255, 255, 0.5);
+  color: #5e718d;
 }
 
 .kr-values strong {
-  color: white;
+  color: #3d4a5c;
 }
 
 /* Badges */
@@ -822,9 +855,9 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 60px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #5e718d;
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.01);
+  background: #ffff;
   border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 12px;
 }
@@ -837,27 +870,27 @@ onMounted(() => {
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .header-actions {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .controls-content {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .scope-selector {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
   }
-  
+
   .scope-buttons {
     width: 100%;
   }
-  
+
   .scope-btn {
     flex-grow: 1;
     text-align: center;
@@ -898,7 +931,12 @@ onMounted(() => {
 }
 
 .skeleton-line {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
   background-size: 200% 100%;
   animation: loading-shimmer 1.5s infinite;
   border-radius: 4px;

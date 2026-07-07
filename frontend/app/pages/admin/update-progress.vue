@@ -1,19 +1,5 @@
 <template>
   <div class="admin-root">
-    <!-- Navbar / Header -->
-    <header class="admin-header">
-      <div class="header-brand">
-        <NuxtLink to="/" class="back-link">
-          <span class="back-icon">←</span> Kembali ke Dashboard
-        </NuxtLink>
-        <h1>Admin Console: Update Capaian OKR</h1>
-      </div>
-      <div class="header-user">
-        <span class="user-badge admin">ADMIN</span>
-        <span class="user-name">{{ auth.user?.name }}</span>
-      </div>
-    </header>
-
     <div class="admin-content">
       <section class="progress-section card">
         <div class="section-header">
