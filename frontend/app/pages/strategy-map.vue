@@ -1,28 +1,12 @@
 <template>
   <div class="map-root">
-    <!-- Navbar / Header -->
-    <header class="header">
-      <div class="header-brand">
-        <NuxtLink to="/dashboard" class="back-link">
-          <span class="back-icon">←</span> Dashboard
-        </NuxtLink>
-        <h1>BSC Strategy Map (Causal Links)</h1>
-      </div>
-      
-      <div class="header-actions">
-        <div class="header-user">
-          <span class="user-badge" :class="auth.user?.role?.toLowerCase().replace('_', '')">
-            {{ auth.user?.role?.replace('_', ' ') }}
-          </span>
-          <span class="user-name">{{ auth.user?.name }}</span>
-        </div>
-      </div>
-    </header>
-
     <!-- Critical Disclaimer Banner (FR-USR-006) -->
     <div class="disclaimer-banner">
       <span class="disclaimer-icon">⚠️</span>
-      <p><strong>Disclaimer:</strong> Peta ini berdasarkan asumsi manajemen (input manual Admin), bukan korelasi data statistik.</p>
+      <p>
+        <strong>Disclaimer:</strong> Peta ini berdasarkan asumsi manajemen
+        (input manual Admin), bukan korelasi data statistik.
+      </p>
     </div>
 
     <div class="map-content">
@@ -30,13 +14,15 @@
       <section class="graph-section card">
         <div class="graph-header">
           <h2>Visualisasi Relasi Sebab-Akibat</h2>
-          <button @click="fetchStrategyMap" class="refresh-btn">🔄 Refresh Map</button>
+          <button @click="fetchStrategyMap" class="refresh-btn">
+            🔄 Refresh Map
+          </button>
         </div>
 
         <div v-if="loadingMap" class="loading-state">
           Memuat peta strategi...
         </div>
-        
+
         <div v-else class="flow-container">
           <ClientOnly>
             <!-- Fallback in case of zero nodes -->
@@ -45,7 +31,7 @@
             </div>
 
             <!-- Standard Vue Flow container -->
-            <VueFlow 
+            <VueFlow
               v-else
               v-model="elements"
               :fit-view-on-init="true"
@@ -53,16 +39,23 @@
             >
               <!-- Custom Node Renderer -->
               <template #node-custom="{ data }">
-                <div class="custom-node" :class="data.perspective.toLowerCase()">
+                <div
+                  class="custom-node"
+                  :class="data.perspective.toLowerCase()"
+                >
                   <div class="node-header">
-                    <span class="node-quarter">{{ data.objectiveQuarter }}</span>
-                    <span class="node-perspective">{{ formatPerspective(data.perspective) }}</span>
+                    <span class="node-quarter">{{
+                      data.objectiveQuarter
+                    }}</span>
+                    <span class="node-perspective">{{
+                      formatPerspective(data.perspective)
+                    }}</span>
                   </div>
                   <p class="node-title">{{ data.title }}</p>
                   <div class="node-progress-row">
                     <div class="node-progress-track">
-                      <div 
-                        class="node-progress-bar" 
+                      <div
+                        class="node-progress-bar"
                         :class="data.status.toLowerCase().replace('_', '')"
                         :style="{ width: data.progress + '%' }"
                       ></div>
@@ -81,11 +74,16 @@
         <!-- Link Creator Card -->
         <div v-if="auth.user?.role === 'ADMIN'" class="card creator-card">
           <h2>Hubungkan Sebab-Akibat (Admin)</h2>
-          <p class="section-desc">Pilih Key Result pendorong (driver) dan hasil akhir (outcome) untuk memetakan sebab-akibat.</p>
+          <p class="section-desc">
+            Pilih Key Result pendorong (driver) dan hasil akhir (outcome) untuk
+            memetakan sebab-akibat.
+          </p>
 
           <form @submit.prevent="submitCausalLink" class="link-form">
             <div class="form-group">
-              <label for="source-kr">Key Result Pendorong (Source/Driver) *</label>
+              <label for="source-kr"
+                >Key Result Pendorong (Source/Driver) *</label
+              >
               <select id="source-kr" v-model="newLink.sourceKrId" required>
                 <option value="" disabled>Pilih Key Result</option>
                 <option v-for="kr in allKeyResults" :key="kr.id" :value="kr.id">
@@ -95,7 +93,9 @@
             </div>
 
             <div class="form-group">
-              <label for="target-kr">Key Result Dampak (Target/Outcome) *</label>
+              <label for="target-kr"
+                >Key Result Dampak (Target/Outcome) *</label
+              >
               <select id="target-kr" v-model="newLink.targetKrId" required>
                 <option value="" disabled>Pilih Key Result</option>
                 <option v-for="kr in allKeyResults" :key="kr.id" :value="kr.id">
@@ -114,23 +114,27 @@
 
             <div class="form-group">
               <label for="link-note">Catatan Penjelasan (Opsional)</label>
-              <input 
+              <input
                 id="link-note"
-                v-model="newLink.note" 
-                type="text" 
-                placeholder="Contoh: Kualitas code mempercepat rilis fitur" 
+                v-model="newLink.note"
+                type="text"
+                placeholder="Contoh: Kualitas code mempercepat rilis fitur"
               />
             </div>
 
-            <button 
-              type="submit" 
-              :disabled="submitting || !newLink.sourceKrId || !newLink.targetKrId"
+            <button
+              type="submit"
+              :disabled="
+                submitting || !newLink.sourceKrId || !newLink.targetKrId
+              "
               class="submit-btn"
             >
-              {{ submitting ? 'Menyimpan...' : 'Hubungkan Relasi' }}
+              {{ submitting ? "Menyimpan..." : "Hubungkan Relasi" }}
             </button>
 
-            <p v-if="successMessage" class="success-msg">{{ successMessage }}</p>
+            <p v-if="successMessage" class="success-msg">
+              {{ successMessage }}
+            </p>
             <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
           </form>
         </div>
@@ -138,7 +142,9 @@
         <!-- Links List Card (All Roles) -->
         <div class="card links-list-card">
           <h2>Daftar Kausalitas Aktif</h2>
-          <p class="section-desc">Berikut hubungan driver-outcome yang saat ini terdefinisi.</p>
+          <p class="section-desc">
+            Berikut hubungan driver-outcome yang saat ini terdefinisi.
+          </p>
 
           <div v-if="loadingMap" class="loading-state">
             Memuat daftar hubungan...
@@ -150,13 +156,17 @@
             <div v-for="edge in edges" :key="edge.id" class="link-item">
               <div class="link-item-top">
                 <div class="link-names">
-                  <span class="kr-node-ref">{{ getKrTitleById(edge.source) }}</span>
+                  <span class="kr-node-ref">{{
+                    getKrTitleById(edge.source)
+                  }}</span>
                   <span class="direction-arrow">➔</span>
-                  <span class="kr-node-ref">{{ getKrTitleById(edge.target) }}</span>
+                  <span class="kr-node-ref">{{
+                    getKrTitleById(edge.target)
+                  }}</span>
                 </div>
-                <button 
+                <button
                   v-if="auth.user?.role === 'ADMIN'"
-                  @click="deleteLink(edge.id)" 
+                  @click="deleteLink(edge.id)"
                   class="delete-link-btn"
                   title="Hapus Hubungan"
                 >
@@ -165,7 +175,9 @@
               </div>
               <div class="link-item-meta">
                 <span class="rel-badge">{{ edge.label }}</span>
-                <span v-if="edge.data?.note" class="link-note">"{{ edge.data.note }}"</span>
+                <span v-if="edge.data?.note" class="link-note"
+                  >"{{ edge.data.note }}"</span
+                >
               </div>
             </div>
           </div>
@@ -176,13 +188,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useAuthStore } from '../stores/auth';
-import { VueFlow } from '@vue-flow/core';
+import { ref, onMounted, computed } from "vue";
+import { useAuthStore } from "../stores/auth";
+import { VueFlow } from "@vue-flow/core";
 
 // Nuxt module style imports
-import '@vue-flow/core/dist/style.css';
-import '@vue-flow/core/dist/theme-default.css';
+import "@vue-flow/core/dist/style.css";
+import "@vue-flow/core/dist/theme-default.css";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
@@ -191,14 +203,14 @@ const elements = ref([]);
 const allKeyResults = ref([]);
 const loadingMap = ref(false);
 const submitting = ref(false);
-const errorMessage = ref('');
-const successMessage = ref('');
+const errorMessage = ref("");
+const successMessage = ref("");
 
 const newLink = ref({
-  sourceKrId: '',
-  targetKrId: '',
-  relationship: 'driver',
-  note: ''
+  sourceKrId: "",
+  targetKrId: "",
+  relationship: "driver",
+  note: "",
 });
 
 // Cache list of edges and nodes separately for UI elements listing
@@ -206,45 +218,48 @@ const nodes = ref([]);
 const edges = ref([]);
 
 function formatPerspective(p) {
-  if (!p) return '';
-  return p.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  if (!p) return "";
+  return p
+    .split("_")
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function getKrTitleById(id) {
-  const kr = allKeyResults.value.find(k => k.id === id);
-  return kr ? kr.title : 'Key Result';
+  const kr = allKeyResults.value.find((k) => k.id === id);
+  return kr ? kr.title : "Key Result";
 }
 
 async function fetchAllKeyResults() {
   try {
     const objectives = await $fetch(`${config.public.apiBase}/objectives`, {
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
 
     const krs = [];
-    objectives.forEach(obj => {
+    objectives.forEach((obj) => {
       if (obj.keyResults) {
-        obj.keyResults.forEach(kr => {
+        obj.keyResults.forEach((kr) => {
           krs.push(kr);
         });
       }
     });
     allKeyResults.value = krs;
   } catch (err) {
-    console.error('Error fetching KRs:', err);
+    console.error("Error fetching KRs:", err);
   }
 }
 
 async function fetchStrategyMap() {
   loadingMap.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
   try {
     const response = await $fetch(`${config.public.apiBase}/strategy-map`, {
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
 
     nodes.value = response.nodes;
@@ -253,67 +268,69 @@ async function fetchStrategyMap() {
     // Combine for Vue Flow
     elements.value = [...response.nodes, ...response.edges];
   } catch (err) {
-    console.error('Error fetching strategy map:', err);
+    console.error("Error fetching strategy map:", err);
   } finally {
     loadingMap.value = false;
   }
 }
 
 async function submitCausalLink() {
-  errorMessage.value = '';
-  successMessage.value = '';
+  errorMessage.value = "";
+  successMessage.value = "";
 
   if (newLink.value.sourceKrId === newLink.value.targetKrId) {
-    errorMessage.value = 'Key Result Driver dan Outcome tidak boleh sama';
+    errorMessage.value = "Key Result Driver dan Outcome tidak boleh sama";
     return;
   }
 
   submitting.value = true;
   try {
     await $fetch(`${config.public.apiBase}/causal-links`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${auth.token}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: newLink.value
+      body: newLink.value,
     });
 
-    successMessage.value = 'Relasi kausalitas berhasil didefinisikan!';
-    
+    successMessage.value = "Relasi kausalitas berhasil didefinisikan!";
+
     // Reset form
     newLink.value = {
-      sourceKrId: '',
-      targetKrId: '',
-      relationship: 'driver',
-      note: ''
+      sourceKrId: "",
+      targetKrId: "",
+      relationship: "driver",
+      note: "",
     };
 
     await fetchStrategyMap();
   } catch (err) {
-    console.error('Causal link error:', err);
-    errorMessage.value = err.data?.message || 'Gagal menyimpan hubungan.';
+    console.error("Causal link error:", err);
+    errorMessage.value = err.data?.message || "Gagal menyimpan hubungan.";
   } finally {
     submitting.value = false;
   }
 }
 
 async function deleteLink(id) {
-  if (!confirm('Apakah Anda yakin ingin menghapus hubungan sebab-akibat ini?')) {
+  if (
+    !confirm("Apakah Anda yakin ingin menghapus hubungan sebab-akibat ini?")
+  ) {
     return;
   }
 
   try {
     await $fetch(`${config.public.apiBase}/causal-links/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
     await fetchStrategyMap();
   } catch (err) {
-    console.error('Delete link error:', err);
-    alert('Gagal menghapus hubungan.');
+    console.error("Delete link error:", err);
+    alert("Gagal menghapus hubungan.");
   }
 }
 
@@ -324,12 +341,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
 
 .map-root {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 20%, rgb(15, 22, 38) 0%, rgb(8, 12, 21) 90%);
+  background: #fafcff;
   color: white;
   padding: 0 0 60px 0;
   display: flex;
@@ -420,12 +437,13 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  border-radius: 12px;
 }
 
 .disclaimer-banner p {
   margin: 0;
   font-size: 13px;
-  color: #ffe0a3;
+  color: #f2ca17;
 }
 
 .disclaimer-icon {
@@ -438,9 +456,10 @@ onMounted(async () => {
   grid-template-columns: 1.6fr 1fr;
   gap: 30px;
   max-width: 1400px;
-  margin: 30px auto 0 auto;
-  padding: 0 30px;
+  margin: auto 0 auto;
+  padding: 30px;
   flex-grow: 1;
+  background: #f0f3f9;
 }
 
 @media (max-width: 1024px) {
@@ -450,12 +469,12 @@ onMounted(async () => {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #ffff;
+  color: #5e718d;
+  border: 2px solid #f0f3f9;
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .graph-section {
@@ -475,12 +494,13 @@ onMounted(async () => {
   font-size: 18px;
   margin: 0;
   font-weight: 600;
+  color: #5e718d;
 }
 
 .refresh-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: #0e97d6;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  color: #ffff;
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 12px;
@@ -494,9 +514,10 @@ onMounted(async () => {
 
 .flow-container {
   flex-grow: 1;
-  background: rgba(0, 0, 0, 0.2);
+  background: #f0f3f9;
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 12px;
+  padding: 12px;
   overflow: hidden;
   position: relative;
 }
@@ -515,12 +536,12 @@ onMounted(async () => {
   padding: 12px;
   border-radius: 8px;
   width: 250px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   position: relative;
 }
 
 .custom-node::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -530,16 +551,24 @@ onMounted(async () => {
   border-bottom-left-radius: 8px;
 }
 
-.custom-node.financial::after { background: #00d2ff; }
-.custom-node.customer::after { background: #ffaa00; }
-.custom-node.internal_process::after { background: #8a2be2; }
-.custom-node.learning_growth::after { background: #4bff4b; }
+.custom-node.financial::after {
+  background: #00d2ff;
+}
+.custom-node.customer::after {
+  background: #ffaa00;
+}
+.custom-node.internal_process::after {
+  background: #8a2be2;
+}
+.custom-node.learning_growth::after {
+  background: #4bff4b;
+}
 
 .node-header {
   display: flex;
   justify-content: space-between;
   font-size: 9px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.4);
   margin-bottom: 6px;
   text-transform: uppercase;
   font-weight: 700;
@@ -562,7 +591,7 @@ onMounted(async () => {
 
 .node-progress-track {
   height: 4px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   flex-grow: 1;
   overflow: hidden;
@@ -573,9 +602,15 @@ onMounted(async () => {
   border-radius: 2px;
 }
 
-.node-progress-bar.ontrack { background: #88ff88; }
-.node-progress-bar.atrisk { background: #ffcc66; }
-.node-progress-bar.offtrack { background: #ff8888; }
+.node-progress-bar.ontrack {
+  background: #88ff88;
+}
+.node-progress-bar.atrisk {
+  background: #ffcc66;
+}
+.node-progress-bar.offtrack {
+  background: #ff8888;
+}
 
 .node-progress-pct {
   font-size: 10px;
@@ -593,11 +628,12 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 6px 0;
+  color: #5e718d;
 }
 
 .section-desc {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #5e718d;
   margin: 0 0 20px 0;
   line-height: 1.4;
 }
@@ -616,28 +652,31 @@ onMounted(async () => {
 
 .form-group label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #5e718d;
   font-weight: 500;
 }
 
-select, input {
+select,
+input {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #d7dfe9;
   border-radius: 6px;
   padding: 10px;
-  color: white;
+  color: #d7dfe9;
   font-family: inherit;
   font-size: 13px;
   outline: none;
 }
 
-select:focus, input:focus {
+select:focus,
+input:focus {
   border-color: #0066ff;
+  color: #3d4a5c;
 }
 
 .submit-btn {
-  background: #0066ff;
-  color: white;
+  background: #0e97d6;
+  color: #ffff;
   border: none;
   padding: 12px;
   border-radius: 6px;
@@ -652,8 +691,8 @@ select:focus, input:focus {
 }
 
 .submit-btn:disabled {
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.3);
+  background: #87cbeb;
+  color: rgba(255, 255, 255, 0.3);
   cursor: not-allowed;
 }
 
@@ -672,7 +711,7 @@ select:focus, input:focus {
 }
 
 .links-list::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
 }
 
@@ -701,7 +740,7 @@ select:focus, input:focus {
 }
 
 .kr-node-ref {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   padding: 2px 6px;
   border-radius: 4px;
   max-width: 150px;
@@ -718,7 +757,7 @@ select:focus, input:focus {
 .delete-link-btn {
   background: transparent;
   border: none;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255, 255, 255, 0.3);
   cursor: pointer;
   padding: 2px;
   font-size: 12px;
@@ -746,7 +785,7 @@ select:focus, input:focus {
 
 .link-note {
   font-size: 11px;
-  color: rgba(255,255,255,0.5);
+  color: #5e718d;
   font-style: italic;
   white-space: nowrap;
   overflow: hidden;

@@ -1,36 +1,21 @@
 <template>
   <div class="bsc-root">
-    <!-- Navbar / Header -->
-    <header class="header">
-      <div class="header-brand">
-        <NuxtLink to="/dashboard" class="back-link">
-          <span class="back-icon">←</span> Dashboard
-        </NuxtLink>
-        <h1>Balanced Scorecard (BSC) Quadrants</h1>
-      </div>
-      
-      <div class="header-actions">
-        <div class="header-user">
-          <span class="user-badge" :class="auth.user?.role?.toLowerCase().replace('_', '')">
-            {{ auth.user?.role?.replace('_', ' ') }}
-          </span>
-          <span class="user-name">{{ auth.user?.name }}</span>
-        </div>
-      </div>
-    </header>
-
     <div class="bsc-container">
       <!-- Intro Card -->
       <section class="intro-card card">
         <h2>Peta Perspektif Perusahaan</h2>
-        <p class="section-desc">Pengelompokan indikator keberhasilan (Key Results) ke dalam 4 perspektif utama Balanced Scorecard guna memastikan keseimbangan arah strategis.</p>
+        <p class="section-desc">
+          Pengelompokan indikator keberhasilan (Key Results) ke dalam 4
+          perspektif utama Balanced Scorecard guna memastikan keseimbangan arah
+          strategis.
+        </p>
       </section>
 
       <!-- 4-Quadrant View Grid -->
       <section class="quadrant-grid">
         <!-- FINANCIAL -->
-        <div 
-          @click="selectQuadrant('FINANCIAL')" 
+        <div
+          @click="selectQuadrant('FINANCIAL')"
           :class="{ active: selectedQuadrantKey === 'FINANCIAL' }"
           class="quadrant-card financial-theme card"
         >
@@ -41,11 +26,17 @@
           <div class="q-body">
             <div class="q-stat">
               <span class="q-label">Rata-Rata Progres</span>
-              <span class="q-val">{{ bscOverview.FINANCIAL?.metrics?.averageProgress || 0 }}%</span>
+              <span class="q-val"
+                >{{
+                  bscOverview.FINANCIAL?.metrics?.averageProgress || 0
+                }}%</span
+              >
             </div>
             <div class="q-stat">
               <span class="q-label">Total Key Results</span>
-              <span class="q-val">{{ bscOverview.FINANCIAL?.metrics?.totalCount || 0 }}</span>
+              <span class="q-val">{{
+                bscOverview.FINANCIAL?.metrics?.totalCount || 0
+              }}</span>
             </div>
           </div>
           <div class="q-footer">
@@ -55,8 +46,8 @@
         </div>
 
         <!-- CUSTOMER -->
-        <div 
-          @click="selectQuadrant('CUSTOMER')" 
+        <div
+          @click="selectQuadrant('CUSTOMER')"
           :class="{ active: selectedQuadrantKey === 'CUSTOMER' }"
           class="quadrant-card customer-theme card"
         >
@@ -67,11 +58,17 @@
           <div class="q-body">
             <div class="q-stat">
               <span class="q-label">Rata-Rata Progres</span>
-              <span class="q-val">{{ bscOverview.CUSTOMER?.metrics?.averageProgress || 0 }}%</span>
+              <span class="q-val"
+                >{{
+                  bscOverview.CUSTOMER?.metrics?.averageProgress || 0
+                }}%</span
+              >
             </div>
             <div class="q-stat">
               <span class="q-label">Total Key Results</span>
-              <span class="q-val">{{ bscOverview.CUSTOMER?.metrics?.totalCount || 0 }}</span>
+              <span class="q-val">{{
+                bscOverview.CUSTOMER?.metrics?.totalCount || 0
+              }}</span>
             </div>
           </div>
           <div class="q-footer">
@@ -81,8 +78,8 @@
         </div>
 
         <!-- INTERNAL PROCESS -->
-        <div 
-          @click="selectQuadrant('INTERNAL_PROCESS')" 
+        <div
+          @click="selectQuadrant('INTERNAL_PROCESS')"
           :class="{ active: selectedQuadrantKey === 'INTERNAL_PROCESS' }"
           class="quadrant-card internal-theme card"
         >
@@ -93,11 +90,17 @@
           <div class="q-body">
             <div class="q-stat">
               <span class="q-label">Rata-Rata Progres</span>
-              <span class="q-val">{{ bscOverview.INTERNAL_PROCESS?.metrics?.averageProgress || 0 }}%</span>
+              <span class="q-val"
+                >{{
+                  bscOverview.INTERNAL_PROCESS?.metrics?.averageProgress || 0
+                }}%</span
+              >
             </div>
             <div class="q-stat">
               <span class="q-label">Total Key Results</span>
-              <span class="q-val">{{ bscOverview.INTERNAL_PROCESS?.metrics?.totalCount || 0 }}</span>
+              <span class="q-val">{{
+                bscOverview.INTERNAL_PROCESS?.metrics?.totalCount || 0
+              }}</span>
             </div>
           </div>
           <div class="q-footer">
@@ -107,8 +110,8 @@
         </div>
 
         <!-- LEARNING & GROWTH -->
-        <div 
-          @click="selectQuadrant('LEARNING_GROWTH')" 
+        <div
+          @click="selectQuadrant('LEARNING_GROWTH')"
           :class="{ active: selectedQuadrantKey === 'LEARNING_GROWTH' }"
           class="quadrant-card learning-theme card"
         >
@@ -119,11 +122,17 @@
           <div class="q-body">
             <div class="q-stat">
               <span class="q-label">Rata-Rata Progres</span>
-              <span class="q-val">{{ bscOverview.LEARNING_GROWTH?.metrics?.averageProgress || 0 }}%</span>
+              <span class="q-val"
+                >{{
+                  bscOverview.LEARNING_GROWTH?.metrics?.averageProgress || 0
+                }}%</span
+              >
             </div>
             <div class="q-stat">
               <span class="q-label">Total Key Results</span>
-              <span class="q-val">{{ bscOverview.LEARNING_GROWTH?.metrics?.totalCount || 0 }}</span>
+              <span class="q-val">{{
+                bscOverview.LEARNING_GROWTH?.metrics?.totalCount || 0
+              }}</span>
             </div>
           </div>
           <div class="q-footer">
@@ -137,18 +146,31 @@
       <section v-if="selectedQuadrantKey" class="drilldown-section card">
         <div class="drilldown-header">
           <div class="dd-title-row">
-            <span class="dd-icon">{{ getPerspectiveIcon(selectedQuadrantKey) }}</span>
-            <h2>Detail Perspektif: {{ formatPerspective(selectedQuadrantKey) }}</h2>
+            <span class="dd-icon">{{
+              getPerspectiveIcon(selectedQuadrantKey)
+            }}</span>
+            <h2>
+              Detail Perspektif: {{ formatPerspective(selectedQuadrantKey) }}
+            </h2>
           </div>
           <div class="dd-metrics-summary">
             <span class="status-count-pill ontrack">
-              On Track: <strong>{{ bscOverview[selectedQuadrantKey]?.metrics?.onTrackCount || 0 }}</strong>
+              On Track:
+              <strong>{{
+                bscOverview[selectedQuadrantKey]?.metrics?.onTrackCount || 0
+              }}</strong>
             </span>
             <span class="status-count-pill atrisk">
-              At Risk: <strong>{{ bscOverview[selectedQuadrantKey]?.metrics?.atRiskCount || 0 }}</strong>
+              At Risk:
+              <strong>{{
+                bscOverview[selectedQuadrantKey]?.metrics?.atRiskCount || 0
+              }}</strong>
             </span>
             <span class="status-count-pill offtrack">
-              Off Track: <strong>{{ bscOverview[selectedQuadrantKey]?.metrics?.offTrackCount || 0 }}</strong>
+              Off Track:
+              <strong>{{
+                bscOverview[selectedQuadrantKey]?.metrics?.offTrackCount || 0
+              }}</strong>
             </span>
           </div>
         </div>
@@ -157,7 +179,10 @@
           Memuat data perspektif...
         </div>
 
-        <div v-else-if="!selectedKrs || selectedKrs.length === 0" class="empty-state">
+        <div
+          v-else-if="!selectedKrs || selectedKrs.length === 0"
+          class="empty-state"
+        >
           Belum ada Key Result yang didefinisikan dalam perspektif ini.
         </div>
 
@@ -165,29 +190,43 @@
           <div v-for="kr in selectedKrs" :key="kr.id" class="kr-drilldown-item">
             <div class="kr-dd-top">
               <div class="kr-dd-info">
-                <span class="kr-parent-obj">Objective: {{ kr.objective?.title }} ({{ kr.objective?.quarter }})</span>
+                <span class="kr-parent-obj"
+                  >Objective: {{ kr.objective?.title }} ({{
+                    kr.objective?.quarter
+                  }})</span
+                >
                 <h3>{{ kr.title }}</h3>
               </div>
-              <span class="status-badge" :class="kr.status.toLowerCase().replace('_', '')">
-                {{ kr.status.replace('_', ' ') }}
+              <span
+                class="status-badge"
+                :class="kr.status.toLowerCase().replace('_', '')"
+              >
+                {{ kr.status.replace("_", " ") }}
               </span>
             </div>
 
             <!-- Progress row -->
             <div class="kr-dd-progress">
               <div class="kr-progress-track">
-                <div 
+                <div
                   class="kr-progress-bar"
                   :class="kr.status.toLowerCase().replace('_', '')"
                   :style="{ width: kr.progress + '%' }"
                 ></div>
               </div>
-              <span class="kr-progress-percent">{{ Math.round(kr.progress) }}%</span>
+              <span class="kr-progress-percent"
+                >{{ Math.round(kr.progress) }}%</span
+              >
             </div>
 
             <div class="kr-dd-footer">
-              <span>Satuan: <strong>{{ kr.unit }}</strong></span>
-              <span>Capaian: <strong>{{ kr.currentValue }}</strong> / Target: <strong>{{ kr.targetValue }}</strong></span>
+              <span
+                >Satuan: <strong>{{ kr.unit }}</strong></span
+              >
+              <span
+                >Capaian: <strong>{{ kr.currentValue }}</strong> / Target:
+                <strong>{{ kr.targetValue }}</strong></span
+              >
             </div>
           </div>
         </div>
@@ -197,34 +236,40 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 const bscOverview = ref({});
-const selectedQuadrantKey = ref('FINANCIAL');
+const selectedQuadrantKey = ref("FINANCIAL");
 const loading = ref(false);
 
 const selectedKrs = computed(() => {
-  if (!selectedQuadrantKey.value || !bscOverview.value[selectedQuadrantKey.value]) {
+  if (
+    !selectedQuadrantKey.value ||
+    !bscOverview.value[selectedQuadrantKey.value]
+  ) {
     return [];
   }
   return bscOverview.value[selectedQuadrantKey.value].krs || [];
 });
 
 function formatPerspective(p) {
-  if (!p) return '';
-  return p.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  if (!p) return "";
+  return p
+    .split("_")
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function getPerspectiveIcon(p) {
-  if (p === 'FINANCIAL') return '💵';
-  if (p === 'CUSTOMER') return '👥';
-  if (p === 'INTERNAL_PROCESS') return '⚙️';
-  if (p === 'LEARNING_GROWTH') return '🌱';
-  return '📊';
+  if (p === "FINANCIAL") return "💵";
+  if (p === "CUSTOMER") return "👥";
+  if (p === "INTERNAL_PROCESS") return "⚙️";
+  if (p === "LEARNING_GROWTH") return "🌱";
+  return "📊";
 }
 
 function selectQuadrant(key) {
@@ -236,12 +281,12 @@ async function fetchBscData() {
   try {
     const response = await $fetch(`${config.public.apiBase}/bsc/overview`, {
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
     bscOverview.value = response;
   } catch (err) {
-    console.error('Error fetching BSC overview:', err);
+    console.error("Error fetching BSC overview:", err);
   } finally {
     loading.value = false;
   }
@@ -253,12 +298,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
 
 .bsc-root {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 20%, rgb(15, 22, 38) 0%, rgb(8, 12, 21) 90%);
   color: white;
   padding: 0 0 60px 0;
 }
@@ -269,7 +313,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
-  background: rgba(255, 255, 255, 0.02);
+  background: #ffff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
   position: sticky;
@@ -363,12 +407,11 @@ onMounted(() => {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffff;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 /* Intro */
@@ -376,11 +419,12 @@ onMounted(() => {
   font-size: 20px;
   margin: 0 0 6px 0;
   font-weight: 600;
+  color: #5e718d;
 }
 
 .section-desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #5e718d;
   margin: 0;
   line-height: 1.5;
 }
@@ -410,19 +454,11 @@ onMounted(() => {
 
 .quadrant-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.quadrant-card.active {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: #00d2ff;
-  box-shadow: 0 0 0 1px #00d2ff, 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Themes colors for left vertical indicator */
 .quadrant-card::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -430,10 +466,18 @@ onMounted(() => {
   height: 100%;
 }
 
-.financial-theme::before { background: #00d2ff; }
-.customer-theme::before { background: #ffaa00; }
-.internal-theme::before { background: #8a2be2; }
-.learning-theme::before { background: #4bff4b; }
+.financial-theme::before {
+  background: #00d2ff;
+}
+.customer-theme::before {
+  background: #ffaa00;
+}
+.internal-theme::before {
+  background: #8a2be2;
+}
+.learning-theme::before {
+  background: #4bff4b;
+}
 
 .q-header {
   display: flex;
@@ -449,6 +493,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
+  color: #5e718d;
 }
 
 .q-body {
@@ -468,27 +513,36 @@ onMounted(() => {
 .q-label {
   font-size: 11px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: #5e718d;
   font-weight: 500;
 }
 
 .q-val {
   font-size: 20px;
   font-weight: 700;
+  color: #5e718d;
 }
 
 /* Theme value highlights */
-.financial-theme .q-val { color: #8ce9ff; }
-.customer-theme .q-val { color: #ffcc66; }
-.internal-theme .q-val { color: #d8b4fe; }
-.learning-theme .q-val { color: #88ff88; }
+.financial-theme .q-val {
+  color: #8ce9ff;
+}
+.customer-theme .q-val {
+  color: #ffcc66;
+}
+.internal-theme .q-val {
+  color: #d8b4fe;
+}
+.learning-theme .q-val {
+  color: #88ff88;
+}
 
 .q-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #5e718d;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   padding-top: 12px;
   margin-top: auto;
@@ -500,7 +554,7 @@ onMounted(() => {
 
 .quadrant-card:hover .arrow-indicator {
   transform: translateX(4px);
-  color: white;
+  color: #5e718d;
 }
 
 /* Drilldown Section */
@@ -546,6 +600,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
+  color: #5e718d;
 }
 
 .dd-metrics-summary {
@@ -558,13 +613,19 @@ onMounted(() => {
   font-size: 11px;
   padding: 4px 10px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #3d4a5c;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.status-count-pill.ontrack strong { color: #88ff88; }
-.status-count-pill.atrisk strong { color: #ffcc66; }
-.status-count-pill.offtrack strong { color: #ff8888; }
+.status-count-pill.ontrack strong {
+  color: #88ff88;
+}
+.status-count-pill.atrisk strong {
+  color: #ffcc66;
+}
+.status-count-pill.offtrack strong {
+  color: #ff8888;
+}
 
 .krs-drilldown-list {
   display: flex;
@@ -573,8 +634,8 @@ onMounted(() => {
 }
 
 .kr-drilldown-item {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: #ffffff;
+  border: 1px solid #d7dfe9;
   border-radius: 12px;
   padding: 16px 20px;
 }
@@ -599,6 +660,7 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 600;
   margin: 0;
+  color: #5e718d;
 }
 
 /* Progress bar */
@@ -607,24 +669,31 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  color: #5e718d;
 }
 
 .kr-progress-track {
   height: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
+  background: #f0f3f9;
+  border-radius: 3px #f0f3f9;
   flex-grow: 1;
   overflow: hidden;
 }
 
 .kr-progress-bar {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-.kr-progress-bar.ontrack { background: #88ff88; }
-.kr-progress-bar.atrisk { background: #ffcc66; }
-.kr-progress-bar.offtrack { background: #ff8888; }
+.kr-progress-bar.ontrack {
+  background: #88ff88;
+}
+.kr-progress-bar.atrisk {
+  background: #ffcc66;
+}
+.kr-progress-bar.offtrack {
+  background: #ff8888;
+}
 
 .kr-progress-percent {
   font-size: 13px;
@@ -636,13 +705,13 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #5e718d;
   border-top: 1px dashed rgba(255, 255, 255, 0.04);
   padding-top: 10px;
 }
 
 .kr-dd-footer strong {
-  color: white;
+  color: #5e718d;
 }
 
 /* Badges */
@@ -674,7 +743,7 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 40px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #5e718d;
   font-size: 14px;
 }
 </style>
