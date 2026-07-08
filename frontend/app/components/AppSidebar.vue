@@ -181,7 +181,7 @@ function handleLogout() {
   width: 240px;
   min-width: 240px;
   height: 100vh;
-  position: fixed;
+  position: sticky;
   left: 0;
   top: 0;
   background: #ffffff;
@@ -211,7 +211,7 @@ function handleLogout() {
 .logo-wordmark {
   font-family: "Rubik", sans-serif;
   font-weight: 600;
-  font-size: 20px;
+  font-size: 21px;
   color: #010571;
   letter-spacing: -0.3px;
   line-height: 1;
@@ -233,7 +233,7 @@ function handleLogout() {
 
 .nav-group-label {
   font-family: "Rubik", sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #8897ae;
   letter-spacing: 0.8px;
@@ -248,7 +248,7 @@ function handleLogout() {
   border-radius: 14px;
   text-decoration: none;
   font-family: "Rubik", sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: #5e718d;
   transition:
@@ -270,6 +270,7 @@ function handleLogout() {
 .nav-active {
   background-color: #0e97d6 !important;
   color: #ffffff !important;
+  font-weight: 500;
 }
 
 .nav-active svg {
@@ -295,7 +296,7 @@ function handleLogout() {
   background: none;
   color: #5e718d;
   font-family: "Rubik", sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;

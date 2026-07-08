@@ -5,16 +5,23 @@
         <div class="section-header">
           <div>
             <h2>Update Capaian Key Results</h2>
-            <p class="section-desc">Masukkan capaian real-time harian untuk memperbarui status indikator kerja otomatis.</p>
+            <p class="section-desc">
+              Masukkan capaian real-time harian untuk memperbarui status
+              indikator kerja otomatis.
+            </p>
           </div>
           <div class="filter-controls">
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="Cari Key Result..." 
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cari Key Result..."
               class="search-input"
             />
-            <select v-model="filterQuarter" @change="fetchObjectives" class="quarter-select">
+            <select
+              v-model="filterQuarter"
+              @change="fetchObjectives"
+              class="quarter-select"
+            >
               <option value="">Semua Quarter</option>
               <option value="Q1-2026">Q1-2026</option>
               <option value="Q2-2026">Q2-2026</option>
@@ -34,17 +41,29 @@
 
         <!-- Key Results Table / List -->
         <div v-else class="kr-grid">
-          <div v-for="kr in filteredKeyResults" :key="kr.id" class="kr-update-card">
+          <div
+            v-for="kr in filteredKeyResults"
+            :key="kr.id"
+            class="kr-update-card"
+          >
             <div class="kr-card-main">
               <div class="kr-details">
-                <span class="parent-obj-title">{{ kr.objectiveTitle }} ({{ kr.objectiveQuarter }})</span>
+                <span class="parent-obj-title"
+                  >{{ kr.objectiveTitle }} ({{ kr.objectiveQuarter }})</span
+                >
                 <h3>{{ kr.title }}</h3>
                 <div class="kr-meta-row">
-                  <span class="perspective-badge" :class="kr.bscPerspective.toLowerCase()">
+                  <span
+                    class="perspective-badge"
+                    :class="kr.bscPerspective.toLowerCase()"
+                  >
                     {{ formatPerspective(kr.bscPerspective) }}
                   </span>
-                  <span class="status-badge" :class="kr.status.toLowerCase().replace('_', '')">
-                    {{ kr.status.replace('_', ' ') }}
+                  <span
+                    class="status-badge"
+                    :class="kr.status.toLowerCase().replace('_', '')"
+                  >
+                    {{ kr.status.replace("_", " ") }}
                   </span>
                 </div>
               </div>
@@ -57,32 +76,34 @@
                 </div>
                 <div class="metric-box">
                   <span class="m-label">Capaian Saat Ini</span>
-                  <span class="m-val highlight">{{ kr.currentValue }} {{ kr.unit }}</span>
+                  <span class="m-val highlight"
+                    >{{ kr.currentValue }} {{ kr.unit }}</span
+                  >
                 </div>
               </div>
 
               <!-- Update Action Form -->
               <div class="update-form-inline">
                 <div class="input-group">
-                  <input 
-                    v-model.number="updatePayloads[kr.id].newValue" 
-                    type="number" 
+                  <input
+                    v-model.number="updatePayloads[kr.id].newValue"
+                    type="number"
                     step="any"
                     placeholder="Nilai baru"
                     class="val-input"
                   />
-                  <input 
-                    v-model="updatePayloads[kr.id].note" 
-                    type="text" 
+                  <input
+                    v-model="updatePayloads[kr.id].note"
+                    type="text"
                     placeholder="Catatan update..."
                     class="note-input"
                   />
-                  <button 
-                    @click="submitProgress(kr.id)" 
+                  <button
+                    @click="submitProgress(kr.id)"
                     :disabled="submittingId === kr.id"
                     class="update-btn"
                   >
-                    {{ submittingId === kr.id ? '...' : 'Update' }}
+                    {{ submittingId === kr.id ? "..." : "Update" }}
                   </button>
                 </div>
                 <button @click="showHistory(kr)" class="history-btn">
@@ -96,7 +117,11 @@
     </div>
 
     <!-- History Modal -->
-    <div v-if="selectedKrForHistory" class="modal-backdrop" @click="closeHistory">
+    <div
+      v-if="selectedKrForHistory"
+      class="modal-backdrop"
+      @click="closeHistory"
+    >
       <div class="modal-card" @click.stop>
         <div class="modal-header">
           <h3>Riwayat Audit Trail: {{ selectedKrForHistory.title }}</h3>
@@ -114,10 +139,12 @@
               <div class="timeline-badge"></div>
               <div class="timeline-content">
                 <div class="timeline-time">
-                  {{ formatDate(log.updatedAt) }} - Oleh <strong>{{ log.updatedBy }}</strong>
+                  {{ formatDate(log.updatedAt) }} - Oleh
+                  <strong>{{ log.updatedBy }}</strong>
                 </div>
                 <div class="timeline-diff">
-                  Perubahan: <span class="old-val">{{ log.oldValue }}</span> → <span class="new-val">{{ log.newValue }}</span>
+                  Perubahan: <span class="old-val">{{ log.oldValue }}</span> →
+                  <span class="new-val">{{ log.newValue }}</span>
                 </div>
                 <p v-if="log.note" class="timeline-note">"{{ log.note }}"</p>
               </div>
@@ -130,16 +157,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../../stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "../../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 const objectives = ref([]);
 const loading = ref(false);
-const filterQuarter = ref('');
-const searchQuery = ref('');
+const filterQuarter = ref("");
+const searchQuery = ref("");
 
 const updatePayloads = ref({});
 const submittingId = ref(null);
@@ -151,13 +178,13 @@ const loadingHistory = ref(false);
 
 const flatKeyResults = computed(() => {
   const list = [];
-  objectives.value.forEach(obj => {
+  objectives.value.forEach((obj) => {
     if (obj.keyResults) {
-      obj.keyResults.forEach(kr => {
+      obj.keyResults.forEach((kr) => {
         list.push({
           ...kr,
           objectiveTitle: obj.title,
-          objectiveQuarter: obj.quarter
+          objectiveQuarter: obj.quarter,
         });
       });
     }
@@ -166,26 +193,30 @@ const flatKeyResults = computed(() => {
 });
 
 const filteredKeyResults = computed(() => {
-  return flatKeyResults.value.filter(kr => {
-    const matchesSearch = kr.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                          kr.objectiveTitle.toLowerCase().includes(searchQuery.value.toLowerCase());
+  return flatKeyResults.value.filter((kr) => {
+    const matchesSearch =
+      kr.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      kr.objectiveTitle.toLowerCase().includes(searchQuery.value.toLowerCase());
     return matchesSearch;
   });
 });
 
 function formatPerspective(p) {
-  if (!p) return '';
-  return p.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  if (!p) return "";
+  return p
+    .split("_")
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return d.toLocaleString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -198,22 +229,22 @@ async function fetchObjectives() {
     }
     const response = await $fetch(url, {
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
     objectives.value = response;
 
     // Initialize update payloads
     const payloads = {};
-    flatKeyResults.value.forEach(kr => {
+    flatKeyResults.value.forEach((kr) => {
       payloads[kr.id] = {
         newValue: null,
-        note: ''
+        note: "",
       };
     });
     updatePayloads.value = payloads;
   } catch (err) {
-    console.error('Error fetching objectives:', err);
+    console.error("Error fetching objectives:", err);
   } finally {
     loading.value = false;
   }
@@ -222,33 +253,33 @@ async function fetchObjectives() {
 async function submitProgress(krId) {
   const payload = updatePayloads.value[krId];
   if (payload.newValue === null || payload.newValue === undefined) {
-    alert('Masukkan nilai capaian baru');
+    alert("Masukkan nilai capaian baru");
     return;
   }
 
   submittingId.value = krId;
   try {
     await $fetch(`${config.public.apiBase}/key-results/${krId}/progress`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
         Authorization: `Bearer ${auth.token}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: {
         newValue: payload.newValue,
-        note: payload.note
-      }
+        note: payload.note,
+      },
     });
 
     // Reset input row
     payload.newValue = null;
-    payload.note = '';
+    payload.note = "";
 
     // Refresh list
     await fetchObjectives();
   } catch (err) {
-    console.error('Update progress error:', err);
-    alert(err.data?.message || 'Gagal memperbarui capaian.');
+    console.error("Update progress error:", err);
+    alert(err.data?.message || "Gagal memperbarui capaian.");
   } finally {
     submittingId.value = null;
   }
@@ -258,14 +289,17 @@ async function showHistory(kr) {
   selectedKrForHistory.value = kr;
   loadingHistory.value = true;
   try {
-    const response = await $fetch(`${config.public.apiBase}/key-results/${kr.id}/history`, {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    });
+    const response = await $fetch(
+      `${config.public.apiBase}/key-results/${kr.id}/history`,
+      {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+      },
+    );
     historyLogs.value = response;
   } catch (err) {
-    console.error('Error fetching history logs:', err);
+    console.error("Error fetching history logs:", err);
   } finally {
     loadingHistory.value = false;
   }
@@ -282,12 +316,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .admin-root {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Inter", sans-serif;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 20%, rgb(15, 22, 38) 0%, rgb(8, 12, 21) 90%);
+  background: radial-gradient(
+    circle at 10% 20%,
+    rgb(15, 22, 38) 0%,
+    rgb(8, 12, 21) 90%
+  );
   color: white;
   padding: 0 0 60px 0;
 }
@@ -309,7 +347,7 @@ onMounted(() => {
 .back-link {
   color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -322,7 +360,7 @@ onMounted(() => {
 }
 
 .header-brand h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0;
   background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
@@ -337,7 +375,7 @@ onMounted(() => {
 }
 
 .user-badge {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 12px;
@@ -350,7 +388,7 @@ onMounted(() => {
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -381,13 +419,13 @@ onMounted(() => {
 }
 
 h2 {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 600;
   margin: 0 0 6px 0;
 }
 
 .section-desc {
-  font-size: 14px;
+  font-size: 17px;
   color: rgba(255, 255, 255, 0.5);
   margin: 0;
 }
@@ -405,7 +443,7 @@ h2 {
   border-radius: 8px;
   padding: 10px 14px;
   color: white;
-  font-size: 13px;
+  font-size: 16px;
   outline: none;
 }
 
@@ -441,7 +479,7 @@ h2 {
 }
 
 .parent-obj-title {
-  font-size: 12px;
+  font-size: 15px;
   color: rgba(255, 255, 255, 0.4);
   display: block;
   margin-bottom: 4px;
@@ -449,7 +487,7 @@ h2 {
 }
 
 .kr-details h3 {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 600;
   margin: 0 0 10px 0;
 }
@@ -476,14 +514,14 @@ h2 {
 }
 
 .m-label {
-  font-size: 11px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
   font-weight: 500;
 }
 
 .m-val {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -549,7 +587,7 @@ h2 {
   color: rgba(255, 255, 255, 0.7);
   padding: 8px 14px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -562,7 +600,7 @@ h2 {
 
 /* Badges */
 .perspective-badge {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 12px;
@@ -593,7 +631,7 @@ h2 {
 }
 
 .status-badge {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 10px;
@@ -601,18 +639,19 @@ h2 {
 }
 
 .status-badge.ontrack {
-  background: rgba(75, 255, 75, 0.15);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
 }
 
 .status-badge.atrisk {
-  background: rgba(255, 170, 0, 0.15);
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   color: #ffcc66;
 }
 
 .status-badge.offtrack {
-  background: rgba(255, 75, 75, 0.15);
-  color: #ff8888;
+  background: var(--color-red-badge);
+  color: var(--color-red);
 }
 
 /* States */
@@ -621,7 +660,7 @@ h2 {
   text-align: center;
   padding: 40px;
   color: rgba(255, 255, 255, 0.4);
-  font-size: 14px;
+  font-size: 17px;
 }
 
 /* Modal */
@@ -663,7 +702,7 @@ h2 {
 
 .modal-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
 }
 
@@ -671,7 +710,7 @@ h2 {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 18px;
+  font-size: 21px;
   cursor: pointer;
 }
 
@@ -723,13 +762,13 @@ h2 {
 }
 
 .timeline-time {
-  font-size: 11px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.4);
   margin-bottom: 4px;
 }
 
 .timeline-diff {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -744,19 +783,29 @@ h2 {
 }
 
 .timeline-note {
-  font-size: 12px;
+  font-size: 15px;
   color: rgba(255, 255, 255, 0.6);
   font-style: italic;
   margin: 6px 0 0 0;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

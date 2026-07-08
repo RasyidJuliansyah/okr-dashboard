@@ -41,7 +41,7 @@
 
         <button type="submit" :disabled="loading" class="submit-btn">
           <span v-if="loading">Menghubungkan...</span>
-          <span v-else>Masuk ke Dashboard</span>
+          <span v-else>Masuk</span>
         </button>
       </form>
 
@@ -94,7 +94,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-gradient);
+  background: var(--content-bg);
   padding: 20px;
   position: relative;
 }
@@ -142,7 +142,7 @@ async function handleLogin() {
 }
 
 .logo-section h2 {
-  font-size: 24px;
+  font-size: 27px;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.5px;
@@ -150,7 +150,7 @@ async function handleLogin() {
 
 .logo-section p {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 17px;
   margin: 5px 0 0 0;
 }
 
@@ -167,18 +167,18 @@ async function handleLogin() {
 }
 
 .form-group label {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-color);
 }
 
 .form-group input {
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: 1px solid var(--color-border);
   padding: 12px 16px;
   border-radius: 8px;
   color: var(--text-color);
-  font-size: 14px;
+  font-size: 17px;
   outline: none;
   transition: all 0.3s;
 }
@@ -195,7 +195,7 @@ async function handleLogin() {
   color: #ff8888;
   padding: 10px 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .submit-btn {
@@ -205,7 +205,7 @@ async function handleLogin() {
   padding: 14px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 18px;
   cursor: pointer;
   transition: all 0.3s;
   margin-top: 10px;
@@ -225,7 +225,7 @@ async function handleLogin() {
   margin-top: 30px;
   padding-top: 20px;
   border-top: 1px solid var(--input-border);
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text-secondary);
 }
 

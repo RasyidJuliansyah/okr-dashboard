@@ -50,7 +50,7 @@ const roleBadgeClass = computed(() => {
 .header-title {
   font-family: "Rubik", sans-serif;
   font-weight: 600;
-  font-size: 24px;
+  font-size: 27px;
   line-height: 32px;
   color: #2d3643;
   margin: 0;
@@ -70,7 +70,7 @@ const roleBadgeClass = computed(() => {
 
 .user-badge {
   font-family: "Rubik", sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 20px;
@@ -97,7 +97,7 @@ const roleBadgeClass = computed(() => {
 
 .user-name {
   font-family: "Rubik", sans-serif;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
   color: #5e718d;
 }

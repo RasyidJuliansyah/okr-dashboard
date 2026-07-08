@@ -153,3 +153,60 @@ export async function getKeyResultHistory(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
+
+export async function updateKeyResult(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { title, targetValue, unit, bscPerspective } = req.body;
+
+    if (!title || targetValue === undefined || !bscPerspective) {
+      return res.status(400).json({
+        message: 'title, targetValue, and bscPerspective are required',
+      });
+    }
+
+    if (targetValue <= 0) {
+      return res.status(400).json({ message: 'Target value must be greater than 0' });
+    }
+
+    if (!VALID_BSC_PERSPECTIVES.includes(bscPerspective)) {
+      return res.status(400).json({
+        message: `bscPerspective must be one of: ${VALID_BSC_PERSPECTIVES.join(', ')}`,
+      });
+    }
+
+    // Check if KR exists
+    const kr = await prisma.keyResult.findUnique({
+      where: { id },
+    });
+    if (!kr) {
+      return res.status(404).json({ message: 'Key Result not found' });
+    }
+
+    // Calculate new status based on current progress
+    const progress = kr.currentValue / parseFloat(targetValue);
+    let newStatus = 'ON_TRACK';
+    if (progress < 0.5) {
+      newStatus = 'OFF_TRACK';
+    } else if (progress < 0.8) {
+      newStatus = 'AT_RISK';
+    }
+
+    const updatedKR = await prisma.keyResult.update({
+      where: { id },
+      data: {
+        title,
+        targetValue: parseFloat(targetValue),
+        unit: unit || '%',
+        bscPerspective,
+        status: newStatus,
+      },
+    });
+
+    return res.status(200).json(updatedKR);
+  } catch (error) {
+    console.error('Update key result details error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
