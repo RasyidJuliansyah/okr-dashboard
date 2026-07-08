@@ -370,7 +370,7 @@ onMounted(async () => {
 .back-link {
   color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -383,7 +383,7 @@ onMounted(async () => {
 }
 
 .header-brand h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0;
   background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
@@ -398,7 +398,7 @@ onMounted(async () => {
 }
 
 .user-badge {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 12px;
@@ -424,7 +424,7 @@ onMounted(async () => {
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -442,24 +442,28 @@ onMounted(async () => {
 
 .disclaimer-banner p {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   color: #f2ca17;
 }
 
 .disclaimer-icon {
-  font-size: 16px;
+  font-size: 19px;
 }
 
 /* Layout Grid */
 .map-content {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  height: 100vh;
+  grid-template-rows: 1.6fr 1fr;
   gap: 30px;
   max-width: 1400px;
   margin: auto 0 auto;
   padding: 30px;
   flex-grow: 1;
-  background: #f0f3f9;
+  background: var(--content-bg);
+}
+.grid-items {
+  overflow-y: auto;
 }
 
 @media (max-width: 1024px) {
@@ -491,7 +495,7 @@ onMounted(async () => {
 }
 
 .graph-header h2 {
-  font-size: 18px;
+  font-size: 21px;
   margin: 0;
   font-weight: 600;
   color: #5e718d;
@@ -503,7 +507,7 @@ onMounted(async () => {
   color: #ffff;
   padding: 6px 14px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -567,7 +571,7 @@ onMounted(async () => {
 .node-header {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.4);
   margin-bottom: 6px;
   text-transform: uppercase;
@@ -575,7 +579,7 @@ onMounted(async () => {
 }
 
 .node-title {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   margin: 0 0 10px 0;
   line-height: 1.4;
@@ -613,7 +617,7 @@ onMounted(async () => {
 }
 
 .node-progress-pct {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -625,14 +629,14 @@ onMounted(async () => {
 }
 
 .creator-card h2 {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 600;
   margin: 0 0 6px 0;
   color: #5e718d;
 }
 
 .section-desc {
-  font-size: 13px;
+  font-size: 16px;
   color: #5e718d;
   margin: 0 0 20px 0;
   line-height: 1.4;
@@ -651,7 +655,7 @@ onMounted(async () => {
 }
 
 .form-group label {
-  font-size: 12px;
+  font-size: 15px;
   color: #5e718d;
   font-weight: 500;
 }
@@ -664,7 +668,7 @@ input {
   padding: 10px;
   color: #d7dfe9;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 16px;
   outline: none;
 }
 
@@ -732,7 +736,7 @@ input:focus {
 }
 
 .link-names {
-  font-size: 12px;
+  font-size: 15px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -760,7 +764,7 @@ input:focus {
   color: rgba(255, 255, 255, 0.3);
   cursor: pointer;
   padding: 2px;
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .delete-link-btn:hover {
@@ -774,7 +778,7 @@ input:focus {
 }
 
 .rel-badge {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   background: rgba(0, 102, 255, 0.15);
@@ -784,7 +788,7 @@ input:focus {
 }
 
 .link-note {
-  font-size: 11px;
+  font-size: 14px;
   color: #5e718d;
   font-style: italic;
   white-space: nowrap;
@@ -794,14 +798,14 @@ input:focus {
 
 .success-msg {
   color: #88ff88;
-  font-size: 12px;
+  font-size: 15px;
   margin: 6px 0 0 0;
   text-align: center;
 }
 
 .error-msg {
   color: #ff8888;
-  font-size: 12px;
+  font-size: 15px;
   margin: 6px 0 0 0;
   text-align: center;
 }

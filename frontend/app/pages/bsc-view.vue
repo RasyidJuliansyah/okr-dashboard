@@ -20,7 +20,6 @@
           class="quadrant-card financial-theme card"
         >
           <div class="q-header">
-            <span class="q-icon">💵</span>
             <h3>Financial</h3>
           </div>
           <div class="q-body">
@@ -52,7 +51,6 @@
           class="quadrant-card customer-theme card"
         >
           <div class="q-header">
-            <span class="q-icon">👥</span>
             <h3>Customer</h3>
           </div>
           <div class="q-body">
@@ -84,7 +82,6 @@
           class="quadrant-card internal-theme card"
         >
           <div class="q-header">
-            <span class="q-icon">⚙️</span>
             <h3>Internal Process</h3>
           </div>
           <div class="q-body">
@@ -116,7 +113,6 @@
           class="quadrant-card learning-theme card"
         >
           <div class="q-header">
-            <span class="q-icon">🌱</span>
             <h3>Learning & Growth</h3>
           </div>
           <div class="q-body">
@@ -265,10 +261,10 @@ function formatPerspective(p) {
 }
 
 function getPerspectiveIcon(p) {
-  if (p === "FINANCIAL") return "💵";
-  if (p === "CUSTOMER") return "👥";
-  if (p === "INTERNAL_PROCESS") return "⚙️";
-  if (p === "LEARNING_GROWTH") return "🌱";
+  if (p === "FINANCIAL") return;
+  if (p === "CUSTOMER") return;
+  if (p === "INTERNAL_PROCESS") return;
+  if (p === "LEARNING_GROWTH") return;
   return "📊";
 }
 
@@ -298,12 +294,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .bsc-root {
-  font-family: "Outfit", sans-serif;
+  font-family: "Inter", sans-serif;
   min-height: 100vh;
-  color: white;
+  background: var(--content-bg);
   padding: 0 0 60px 0;
 }
 
@@ -324,7 +320,7 @@ onMounted(() => {
 .back-link {
   color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -337,7 +333,7 @@ onMounted(() => {
 }
 
 .header-brand h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0;
   background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
@@ -358,7 +354,7 @@ onMounted(() => {
 }
 
 .user-badge {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 12px;
@@ -391,7 +387,7 @@ onMounted(() => {
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -399,16 +395,16 @@ onMounted(() => {
 /* Layout Container */
 .bsc-container {
   max-width: 1200px;
-  margin: 30px auto 0 auto;
-  padding: 0 20px;
+  margin: auto 0 auto;
+  padding: 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 30px;
 }
 
 .card {
-  background: #ffff;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(16px);
@@ -416,14 +412,14 @@ onMounted(() => {
 
 /* Intro */
 .intro-card h2 {
-  font-size: 20px;
+  font-size: 23px;
   margin: 0 0 6px 0;
   font-weight: 600;
-  color: #5e718d;
+  color: var(--color-gamma-150);
 }
 
 .section-desc {
-  font-size: 14px;
+  font-size: 17px;
   color: #5e718d;
   margin: 0;
   line-height: 1.5;
@@ -467,16 +463,16 @@ onMounted(() => {
 }
 
 .financial-theme::before {
-  background: #00d2ff;
+  background: var(--color-primary);
 }
 .customer-theme::before {
-  background: #ffaa00;
+  background: var(--color-secondary);
 }
 .internal-theme::before {
-  background: #8a2be2;
+  background: var(--color-purple);
 }
 .learning-theme::before {
-  background: #4bff4b;
+  background: var(--color-green);
 }
 
 .q-header {
@@ -486,14 +482,14 @@ onMounted(() => {
 }
 
 .q-icon {
-  font-size: 24px;
+  font-size: 27px;
 }
 
 .q-header h3 {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
   margin: 0;
-  color: #5e718d;
+  color: var(--color-gamma-150);
 }
 
 .q-body {
@@ -511,37 +507,37 @@ onMounted(() => {
 }
 
 .q-label {
-  font-size: 11px;
+  font-size: 14px;
   text-transform: uppercase;
   color: #5e718d;
   font-weight: 500;
 }
 
 .q-val {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 700;
   color: #5e718d;
 }
 
 /* Theme value highlights */
 .financial-theme .q-val {
-  color: #8ce9ff;
+  color: var(--color-primary);
 }
 .customer-theme .q-val {
-  color: #ffcc66;
+  color: var(--color-secondary);
 }
 .internal-theme .q-val {
-  color: #d8b4fe;
+  color: var(--color-purple);
 }
 .learning-theme .q-val {
-  color: #88ff88;
+  color: var(--color-green);
 }
 
 .q-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 15px;
   color: #5e718d;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   padding-top: 12px;
@@ -593,14 +589,14 @@ onMounted(() => {
 }
 
 .dd-icon {
-  font-size: 24px;
+  font-size: 27px;
 }
 
 .dd-title-row h2 {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
   margin: 0;
-  color: #5e718d;
+  color: var(--color-gamma-150);
 }
 
 .dd-metrics-summary {
@@ -610,21 +606,22 @@ onMounted(() => {
 }
 
 .status-count-pill {
-  font-size: 11px;
+  font-size: 16px;
   padding: 4px 10px;
   border-radius: 12px;
-  background: #3d4a5c;
+  background: var(--color-black-badge);
+  color: var(--color-white);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .status-count-pill.ontrack strong {
-  color: #88ff88;
+  color: var(--color-green);
 }
 .status-count-pill.atrisk strong {
-  color: #ffcc66;
+  color: var(--color-yellow);
 }
 .status-count-pill.offtrack strong {
-  color: #ff8888;
+  color: var(--color-util-alert-tint);
 }
 
 .krs-drilldown-list {
@@ -649,7 +646,7 @@ onMounted(() => {
 }
 
 .kr-parent-obj {
-  font-size: 11px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.4);
   display: block;
   margin-bottom: 4px;
@@ -657,7 +654,7 @@ onMounted(() => {
 }
 
 .kr-dd-info h3 {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   margin: 0;
   color: #5e718d;
@@ -686,17 +683,17 @@ onMounted(() => {
 }
 
 .kr-progress-bar.ontrack {
-  background: #88ff88;
+  background: #49d507;
 }
 .kr-progress-bar.atrisk {
-  background: #ffcc66;
+  background: #f2af17;
 }
 .kr-progress-bar.offtrack {
-  background: #ff8888;
+  background: #f97066;
 }
 
 .kr-progress-percent {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -704,7 +701,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 15px;
   color: #5e718d;
   border-top: 1px dashed rgba(255, 255, 255, 0.04);
   padding-top: 10px;
@@ -716,7 +713,7 @@ onMounted(() => {
 
 /* Badges */
 .status-badge {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 8px;
@@ -724,18 +721,19 @@ onMounted(() => {
 }
 
 .status-badge.ontrack {
-  background: rgba(75, 255, 75, 0.15);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
 }
 
 .status-badge.atrisk {
-  background: rgba(255, 170, 0, 0.15);
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   color: #ffcc66;
 }
 
 .status-badge.offtrack {
-  background: rgba(255, 75, 75, 0.15);
-  color: #ff8888;
+  background: var(--color-red-badge);
+  color: var(--color-red);
 }
 
 /* States */
@@ -744,6 +742,6 @@ onMounted(() => {
   text-align: center;
   padding: 40px;
   color: #5e718d;
-  font-size: 14px;
+  font-size: 17px;
 }
 </style>

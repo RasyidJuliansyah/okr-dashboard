@@ -188,7 +188,7 @@
                       Nilai: <strong>{{ kr.currentValue }}</strong> /
                       {{ kr.targetValue }} {{ kr.unit }}
                     </span>
-                    <span
+                    <!-- <span
                       class="kr-source-tooltip"
                       :title="
                         'Input Manual — Diperbarui pada: ' +
@@ -196,7 +196,7 @@
                       "
                     >
                       ℹ️ Input Manual
-                    </span>
+                    </span> -->
                     <span
                       class="status-badge"
                       :class="kr.status.toLowerCase().replace('_', '')"
@@ -287,12 +287,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .dashboard-root {
-  font-family: "Outfit", sans-serif;
+  font-family: "Inter", sans-serif;
   min-height: 100vh;
-  background: var(--bg-gradient);
+  background: var(--content-bg);
   color: var(--text-color);
   padding: 0 0 60px 0;
 }
@@ -314,7 +314,7 @@ onMounted(() => {
 .back-link {
   color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -326,8 +326,23 @@ onMounted(() => {
   color: #00d2ff;
 }
 
+.header-title {
+  font-family: "Rubik", sans-serif;
+  font-weight: 600;
+  font-size: 27px;
+  line-height: 32px;
+  color: #2d3643;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .header-brand h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0;
   background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
@@ -347,7 +362,7 @@ onMounted(() => {
   color: var(--nav-btn-text);
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.3s;
@@ -375,7 +390,7 @@ onMounted(() => {
 }
 
 .user-badge {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 12px;
@@ -408,7 +423,7 @@ onMounted(() => {
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
   color: var(--text-color);
 }
@@ -416,8 +431,8 @@ onMounted(() => {
 /* Layout Container */
 .dashboard-container {
   max-width: 1200px;
-  margin: 30px auto 0 auto;
-  padding: 0 20px;
+  margin: auto 0 auto;
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
   gap: 30px;
@@ -446,7 +461,7 @@ onMounted(() => {
 }
 
 .controls-content h2 {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
   margin: 0;
 }
@@ -458,7 +473,7 @@ onMounted(() => {
 }
 
 .scope-label {
-  font-size: 13px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -475,7 +490,7 @@ onMounted(() => {
   border: none;
   color: rgba(255, 255, 255, 0.6);
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
@@ -488,7 +503,7 @@ onMounted(() => {
 
 .scope-btn.active {
   background: rgba(255, 255, 255, 0.08);
-  color: #00d2ff;
+  color: #0e97d6;
 }
 
 /* KPI Summary Cards Grid */
@@ -511,7 +526,7 @@ onMounted(() => {
 }
 
 .kpi-label {
-  font-size: 12px;
+  font-size: 15px;
   text-transform: uppercase;
   color: #0f1623;
   font-weight: 600;
@@ -526,7 +541,7 @@ onMounted(() => {
 }
 
 .kpi-value {
-  font-size: 36px;
+  font-size: 39px;
   font-weight: 700;
   color: #0e97d6;
 }
@@ -543,7 +558,7 @@ onMounted(() => {
 
 .progress-ring-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00d2ff, #0066ff);
+  background: #0e97d6;
   border-radius: 4px;
 }
 
@@ -559,28 +574,28 @@ onMounted(() => {
 }
 
 .count-val {
-  font-size: 24px;
+  font-size: 27px;
   font-weight: 700;
 }
 
 .count-val.ontrack {
-  color: #88ff88;
+  color: var(--color-green);
 }
 .count-val.atrisk {
-  color: #ffcc66;
+  color: var(--color-yellow);
 }
 .count-val.offtrack {
-  color: #ff8888;
+  color: var(--color-red);
 }
 
 .count-lbl {
-  font-size: 11px;
-  color: #0f1623;
+  font-size: 14px;
+  color: #8897ae;
   margin-top: 2px;
 }
 
 .kpi-desc {
-  font-size: 12px;
+  font-size: 15px;
   color: #0f1623;
   margin: 0;
 }
@@ -599,7 +614,7 @@ onMounted(() => {
 }
 
 .section-title-row h2 {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
   margin: 0;
 }
@@ -609,7 +624,7 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 4px 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 15px;
   color: rgba(255, 255, 255, 0.6);
 }
 
@@ -640,9 +655,9 @@ onMounted(() => {
 }
 
 .obj-quarter {
-  background: rgba(0, 102, 255, 0.15);
-  color: #8cc4ff;
-  font-size: 11px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 4px;
@@ -651,13 +666,13 @@ onMounted(() => {
 }
 
 .obj-card-header h3 {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 600;
   margin: 0;
 }
 
 .obj-desc {
-  font-size: 13px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.5);
   margin: 4px 0 0 0;
 }
@@ -673,13 +688,13 @@ onMounted(() => {
 }
 
 .obj-progress-badge span {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 700;
-  color: #00d2ff;
+  color: #0e97d6;
 }
 
 .progress-lbl {
-  font-size: 10px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.4);
 }
 
@@ -693,7 +708,7 @@ onMounted(() => {
 
 .obj-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0066ff, #00d2ff);
+  background-color: var(--color-primary);
   border-radius: 3px;
 }
 
@@ -704,7 +719,7 @@ onMounted(() => {
 }
 
 .krs-section h4 {
-  font-size: 12px;
+  font-size: 15px;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
   margin: 0 0 12px 0;
@@ -735,7 +750,7 @@ onMounted(() => {
 }
 
 .kr-title {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
 }
 
@@ -760,17 +775,17 @@ onMounted(() => {
 }
 
 .kr-progress-bar.ontrack {
-  background: #88ff88;
+  background: #49d507;
 }
 .kr-progress-bar.atrisk {
-  background: #ffcc66;
+  background: #f2af17;
 }
 .kr-progress-bar.offtrack {
-  background: #ff8888;
+  background: #f97066;
 }
 
 .kr-progress-val {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   min-width: 32px;
   text-align: right;
@@ -781,7 +796,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 15px;
   color: #5e718d;
 }
 
@@ -795,7 +810,7 @@ onMounted(() => {
 
 /* Badges */
 .perspective-badge {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 10px;
@@ -804,31 +819,31 @@ onMounted(() => {
 }
 
 .perspective-badge.financial {
-  background: rgba(0, 210, 255, 0.12);
-  color: #8ce9ff;
+  background: var(--color-purple-badge);
+  color: var(--color-primary);
   border: 1px solid rgba(0, 210, 255, 0.25);
 }
 
 .perspective-badge.customer {
-  background: rgba(255, 170, 0, 0.12);
-  color: #ffcc66;
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   border: 1px solid rgba(255, 170, 0, 0.25);
 }
 
 .perspective-badge.internal_process {
-  background: rgba(138, 43, 226, 0.12);
-  color: #d8b4fe;
+  background: var(--color-purple-badge);
+  color: var(--color-purple);
   border: 1px solid rgba(138, 43, 226, 0.25);
 }
 
 .perspective-badge.learning_growth {
-  background: rgba(75, 255, 75, 0.12);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
   border: 1px solid rgba(75, 255, 75, 0.25);
 }
 
 .status-badge {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 8px;
@@ -836,18 +851,19 @@ onMounted(() => {
 }
 
 .status-badge.ontrack {
-  background: rgba(75, 255, 75, 0.15);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
 }
 
 .status-badge.atrisk {
-  background: rgba(255, 170, 0, 0.15);
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   color: #ffcc66;
 }
 
 .status-badge.offtrack {
-  background: rgba(255, 75, 75, 0.15);
-  color: #ff8888;
+  background: var(--color-red-badge);
+  color: var(--color-red);
 }
 
 /* Loading/Empty State */
@@ -856,7 +872,7 @@ onMounted(() => {
   text-align: center;
   padding: 60px;
   color: #5e718d;
-  font-size: 14px;
+  font-size: 17px;
   background: #ffff;
   border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 12px;
@@ -898,7 +914,7 @@ onMounted(() => {
 }
 
 .kr-source-tooltip {
-  font-size: 10px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.4);
   cursor: help;
   display: flex;

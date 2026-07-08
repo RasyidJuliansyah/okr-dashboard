@@ -4,25 +4,27 @@
       <!-- Left Column: Form Builder -->
       <section class="form-section card">
         <h2>Buat Objective & Key Results Baru</h2>
-        <p class="section-desc">Definisikan target strategis triwulanan dan indikator keberhasilannya.</p>
+        <p class="section-desc">
+          Definisikan target strategis triwulanan dan indikator keberhasilannya.
+        </p>
 
         <form @submit.prevent="submitObjective" class="okr-form">
           <div class="form-group">
             <label for="obj-title">Judul Objective *</label>
-            <input 
+            <input
               id="obj-title"
-              v-model="newObjective.title" 
-              type="text" 
-              placeholder="Contoh: Meningkatkan Efisiensi Operasional Tim Dev" 
+              v-model="newObjective.title"
+              type="text"
+              placeholder="Contoh: Meningkatkan Efisiensi Operasional Tim Dev"
               required
             />
           </div>
 
           <div class="form-group">
             <label for="obj-desc">Deskripsi (Opsional)</label>
-            <textarea 
+            <textarea
               id="obj-desc"
-              v-model="newObjective.description" 
+              v-model="newObjective.description"
               placeholder="Detail penjelasan mengenai sasaran ini..."
               rows="2"
             ></textarea>
@@ -51,20 +53,23 @@
             </button>
           </div>
 
-          <div v-if="newObjective.keyResults.length === 0" class="empty-kr-alert">
+          <div
+            v-if="newObjective.keyResults.length === 0"
+            class="empty-kr-alert"
+          >
             Minimal harus ada 1 Key Result sebelum menyimpan Objective.
           </div>
 
-          <div 
-            v-for="(kr, index) in newObjective.keyResults" 
-            :key="index" 
+          <div
+            v-for="(kr, index) in newObjective.keyResults"
+            :key="index"
             class="kr-row-card"
           >
             <div class="kr-row-header">
               <h4>Key Result #{{ index + 1 }}</h4>
-              <button 
-                type="button" 
-                @click="removeKrRow(index)" 
+              <button
+                type="button"
+                @click="removeKrRow(index)"
                 class="remove-kr-btn"
                 title="Hapus KR ini"
               >
@@ -74,11 +79,11 @@
 
             <div class="form-group">
               <label :for="'kr-title-' + index">Deskripsi KR *</label>
-              <input 
+              <input
                 :id="'kr-title-' + index"
-                v-model="kr.title" 
-                type="text" 
-                placeholder="Contoh: Mengurangi load-time server menjadi < 200ms" 
+                v-model="kr.title"
+                type="text"
+                placeholder="Contoh: Mengurangi load-time server menjadi < 200ms"
                 required
               />
             </div>
@@ -86,29 +91,33 @@
             <div class="form-row">
               <div class="form-group third">
                 <label :for="'kr-target-' + index">Target Nilai *</label>
-                <input 
+                <input
                   :id="'kr-target-' + index"
-                  v-model.number="kr.targetValue" 
-                  type="number" 
+                  v-model.number="kr.targetValue"
+                  type="number"
                   step="any"
-                  placeholder="Target" 
+                  placeholder="Target"
                   min="0.000001"
                   required
                 />
               </div>
               <div class="form-group third">
                 <label :for="'kr-unit-' + index">Satuan *</label>
-                <input 
+                <input
                   :id="'kr-unit-' + index"
-                  v-model="kr.unit" 
-                  type="text" 
-                  placeholder="%, IDR, dll" 
+                  v-model="kr.unit"
+                  type="text"
+                  placeholder="%, IDR, dll"
                   required
                 />
               </div>
               <div class="form-group third">
                 <label :for="'kr-bsc-' + index">Perspektif BSC *</label>
-                <select :id="'kr-bsc-' + index" v-model="kr.bscPerspective" required>
+                <select
+                  :id="'kr-bsc-' + index"
+                  v-model="kr.bscPerspective"
+                  required
+                >
                   <option value="" disabled>Pilih</option>
                   <option value="FINANCIAL">Financial</option>
                   <option value="CUSTOMER">Customer</option>
@@ -121,12 +130,12 @@
 
           <!-- Form Actions -->
           <div class="form-actions">
-            <button 
-              type="submit" 
-              class="save-btn" 
+            <button
+              type="submit"
+              class="save-btn"
               :disabled="loading || newObjective.keyResults.length === 0"
             >
-              {{ loading ? 'Menyimpan...' : 'Simpan OKR & Hubungkan ke BSC' }}
+              {{ loading ? "Menyimpan..." : "Simpan OKR & Hubungkan ke BSC" }}
             </button>
           </div>
 
@@ -142,7 +151,11 @@
           <h2>Daftar OKR Aktif</h2>
           <div class="filter-group">
             <label for="filter-quarter">Quarter:</label>
-            <select id="filter-quarter" v-model="filterQuarter" @change="fetchObjectives">
+            <select
+              id="filter-quarter"
+              v-model="filterQuarter"
+              @change="fetchObjectives"
+            >
               <option value="">Semua</option>
               <option value="Q1-2026">Q1-2026</option>
               <option value="Q2-2026">Q2-2026</option>
@@ -152,9 +165,7 @@
           </div>
         </div>
 
-        <div v-if="loadingList" class="loading-state">
-          Memuat data OKR...
-        </div>
+        <div v-if="loadingList" class="loading-state">Memuat data OKR...</div>
 
         <div v-else-if="objectives.length === 0" class="empty-state">
           Belum ada OKR yang terdaftar untuk periode ini.
@@ -166,10 +177,12 @@
               <div>
                 <span class="quarter-badge">{{ obj.quarter }}</span>
                 <h3>{{ obj.title }}</h3>
-                <p v-if="obj.description" class="obj-desc">{{ obj.description }}</p>
+                <p v-if="obj.description" class="obj-desc">
+                  {{ obj.description }}
+                </p>
               </div>
-              <button 
-                @click="deleteObjective(obj.id)" 
+              <button
+                @click="deleteObjective(obj.id)"
                 class="delete-obj-btn"
                 title="Hapus Objective ini beserta seluruh Key Results nya"
               >
@@ -178,18 +191,47 @@
             </div>
 
             <div class="key-results-container">
-              <div v-for="kr in obj.keyResults" :key="kr.id" class="kr-list-row">
+              <div
+                v-for="kr in obj.keyResults"
+                :key="kr.id"
+                class="kr-list-row"
+              >
                 <div class="kr-info">
                   <span class="kr-title">{{ kr.title }}</span>
                   <div class="kr-stats">
                     Target: <strong>{{ kr.targetValue }} {{ kr.unit }}</strong>
-                    <span class="status-badge" :class="kr.status.toLowerCase().replace('_', '')">{{ kr.status }}</span>
+                    <span
+                      class="status-badge"
+                      :class="kr.status.toLowerCase().replace('_', '')"
+                      >{{ kr.status }}</span
+                    >
                   </div>
                 </div>
-                <div class="kr-perspective">
-                  <span class="perspective-badge" :class="kr.bscPerspective.toLowerCase()">
-                    {{ formatPerspective(kr.bscPerspective) }}
-                  </span>
+                <div class="kr-actions-wrapper">
+                  <div class="kr-perspective">
+                    <span
+                      class="perspective-badge"
+                      :class="kr.bscPerspective.toLowerCase()"
+                    >
+                      {{ formatPerspective(kr.bscPerspective) }}
+                    </span>
+                  </div>
+                  <div class="kr-action-buttons">
+                    <button
+                      @click="startEditKr(kr)"
+                      class="edit-kr-btn"
+                      title="Edit Metric (Key Result)"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      @click="deleteKr(kr.id)"
+                      class="delete-kr-btn"
+                      title="Hapus Metric (Key Result)"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -197,43 +239,99 @@
         </div>
       </section>
     </div>
+
+    <!-- Edit KR Modal -->
+    <div v-if="editingKr" class="modal-overlay">
+      <div class="modal-card">
+        <h3>Edit Key Result / Metric</h3>
+        <form @submit.prevent="submitEditKr" class="okr-form">
+          <div class="form-group">
+            <label>Deskripsi Key Result *</label>
+            <input
+              v-model="editKrData.title"
+              type="text"
+              placeholder="Contoh: Mengurangi load-time server menjadi < 200ms"
+              required
+            />
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Target Nilai *</label>
+              <input
+                v-model.number="editKrData.targetValue"
+                type="number"
+                step="any"
+                min="0.000001"
+                required
+              />
+            </div>
+            <div class="form-group half">
+              <label>Satuan *</label>
+              <input
+                v-model="editKrData.unit"
+                type="text"
+                placeholder="%, IDR, dll"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Perspektif BSC *</label>
+            <select v-model="editKrData.bscPerspective" required>
+              <option value="FINANCIAL">Financial</option>
+              <option value="CUSTOMER">Customer</option>
+              <option value="INTERNAL_PROCESS">Internal Process</option>
+              <option value="LEARNING_GROWTH">Learning & Growth</option>
+            </select>
+          </div>
+          <div class="modal-actions">
+            <button type="button" @click="editingKr = null" class="cancel-btn">
+              Batal
+            </button>
+            <button type="submit" class="save-kr-btn" :disabled="savingKr">
+              {{ savingKr ? "Menyimpan..." : "Simpan Perubahan" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useAuthStore } from '../../stores/auth';
+import { ref, onMounted } from "vue";
+import { useAuthStore } from "../../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 const objectives = ref([]);
-const filterQuarter = ref('');
+const filterQuarter = ref("");
 const loading = ref(false);
 const loadingList = ref(false);
-const errorMessage = ref('');
-const successMessage = ref('');
+const errorMessage = ref("");
+const successMessage = ref("");
 
 const newObjective = ref({
-  title: '',
-  description: '',
-  quarter: 'Q3-2026',
+  title: "",
+  description: "",
+  quarter: "Q3-2026",
   keyResults: [
     {
-      title: '',
+      title: "",
       targetValue: null,
-      unit: '%',
-      bscPerspective: ''
-    }
-  ]
+      unit: "%",
+      bscPerspective: "",
+    },
+  ],
 });
 
 function addKrRow() {
   newObjective.value.keyResults.push({
-    title: '',
+    title: "",
     targetValue: null,
-    unit: '%',
-    bscPerspective: ''
+    unit: "%",
+    bscPerspective: "",
   });
 }
 
@@ -242,8 +340,11 @@ function removeKrRow(index) {
 }
 
 function formatPerspective(p) {
-  if (!p) return '';
-  return p.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  if (!p) return "";
+  return p
+    .split("_")
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 async function fetchObjectives() {
@@ -255,29 +356,29 @@ async function fetchObjectives() {
     }
     const response = await $fetch(url, {
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
     objectives.value = response;
   } catch (err) {
-    console.error('Error fetching objectives:', err);
+    console.error("Error fetching objectives:", err);
   } finally {
     loadingList.value = false;
   }
 }
 
 async function submitObjective() {
-  errorMessage.value = '';
-  successMessage.value = '';
+  errorMessage.value = "";
+  successMessage.value = "";
 
   // Validations
   if (!newObjective.value.title.trim()) {
-    errorMessage.value = 'Judul Objective wajib diisi';
+    errorMessage.value = "Judul Objective wajib diisi";
     return;
   }
 
   if (newObjective.value.keyResults.length === 0) {
-    errorMessage.value = 'Minimal harus membuat 1 Key Result';
+    errorMessage.value = "Minimal harus membuat 1 Key Result";
     return;
   }
 
@@ -287,7 +388,11 @@ async function submitObjective() {
       errorMessage.value = `Deskripsi Key Result #${i + 1} wajib diisi`;
       return;
     }
-    if (kr.targetValue === null || kr.targetValue === undefined || kr.targetValue <= 0) {
+    if (
+      kr.targetValue === null ||
+      kr.targetValue === undefined ||
+      kr.targetValue <= 0
+    ) {
       errorMessage.value = `Target Nilai Key Result #${i + 1} harus lebih besar dari 0`;
       return;
     }
@@ -300,56 +405,136 @@ async function submitObjective() {
   loading.value = true;
   try {
     await $fetch(`${config.public.apiBase}/objectives`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${auth.token}`,
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: newObjective.value
+      body: newObjective.value,
     });
 
-    successMessage.value = 'Objective & Key Results berhasil dibuat!';
-    
+    successMessage.value = "Objective & Key Results berhasil dibuat!";
+
     // Reset form
     newObjective.value = {
-      title: '',
-      description: '',
-      quarter: 'Q3-2026',
+      title: "",
+      description: "",
+      quarter: "Q3-2026",
       keyResults: [
         {
-          title: '',
+          title: "",
           targetValue: null,
-          unit: '%',
-          bscPerspective: ''
-        }
-      ]
+          unit: "%",
+          bscPerspective: "",
+        },
+      ],
     };
 
     fetchObjectives();
   } catch (err) {
-    console.error('Submit objective error:', err);
-    errorMessage.value = err.data?.message || 'Gagal menyimpan data OKR.';
+    console.error("Submit objective error:", err);
+    errorMessage.value = err.data?.message || "Gagal menyimpan data OKR.";
   } finally {
     loading.value = false;
   }
 }
 
 async function deleteObjective(id) {
-  if (!confirm('Apakah Anda yakin ingin menghapus Objective ini beserta seluruh Key Results di dalamnya?')) {
+  if (
+    !confirm(
+      "Apakah Anda yakin ingin menghapus Objective ini beserta seluruh Key Results di dalamnya?",
+    )
+  ) {
     return;
   }
 
   try {
     await $fetch(`${config.public.apiBase}/objectives/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
+        Authorization: `Bearer ${auth.token}`,
+      },
     });
     fetchObjectives();
   } catch (err) {
-    console.error('Delete error:', err);
-    alert(err.data?.message || 'Gagal menghapus Objective.');
+    console.error("Delete error:", err);
+    alert(err.data?.message || "Gagal menghapus Objective.");
+  }
+}
+
+// Edit & Delete individual Key Results/Metrics
+const editingKr = ref(null);
+const editKrData = ref({
+  id: "",
+  title: "",
+  targetValue: null,
+  unit: "",
+  bscPerspective: "",
+});
+const savingKr = ref(false);
+
+function startEditKr(kr) {
+  editingKr.value = kr.id;
+  editKrData.value = {
+    id: kr.id,
+    title: kr.title,
+    targetValue: kr.targetValue,
+    unit: kr.unit,
+    bscPerspective: kr.bscPerspective,
+  };
+}
+
+async function submitEditKr() {
+  if (!editKrData.value.title.trim()) return;
+  if (
+    editKrData.value.targetValue === null ||
+    editKrData.value.targetValue <= 0
+  )
+    return;
+
+  savingKr.value = true;
+  try {
+    await $fetch(
+      `${config.public.apiBase}/key-results/${editKrData.value.id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          "Content-Type": "application/json",
+        },
+        body: {
+          title: editKrData.value.title,
+          targetValue: editKrData.value.targetValue,
+          unit: editKrData.value.unit,
+          bscPerspective: editKrData.value.bscPerspective,
+        },
+      },
+    );
+    editingKr.value = null;
+    fetchObjectives();
+  } catch (err) {
+    console.error("Edit KR error:", err);
+    alert(err.data?.message || "Gagal mengubah Key Result.");
+  } finally {
+    savingKr.value = false;
+  }
+}
+
+async function deleteKr(id) {
+  if (!confirm("Apakah Anda yakin ingin menghapus Key Result ini?")) {
+    return;
+  }
+  try {
+    await $fetch(`${config.public.apiBase}/key-results/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+    fetchObjectives();
+  } catch (err) {
+    console.error("Delete KR error:", err);
+    alert(err.data?.message || "Gagal menghapus Key Result.");
   }
 }
 
@@ -359,12 +544,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .admin-root {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Inter", sans-serif;
   min-height: 100vh;
-  background: radial-gradient(circle at 10% 20%, rgb(15, 22, 38) 0%, rgb(8, 12, 21) 90%);
+  background: radial-gradient(
+    circle at 10% 20%,
+    rgb(15, 22, 38) 0%,
+    rgb(8, 12, 21) 90%
+  );
   color: white;
   padding: 0 0 50px 0;
 }
@@ -386,7 +575,7 @@ onMounted(() => {
 .back-link {
   color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -399,7 +588,7 @@ onMounted(() => {
 }
 
 .header-brand h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0;
   background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
@@ -414,7 +603,7 @@ onMounted(() => {
 }
 
 .user-badge {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 12px;
@@ -428,7 +617,7 @@ onMounted(() => {
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -459,13 +648,13 @@ onMounted(() => {
 }
 
 h2 {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 600;
   margin: 0 0 8px 0;
 }
 
 .section-desc {
-  font-size: 14px;
+  font-size: 17px;
   color: rgba(255, 255, 255, 0.5);
   margin: 0 0 24px 0;
 }
@@ -484,7 +673,7 @@ h2 {
 }
 
 .form-group label {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
 }
@@ -499,7 +688,7 @@ select {
   padding: 12px 14px;
   color: white;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 17px;
   transition: all 0.3s;
 }
 
@@ -540,7 +729,7 @@ select:focus {
 }
 
 .kr-builder-header h3 {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 600;
   margin: 0;
 }
@@ -552,7 +741,7 @@ select:focus {
   padding: 6px 14px;
   border-radius: 6px;
   font-weight: 500;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -568,7 +757,7 @@ select:focus {
   color: #ff8888;
   padding: 12px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 16px;
   text-align: center;
 }
 
@@ -601,7 +790,7 @@ select:focus {
 }
 
 .kr-row-header h4 {
-  font-size: 13px;
+  font-size: 16px;
   margin: 0;
   color: rgba(255, 255, 255, 0.6);
   font-weight: 600;
@@ -612,7 +801,7 @@ select:focus {
   border: none;
   color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 17px;
   padding: 4px;
   transition: color 0.3s;
 }
@@ -634,7 +823,7 @@ select:focus {
   padding: 14px 24px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 17px;
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
   transition: all 0.3s;
@@ -659,7 +848,7 @@ select:focus {
   border-left: 3px solid #ff4b4b;
   padding: 10px 14px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 16px;
   margin: 0;
 }
 
@@ -669,7 +858,7 @@ select:focus {
   border-left: 3px solid #4bff4b;
   padding: 10px 14px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 16px;
   margin: 0;
 }
 
@@ -688,13 +877,13 @@ select:focus {
 }
 
 .filter-group label {
-  font-size: 13px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.6);
 }
 
 .filter-group select {
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .loading-state,
@@ -702,7 +891,7 @@ select:focus {
   text-align: center;
   padding: 40px;
   color: rgba(255, 255, 255, 0.4);
-  font-size: 14px;
+  font-size: 17px;
   background: rgba(255, 255, 255, 0.01);
   border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 12px;
@@ -752,7 +941,7 @@ select:focus {
 .quarter-badge {
   background: rgba(0, 136, 255, 0.15);
   color: #8cc4ff;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 4px;
@@ -761,13 +950,13 @@ select:focus {
 }
 
 .objective-item-header h3 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
   margin: 0;
 }
 
 .obj-desc {
-  font-size: 13px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.5);
   margin: 6px 0 0 0;
 }
@@ -778,7 +967,7 @@ select:focus {
   color: #ff8888;
   padding: 6px 12px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -813,17 +1002,17 @@ select:focus {
 }
 
 .kr-title {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
 }
 
 .kr-stats {
-  font-size: 11px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.4);
 }
 
 .status-badge {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 10px;
@@ -832,22 +1021,23 @@ select:focus {
 }
 
 .status-badge.ontrack {
-  background: rgba(75, 255, 75, 0.15);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
 }
 
 .status-badge.atrisk {
-  background: rgba(255, 170, 0, 0.15);
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   color: #ffcc66;
 }
 
 .status-badge.offtrack {
-  background: rgba(255, 75, 75, 0.15);
-  color: #ff8888;
+  background: var(--color-red-badge);
+  color: var(--color-red);
 }
 
 .perspective-badge {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 12px;
@@ -875,5 +1065,121 @@ select:focus {
   background: rgba(75, 255, 75, 0.12);
   color: #88ff88;
   border: 1px solid rgba(75, 255, 75, 0.25);
+}
+
+.kr-actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kr-action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.edit-kr-btn {
+  background: rgba(0, 210, 255, 0.1);
+  border: 1px solid rgba(0, 210, 255, 0.3);
+  color: #8ce9ff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-kr-btn:hover {
+  background: rgba(0, 210, 255, 0.2);
+}
+
+.delete-kr-btn {
+  background: rgba(255, 75, 75, 0.1);
+  border: 1px solid rgba(255, 75, 75, 0.3);
+  color: #ff8888;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.delete-kr-btn:hover {
+  background: rgba(255, 75, 75, 0.2);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: rgb(20, 30, 50);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  color: white;
+}
+
+.modal-card h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.save-kr-btn {
+  background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.save-kr-btn:hover {
+  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+  transform: translateY(-1px);
 }
 </style>

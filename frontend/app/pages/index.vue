@@ -120,20 +120,20 @@ function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 700;
   box-shadow: 0 8px 16px rgba(0, 102, 255, 0.3);
 }
 
 .welcome-header h1 {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   margin: 0 0 4px 0;
 }
 
 .welcome-header p {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 17px;
   margin: 0;
 }
 
@@ -156,12 +156,12 @@ function handleLogout() {
 
 .label {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 17px;
 }
 
 .value {
   font-weight: 500;
-  font-size: 14px;
+  font-size: 17px;
 }
 
 .value.code {
@@ -174,7 +174,7 @@ function handleLogout() {
 .value.badge {
   padding: 4px 10px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 15px;
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -217,7 +217,7 @@ function handleLogout() {
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 17px;
   text-decoration: none;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
@@ -252,7 +252,7 @@ function handleLogout() {
   padding: 10px 20px;
   border-radius: 8px;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 17px;
   cursor: pointer;
   transition: all 0.3s;
 }
