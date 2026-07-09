@@ -127,9 +127,17 @@
         <div v-else class="objectives-grid">
           <!-- Objective Card -->
           <div
-            v-for="obj in summaryData.objectives"
+            v-for="(obj, index) in summaryData.objectives"
             :key="obj.id"
             class="objective-card card"
+            draggable="true"
+            @dragstart="onDragStart(index, $event)"
+            @dragover.prevent
+            @dragenter.prevent
+            @drop="onDrop(index, $event)"
+            @dragend="onDragEnd"
+            :class="{ 'is-dragging': draggedIndex === index }"
+            style="cursor: grab;"
           >
             <div class="obj-card-header">
               <div>
@@ -225,6 +233,55 @@ const summaryData = ref({});
 const currentScope = ref("self");
 const loading = ref(false);
 
+const orderLocalStorageKey = "okr-dashboard-objectives-order";
+const draggedIndex = ref(null);
+
+function applyCustomOrder() {
+  if (!summaryData.value || !summaryData.value.objectives) return;
+  const savedOrderStr = localStorage.getItem(orderLocalStorageKey);
+  if (!savedOrderStr) return;
+  
+  try {
+    const savedOrder = JSON.parse(savedOrderStr);
+    summaryData.value.objectives.sort((a, b) => {
+      const idxA = savedOrder.indexOf(a.id);
+      const idxB = savedOrder.indexOf(b.id);
+      if (idxA === -1 && idxB === -1) return 0;
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+  } catch (e) {
+    console.error("Failed to parse custom objectives order", e);
+  }
+}
+
+function onDragStart(index, event) {
+  draggedIndex.value = index;
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+  }
+}
+
+function onDrop(targetIndex, event) {
+  if (draggedIndex.value === null || draggedIndex.value === targetIndex) return;
+  
+  const objectives = [...summaryData.value.objectives];
+  const draggedObj = objectives.splice(draggedIndex.value, 1)[0];
+  objectives.splice(targetIndex, 0, draggedObj);
+  
+  summaryData.value.objectives = objectives;
+  
+  const idsOrder = objectives.map(o => o.id);
+  localStorage.setItem(orderLocalStorageKey, JSON.stringify(idsOrder));
+  
+  draggedIndex.value = null;
+}
+
+function onDragEnd() {
+  draggedIndex.value = null;
+}
+
 const showScopeSelector = computed(() => {
   return auth.user?.role && auth.user.role !== "EMPLOYEE";
 });
@@ -266,6 +323,7 @@ async function fetchDashboardData() {
       },
     );
     summaryData.value = response;
+    applyCustomOrder();
   } catch (err) {
     console.error("Error fetching dashboard summary:", err);
   } finally {
@@ -645,6 +703,13 @@ onMounted(() => {
 .objective-card:hover {
   transform: translateY(-2px);
   border-color: #00d2ff;
+}
+
+.objective-card.is-dragging {
+  opacity: 0.4;
+  border: 2px dashed #0066ff !important;
+  background: var(--card-bg-hover, rgba(0, 102, 255, 0.05));
+  transform: scale(0.98);
 }
 
 .obj-card-header {

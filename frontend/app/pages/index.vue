@@ -1,59 +1,72 @@
 <template>
   <div class="dashboard-root">
-    <div class="dashboard-card">
-      <div class="welcome-header">
-        <div class="user-avatar">{{ userInitial }}</div>
-        <div>
-          <h1>Selamat Datang, {{ auth.user?.name || 'User' }}!</h1>
-          <p>{{ auth.user?.email }}</p>
-        </div>
-        <div class="index-theme-toggle">
-          <ThemeToggle />
-        </div>
+    <!-- <div class="dashboard-card"> -->
+    <div class="welcome-header">
+      <div class="user-avatar">{{ userInitial }}</div>
+      <div>
+        <h1>Selamat Datang, {{ auth.user?.name || "User" }}!</h1>
+        <p>{{ auth.user?.email }}</p>
       </div>
-
-      <div class="user-details">
-        <div class="detail-row">
-          <span class="label">User ID:</span>
-          <span class="value code">{{ auth.user?.id }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Peran (Role):</span>
-          <span class="value badge" :class="auth.user?.role?.toLowerCase()">{{ auth.user?.role }}</span>
-        </div>
-        <div class="detail-row" v-if="auth.user?.teamId">
-          <span class="label">Team ID:</span>
-          <span class="value code">{{ auth.user?.teamId }}</span>
-        </div>
-      </div>
-
-      <div class="action-section">
-        <NuxtLink to="/dashboard" class="admin-panel-btn">
-          Lihat Dashboard OKR
-        </NuxtLink>
-        <NuxtLink v-if="auth.user?.role === 'ADMIN'" to="/admin/objectives" class="admin-panel-btn secondary">
-          Buat OKR
-        </NuxtLink>
-        <NuxtLink v-if="auth.user?.role === 'ADMIN'" to="/admin/update-progress" class="admin-panel-btn secondary">
-          Update Capaian
-        </NuxtLink>
-        <button @click="handleLogout" class="logout-btn">
-          Keluar
-        </button>
+      <div class="index-theme-toggle">
+        <ThemeToggle />
       </div>
     </div>
+
+    <div class="user-details">
+      <div class="detail-row">
+        <span class="label">User ID:</span>
+        <span class="value code">{{ auth.user?.id }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Peran (Role):</span>
+        <span class="value badge" :class="auth.user?.role?.toLowerCase()">{{
+          auth.user?.role
+        }}</span>
+      </div>
+      <div class="detail-row" v-if="auth.user?.teamId">
+        <span class="label">Team ID:</span>
+        <span class="value code">{{ auth.user?.teamId }}</span>
+      </div>
+    </div>
+
+    <div class="action-section">
+      <NuxtLink to="/dashboard" class="admin-panel-btn">
+        Lihat Dashboard OKR
+      </NuxtLink>
+      <NuxtLink
+        v-if="auth.user?.role === 'ADMIN'"
+        to="/admin/objectives"
+        class="admin-panel-btn secondary"
+      >
+        Buat OKR
+      </NuxtLink>
+      <NuxtLink
+        v-if="auth.user?.role === 'ADMIN'"
+        to="/admin/update-progress"
+        class="admin-panel-btn secondary"
+      >
+        Update Capaian
+      </NuxtLink>
+      <button @click="handleLogout" class="logout-btn">Keluar</button>
+    </div>
   </div>
+  <!-- </div> -->
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { computed } from "vue";
+import { useAuthStore } from "../stores/auth";
 
 const auth = useAuthStore();
 
 const userInitial = computed(() => {
-  if (!auth.user?.name) return 'U';
-  return auth.user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  if (!auth.user?.name) return "U";
+  return auth.user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
 });
 
 function handleLogout() {
@@ -62,10 +75,10 @@ function handleLogout() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 .dashboard-root {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   min-height: 100vh;
   display: flex;
   align-items: center;

@@ -10,38 +10,64 @@
 
         <form @submit.prevent="submitObjective" class="okr-form">
           <div class="form-group">
-            <label for="obj-title">Judul Objective *</label>
-            <input
-              id="obj-title"
-              v-model="newObjective.title"
-              type="text"
-              placeholder="Contoh: Meningkatkan Efisiensi Operasional Tim Dev"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="obj-desc">Deskripsi (Opsional)</label>
-            <textarea
-              id="obj-desc"
-              v-model="newObjective.description"
-              placeholder="Detail penjelasan mengenai sasaran ini..."
-              rows="2"
-            ></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group half">
-              <label for="obj-quarter">Quarter / Periode *</label>
-              <select id="obj-quarter" v-model="newObjective.quarter" required>
-                <option value="" disabled>Pilih Quarter</option>
-                <option value="Q1-2026">Q1-2026</option>
-                <option value="Q2-2026">Q2-2026</option>
-                <option value="Q3-2026">Q3-2026</option>
-                <option value="Q4-2026">Q4-2026</option>
-              </select>
+            <label>Metode Input Objective</label>
+            <div class="radio-group" style="display: flex; gap: 1.5rem; margin-top: 0.5rem; margin-bottom: 1rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal;">
+                <input type="radio" :value="false" v-model="isExistingObjective" />
+                Buat Baru
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: normal;">
+                <input type="radio" :value="true" v-model="isExistingObjective" />
+                Pilih Eksisting
+              </label>
             </div>
           </div>
+
+          <div v-if="isExistingObjective" class="form-group">
+            <label for="obj-select">Pilih Objective Eksisting *</label>
+            <select id="obj-select" v-model="selectedObjectiveId" required>
+              <option value="" disabled>Pilih Objective</option>
+              <option v-for="obj in allObjectivesForDropdown" :key="obj.id" :value="obj.id">
+                [{{ obj.quarter }}] {{ obj.title }}
+              </option>
+            </select>
+          </div>
+
+          <template v-else>
+            <div class="form-group">
+              <label for="obj-title">Judul Objective *</label>
+              <input
+                id="obj-title"
+                v-model="newObjective.title"
+                type="text"
+                placeholder="Contoh: Meningkatkan Efisiensi Operasional Tim Dev"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="obj-desc">Deskripsi (Opsional)</label>
+              <textarea
+                id="obj-desc"
+                v-model="newObjective.description"
+                placeholder="Detail penjelasan mengenai sasaran ini..."
+                rows="2"
+              ></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group half">
+                <label for="obj-quarter">Quarter / Periode *</label>
+                <select id="obj-quarter" v-model="newObjective.quarter" required>
+                  <option value="" disabled>Pilih Quarter</option>
+                  <option value="Q1-2026">Q1-2026</option>
+                  <option value="Q2-2026">Q2-2026</option>
+                  <option value="Q3-2026">Q3-2026</option>
+                  <option value="Q4-2026">Q4-2026</option>
+                </select>
+              </div>
+            </div>
+          </template>
 
           <hr class="divider" />
 
@@ -312,6 +338,10 @@ const loadingList = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
 
+const isExistingObjective = ref(false);
+const selectedObjectiveId = ref("");
+const allObjectivesForDropdown = ref([]);
+
 const newObjective = ref({
   title: "",
   description: "",
@@ -347,6 +377,19 @@ function formatPerspective(p) {
     .join(" ");
 }
 
+async function fetchAllObjectivesForDropdown() {
+  try {
+    const response = await $fetch(`${config.public.apiBase}/objectives`, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+    allObjectivesForDropdown.value = response;
+  } catch (err) {
+    console.error("Error fetching all objectives for dropdown:", err);
+  }
+}
+
 async function fetchObjectives() {
   loadingList.value = true;
   try {
@@ -372,7 +415,12 @@ async function submitObjective() {
   successMessage.value = "";
 
   // Validations
-  if (!newObjective.value.title.trim()) {
+  if (isExistingObjective.value && !selectedObjectiveId.value) {
+    errorMessage.value = "Silakan pilih Objective terlebih dahulu";
+    return;
+  }
+
+  if (!isExistingObjective.value && !newObjective.value.title.trim()) {
     errorMessage.value = "Judul Objective wajib diisi";
     return;
   }
@@ -404,16 +452,37 @@ async function submitObjective() {
 
   loading.value = true;
   try {
-    await $fetch(`${config.public.apiBase}/objectives`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-        "Content-Type": "application/json",
-      },
-      body: newObjective.value,
-    });
-
-    successMessage.value = "Objective & Key Results berhasil dibuat!";
+    if (isExistingObjective.value) {
+      // Save Key Results to existing Objective
+      for (const kr of newObjective.value.keyResults) {
+        await $fetch(`${config.public.apiBase}/key-results`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "Content-Type": "application/json",
+          },
+          body: {
+            objectiveId: selectedObjectiveId.value,
+            title: kr.title,
+            targetValue: kr.targetValue,
+            unit: kr.unit,
+            bscPerspective: kr.bscPerspective,
+          },
+        });
+      }
+      successMessage.value = "Key Results berhasil ditambahkan ke Objective!";
+    } else {
+      // Create new Objective and nested Key Results
+      await $fetch(`${config.public.apiBase}/objectives`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          "Content-Type": "application/json",
+        },
+        body: newObjective.value,
+      });
+      successMessage.value = "Objective & Key Results berhasil dibuat!";
+    }
 
     // Reset form
     newObjective.value = {
@@ -429,8 +498,10 @@ async function submitObjective() {
         },
       ],
     };
+    selectedObjectiveId.value = "";
 
     fetchObjectives();
+    fetchAllObjectivesForDropdown();
   } catch (err) {
     console.error("Submit objective error:", err);
     errorMessage.value = err.data?.message || "Gagal menyimpan data OKR.";
@@ -540,6 +611,7 @@ async function deleteKr(id) {
 
 onMounted(() => {
   fetchObjectives();
+  fetchAllObjectivesForDropdown();
 });
 </script>
 
@@ -547,15 +619,10 @@ onMounted(() => {
 @import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .admin-root {
-  font-family: "Inter", sans-serif;
-  min-height: 100vh;
-  background: radial-gradient(
-    circle at 10% 20%,
-    rgb(15, 22, 38) 0%,
-    rgb(8, 12, 21) 90%
-  );
-  color: white;
-  padding: 0 0 50px 0;
+  font-family: "Rubik", sans-serif;
+  background: var(--content-bg);
+  color: var(--text-color);
+  padding: 30px 0 50px 0;
 }
 
 /* Header Styles */
@@ -640,11 +707,9 @@ onMounted(() => {
 
 .card {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1.5px solid var(--card-border);
   border-radius: 16px;
   padding: 30px;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 h2 {
@@ -655,8 +720,8 @@ h2 {
 
 .section-desc {
   font-size: 17px;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0 0 24px 0;
+  color: var(--color-primary-shade);
+  margin: 20px 0 24px 0;
 }
 
 /* Form Styles */
@@ -675,18 +740,18 @@ h2 {
 .form-group label {
   font-size: 16px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-gamma-050);
 }
 
 input[type="text"],
 input[type="number"],
 textarea,
 select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-field);
+  border: 1.5px solid var(--color-gamma-750);
   border-radius: 8px;
   padding: 12px 14px;
-  color: white;
+  color: var(--color-gamma-065);
   font-family: inherit;
   font-size: 17px;
   transition: all 0.3s;
@@ -735,20 +800,20 @@ select:focus {
 }
 
 .add-kr-btn {
-  background: rgba(0, 210, 255, 0.1);
-  border: 1px solid rgba(0, 210, 255, 0.3);
-  color: #8ce9ff;
-  padding: 6px 14px;
+  background: transparent;
+  border: 1.5px solid var(--card-border);
+  color: var(--color-primary-shade);
+  padding: 8px 14px;
   border-radius: 6px;
-  font-weight: 500;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .add-kr-btn:hover {
-  background: rgba(0, 210, 255, 0.2);
+  background: var(--color-primary);
   transform: translateY(-1px);
+  color: white;
 }
 
 .empty-kr-alert {
@@ -762,7 +827,7 @@ select:focus {
 }
 
 .kr-row-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-field);
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   padding: 16px;
@@ -792,7 +857,7 @@ select:focus {
 .kr-row-header h4 {
   font-size: 16px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-primary-shade);
   font-weight: 600;
 }
 
@@ -817,7 +882,7 @@ select:focus {
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+  background: var(--color-primary);
   border: none;
   color: white;
   padding: 14px 24px;
@@ -825,14 +890,12 @@ select:focus {
   font-weight: 600;
   font-size: 17px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
   transition: all 0.3s;
   width: 100%;
 }
 
 .save-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 102, 255, 0.4);
 }
 
 .save-btn:disabled {
@@ -925,7 +988,7 @@ select:focus {
 
 .objective-item {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1.5px solid var(--color-gamma-850);
   border-radius: 12px;
   padding: 20px;
 }
@@ -990,7 +1053,7 @@ select:focus {
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--card-gamma-650);
   padding: 10px 14px;
   border-radius: 8px;
 }
@@ -1002,8 +1065,8 @@ select:focus {
 }
 
 .kr-title {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
+  border: 1.5px solid var(--card-gamma-650);
 }
 
 .kr-stats {
@@ -1012,8 +1075,8 @@ select:focus {
 }
 
 .status-badge {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 500;
   padding: 1px 6px;
   border-radius: 10px;
   text-transform: uppercase;
@@ -1037,33 +1100,35 @@ select:focus {
 }
 
 .perspective-badge {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .perspective-badge.financial {
-  background: rgba(0, 210, 255, 0.12);
-  color: #8ce9ff;
+  background: var(--color-purple-badge);
+  color: var(--color-primary);
   border: 1px solid rgba(0, 210, 255, 0.25);
 }
 
 .perspective-badge.customer {
-  background: rgba(255, 170, 0, 0.12);
-  color: #ffcc66;
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   border: 1px solid rgba(255, 170, 0, 0.25);
 }
 
 .perspective-badge.internal_process {
-  background: rgba(138, 43, 226, 0.12);
-  color: #d8b4fe;
+  background: var(--color-purple-badge);
+  color: var(--color-purple);
   border: 1px solid rgba(138, 43, 226, 0.25);
 }
 
 .perspective-badge.learning_growth {
-  background: rgba(75, 255, 75, 0.12);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
   border: 1px solid rgba(75, 255, 75, 0.25);
 }
 
@@ -1079,13 +1144,12 @@ select:focus {
 }
 
 .edit-kr-btn {
-  background: rgba(0, 210, 255, 0.1);
-  border: 1px solid rgba(0, 210, 255, 0.3);
-  color: #8ce9ff;
-  padding: 4px 10px;
-  border-radius: 4px;
+  background: transparent;
+  border: 1.5px solid var(--card-border);
+  color: var(--color-primary-shade);
+  padding: 8px 14px;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -1095,13 +1159,12 @@ select:focus {
 }
 
 .delete-kr-btn {
-  background: rgba(255, 75, 75, 0.1);
-  border: 1px solid rgba(255, 75, 75, 0.3);
-  color: #ff8888;
-  padding: 4px 10px;
-  border-radius: 4px;
+  background: transparent;
+  border: 1.5px solid var(--card-border);
+  color: var(--color-red);
+  padding: 8px 14px;
+  border-radius: 6px;
   font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -1126,14 +1189,14 @@ select:focus {
 }
 
 .modal-card {
-  background: rgb(20, 30, 50);
+  background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
   padding: 30px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  color: white;
+  color: var(--color-gamma-065);
 }
 
 .modal-card h3 {
@@ -1167,7 +1230,7 @@ select:focus {
 }
 
 .save-kr-btn {
-  background: linear-gradient(135deg, #00d2ff 0%, #0066ff 100%);
+  background: var(--color-primary);
   border: none;
   color: white;
   padding: 10px 20px;
@@ -1179,7 +1242,6 @@ select:focus {
 }
 
 .save-kr-btn:hover {
-  box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
   transform: translateY(-1px);
 }
 </style>

@@ -59,9 +59,26 @@ async function deleteKeyResult(req, res) {
         if (!kr) {
             return res.status(404).json({ message: 'Key Result not found' });
         }
-        await prisma.keyResult.delete({
-            where: { id },
-        });
+        // Use a transaction to delete all dependent rows and then the Key Result itself
+        await prisma.$transaction([
+            // Delete updates
+            prisma.krUpdate.deleteMany({
+                where: { keyResultId: id },
+            }),
+            // Delete causal links (where source or target is this KR)
+            prisma.causalLink.deleteMany({
+                where: {
+                    OR: [
+                        { sourceKrId: id },
+                        { targetKrId: id },
+                    ],
+                },
+            }),
+            // Delete the Key Result
+            prisma.keyResult.delete({
+                where: { id },
+            }),
+        ]);
         return res.status(200).json({ message: 'Key Result deleted successfully' });
     }
     catch (error) {

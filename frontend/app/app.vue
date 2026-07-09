@@ -120,6 +120,7 @@ const pageTitle = computed(() => {
   --color-yellow-badge: #fefbe5;
   --color-black-badge: #455468;
   --color-red-badge: #ffeaed;
+  --color-field: #f0f3f9;
   --color-gamma-900: #f2f2f2;
   --color-gamma-850: #e4e4e4;
   --color-gamma-750: #c9c9c9;
@@ -237,7 +238,7 @@ const pageTitle = computed(() => {
 }
 
 /* Dark Theme Override */
-.dark-theme {
+/* .dark-theme {
   --bg-primary: #0b0f19;
   --bg-secondary: #131a2c;
   --bg-card: rgba(22, 30, 49, 0.85);
@@ -268,7 +269,7 @@ const pageTitle = computed(() => {
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4);
   --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-}
+} */
 
 * {
   box-sizing: border-box;

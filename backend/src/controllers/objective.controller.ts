@@ -91,15 +91,37 @@ export async function deleteObjective(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
 
-    // First delete associated Key Results (since SQLite/Prisma doesn't cascade automatically unless defined)
-    // Actually cascade delete can be handled or we can delete Key Results first
-    await prisma.keyResult.deleteMany({
+    // Find all Key Results associated with this Objective
+    const keyResults = await prisma.keyResult.findMany({
       where: { objectiveId: id },
+      select: { id: true },
     });
+    const krIds = keyResults.map(kr => kr.id);
 
-    await prisma.objective.delete({
-      where: { id },
-    });
+    // Delete everything in a transaction to maintain integrity
+    await prisma.$transaction([
+      // 1. Delete all updates for these Key Results
+      prisma.krUpdate.deleteMany({
+        where: { keyResultId: { in: krIds } },
+      }),
+      // 2. Delete all causal links involving these Key Results
+      prisma.causalLink.deleteMany({
+        where: {
+          OR: [
+            { sourceKrId: { in: krIds } },
+            { targetKrId: { in: krIds } },
+          ],
+        },
+      }),
+      // 3. Delete the Key Results themselves
+      prisma.keyResult.deleteMany({
+        where: { objectiveId: id },
+      }),
+      // 4. Delete the Objective
+      prisma.objective.delete({
+        where: { id },
+      }),
+    ]);
 
     return res.status(200).json({ message: 'Objective and its Key Results deleted successfully' });
   } catch (error) {

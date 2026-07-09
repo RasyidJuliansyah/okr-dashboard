@@ -17,7 +17,7 @@
               placeholder="Cari Key Result..."
               class="search-input"
             />
-            <select
+            <!-- <select
               v-model="filterQuarter"
               @change="fetchObjectives"
               class="quarter-select"
@@ -27,7 +27,7 @@
               <option value="Q2-2026">Q2-2026</option>
               <option value="Q3-2026">Q3-2026</option>
               <option value="Q4-2026">Q4-2026</option>
-            </select>
+            </select> -->
           </div>
         </div>
 
@@ -107,7 +107,7 @@
                   </button>
                 </div>
                 <button @click="showHistory(kr)" class="history-btn">
-                  🕒 Riwayat Audit
+                  Riwayat Audit
                 </button>
               </div>
             </div>
@@ -319,14 +319,10 @@ onMounted(() => {
 @import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .admin-root {
-  font-family: "Inter", sans-serif;
+  font-family: "Rubik", sans-serif;
   min-height: 100vh;
-  background: radial-gradient(
-    circle at 10% 20%,
-    rgb(15, 22, 38) 0%,
-    rgb(8, 12, 21) 90%
-  );
-  color: white;
+  background: var(--content-bg);
+  color: var(--text-color);
   padding: 0 0 60px 0;
 }
 
@@ -396,17 +392,15 @@ onMounted(() => {
 /* Layout Content */
 .admin-content {
   max-width: 1100px;
-  margin: 30px auto 0 auto;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 30px 20px;
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
   border-radius: 16px;
   padding: 30px;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .section-header {
@@ -438,18 +432,19 @@ h2 {
 
 .search-input,
 .quarter-select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 850px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--color-gamma-650);
   border-radius: 8px;
   padding: 10px 14px;
-  color: white;
+  color: var(--color-gamma-080);
   font-size: 16px;
   outline: none;
 }
 
 .search-input:focus,
 .quarter-select:focus {
-  border-color: #0088ff;
+  border: 1.5px solid var(--color-primary);
 }
 
 /* Grid & Cards */
@@ -480,7 +475,7 @@ h2 {
 
 .parent-obj-title {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-primary);
   display: block;
   margin-bottom: 4px;
   font-weight: 500;
@@ -501,10 +496,10 @@ h2 {
 .kr-metrics {
   display: flex;
   gap: 20px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-field);
   padding: 12px 20px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
 }
 
 .metric-box {
@@ -515,7 +510,7 @@ h2 {
 
 .m-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-gamma-050);
   text-transform: uppercase;
   font-weight: 500;
 }
@@ -548,21 +543,22 @@ h2 {
 
 .val-input {
   width: 110px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-gamma-020);
+  border: 1.5px solid var(--card-border);
   border-radius: 6px;
   padding: 8px 12px;
-  color: white;
+  color: var(--color-primary-shade);
   outline: none;
 }
 
 .note-input {
+  width: 500px;
   flex-grow: 1;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-gamma-020);
+  border: 1.5px solid var(--card-border);
   border-radius: 6px;
   padding: 8px 12px;
-  color: white;
+  color: var(--color-primary-shade);
   outline: none;
 }
 
@@ -583,50 +579,52 @@ h2 {
 
 .history-btn {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid var(--card-border);
+  color: var(--color-primary-shade);
   padding: 8px 14px;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .history-btn:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--color-primary);
   color: white;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-primary);
 }
 
 /* Badges */
 .perspective-badge {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .perspective-badge.financial {
-  background: rgba(0, 210, 255, 0.12);
-  color: #8ce9ff;
+  background: var(--color-purple-badge);
+  color: var(--color-primary);
   border: 1px solid rgba(0, 210, 255, 0.25);
 }
 
 .perspective-badge.customer {
-  background: rgba(255, 170, 0, 0.12);
-  color: #ffcc66;
+  background: var(--color-yellow-badge);
+  color: var(--color-yellow);
   border: 1px solid rgba(255, 170, 0, 0.25);
 }
 
 .perspective-badge.internal_process {
-  background: rgba(138, 43, 226, 0.12);
-  color: #d8b4fe;
+  background: var(--color-purple-badge);
+  color: var(--color-purple);
   border: 1px solid rgba(138, 43, 226, 0.25);
 }
 
 .perspective-badge.learning_growth {
-  background: rgba(75, 255, 75, 0.12);
-  color: #88ff88;
+  background: var(--color-green-badge);
+  color: var(--color-green);
   border: 1px solid rgba(75, 255, 75, 0.25);
 }
 

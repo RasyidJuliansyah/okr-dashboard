@@ -15,7 +15,7 @@
         <div class="graph-header">
           <h2>Visualisasi Relasi Sebab-Akibat</h2>
           <button @click="fetchStrategyMap" class="refresh-btn">
-            🔄 Refresh Map
+            Refresh Map
           </button>
         </div>
 
@@ -35,6 +35,10 @@
               v-else
               v-model="elements"
               :fit-view-on-init="true"
+              :nodes-draggable="isAdmin"
+              :edges-draggable="isAdmin"
+              :nodes-connectable="isAdmin"
+              :elements-selectable="isAdmin"
               class="vue-flow-board"
             >
               <!-- Custom Node Renderer -->
@@ -71,12 +75,21 @@
 
       <!-- Right Panel: Causal Link Creator (Admin only) & Details -->
       <section class="side-panel">
-        <!-- Link Creator Card -->
-        <div v-if="auth.user?.role === 'ADMIN'" class="card creator-card">
-          <h2>Hubungkan Sebab-Akibat (Admin)</h2>
+        <!-- Link Creator/Editor Card -->
+        <div class="card creator-card">
+          <h2>
+            {{
+              editingLinkId
+                ? "Edit Hubungan Sebab-Akibat"
+                : "Hubungkan Sebab-Akibat"
+            }}
+          </h2>
           <p class="section-desc">
-            Pilih Key Result pendorong (driver) dan hasil akhir (outcome) untuk
-            memetakan sebab-akibat.
+            {{
+              editingLinkId
+                ? "Ubah hubungan sebab-akibat antara dua Key Result di bawah."
+                : "Pilih Key Result pendorong (driver) dan hasil akhir (outcome) untuk memetakan sebab-akibat."
+            }}
           </p>
 
           <form @submit.prevent="submitCausalLink" class="link-form">
@@ -122,15 +135,46 @@
               />
             </div>
 
-            <button
-              type="submit"
-              :disabled="
-                submitting || !newLink.sourceKrId || !newLink.targetKrId
-              "
-              class="submit-btn"
+            <div
+              class="form-actions"
+              style="display: flex; gap: 10px; margin-top: 10px"
             >
-              {{ submitting ? "Menyimpan..." : "Hubungkan Relasi" }}
-            </button>
+              <button
+                type="submit"
+                :disabled="
+                  submitting || !newLink.sourceKrId || !newLink.targetKrId
+                "
+                class="submit-btn"
+                style="flex: 2; margin-top: 0"
+              >
+                {{
+                  submitting
+                    ? "Menyimpan..."
+                    : editingLinkId
+                      ? "Simpan"
+                      : "Hubungkan Relasi"
+                }}
+              </button>
+              <button
+                v-if="editingLinkId"
+                type="button"
+                @click="cancelEdit"
+                style="
+                  font-style: Rubik, sans-serif;
+                  flex: 1;
+                  background: transparent;
+                  border: 1.5px solid var(--color-red);
+                  color: var(--color-red);
+                  cursor: pointer;
+                  padding: 10px;
+                  border-radius: 6px;
+                  font-weight: 500;
+                  transition: all 0.3s;
+                "
+              >
+                Batal
+              </button>
+            </div>
 
             <p v-if="successMessage" class="success-msg">
               {{ successMessage }}
@@ -164,14 +208,43 @@
                     getKrTitleById(edge.target)
                   }}</span>
                 </div>
-                <button
-                  v-if="auth.user?.role === 'ADMIN'"
-                  @click="deleteLink(edge.id)"
-                  class="delete-link-btn"
-                  title="Hapus Hubungan"
+                <div
+                  class="link-actions"
+                  style="display: flex; gap: 8px; align-items: center"
                 >
-                  ✕
-                </button>
+                  <button
+                    @click="startEditLink(edge)"
+                    class="edit-link-btn"
+                    title="Edit Hubungan"
+                    style="
+                      font-style: Rubik, sans-serif;
+                      border: 1.5 px solid var(---color-primary);
+                      border-radius: 4px;
+                      padding: 8px 12px;
+                      color: var(--color-primary);
+                      cursor: pointer;
+                      font-size: 14px;
+                    "
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click="deleteLink(edge.id)"
+                    class="delete-link-btn"
+                    title="Hapus Hubungan"
+                    style="
+                      border: 1.5 px solid var(--color-red);
+                      border-color: var(--color-red);
+                      border-radius: 4px;
+                      padding: 8px 12px;
+                      color: var(--color-red);
+                      cursor: pointer;
+                      font-size: 14px;
+                    "
+                  >
+                    Hapus
+                  </button>
+                </div>
               </div>
               <div class="link-item-meta">
                 <span class="rel-badge">{{ edge.label }}</span>
@@ -206,6 +279,8 @@ const submitting = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
 
+const editingLinkId = ref(null);
+
 const newLink = ref({
   sourceKrId: "",
   targetKrId: "",
@@ -213,9 +288,35 @@ const newLink = ref({
   note: "",
 });
 
+function startEditLink(edge) {
+  editingLinkId.value = edge.id;
+  newLink.value = {
+    sourceKrId: edge.source,
+    targetKrId: edge.target,
+    relationship: edge.label.toLowerCase() === "driver" ? "driver" : "outcome",
+    note: edge.data?.note || "",
+  };
+  errorMessage.value = "";
+  successMessage.value = "";
+}
+
+function cancelEdit() {
+  editingLinkId.value = null;
+  newLink.value = {
+    sourceKrId: "",
+    targetKrId: "",
+    relationship: "driver",
+    note: "",
+  };
+  errorMessage.value = "";
+  successMessage.value = "";
+}
+
 // Cache list of edges and nodes separately for UI elements listing
 const nodes = ref([]);
 const edges = ref([]);
+
+const isAdmin = computed(() => auth.user?.role === "ADMIN");
 
 function formatPerspective(p) {
   if (!p) return "";
@@ -285,16 +386,31 @@ async function submitCausalLink() {
 
   submitting.value = true;
   try {
-    await $fetch(`${config.public.apiBase}/causal-links`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-        "Content-Type": "application/json",
-      },
-      body: newLink.value,
-    });
-
-    successMessage.value = "Relasi kausalitas berhasil didefinisikan!";
+    if (editingLinkId.value) {
+      await $fetch(
+        `${config.public.apiBase}/causal-links/${editingLinkId.value}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            "Content-Type": "application/json",
+          },
+          body: newLink.value,
+        },
+      );
+      successMessage.value = "Hubungan kausalitas berhasil diperbarui!";
+      editingLinkId.value = null;
+    } else {
+      await $fetch(`${config.public.apiBase}/causal-links`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          "Content-Type": "application/json",
+        },
+        body: newLink.value,
+      });
+      successMessage.value = "Relasi kausalitas berhasil didefinisikan!";
+    }
 
     // Reset form
     newLink.value = {
@@ -666,8 +782,7 @@ input {
   border: 1px solid #d7dfe9;
   border-radius: 6px;
   padding: 10px;
-  color: #d7dfe9;
-  font-family: inherit;
+  color: var(--text-primary);
   font-size: 16px;
   outline: none;
 }
@@ -756,15 +871,6 @@ input:focus {
 
 .direction-arrow {
   color: #00d2ff;
-}
-
-.delete-link-btn {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  padding: 2px;
-  font-size: 15px;
 }
 
 .delete-link-btn:hover {
