@@ -130,22 +130,23 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       });
 
       if (updatesInPeriod.length > 0) {
-        // 2. Reconstruct state as of target compareTo date (latest update before or equal to target end date)
-        const snapshotUpdates = await prisma.krUpdate.findMany({
+        // 2. Fetch all updates for these KRs to correctly reconstruct historical state
+        const allUpdates = await prisma.krUpdate.findMany({
           where: {
             keyResultId: { in: krIds },
-            updatedAt: { lte: toDate },
           },
           orderBy: {
-            updatedAt: 'desc',
+            updatedAt: 'asc',
           },
         });
 
-        const lastWeekValueMap = new Map<string, number>();
-        for (const u of snapshotUpdates) {
-          if (!lastWeekValueMap.has(u.keyResultId)) {
-            lastWeekValueMap.set(u.keyResultId, u.newValue);
+        // Group updates by keyResultId
+        const updatesByKrMap = new Map<string, typeof allUpdates>();
+        for (const u of allUpdates) {
+          if (!updatesByKrMap.has(u.keyResultId)) {
+            updatesByKrMap.set(u.keyResultId, []);
           }
+          updatesByKrMap.get(u.keyResultId)!.push(u);
         }
 
         let prevSumProgress = 0;
@@ -157,7 +158,22 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         for (const obj of detailedObjectives) {
           for (const kr of obj.keyResults) {
             prevTotalKRs++;
-            const val = lastWeekValueMap.get(kr.id) ?? 0;
+            const krUpdates = updatesByKrMap.get(kr.id) || [];
+            
+            let val = kr.currentValue;
+
+            // Filter updates that happened before or equal to target end date
+            const updatesBeforeOrEqualToTarget = krUpdates.filter(u => new Date(u.updatedAt) <= toDate);
+            const updatesAfterTarget = krUpdates.filter(u => new Date(u.updatedAt) > toDate);
+
+            if (updatesBeforeOrEqualToTarget.length > 0) {
+              // The value was the newValue of the last update before/at the target date
+              val = updatesBeforeOrEqualToTarget[updatesBeforeOrEqualToTarget.length - 1].newValue;
+            } else if (updatesAfterTarget.length > 0) {
+              // The value was the oldValue of the first update after target date
+              val = updatesAfterTarget[0].oldValue;
+            }
+
             const pct = kr.targetValue > 0
               ? Math.min(100, Math.max(0, (val / kr.targetValue) * 100))
               : 0;
