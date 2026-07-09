@@ -37,6 +37,26 @@
               </button>
             </div>
           </div>
+
+          <!-- Comparison Date Range Picker -->
+          <div class="comparison-row">
+            <span class="comparison-label">Bandingkan dengan periode:</span>
+            <div class="date-range-inputs">
+              <input type="date" v-model="compareFrom" :max="compareTo || today" />
+              <span class="date-sep">–</span>
+              <input type="date" v-model="compareTo" :min="compareFrom" :max="today" />
+            </div>
+            <!-- Shortcut buttons -->
+            <div class="shortcut-btns">
+              <button @click="setShortcut(7)" class="shortcut-btn">7 Hari Lalu</button>
+              <button @click="setShortcut(14)" class="shortcut-btn">14 Hari Lalu</button>
+              <button @click="setShortcut(30)" class="shortcut-btn">30 Hari Lalu</button>
+              <button @click="clearComparison" class="clear-btn" v-if="compareFrom || compareTo">Reset</button>
+            </div>
+            <button class="compare-btn" @click="fetchDashboardData" :disabled="!compareFrom || !compareTo">
+              Bandingkan
+            </button>
+          </div>
         </div>
       </section>
 
@@ -49,6 +69,13 @@
             <span class="kpi-value"
               >{{ summaryData.metrics?.averageProgress || 0 }}%</span
             >
+            <span
+              v-if="summaryData.previousMetrics"
+              class="delta-badge"
+              :class="getDeltaClass(progressDelta)"
+            >
+              {{ formatDelta(progressDelta) }}
+            </span>
             <div class="progress-ring-placeholder">
               <div
                 class="progress-ring-fill"
@@ -58,7 +85,13 @@
               ></div>
             </div>
           </div>
-          <p class="kpi-desc">
+          <p v-if="compareFrom && !summaryData.previousMetrics" class="kpi-no-data">
+            Tidak ada data pada periode ini
+          </p>
+          <p v-else-if="summaryData.previousMetrics" class="kpi-desc">
+            vs. {{ summaryData.previousMetrics.rangeLabel }}: {{ summaryData.previousMetrics.averageProgress }}%
+          </p>
+          <p v-else class="kpi-desc">
             Agregat progres seluruh Key Results dalam scope terpilih.
           </p>
         </div>
@@ -68,25 +101,58 @@
           <span class="kpi-label">Status Key Results</span>
           <div class="status-summary-row">
             <div class="status-count-item">
-              <span class="count-val ontrack">{{
-                summaryData.metrics?.onTrackCount || 0
-              }}</span>
+              <div class="status-val-row">
+                <span class="count-val ontrack">{{
+                  summaryData.metrics?.onTrackCount || 0
+                }}</span>
+                <span
+                  v-if="summaryData.previousMetrics"
+                  class="delta-badge small"
+                  :class="getDeltaClass(onTrackDelta)"
+                >
+                  {{ formatSimpleDelta(onTrackDelta) }}
+                </span>
+              </div>
               <span class="count-lbl">On Track</span>
             </div>
             <div class="status-count-item">
-              <span class="count-val atrisk">{{
-                summaryData.metrics?.atRiskCount || 0
-              }}</span>
+              <div class="status-val-row">
+                <span class="count-val atrisk">{{
+                  summaryData.metrics?.atRiskCount || 0
+                }}</span>
+                <span
+                  v-if="summaryData.previousMetrics"
+                  class="delta-badge small"
+                  :class="getDeltaClass(atRiskDelta, true)"
+                >
+                  {{ formatSimpleDelta(atRiskDelta) }}
+                </span>
+              </div>
               <span class="count-lbl">At Risk</span>
             </div>
             <div class="status-count-item">
-              <span class="count-val offtrack">{{
-                summaryData.metrics?.offTrackCount || 0
-              }}</span>
+              <div class="status-val-row">
+                <span class="count-val offtrack">{{
+                  summaryData.metrics?.offTrackCount || 0
+                }}</span>
+                <span
+                  v-if="summaryData.previousMetrics"
+                  class="delta-badge small"
+                  :class="getDeltaClass(offTrackDelta, true)"
+                >
+                  {{ formatSimpleDelta(offTrackDelta) }}
+                </span>
+              </div>
               <span class="count-lbl">Off Track</span>
             </div>
           </div>
-          <p class="kpi-desc">
+          <p v-if="compareFrom && !summaryData.previousMetrics" class="kpi-no-data">
+            Tidak ada data pada periode ini
+          </p>
+          <p v-else-if="summaryData.previousMetrics" class="kpi-desc">
+            vs. {{ summaryData.previousMetrics.rangeLabel }}
+          </p>
+          <p v-else class="kpi-desc">
             Status otomatis berdasarkan capaian vs target harian.
           </p>
         </div>
@@ -233,6 +299,68 @@ const summaryData = ref({});
 const currentScope = ref("self");
 const loading = ref(false);
 
+const compareFrom = ref("");
+const compareTo = ref("");
+const today = new Date().toISOString().split("T")[0];
+
+function setShortcut(days) {
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  compareFrom.value = from.toISOString().split("T")[0];
+  compareTo.value = today;
+  fetchDashboardData();
+}
+
+function clearComparison() {
+  compareFrom.value = "";
+  compareTo.value = "";
+  fetchDashboardData();
+}
+
+const progressDelta = computed(() => {
+  if (!summaryData.value.previousMetrics) return null;
+  return Math.round((
+    (summaryData.value.metrics?.averageProgress ?? 0) -
+    summaryData.value.previousMetrics.averageProgress
+  ) * 10) / 10;
+});
+
+const onTrackDelta = computed(() => {
+  if (!summaryData.value.previousMetrics) return null;
+  return (summaryData.value.metrics?.onTrackCount ?? 0) - summaryData.value.previousMetrics.onTrackCount;
+});
+
+const atRiskDelta = computed(() => {
+  if (!summaryData.value.previousMetrics) return null;
+  return (summaryData.value.metrics?.atRiskCount ?? 0) - summaryData.value.previousMetrics.atRiskCount;
+});
+
+const offTrackDelta = computed(() => {
+  if (!summaryData.value.previousMetrics) return null;
+  return (summaryData.value.metrics?.offTrackCount ?? 0) - summaryData.value.previousMetrics.offTrackCount;
+});
+
+function formatDelta(delta) {
+  if (delta === null || delta === undefined) return "";
+  if (delta > 0) return `▲ +${delta}%`;
+  if (delta < 0) return `▼ ${delta}%`;
+  return "─ 0%";
+}
+
+function formatSimpleDelta(delta) {
+  if (delta === null || delta === undefined) return "";
+  if (delta > 0) return `▲ +${delta}`;
+  if (delta < 0) return `▼ ${delta}`;
+  return "─ 0";
+}
+
+function getDeltaClass(delta, invert = false) {
+  if (delta === null || delta === undefined) return "delta-neutral";
+  if (delta > 0) return invert ? "delta-down" : "delta-up";
+  if (delta < 0) return invert ? "delta-up" : "delta-down";
+  return "delta-neutral";
+}
+
 const orderLocalStorageKey = "okr-dashboard-objectives-order";
 const draggedIndex = ref(null);
 
@@ -314,14 +442,15 @@ async function changeScope(scope) {
 async function fetchDashboardData() {
   loading.value = true;
   try {
-    const response = await $fetch(
-      `${config.public.apiBase}/dashboard/summary?scope=${currentScope.value}`,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
+    let url = `${config.public.apiBase}/dashboard/summary?scope=${currentScope.value}`;
+    if (compareFrom.value && compareTo.value) {
+      url += `&compareFrom=${compareFrom.value}&compareTo=${compareTo.value}`;
+    }
+    const response = await $fetch(url, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
       },
-    );
+    });
     summaryData.value = response;
     applyCustomOrder();
   } catch (err) {
@@ -1074,5 +1203,152 @@ onMounted(() => {
   100% {
     background-position: -200% 0;
   }
+}
+
+.comparison-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f3f9;
+  width: 100%;
+}
+
+.comparison-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #5e718d;
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-range-inputs input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: "Rubik", sans-serif;
+  color: #2d3643;
+  cursor: pointer;
+  background-color: #ffffff;
+}
+
+.date-sep {
+  color: #8897ae;
+}
+
+.shortcut-btns {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shortcut-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #e4e4e4;
+  background: #f8fafc;
+  color: #5e718d;
+  font-size: 13px;
+  font-family: "Rubik", sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.shortcut-btn:hover {
+  background: #0e97d6;
+  color: #ffffff;
+  border-color: #0e97d6;
+}
+
+.clear-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #eb3123;
+  background: #fff1f2;
+  color: #eb3123;
+  font-size: 13px;
+  font-family: "Rubik", sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.clear-btn:hover {
+  background: #eb3123;
+  color: #ffffff;
+}
+
+.compare-btn {
+  padding: 8px 20px;
+  background: #0e97d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-family: "Rubik", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease-out;
+}
+
+.compare-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.compare-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.delta-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-left: 10px;
+}
+
+.delta-badge.small {
+  font-size: 11px;
+  padding: 2px 6px;
+  margin-left: 4px;
+}
+
+.delta-up {
+  color: #009c29;
+  background: #e3fdea;
+}
+
+.delta-down {
+  color: #eb3123;
+  background: #ffeaed;
+}
+
+.delta-neutral {
+  color: #5e718d;
+  background: #f0f3f9;
+}
+
+.kpi-no-data {
+  font-size: 13px;
+  color: #8897ae;
+  font-style: italic;
+  margin: 4px 0 0;
+}
+
+.status-val-row {
+  display: flex;
+  align-items: center;
 }
 </style>
