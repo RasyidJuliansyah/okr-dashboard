@@ -1,9 +1,17 @@
 <template>
   <div class="app-layout" :class="{ 'with-shell': showShell }">
     <NuxtRouteAnnouncer />
-    <AppSidebar v-if="showShell" />
+    
+    <!-- Sidebar backdrop overlay (mobile only) -->
+    <div 
+      v-if="showShell && isSidebarOpen" 
+      class="sidebar-overlay" 
+      @click="isSidebarOpen = false"
+    ></div>
+
+    <AppSidebar v-if="showShell" :isOpen="isSidebarOpen" @close="isSidebarOpen = false" />
     <div :class="['main-wrapper', { 'with-sidebar': showShell }]">
-      <AppHeader v-if="showShell" :title="pageTitle" />
+      <AppHeader v-if="showShell" :title="pageTitle" @toggle-sidebar="isSidebarOpen = !isSidebarOpen" />
       <main :class="['page-content', { 'padded-content': showShell }]">
         <NuxtPage />
       </main>
@@ -12,7 +20,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import AppSidebar from "./components/AppSidebar.vue";
@@ -20,6 +28,8 @@ import AppHeader from "./components/AppHeader.vue";
 
 const auth = useAuthStore();
 const route = useRoute();
+
+const isSidebarOpen = ref(false);
 
 const isAuthenticated = computed(() => auth.isAuthenticated);
 const isLoginPage = computed(() => route.path === "/login");
@@ -314,7 +324,14 @@ p {
   width: 100%;
 }
 
-/* .page-content.padded-content {
-  padding: var(--content-padding);
-} */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(13, 21, 37, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+}
 </style>

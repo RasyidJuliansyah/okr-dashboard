@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ 'is-open': isOpen }">
     <!-- Logo Section -->
     <div class="logo-section">
       <img src="/logo.png" alt="Skolla Logo" class="logo-icon" />
@@ -9,7 +9,7 @@
     <nav class="nav-container">
       <div class="nav-group">
         <p class="nav-group-label">MENU UTAMA</p>
-        <NuxtLink to="/dashboard" class="nav-item" active-class="nav-active">
+        <NuxtLink to="/dashboard" class="nav-item" active-class="nav-active" @click="emit('close')">
           <svg
             width="20"
             height="20"
@@ -27,7 +27,7 @@
           </svg>
           <span>Dashboard</span>
         </NuxtLink>
-        <NuxtLink to="/bsc-view" class="nav-item" active-class="nav-active">
+        <NuxtLink to="/bsc-view" class="nav-item" active-class="nav-active" @click="emit('close')">
           <svg
             width="20"
             height="20"
@@ -45,7 +45,7 @@
           </svg>
           <span>Strategic Mapping</span>
         </NuxtLink>
-        <NuxtLink to="/strategy-map" class="nav-item" active-class="nav-active">
+        <NuxtLink to="/strategy-map" class="nav-item" active-class="nav-active" @click="emit('close')">
           <svg
             width="20"
             height="20"
@@ -74,6 +74,7 @@
           to="/admin/objectives"
           class="nav-item"
           active-class="nav-active"
+          @click="emit('close')"
         >
           <svg
             width="20"
@@ -97,6 +98,7 @@
           to="/admin/update-progress"
           class="nav-item"
           active-class="nav-active"
+          @click="emit('close')"
         >
           <svg
             width="20"
@@ -140,7 +142,7 @@
         </svg>
         <span>Logout</span>
       </button>
-      <NuxtLink v-else to="/login" class="footer-action">
+      <NuxtLink v-else to="/login" class="footer-action" @click="emit('close')">
         <svg
           width="18"
           height="18"
@@ -165,6 +167,14 @@
 import { computed } from "vue";
 import { useAuthStore } from "../stores/auth";
 
+const props = defineProps({
+  isOpen: {
+    type: Boolean,
+    default: false,
+  },
+});
+const emit = defineEmits(["close"]);
+
 const auth = useAuthStore();
 const isAuthenticated = computed(() => auth.isAuthenticated);
 const isAdmin = computed(
@@ -173,6 +183,7 @@ const isAdmin = computed(
 
 function handleLogout() {
   auth.logout();
+  emit("close");
 }
 </script>
 
@@ -190,6 +201,22 @@ function handleLogout() {
   flex-direction: column;
   z-index: 100;
   overflow-y: auto;
+  transition: transform 0.3s ease, left 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -240px;
+    height: 100vh;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar.is-open {
+    left: 0;
+  }
 }
 
 .logo-section {
