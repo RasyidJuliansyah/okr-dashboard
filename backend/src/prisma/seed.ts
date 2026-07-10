@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { PrismaClient } from "@prisma/client";
+import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -8,35 +8,35 @@ async function main() {
   await prisma.user.deleteMany({});
   await prisma.team.deleteMany({});
 
-  console.log('Seeding database...');
+  console.log("Seeding database...");
 
   // Hash password
   const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash('password123', saltRounds);
+  const hashedPassword = await bcrypt.hash("SkollaEdu", saltRounds);
 
   // Create Team first (managerId will be updated later)
   const team = await prisma.team.create({
     data: {
-      name: 'Product & Tech',
+      name: "Product & Tech",
     },
   });
 
   // Create Users
   const admin = await prisma.user.create({
     data: {
-      name: 'System Admin',
-      email: 'admin@company.com',
+      name: "Skolla Education",
+      email: "admin@skolla.education",
       password: hashedPassword,
-      role: 'ADMIN',
+      role: "ADMIN",
     },
   });
 
   const manager = await prisma.user.create({
     data: {
-      name: 'Jane Manager',
-      email: 'manager@company.com',
+      name: "Jane Manager",
+      email: "manager@company.com",
       password: hashedPassword,
-      role: 'MANAGER',
+      role: "MANAGER",
       teamId: team.id,
     },
   });
@@ -49,24 +49,24 @@ async function main() {
 
   const clevel = await prisma.user.create({
     data: {
-      name: 'Alice CEO',
-      email: 'clevel@company.com',
+      name: "C-Level Skolla Education",
+      email: "clevel@skolla.education",
       password: hashedPassword,
-      role: 'C_LEVEL',
+      role: "C_LEVEL",
     },
   });
 
   const employee = await prisma.user.create({
     data: {
-      name: 'John Employee',
-      email: 'employee@company.com',
+      name: "John Employee",
+      email: "employee@company.com",
       password: hashedPassword,
-      role: 'EMPLOYEE',
+      role: "EMPLOYEE",
       teamId: team.id,
     },
   });
 
-  console.log('Seeding finished successfully:');
+  console.log("Seeding finished successfully:");
   console.log({
     admin: admin.email,
     manager: manager.email,

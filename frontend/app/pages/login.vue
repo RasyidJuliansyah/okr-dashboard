@@ -25,14 +25,61 @@
 
         <div class="form-group">
           <label for="password">Kata Sandi</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            required
-            placeholder="••••••••"
-            :disabled="loading"
-          />
+          <div class="password-input-wrapper">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              required
+              placeholder="••••••••"
+              :disabled="loading"
+            />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              @click="togglePasswordVisibility"
+              aria-label="Toggle password visibility"
+            >
+              <!-- Eye Icon when showPassword is false -->
+              <svg
+                v-if="!showPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <!-- Eye-off Icon when showPassword is true -->
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                <path
+                  d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
+                />
+                <path
+                  d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
+                />
+                <line x1="2" y1="2" x2="22" y2="22" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div v-if="error" class="error-message">
@@ -45,7 +92,7 @@
         </button>
       </form>
 
-      <div class="demo-accounts">
+      <!-- <div class="demo-accounts">
         <p>Akun Demo:</p>
         <ul>
           <li><strong>Admin:</strong> admin@company.com</li>
@@ -54,7 +101,7 @@
           <li><strong>Employee:</strong> employee@company.com</li>
           <li><strong>Password:</strong> password123</li>
         </ul>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -68,6 +115,11 @@ const email = ref("");
 const password = ref("");
 const error = ref("");
 const loading = ref(false);
+const showPassword = ref(false);
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value;
+}
 
 async function handleLogin() {
   error.value = "";
@@ -181,6 +233,40 @@ async function handleLogin() {
   font-size: 17px;
   outline: none;
   transition: all 0.3s;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-color);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .form-group input:focus {

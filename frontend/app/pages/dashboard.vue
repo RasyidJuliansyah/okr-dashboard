@@ -39,24 +39,49 @@
           </div>
 
           <!-- Comparison Date Range Picker -->
-          <div class="comparison-row">
+          <!-- <div class="comparison-row">
             <span class="comparison-label">Bandingkan dengan periode:</span>
             <div class="date-range-inputs">
-              <input type="date" v-model="compareFrom" :max="compareTo || today" />
+              <input
+                type="date"
+                v-model="compareFrom"
+                :max="compareTo || today"
+              />
               <span class="date-sep">–</span>
-              <input type="date" v-model="compareTo" :min="compareFrom" :max="today" />
+              <input
+                type="date"
+                v-model="compareTo"
+                :min="compareFrom"
+                :max="today"
+              />
             </div>
-            <!-- Shortcut buttons -->
+             Shortcut buttons 
             <div class="shortcut-btns">
-              <button @click="setShortcut(7)" class="shortcut-btn">7 Hari Lalu</button>
-              <button @click="setShortcut(14)" class="shortcut-btn">14 Hari Lalu</button>
-              <button @click="setShortcut(30)" class="shortcut-btn">30 Hari Lalu</button>
-              <button @click="clearComparison" class="clear-btn" v-if="compareFrom || compareTo">Reset</button>
+              <button @click="setShortcut(7)" class="shortcut-btn">
+                7 Hari Lalu
+              </button>
+              <button @click="setShortcut(14)" class="shortcut-btn">
+                14 Hari Lalu
+              </button>
+              <button @click="setShortcut(30)" class="shortcut-btn">
+                30 Hari Lalu
+              </button>
+              <button
+                @click="clearComparison"
+                class="clear-btn"
+                v-if="compareFrom || compareTo"
+              >
+                Reset
+              </button>
             </div>
-            <button class="compare-btn" @click="fetchDashboardData" :disabled="!compareFrom || !compareTo">
+            <button
+              class="compare-btn"
+              @click="fetchDashboardData"
+              :disabled="!compareFrom || !compareTo"
+            >
               Bandingkan
             </button>
-          </div>
+          </div> -->
         </div>
       </section>
 
@@ -85,11 +110,15 @@
               ></div>
             </div>
           </div>
-          <p v-if="compareFrom && !summaryData.previousMetrics" class="kpi-no-data">
+          <p
+            v-if="compareFrom && !summaryData.previousMetrics"
+            class="kpi-no-data"
+          >
             Tidak ada data pada periode ini
           </p>
           <p v-else-if="summaryData.previousMetrics" class="kpi-desc">
-            vs. {{ summaryData.previousMetrics.rangeLabel }}: {{ summaryData.previousMetrics.averageProgress }}%
+            vs. {{ summaryData.previousMetrics.rangeLabel }}:
+            {{ summaryData.previousMetrics.averageProgress }}%
           </p>
           <p v-else class="kpi-desc">
             Agregat progres seluruh Key Results dalam scope terpilih.
@@ -146,7 +175,10 @@
               <span class="count-lbl">Off Track</span>
             </div>
           </div>
-          <p v-if="compareFrom && !summaryData.previousMetrics" class="kpi-no-data">
+          <p
+            v-if="compareFrom && !summaryData.previousMetrics"
+            class="kpi-no-data"
+          >
             Tidak ada data pada periode ini
           </p>
           <p v-else-if="summaryData.previousMetrics" class="kpi-desc">
@@ -203,7 +235,7 @@
             @drop="onDrop(index, $event)"
             @dragend="onDragEnd"
             :class="{ 'is-dragging': draggedIndex === index }"
-            style="cursor: grab;"
+            style="cursor: grab"
           >
             <div class="obj-card-header">
               <div>
@@ -319,25 +351,37 @@ function clearComparison() {
 
 const progressDelta = computed(() => {
   if (!summaryData.value.previousMetrics) return null;
-  return Math.round((
-    (summaryData.value.metrics?.averageProgress ?? 0) -
-    summaryData.value.previousMetrics.averageProgress
-  ) * 10) / 10;
+  return (
+    Math.round(
+      ((summaryData.value.metrics?.averageProgress ?? 0) -
+        summaryData.value.previousMetrics.averageProgress) *
+        10,
+    ) / 10
+  );
 });
 
 const onTrackDelta = computed(() => {
   if (!summaryData.value.previousMetrics) return null;
-  return (summaryData.value.metrics?.onTrackCount ?? 0) - summaryData.value.previousMetrics.onTrackCount;
+  return (
+    (summaryData.value.metrics?.onTrackCount ?? 0) -
+    summaryData.value.previousMetrics.onTrackCount
+  );
 });
 
 const atRiskDelta = computed(() => {
   if (!summaryData.value.previousMetrics) return null;
-  return (summaryData.value.metrics?.atRiskCount ?? 0) - summaryData.value.previousMetrics.atRiskCount;
+  return (
+    (summaryData.value.metrics?.atRiskCount ?? 0) -
+    summaryData.value.previousMetrics.atRiskCount
+  );
 });
 
 const offTrackDelta = computed(() => {
   if (!summaryData.value.previousMetrics) return null;
-  return (summaryData.value.metrics?.offTrackCount ?? 0) - summaryData.value.previousMetrics.offTrackCount;
+  return (
+    (summaryData.value.metrics?.offTrackCount ?? 0) -
+    summaryData.value.previousMetrics.offTrackCount
+  );
 });
 
 function formatDelta(delta) {
@@ -368,7 +412,7 @@ function applyCustomOrder() {
   if (!summaryData.value || !summaryData.value.objectives) return;
   const savedOrderStr = localStorage.getItem(orderLocalStorageKey);
   if (!savedOrderStr) return;
-  
+
   try {
     const savedOrder = JSON.parse(savedOrderStr);
     summaryData.value.objectives.sort((a, b) => {
@@ -393,16 +437,16 @@ function onDragStart(index, event) {
 
 function onDrop(targetIndex, event) {
   if (draggedIndex.value === null || draggedIndex.value === targetIndex) return;
-  
+
   const objectives = [...summaryData.value.objectives];
   const draggedObj = objectives.splice(draggedIndex.value, 1)[0];
   objectives.splice(targetIndex, 0, draggedObj);
-  
+
   summaryData.value.objectives = objectives;
-  
-  const idsOrder = objectives.map(o => o.id);
+
+  const idsOrder = objectives.map((o) => o.id);
   localStorage.setItem(orderLocalStorageKey, JSON.stringify(idsOrder));
-  
+
   draggedIndex.value = null;
 }
 
