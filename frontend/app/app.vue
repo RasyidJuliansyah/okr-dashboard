@@ -43,6 +43,7 @@ const pageTitle = computed(() => {
   if (path.startsWith("/strategy-map")) return "Causal Map";
   if (path.startsWith("/admin/objectives")) return "OKR Builder";
   if (path.startsWith("/admin/update-progress")) return "Update Capaian";
+  if (path.startsWith("/admin/employees")) return "Data Pegawai";
   return "Profil Pengguna";
 });
 </script>

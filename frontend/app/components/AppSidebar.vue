@@ -59,11 +59,67 @@
             <rect x="16" y="16" width="6" height="6" rx="1" />
             <rect x="2" y="16" width="6" height="6" rx="1" />
             <rect x="9" y="2" width="6" height="6" rx="1" />
-            <path d="M12 8v4" />
-            <path d="M12 12H5v4" />
-            <path d="M12 12h7v4" />
+            <line x1="12" y1="12" x2="12" y2="8" />
+            <line x1="12" y1="12" x2="5" y2="12" />
+            <line x1="12" y1="12" x2="19" y2="12" />
           </svg>
           <span>Causal Map</span>
+        </NuxtLink>
+        <NuxtLink to="/initiatives" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="5" height="18" rx="1" />
+            <rect x="10" y="3" width="5" height="11" rx="1" />
+            <rect x="17" y="3" width="5" height="15" rx="1" />
+          </svg>
+          <span>Inisiatif (Kanban)</span>
+        </NuxtLink>
+        <NuxtLink to="/departments" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="2" y="7" width="6" height="14" rx="1" />
+            <rect x="9" y="2" width="6" height="19" rx="1" />
+            <rect x="16" y="11" width="6" height="10" rx="1" />
+          </svg>
+          <span>Struktur Departemen</span>
+        </NuxtLink>
+      </div>
+
+      <!-- C-Level menu -->
+      <div v-if="isCLevel || isAdmin" class="nav-group">
+        <p class="nav-group-label">C-LEVEL</p>
+        <NuxtLink to="/c-level" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 20V10" />
+            <path d="M12 20V4" />
+            <path d="M6 20v-6" />
+          </svg>
+          <span>Executive Dashboard</span>
         </NuxtLink>
       </div>
 
@@ -95,6 +151,28 @@
           <span>OKR Builder</span>
         </NuxtLink>
         <NuxtLink
+          to="/initiatives"
+          class="nav-item"
+          active-class="nav-active"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="5" height="18" rx="1" />
+            <rect x="10" y="3" width="5" height="11" rx="1" />
+            <rect x="17" y="3" width="5" height="15" rx="1" />
+          </svg>
+          <span>Inisiatif (Kanban)</span>
+        </NuxtLink>
+        <NuxtLink
           to="/admin/update-progress"
           class="nav-item"
           active-class="nav-active"
@@ -115,7 +193,89 @@
           </svg>
           <span>Update Progress</span>
         </NuxtLink>
+        <NuxtLink
+          to="/admin/employees"
+          class="nav-item"
+          active-class="nav-active"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Data Pegawai</span>
+        </NuxtLink>
+        <NuxtLink
+          to="/departments"
+          class="nav-item"
+          active-class="nav-active"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="2" y="7" width="6" height="14" rx="1" />
+            <rect x="9" y="2" width="6" height="19" rx="1" />
+            <rect x="16" y="11" width="6" height="10" rx="1" />
+          </svg>
+          <span>Struktur Departemen</span>
+        </NuxtLink>
       </div>
+
+      <!-- Manager menu -->
+      <div v-if="isManager || isAdmin" class="nav-group">
+        <p class="nav-group-label">MANAGER</p>
+        <NuxtLink to="/manager/overview" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          <span>OKR Overview</span>
+        </NuxtLink>
+      </div>
+
+      <!-- Leader menu -->
+      <div v-if="isLeader || isAdmin" class="nav-group">
+        <p class="nav-group-label">LEADER</p>
+        <NuxtLink to="/leader/my-krs" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
+          </svg>
+          <span>KR Saya</span>
+        </NuxtLink>
+      </div>
+
+      <!-- Team menu -->
+      <div v-if="isTeam || isLeader || isAdmin" class="nav-group">
+        <p class="nav-group-label">PEKERJAAN</p>
+        <NuxtLink to="/team/my-work" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>Pekerjaan Saya</span>
+        </NuxtLink>
+      </div>
+
     </nav>
 
     <!-- Footer -->
@@ -157,7 +317,7 @@
           <polyline points="10 17 15 12 10 7" />
           <line x1="15" x2="3" y1="12" y2="12" />
         </svg>
-        <span>Login Admin</span>
+        <span>Login</span>
       </NuxtLink>
     </div>
   </aside>
@@ -177,9 +337,11 @@ const emit = defineEmits(["close"]);
 
 const auth = useAuthStore();
 const isAuthenticated = computed(() => auth.isAuthenticated);
-const isAdmin = computed(
-  () => auth.isAuthenticated && auth.user?.role === "ADMIN",
-);
+const isAdmin = computed(() => auth.isAuthenticated && auth.user?.role === 'ADMIN');
+const isCLevel = computed(() => auth.isAuthenticated && auth.user?.role === 'C_LEVEL');
+const isManager = computed(() => auth.isAuthenticated && auth.user?.role === 'MANAGER');
+const isLeader = computed(() => auth.isAuthenticated && auth.user?.role === 'LEADER');
+const isTeam = computed(() => auth.isAuthenticated && auth.user?.role === 'TEAM');
 
 function handleLogout() {
   auth.logout();

@@ -33,6 +33,7 @@ const defaultKRs = [
     id: "kr-1-1",
     objId: "obj-1",
     title: "Mencapai Revenue Semester I sebesar $2.0M",
+    createdAt: "2026-07-01T08:00:00.000Z",
     owner: "Jane Doe",
     team: "finance",
     current: 1.6,
@@ -47,6 +48,7 @@ const defaultKRs = [
     id: "kr-1-2",
     objId: "obj-1",
     title: "Mengurangi Operating Expenses sebesar 10%",
+    createdAt: "2026-07-01T09:00:00.000Z",
     owner: "Jane Doe",
     team: "finance",
     current: 4,
@@ -61,6 +63,7 @@ const defaultKRs = [
     id: "kr-2-1",
     objId: "obj-2",
     title: "Meningkatkan Net Promoter Score (NPS) ke 75",
+    createdAt: "2026-07-01T10:00:00.000Z",
     owner: "Sarah Smith",
     team: "growth",
     current: 70,
@@ -75,6 +78,7 @@ const defaultKRs = [
     id: "kr-2-2",
     objId: "obj-2",
     title: "Menurunkan Customer Churn Rate di bawah 2%",
+    createdAt: "2026-07-01T11:00:00.000Z",
     owner: "Sarah Smith",
     team: "growth",
     current: 3.5,
@@ -89,6 +93,7 @@ const defaultKRs = [
     id: "kr-3-1",
     objId: "obj-3",
     title: "Mempercepat Cycle Time deployment menjadi 3 hari",
+    createdAt: "2026-07-01T12:00:00.000Z",
     owner: "John Doe",
     team: "engineering",
     current: 5,
@@ -103,6 +108,7 @@ const defaultKRs = [
     id: "kr-3-2",
     objId: "obj-3",
     title: "Meningkatkan test coverage kode utama ke 90%",
+    createdAt: "2026-07-01T13:00:00.000Z",
     owner: "John Doe",
     team: "engineering",
     current: 88,
@@ -117,6 +123,7 @@ const defaultKRs = [
     id: "kr-4-1",
     objId: "obj-4",
     title: "Menyelesaikan sertifikasi cloud untuk 15 engineer",
+    createdAt: "2026-07-01T14:00:00.000Z",
     owner: "Bob Johnson",
     team: "engineering",
     current: 12,
@@ -131,6 +138,7 @@ const defaultKRs = [
     id: "kr-4-2",
     objId: "obj-4",
     title: "Meningkatkan Employee Engagement Score ke 4.5/5",
+    createdAt: "2026-07-01T15:00:00.000Z",
     owner: "HR Team",
     team: "engineering",
     current: 4.2,
@@ -450,6 +458,15 @@ function renderNotifications() {
   lucide.createIcons();
 }
 
+// Helper: load & save collapse state
+function loadCollapseState() {
+  try { return JSON.parse(localStorage.getItem("krCollapseState") || "{}"); }
+  catch { return {}; }
+}
+function saveCollapseState(state) {
+  localStorage.setItem("krCollapseState", JSON.stringify(state));
+}
+
 // =============================================
 // MAIN DASHBOARD RENDERER
 // =============================================
@@ -510,10 +527,19 @@ function renderDashboard() {
     // For employee, skip objectives with no KRs assigned to them
     if (state.currentRole === "employee" && objKRs.length === 0) return;
 
+    // Sort KRs: newest first (descending by createdAt)
+    objKRs = objKRs.sort((a, b) => {
+      const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tB - tA;
+    });
+
     const objProgress = calculateObjProgress(obj.id);
     const objProgressColor = objProgress >= 80 ? "bg-green" : objProgress >= 50 ? "bg-orange" : "bg-red";
 
     let krListHtml = "";
+    const collapseState = loadCollapseState();
+    
     objKRs.forEach((kr) => {
       const progress = calculateKRProgress(kr);
       const progressColor = progress >= 80 ? "bg-green" : progress >= 50 ? "bg-orange" : "bg-red";
@@ -526,12 +552,20 @@ function renderDashboard() {
         </div>
       ` : "";
 
+      const isExpanded = collapseState[kr.id] !== false; // default: expanded
+      const bodyClass = isExpanded ? "kr-body--expanded" : "kr-body--collapsed";
+      const chevronStyle = isExpanded ? "" : "transform: rotate(-90deg);";
+
       krListHtml += `
-        <div class="kr-item">
-          <div class="kr-left">
+        <div class="kr-item" data-kr-id="${kr.id}">
+          <div class="kr-header" data-kr-id="${kr.id}" aria-expanded="${isExpanded}">
+            <i data-lucide="chevron-down" class="kr-collapse-btn kr-chevron" style="${chevronStyle}"></i>
             <div class="kr-status-indicator ${kr.status}"></div>
-            <div class="kr-details">
-              <h5>${kr.title}</h5>
+            <h5 class="kr-title-inline">${kr.title}</h5>
+            <span class="status-badge ${kr.status} kr-badge-inline">${statusLabel}</span>
+          </div>
+          <div class="kr-body ${bodyClass}">
+            <div class="kr-body-inner">
               <div class="kr-meta">
                 <span><i data-lucide="user"></i> ${kr.owner}</span>
                 <span><i data-lucide="users"></i> Tim: ${kr.team.toUpperCase()}</span>
@@ -541,22 +575,21 @@ function renderDashboard() {
                   <span class="source-tooltip-content">Sumber: ${kr.source}<br>Terakhir Update: ${kr.lastUpdated}</span>
                 </span>
               </div>
-            </div>
-          </div>
-          <div class="kr-right" style="display:flex; flex-direction:column; align-items:flex-end;">
-            <div style="display:flex; gap:16px; align-items:center;">
-              <div class="obj-progress-bar-container" style="width: 140px;">
-              <div class="progress-bar-track">
-                <div class="progress-bar-fill ${progressColor}" style="width: ${progress}%;"></div>
+              <div class="kr-right-content" style="display:flex; flex-direction:column; align-items:flex-end;">
+                <div style="display:flex; gap:16px; align-items:center;">
+                  <div class="obj-progress-bar-container" style="width: 140px;">
+                  <div class="progress-bar-track">
+                    <div class="progress-bar-fill ${progressColor}" style="width: ${progress}%;"></div>
+                  </div>
+                  <span class="obj-progress-val">${progress}%</span>
+                </div>
+                <div class="kr-numeric-progress">
+                  <span class="current">${kr.current}</span> / ${kr.target} ${kr.unit}
+                </div>
+                </div>
+                ${actionBtns}
               </div>
-              <span class="obj-progress-val">${progress}%</span>
             </div>
-            <div class="kr-numeric-progress">
-              <span class="current">${kr.current}</span> / ${kr.target} ${kr.unit}
-            </div>
-            <span class="status-badge ${kr.status}">${statusLabel}</span>
-            </div>
-            ${actionBtns}
           </div>
         </div>
       `;
@@ -591,6 +624,26 @@ function renderDashboard() {
   });
 
   lucide.createIcons();
+
+  okrContainer.querySelectorAll(".kr-header").forEach((header) => {
+    header.addEventListener("click", () => {
+      const krId = header.dataset.krId;
+      const krItem = okrContainer.querySelector(`.kr-item[data-kr-id="${krId}"]`);
+      const body = krItem.querySelector(".kr-body");
+      const chevron = header.querySelector(".kr-chevron");
+      const isExpanded = header.getAttribute("aria-expanded") === "true";
+  
+      header.setAttribute("aria-expanded", String(!isExpanded));
+      body.classList.toggle("kr-body--expanded", !isExpanded);
+      body.classList.toggle("kr-body--collapsed", isExpanded);
+      chevron.style.transform = isExpanded ? "rotate(-90deg)" : "rotate(0deg)";
+  
+      // Persist
+      const cs = loadCollapseState();
+      cs[krId] = !isExpanded;
+      saveCollapseState(cs);
+    });
+  });
 }
 
 function filterAndSearchKRs() {
@@ -1022,6 +1075,7 @@ if (builderForm) {
 
     const newKR = {
       id: `kr-${Date.now()}`,
+      createdAt: new Date().toISOString(),
       objId,
       title,
       owner,
@@ -1048,6 +1102,12 @@ if (builderForm) {
     });
 
     saveState();
+
+    // Collapse semua KR lama, expand hanya yang baru
+    const cs = loadCollapseState();
+    state.keyResults.forEach((kr) => { cs[kr.id] = false; }); // collapse semua
+    cs[newKR.id] = true; // expand hanya yang baru
+    saveCollapseState(cs);
     renderDashboard();
     renderBSCGrid();
     renderAuditTrail();

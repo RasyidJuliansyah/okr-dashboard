@@ -12,22 +12,15 @@ const keyresult_routes_1 = __importDefault(require("./routes/keyresult.routes"))
 const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
 const bsc_routes_1 = __importDefault(require("./routes/bsc.routes"));
 const causal_routes_1 = __importDefault(require("./routes/causal.routes"));
+const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const initiative_routes_1 = __importDefault(require("./routes/initiative.routes"));
+const department_routes_1 = __importDefault(require("./routes/department.routes"));
+const bulkUpload_routes_1 = __importDefault(require("./routes/bulkUpload.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 app.use((0, cors_1.default)({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-            callback(null, true);
-        }
-        else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: true, // Allow all origins for development
     credentials: true,
 }));
 app.use(express_1.default.json());
@@ -38,6 +31,10 @@ app.use('/api/key-results', keyresult_routes_1.default);
 app.use('/api/dashboard', dashboard_routes_1.default);
 app.use('/api/bsc', bsc_routes_1.default);
 app.use('/api', causal_routes_1.default);
+app.use('/api/users', user_routes_1.default);
+app.use('/api/initiatives', initiative_routes_1.default);
+app.use('/api/departments', department_routes_1.default);
+app.use('/api/bulk-upload', bulkUpload_routes_1.default);
 // Base route for sanity check
 app.get('/', (req, res) => {
     res.json({ message: 'OKR & Balanced Scorecard API is running.' });

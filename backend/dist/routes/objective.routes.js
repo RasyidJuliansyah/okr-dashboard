@@ -9,4 +9,6 @@ router.get('/', auth_middleware_1.authMiddleware, objective_controller_1.getObje
 // Only admin can create or delete objectives
 router.post('/', auth_middleware_1.authMiddleware, (0, auth_middleware_1.roleGuard)(['ADMIN']), objective_controller_1.createObjective);
 router.delete('/:id', auth_middleware_1.authMiddleware, (0, auth_middleware_1.roleGuard)(['ADMIN']), objective_controller_1.deleteObjective);
+// Manager overview
+router.get('/manager/overview', auth_middleware_1.authMiddleware, (0, auth_middleware_1.roleGuard)(['MANAGER', 'ADMIN', 'C_LEVEL']), objective_controller_1.getManagerOverview);
 exports.default = router;

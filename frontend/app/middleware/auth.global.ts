@@ -17,4 +17,8 @@ export default defineNuxtRouteMiddleware((to, from) => {
   if (to.path.startsWith('/admin') && auth.user?.role !== 'ADMIN') {
     return navigateTo('/');
   }
+
+  if (to.path.startsWith('/c-level') && !['C_LEVEL', 'ADMIN'].includes(auth.user?.role || '')) {
+    return navigateTo('/');
+  }
 });

@@ -9,103 +9,170 @@ async function getDashboardSummary(req, res) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         const { id: userId, role } = req.user;
-        let scope = req.query.scope || 'self';
-        // Role-based restrictions on scope
-        if (role === 'EMPLOYEE') {
-            scope = 'self';
-        }
-        else if (role === 'MANAGER' && scope === 'company') {
-            scope = 'team'; // Downgrade managers to team scope if they try to access company
-        }
-        // Fetch user details to get team ID
+        // --- Ambil data user dari DB ---
         const dbUser = await prisma.user.findUnique({
             where: { id: userId },
-            select: { teamId: true },
+            select: { teamId: true, department: true },
         });
-        const teamId = dbUser?.teamId;
-        // Build query conditions based on scope
-        let whereClause = {};
-        if (scope === 'self') {
-            whereClause.ownerId = userId;
+        // --- TEAM: hanya lihat Initiative & KPI milik tim sendiri ---
+        if (role === 'TEAM') {
+            if (!dbUser?.teamId) {
+                return res.status(200).json({ role, scope: 'team', initiatives: [], kpis: [] });
+            }
+            const initiatives = await prisma.initiative.findMany({
+                where: { teamId: dbUser.teamId },
+                include: {
+                    keyResult: { select: { id: true, title: true, bscPerspective: true } },
+                    kpis: {
+                        include: {
+                            assignments: { where: { userId }, select: { userId: true } },
+                        },
+                    },
+                },
+            });
+            // Hanya KPI yang di-assign ke user ini
+            const myKpis = await prisma.kpi.findMany({
+                where: { assignments: { some: { userId } } },
+                include: {
+                    initiative: { select: { id: true, title: true, teamId: true } },
+                    updates: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1,
+                    },
+                },
+            });
+            return res.status(200).json({ role, scope: 'team', initiatives, myKpis });
         }
-        else if (scope === 'team') {
-            if (!teamId) {
-                // User is not in a team, return empty
-                return res.status(200).json({
-                    scope,
-                    metrics: { totalObjectives: 0, averageProgress: 0, onTrackCount: 0, atRiskCount: 0, offTrackCount: 0 },
-                    objectives: [],
+        // --- LEADER: KR (read-only, konteks) + Initiative dari semua Tim yang dipimpin ---
+        if (role === 'LEADER') {
+            const leadingTeams = await prisma.team.findMany({
+                where: { leaderId: userId },
+                select: { id: true, name: true },
+            });
+            const leadingTeamIds = leadingTeams.map(t => t.id);
+            const initiatives = await prisma.initiative.findMany({
+                where: { teamId: { in: leadingTeamIds } },
+                include: {
+                    keyResult: { select: { id: true, title: true, bscPerspective: true, status: true } },
+                    team: { select: { id: true, name: true } },
+                    kpis: true,
+                },
+            });
+            return res.status(200).json({ role, scope: 'leader', leadingTeams, initiatives });
+        }
+        // --- MANAGER: Objective & KR yang KrDepartment-nya cocok dengan dept Manager ---
+        if (role === 'MANAGER') {
+            const managerDept = dbUser?.department;
+            let objectives = [];
+            if (managerDept) {
+                objectives = await prisma.objective.findMany({
+                    where: {
+                        keyResults: {
+                            some: {
+                                departments: { some: { department: managerDept } },
+                            },
+                        },
+                    },
+                    include: {
+                        keyResults: {
+                            where: {
+                                departments: { some: { department: managerDept } },
+                            },
+                            include: {
+                                assignments: {
+                                    include: { user: { select: { id: true, name: true, department: true, role: true } } },
+                                },
+                                departments: true,
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: 'desc' },
                 });
             }
-            // Get all user IDs in the same team
-            const teamUsers = await prisma.user.findMany({
-                where: { teamId },
-                select: { id: true },
+            // Approval queue: KpiUpdate PENDING dari team di dept ini
+            const pendingApprovals = await prisma.kpiUpdate.findMany({
+                where: {
+                    status: 'PENDING_APPROVAL',
+                    kpi: {
+                        initiative: {
+                            team: { department: managerDept || undefined },
+                        },
+                    },
+                },
+                include: {
+                    kpi: {
+                        include: {
+                            initiative: {
+                                include: { team: { select: { id: true, name: true } } },
+                            },
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
             });
-            const teamUserIds = teamUsers.map(u => u.id);
-            whereClause.ownerId = { in: teamUserIds };
+            // Hitung metrics
+            let totalKRs = 0, sumProgress = 0, onTrackCount = 0, atRiskCount = 0, offTrackCount = 0;
+            const detailedObjectives = objectives.map(obj => {
+                const keyResultsWithProgress = obj.keyResults.map((kr) => {
+                    totalKRs++;
+                    const progressPercent = kr.targetValue > 0 ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100)) : 0;
+                    sumProgress += progressPercent;
+                    if (kr.status === 'ON_TRACK')
+                        onTrackCount++;
+                    else if (kr.status === 'AT_RISK')
+                        atRiskCount++;
+                    else if (kr.status === 'OFF_TRACK')
+                        offTrackCount++;
+                    return { ...kr, progress: progressPercent };
+                });
+                const avgObjProgress = keyResultsWithProgress.length > 0 ? keyResultsWithProgress.reduce((a, k) => a + k.progress, 0) / keyResultsWithProgress.length : 0;
+                return { ...obj, keyResults: keyResultsWithProgress, progress: avgObjProgress };
+            });
+            return res.status(200).json({
+                role,
+                scope: 'department',
+                department: managerDept,
+                metrics: { totalObjectives: objectives.length, totalKeyResults: totalKRs, averageProgress: Math.round((totalKRs > 0 ? sumProgress / totalKRs : 0) * 10) / 10, onTrackCount, atRiskCount, offTrackCount },
+                objectives: detailedObjectives,
+                pendingApprovals,
+            });
         }
-        else if (scope === 'company') {
-            // Company scope shows everything, no ownerId filter
-        }
-        // Fetch objectives and nested Key Results
+        // --- C_LEVEL & ADMIN: Semua data ---
         const objectives = await prisma.objective.findMany({
-            where: whereClause,
             include: {
-                keyResults: true,
+                keyResults: {
+                    include: {
+                        assignments: {
+                            include: { user: { select: { id: true, name: true, department: true, role: true } } },
+                            orderBy: { raciRole: 'asc' },
+                        },
+                        departments: true,
+                    },
+                },
             },
-            orderBy: {
-                createdAt: 'desc',
-            },
+            orderBy: { createdAt: 'desc' },
         });
-        // Calculate metrics
-        let totalObjectives = objectives.length;
-        let totalKRs = 0;
-        let sumProgress = 0;
-        let onTrackCount = 0;
-        let atRiskCount = 0;
-        let offTrackCount = 0;
+        let totalKRs = 0, sumProgress = 0, onTrackCount = 0, atRiskCount = 0, offTrackCount = 0;
         const detailedObjectives = objectives.map(obj => {
-            let objProgressSum = 0;
-            let objKrCount = obj.keyResults.length;
             const keyResultsWithProgress = obj.keyResults.map(kr => {
                 totalKRs++;
-                // Calculate individual KR progress percentage
-                const progressPercent = kr.targetValue > 0
-                    ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
-                    : 0;
+                const progressPercent = kr.targetValue > 0 ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100)) : 0;
                 sumProgress += progressPercent;
-                objProgressSum += progressPercent;
-                // Categorize status count
                 if (kr.status === 'ON_TRACK')
                     onTrackCount++;
                 else if (kr.status === 'AT_RISK')
                     atRiskCount++;
                 else if (kr.status === 'OFF_TRACK')
                     offTrackCount++;
-                return {
-                    ...kr,
-                    progress: progressPercent,
-                };
+                return { ...kr, progress: progressPercent };
             });
-            const avgObjProgress = objKrCount > 0 ? objProgressSum / objKrCount : 0;
-            return {
-                ...obj,
-                keyResults: keyResultsWithProgress,
-                progress: avgObjProgress,
-            };
+            const avgObjProgress = keyResultsWithProgress.length > 0 ? keyResultsWithProgress.reduce((a, k) => a + k.progress, 0) / keyResultsWithProgress.length : 0;
+            return { ...obj, keyResults: keyResultsWithProgress, progress: avgObjProgress };
         });
-        const averageProgress = totalKRs > 0 ? sumProgress / totalKRs : 0;
         return res.status(200).json({
-            scope,
-            metrics: {
-                totalObjectives,
-                totalKeyResults: totalKRs,
-                averageProgress: Math.round(averageProgress * 10) / 10,
-                onTrackCount,
-                atRiskCount,
-                offTrackCount,
-            },
+            role,
+            scope: 'company',
+            metrics: { totalObjectives: objectives.length, totalKeyResults: totalKRs, averageProgress: Math.round((totalKRs > 0 ? sumProgress / totalKRs : 0) * 10) / 10, onTrackCount, atRiskCount, offTrackCount },
             objectives: detailedObjectives,
         });
     }

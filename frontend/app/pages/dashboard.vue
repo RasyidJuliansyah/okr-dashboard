@@ -190,6 +190,102 @@
         </div>
       </section>
 
+      <!-- ─── SECTION: TEAM VIEW ─── -->
+      <section v-if="userRole === 'TEAM'" class="role-section">
+        <h3 class="section-title">📋 KPI Saya</h3>
+        <div v-if="myKpis.length === 0" class="empty-state">
+          Belum ada KPI yang di-assign ke kamu.
+        </div>
+        <div v-for="kpi in myKpis" :key="kpi.id" class="kpi-card card">
+          <div class="kpi-header">
+            <span class="kpi-title">{{ kpi.title }}</span>
+            <span :class="['status-badge', kpi.status.toLowerCase().replace('_','-')]">{{ kpi.status }}</span>
+          </div>
+          <div class="kpi-progress">
+            <span>{{ kpi.currentValue }} / {{ kpi.targetValue }} {{ kpi.unit }}</span>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: Math.min(100, (kpi.currentValue / kpi.targetValue) * 100) + '%' }"></div>
+            </div>
+          </div>
+          <div class="kpi-initiative">Initiative: {{ kpi.initiative?.title }}</div>
+          <button class="primary-btn" @click="openKpiSubmitModal(kpi)">📤 Submit Update</button>
+        </div>
+      </section>
+
+      <!-- ─── SECTION: LEADER VIEW ─── -->
+      <section v-if="userRole === 'LEADER'" class="role-section">
+        <h3 class="section-title">🏆 Initiative Tim Saya</h3>
+        <div v-if="leaderInitiatives.length === 0" class="empty-state">
+          Belum ada Initiative untuk tim yang kamu pimpin.
+        </div>
+        <div v-for="init in leaderInitiatives" :key="init.id" class="initiative-card card">
+          <div class="init-header">
+            <span class="init-title">{{ init.title }}</span>
+            <span class="team-badge">{{ init.team?.name }}</span>
+          </div>
+          <div class="init-kr-context">KR: {{ init.keyResult?.title }}</div>
+          <div class="init-kpis">
+            <span v-for="kpi in init.kpis" :key="kpi.id" class="kpi-chip">
+              {{ kpi.title }} ({{ kpi.currentValue }}/{{ kpi.targetValue }})
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
+      <section v-if="userRole === 'MANAGER' && pendingApprovals.length > 0" class="role-section">
+        <h3 class="section-title">🔔 Approval KPI Pending ({{ pendingApprovals.length }})</h3>
+        <div v-for="update in pendingApprovals" :key="update.id" class="approval-card card">
+          <div class="approval-info">
+            <strong>{{ update.kpi?.title }}</strong>
+            <span class="team-badge">{{ update.kpi?.initiative?.team?.name }}</span>
+          </div>
+          <div class="approval-values">
+            Nilai: <del>{{ update.oldValue }}</del> → <strong>{{ update.newValue }}</strong>
+          </div>
+          <div v-if="update.note" class="approval-note">Catatan: {{ update.note }}</div>
+          <div class="approval-actions">
+            <button class="approve-btn" @click="handleApprove(update.id)">✅ Approve</button>
+            <button class="reject-btn" @click="openRejectModal(update)">❌ Reject</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── MODAL: Submit KPI Update (TEAM) ─── -->
+      <div v-if="showKpiSubmitModal" class="modal-overlay" @click.self="showKpiSubmitModal = false">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Submit Update KPI</h3>
+            <button class="modal-close-btn" @click="showKpiSubmitModal = false">&times;</button>
+          </div>
+          <p>{{ selectedKpi?.title }}</p>
+          <label>Nilai Baru:</label>
+          <input v-model.number="submitNewValue" type="number" class="form-input" />
+          <label>Catatan (opsional):</label>
+          <textarea v-model="submitNote" class="form-input" rows="3"></textarea>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showKpiSubmitModal = false">Batal</button>
+            <button class="primary-btn" @click="submitKpiUpdate">Kirim</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MODAL: Reject KPI Update (MANAGER) ─── -->
+      <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Tolak Update KPI</h3>
+            <button class="modal-close-btn" @click="showRejectModal = false">&times;</button>
+          </div>
+          <p>Berikan alasan penolakan untuk <strong>{{ selectedApproval?.kpi?.title }}</strong>:</p>
+          <textarea v-model="rejectNote" class="form-input" rows="3" placeholder="Alasan penolakan (wajib diisi)..."></textarea>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showRejectModal = false">Batal</button>
+            <button class="danger-btn" @click="handleReject">Tolak Update</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Objectives & Key Results List -->
       <section class="objectives-section">
         <div class="section-title-row">
@@ -294,21 +390,54 @@
                       Nilai: <strong>{{ kr.currentValue }}</strong> /
                       {{ kr.targetValue }} {{ kr.unit }}
                     </span>
-                    <!-- <span
-                      class="kr-source-tooltip"
-                      :title="
-                        'Input Manual — Diperbarui pada: ' +
-                        formatDate(kr.updatedAt)
-                      "
-                    >
-                      ℹ️ Input Manual
-                    </span> -->
                     <span
                       class="status-badge"
                       :class="kr.status.toLowerCase().replace('_', '')"
                     >
                       {{ kr.status.replace("_", " ") }}
                     </span>
+                  </div>
+
+                  <!-- RACI Row -->
+                  <div v-if="(kr.assignments && kr.assignments.length > 0) || (kr.departments && kr.departments.length > 0)" class="kr-raci-row">
+                    <!-- Accountable -->
+                    <div class="raci-mini-group" v-if="kr.assignments && kr.assignments.some(x => x.raciRole === 'ACCOUNTABLE')">
+                      <span class="raci-mini-badge a-mini">A</span>
+                      <span
+                        v-for="a in kr.assignments.filter(x => x.raciRole === 'ACCOUNTABLE')"
+                        :key="a.id"
+                        class="raci-chip accountable-chip"
+                      >
+                        {{ a.user.name }}
+                      </span>
+                    </div>
+                    <!-- Responsible -->
+                    <div class="raci-mini-group" v-if="kr.assignments && kr.assignments.some(x => x.raciRole === 'RESPONSIBLE')">
+                      <span class="raci-mini-badge r-mini">R</span>
+                      <span
+                        v-for="a in kr.assignments.filter(x => x.raciRole === 'RESPONSIBLE')"
+                        :key="a.id"
+                        class="raci-chip responsible-chip"
+                      >
+                        {{ a.user.name }}
+                        <span v-if="a.user.department" class="chip-dept">· {{ a.user.department }}</span>
+                      </span>
+                    </div>
+                    <!-- Departemen Terlibat -->
+                    <div class="kr-dept-row" v-if="kr.departments && kr.departments.length > 0">
+                      <span class="dept-mini-label">Dept:</span>
+                      <span v-for="d in kr.departments" :key="d.id" class="dept-mini-tag">{{ d.department }}</span>
+                    </div>
+                  </div>
+
+                  <!-- KR History Link -->
+                  <div class="kr-history-link">
+                    <NuxtLink
+                      :to="`/kr-history?krId=${kr.id}&krTitle=${encodeURIComponent(kr.title)}&krTarget=${kr.targetValue}&krUnit=${encodeURIComponent(kr.unit)}`"
+                      class="history-btn"
+                    >
+                      📈 Lihat History
+                    </NuxtLink>
                   </div>
                 </div>
               </div>
@@ -326,6 +455,20 @@ import { useAuthStore } from "../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
+
+// Ambil role dari auth store
+const userRole = computed(() => auth.user?.role || '');
+
+// State untuk data TEAM
+const myKpis = ref([]);
+const myInitiatives = ref([]);
+
+// State untuk data MANAGER
+const pendingApprovals = ref([]);
+
+// State untuk data LEADER
+const leadingTeams = ref([]);
+const leaderInitiatives = ref([]);
 
 const summaryData = ref({});
 const currentScope = ref("self");
@@ -495,6 +638,17 @@ async function fetchDashboardData() {
         Authorization: `Bearer ${auth.token}`,
       },
     });
+    
+    if (userRole.value === 'TEAM') {
+      myKpis.value = response.myKpis || [];
+      myInitiatives.value = response.initiatives || [];
+    } else if (userRole.value === 'LEADER') {
+      leadingTeams.value = response.leadingTeams || [];
+      leaderInitiatives.value = response.initiatives || [];
+    } else if (userRole.value === 'MANAGER') {
+      pendingApprovals.value = response.pendingApprovals || [];
+    }
+
     summaryData.value = response;
     applyCustomOrder();
   } catch (err) {
@@ -515,6 +669,81 @@ onMounted(() => {
   }
   fetchDashboardData();
 });
+
+// ─── KPI Submit Modal (TEAM) ───
+const showKpiSubmitModal = ref(false);
+const selectedKpi = ref(null);
+const submitNewValue = ref(0);
+const submitNote = ref('');
+
+function openKpiSubmitModal(kpi) {
+  selectedKpi.value = kpi;
+  submitNewValue.value = kpi.currentValue;
+  submitNote.value = '';
+  showKpiSubmitModal.value = true;
+}
+
+async function submitKpiUpdate() {
+  if (!selectedKpi.value) return;
+  const token = auth.token || localStorage.getItem('token');
+  const res = await fetch(`${config.public.apiBase}/initiatives/kpis/${selectedKpi.value.id}/updates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ newValue: submitNewValue.value, note: submitNote.value }),
+  });
+  if (res.ok) {
+    showKpiSubmitModal.value = false;
+    alert('Update berhasil dikirim, menunggu persetujuan Manager.');
+    await fetchDashboardData();
+  } else {
+    const err = await res.json();
+    alert(err.message || 'Gagal mengirim update');
+  }
+}
+
+// ─── Approval Modal (MANAGER) ───
+const showRejectModal = ref(false);
+const selectedApproval = ref(null);
+const rejectNote = ref('');
+
+function openRejectModal(update) {
+  selectedApproval.value = update;
+  rejectNote.value = '';
+  showRejectModal.value = true;
+}
+
+async function handleApprove(updateId) {
+  if (!confirm('Setujui update ini?')) return;
+  const token = auth.token || localStorage.getItem('token');
+  const res = await fetch(`${config.public.apiBase}/initiatives/kpi-updates/${updateId}/approve`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.ok) {
+    await fetchDashboardData();
+  } else {
+    alert('Gagal approve');
+  }
+}
+
+async function handleReject() {
+  if (!rejectNote.value.trim()) {
+    alert('Alasan penolakan wajib diisi');
+    return;
+  }
+  const token = auth.token || localStorage.getItem('token');
+  const res = await fetch(`${config.public.apiBase}/initiatives/kpi-updates/${selectedApproval.value.id}/reject`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ reviewNote: rejectNote.value }),
+  });
+  if (res.ok) {
+    showRejectModal.value = false;
+    await fetchDashboardData();
+  } else {
+    alert('Gagal reject');
+  }
+}
 </script>
 
 <style scoped>
@@ -1395,4 +1624,141 @@ onMounted(() => {
   display: flex;
   align-items: center;
 }
+
+/* KR RACI & Dept Styles */
+.kr-raci-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.raci-mini-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.raci-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.a-mini { background: #7c3aed; }
+.r-mini { background: #0e97d6; }
+
+.raci-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 99px;
+  font-weight: 500;
+}
+
+.accountable-chip {
+  background: rgba(124, 58, 237, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.responsible-chip {
+  background: rgba(14, 151, 214, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 151, 214, 0.3);
+}
+
+.chip-dept {
+  opacity: 0.75;
+}
+
+.kr-dept-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.dept-mini-label {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.dept-mini-tag {
+  font-size: 0.65rem;
+  padding: 0.08rem 0.4rem;
+  background: rgba(5, 150, 105, 0.15);
+  color: #34d399;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.kr-history-link {
+  margin-top: 0.5rem;
+}
+
+.history-btn {
+  font-size: 0.75rem;
+  color: #38bdf8;
+  text-decoration: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(14, 151, 214, 0.1);
+  border: 1px solid rgba(14, 151, 214, 0.2);
+  display: inline-block;
+  transition: all 150ms ease;
+}
+
+.history-btn:hover {
+  background: rgba(14, 151, 214, 0.2);
+  border-color: rgba(14, 151, 214, 0.4);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-box {
+  background: #1e293b;
+  color: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.modal-header h3 { margin: 0; }
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.6);
+}
+.modal-close-btn:hover { color: #fff; }
 </style>

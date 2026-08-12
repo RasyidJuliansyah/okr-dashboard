@@ -65,6 +65,12 @@
                   >
                     {{ kr.status.replace("_", " ") }}
                   </span>
+                  <div v-if="kr.assignments && kr.assignments.length > 0" class="kr-pic-inline">
+                    <span class="pic-lbl">PIC:</span>
+                    <span v-for="a in kr.assignments" :key="a.id" class="pic-chip" :class="a.raciRole.toLowerCase()">
+                      {{ a.user.name }}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -805,5 +811,34 @@ h2 {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.kr-pic-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.5rem;
+}
+
+.pic-lbl {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.pic-chip {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.pic-chip.accountable {
+  background: rgba(124, 58, 237, 0.2);
+  color: #c084fc;
+}
+
+.pic-chip.responsible {
+  background: rgba(14, 151, 214, 0.2);
+  color: #38bdf8;
 }
 </style>

@@ -8,48 +8,88 @@ generator client {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password   String
-  role       String   @default("EMPLOYEE") // ADMIN, MANAGER, C_LEVEL, EMPLOYEE
-  teamId     String?
-  team       Team?    @relation(fields: [teamId], references: [id])
-  createdAt  DateTime @default(now())
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           String          @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
+  department     String?
+  position       String?
+  teamId         String?
+  team           Team?           @relation("TeamMembers", fields: [teamId], references: [id])
+  leadingTeams   Team[]          @relation("TeamLeader")
+  assignments    KrAssignment[]
+  kpiAssignments KpiAssignment[]
+  managedDepartments Department[]  @relation("DepartmentManager")
+  ownedInitiatives Initiative[]  @relation("InitiativeOwner")
+  createdAt      DateTime        @default(now())
 }
 
 model Team {
-  id        String  @id @default(uuid())
-  name      String
-  managerId String?
-  users     User[]
+  id          String       @id @default(uuid())
+  name        String
+  managerId   String?
+  leaderId    String?
+  leader      User?        @relation("TeamLeader", fields: [leaderId], references: [id])
+  department  String?
+  users       User[]       @relation("TeamMembers")
+  initiatives Initiative[]
 }
 
 model Objective {
   id          String      @id @default(uuid())
   title       String
   description String?
-  quarter     String      // contoh: "Q3-2026"
-  ownerId     String?     // user atau team, simplifikasi: user id
+  quarter     String
+  ownerId     String?
   keyResults  KeyResult[]
   createdAt   DateTime    @default(now())
 }
 
 model KeyResult {
-  id             String        @id @default(uuid())
+  id             String         @id @default(uuid())
   objectiveId    String
-  objective      Objective     @relation(fields: [objectiveId], references: [id])
+  objective      Objective      @relation(fields: [objectiveId], references: [id])
   title          String
   targetValue    Float
-  currentValue   Float         @default(0)
-  unit           String        // contoh: "%", "IDR", "users"
-  bscPerspective String        // FINANCIAL, CUSTOMER, INTERNAL_PROCESS, LEARNING_GROWTH
-  status         String        @default("ON_TRACK") // ON_TRACK, AT_RISK, OFF_TRACK
+  currentValue   Float          @default(0)
+  unit           String
+  bscPerspective String
+  status         String         @default("ON_TRACK")
+  assignments    KrAssignment[]
+  departments    KrDepartment[]
   updates        KrUpdate[]
-  sourceLinksA   CausalLink[]  @relation("SourceKR")
-  sourceLinksB   CausalLink[]  @relation("TargetKR")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  initiatives    Initiative[]
+  sourceLinksA   CausalLink[]   @relation("SourceKR")
+  sourceLinksB   CausalLink[]   @relation("TargetKR")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model KrAssignment {
+  id          String    @id @default(uuid())
+  keyResultId String
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  assignedBy  String
+  assignedAt  DateTime  @default(now())
+  raciRole    String    @default("RESPONSIBLE")
+
+  @@unique([keyResultId, userId])
+  @@index([keyResultId])
+  @@index([userId])
+}
+
+model KrDepartment {
+  id          String    @id @default(uuid())
+  keyResultId String
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
+  department  String
+  createdAt   DateTime  @default(now())
+
+  @@unique([keyResultId, department])
+  @@index([keyResultId])
 }
 
 model KrUpdate {
@@ -59,8 +99,10 @@ model KrUpdate {
   oldValue    Float
   newValue    Float
   note        String?
-  updatedBy   String    // user id admin
+  updatedBy   String
   updatedAt   DateTime  @default(now())
+
+  @@index([keyResultId, updatedAt])
 }
 
 model CausalLink {
@@ -69,8 +111,82 @@ model CausalLink {
   sourceKr     KeyResult @relation("SourceKR", fields: [sourceKrId], references: [id])
   targetKrId   String
   targetKr     KeyResult @relation("TargetKR", fields: [targetKrId], references: [id])
-  relationship String    // "driver" | "outcome"
+  relationship String
   note         String?
   createdBy    String
   createdAt    DateTime  @default(now())
+}
+
+model Initiative {
+  id           String   @id @default(uuid())
+  keyResultId  String
+  keyResult    KeyResult @relation(fields: [keyResultId], references: [id])
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id])
+  ownerId      String?
+  owner        User?    @relation("InitiativeOwner", fields: [ownerId], references: [id])
+  title        String
+  description  String?
+  targetValue  Float    @default(0)
+  currentValue Float    @default(0)
+  unit         String?
+  status       String   @default("ON_TRACK")
+  kanbanStatus String   @default("TODO") // TODO, IN_PROGRESS, DONE
+  kpis         Kpi[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Kpi {
+  id           String          @id @default(uuid())
+  initiativeId String
+  initiative   Initiative      @relation(fields: [initiativeId], references: [id])
+  title        String
+  targetValue  Float
+  currentValue Float           @default(0)
+  unit         String?
+  status       String          @default("ON_TRACK")
+  assignments  KpiAssignment[]
+  updates      KpiUpdate[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model KpiAssignment {
+  id         String   @id @default(uuid())
+  kpiId      String
+  kpi        Kpi      @relation(fields: [kpiId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  assignedAt DateTime @default(now())
+
+  @@unique([kpiId, userId])
+  @@index([kpiId])
+  @@index([userId])
+}
+
+model KpiUpdate {
+  id          String    @id @default(uuid())
+  kpiId       String
+  kpi         Kpi       @relation(fields: [kpiId], references: [id])
+  oldValue    Float
+  newValue    Float
+  note        String?
+  submittedBy String
+  status      String    @default("PENDING_APPROVAL")
+  reviewedBy  String?
+  reviewNote  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([kpiId, createdAt])
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String
+  value     String   @unique
+  managerId String?
+  manager   User?    @relation("DepartmentManager", fields: [managerId], references: [id])
+  createdAt DateTime @default(now())
 }

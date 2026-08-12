@@ -7,25 +7,18 @@ import keyResultRoutes from './routes/keyresult.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import bscRoutes from './routes/bsc.routes';
 import causalRoutes from './routes/causal.routes';
+import userRoutes from './routes/user.routes';
+import initiativeRoutes from './routes/initiative.routes';
+import departmentRoutes from './routes/department.routes';
+import bulkUploadRoutes from './routes/bulkUpload.routes';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins for development
   credentials: true,
 }));
 
@@ -38,6 +31,10 @@ app.use('/api/key-results', keyResultRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/bsc', bscRoutes);
 app.use('/api', causalRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/initiatives', initiativeRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/bulk-upload', bulkUploadRoutes);
 
 // Base route for sanity check
 app.get('/', (req, res) => {

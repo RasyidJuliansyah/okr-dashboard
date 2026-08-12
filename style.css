@@ -861,15 +861,14 @@ body:not(.dark-theme) .sun-icon {
 
 .kr-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   padding: 13px 16px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   transition: var(--transition-smooth);
   position: relative;
-  gap: 12px;
 }
 
 .kr-item:hover {
@@ -877,13 +876,77 @@ body:not(.dark-theme) .sun-icon {
   border-color: rgba(14, 151, 214, 0.2);
 }
 
-.kr-left {
+/* KR Item: Header (always visible) */
+.kr-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.kr-title-inline {
   flex-grow: 1;
-  max-width: 50%;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   min-width: 0;
+}
+
+.kr-badge-inline {
+  flex-shrink: 0;
+}
+
+/* Collapse/Expand toggle button */
+.kr-collapse-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  transition: var(--transition-smooth);
+}
+.kr-collapse-btn:hover {
+  color: var(--accent-primary);
+  background: rgba(14, 151, 214, 0.08);
+}
+
+/* Chevron rotation */
+.kr-chevron {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.25s ease;
+}
+
+/* KR Body: Collapsible section */
+.kr-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease, padding-top 0.25s ease;
+}
+.kr-body--expanded {
+  max-height: 200px;
+  opacity: 1;
+  padding-top: 10px;
+}
+.kr-body--collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+}
+
+.kr-body-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px;
 }
 
 .kr-status-indicator {
@@ -943,13 +1006,7 @@ body:not(.dark-theme) .sun-icon {
   flex-shrink: 0;
 }
 
-.kr-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  justify-content: flex-end;
-  flex-shrink: 0;
-}
+
 
 .kr-numeric-progress {
   text-align: right;

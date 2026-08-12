@@ -60,27 +60,49 @@ export async function deleteKeyResult(req: AuthRequest, res: Response) {
     // Check if KR exists
     const kr = await prisma.keyResult.findUnique({
       where: { id },
+      include: { initiatives: { include: { kpis: true } } },
     });
     if (!kr) {
       return res.status(404).json({ message: 'Key Result not found' });
     }
 
-    // Use a transaction to delete all dependent rows and then the Key Result itself
+    const initiativeIds = kr.initiatives.map((i) => i.id);
+    const kpiIds = kr.initiatives.flatMap((i) => i.kpis.map((k) => k.id));
+
+    // Cascade delete in transaction to prevent Foreign Key Violation (P2003)
     await prisma.$transaction([
-      // Delete updates
+      // 1. Delete KPI updates & KPI assignments
+      prisma.kpiUpdate.deleteMany({
+        where: { kpiId: { in: kpiIds } },
+      }),
+      prisma.kpiAssignment.deleteMany({
+        where: { kpiId: { in: kpiIds } },
+      }),
+      // 2. Delete KPIs
+      prisma.kpi.deleteMany({
+        where: { id: { in: kpiIds } },
+      }),
+      // 3. Delete Initiatives
+      prisma.initiative.deleteMany({
+        where: { id: { in: initiativeIds } },
+      }),
+      // 4. Delete KR Assignments (RACI) & KR Departments & KR Updates
+      prisma.krAssignment.deleteMany({
+        where: { keyResultId: id },
+      }),
+      prisma.krDepartment.deleteMany({
+        where: { keyResultId: id },
+      }),
       prisma.krUpdate.deleteMany({
         where: { keyResultId: id },
       }),
-      // Delete causal links (where source or target is this KR)
+      // 5. Delete Causal Links
       prisma.causalLink.deleteMany({
         where: {
-          OR: [
-            { sourceKrId: id },
-            { targetKrId: id },
-          ],
+          OR: [{ sourceKrId: id }, { targetKrId: id }],
         },
       }),
-      // Delete the Key Result
+      // 6. Delete Key Result
       prisma.keyResult.delete({
         where: { id },
       }),
@@ -227,3 +249,181 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
   }
 }
 
+// POST /api/key-results/:id/assign
+// Body: { assignments: [{userId, raciRole}][], departments: string[] } OR { userIds: string[] }
+export async function assignUsersToKeyResult(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { assignments, departments } = req.body;
+
+    // --- Backward compatibility: support lama { userIds: string[] } ---
+    let normalizedAssignments: { userId: string; raciRole: string }[] = [];
+    if (Array.isArray(req.body.userIds)) {
+      normalizedAssignments = req.body.userIds.map((uid: string) => ({
+        userId: uid,
+        raciRole: 'RESPONSIBLE',
+      }));
+    } else if (Array.isArray(assignments)) {
+      normalizedAssignments = assignments;
+    } else {
+      return res.status(400).json({ message: 'assignments harus berupa array' });
+    }
+
+    // Validasi KR ada
+    const kr = await prisma.keyResult.findUnique({ where: { id } });
+    if (!kr) return res.status(404).json({ message: 'Key Result not found' });
+
+    // Jika ada assignments yang dipass (bukan array kosong)
+    if (normalizedAssignments.length > 0) {
+      // Validasi RACI: minimal 1 ACCOUNTABLE
+      const accountables = normalizedAssignments.filter(a => a.raciRole === 'ACCOUNTABLE');
+      if (accountables.length < 1) {
+        return res.status(400).json({
+          message: 'Setiap KR harus memiliki minimal 1 Accountable',
+        });
+      }
+
+      // Validasi RACI: tepat 1 RESPONSIBLE
+      const responsibles = normalizedAssignments.filter(a => a.raciRole === 'RESPONSIBLE');
+      if (responsibles.length !== 1) {
+        return res.status(400).json({
+          message: 'Setiap KR harus memiliki tepat 1 Responsible',
+        });
+      }
+
+      // Validasi user IDs
+      const userIds = normalizedAssignments.map(a => a.userId);
+      const users = await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true },
+      });
+      if (users.length !== userIds.length) {
+        return res.status(400).json({ message: 'Satu atau lebih user tidak ditemukan' });
+      }
+    }
+
+    // Validasi departments
+    const validDeptRecords = await prisma.department.findMany({ select: { value: true } });
+    const validDepartments = validDeptRecords.map(d => d.value);
+    if (departments && Array.isArray(departments)) {
+      for (const dept of departments) {
+        if (!validDepartments.includes(dept)) {
+          return res.status(400).json({ message: `Department tidak valid: ${dept}` });
+        }
+      }
+    }
+
+    // Transaksi: replace assignments + departments
+    await prisma.$transaction([
+      prisma.krAssignment.deleteMany({ where: { keyResultId: id } }),
+      ...(normalizedAssignments.length > 0
+        ? [
+            prisma.krAssignment.createMany({
+              data: normalizedAssignments.map(a => ({
+                keyResultId: id,
+                userId: a.userId,
+                raciRole: a.raciRole,
+                assignedBy: req.user?.id || 'system',
+              })),
+            }),
+          ]
+        : []),
+      prisma.krDepartment.deleteMany({ where: { keyResultId: id } }),
+      ...(departments && Array.isArray(departments) && departments.length > 0
+        ? [
+            prisma.krDepartment.createMany({
+              data: departments.map((dept: string) => ({
+                keyResultId: id,
+                department: dept,
+              })),
+            }),
+          ]
+        : []),
+    ]);
+
+    const updated = await prisma.keyResult.findUnique({
+      where: { id },
+      include: {
+        assignments: {
+          include: {
+            user: { select: { id: true, name: true, email: true, department: true, role: true } },
+          },
+          orderBy: { raciRole: 'asc' },
+        },
+        departments: true,
+      },
+    });
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error('Assign users error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+// GET /api/key-results/:id/assignments
+export async function getKeyResultAssignments(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const kr = await prisma.keyResult.findUnique({
+      where: { id },
+      include: {
+        assignments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                department: true,
+                role: true,
+              },
+            },
+          },
+          orderBy: { assignedAt: 'asc' },
+        },
+        departments: true,
+      },
+    });
+
+    if (!kr) {
+      return res.status(404).json({ message: 'Key Result not found' });
+    }
+
+    return res.status(200).json({
+      assignments: kr.assignments,
+      departments: kr.departments,
+    });
+  } catch (error) {
+    console.error('Get assignments error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+// GET /api/key-results/my-assigned
+export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
+  try {
+    const { id: userId } = req.user!;
+    
+    const assignments = await prisma.krAssignment.findMany({
+      where: { userId },
+      include: {
+        keyResult: {
+          include: {
+            objective: true,
+            initiatives: {
+              include: { team: true, kpis: { include: { assignments: { include: { user: true } } } } }
+            },
+            departments: true
+          }
+        }
+      }
+    });
+    
+    return res.status(200).json(assignments);
+  } catch (error) {
+    console.error('Get my assigned KRs error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}

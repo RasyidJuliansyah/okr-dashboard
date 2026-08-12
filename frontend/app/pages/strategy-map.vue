@@ -270,6 +270,13 @@ import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 
 const auth = useAuthStore();
+
+onMounted(() => {
+  const role = auth.user?.role;
+  if (role !== 'ADMIN' && role !== 'C_LEVEL') {
+    navigateTo('/dashboard');
+  }
+});
 const config = useRuntimeConfig();
 
 const elements = ref([]);
@@ -903,14 +910,14 @@ input:focus {
 }
 
 .success-msg {
-  color: #88ff88;
+  color: var(--color-green);
   font-size: 15px;
   margin: 6px 0 0 0;
   text-align: center;
 }
 
 .error-msg {
-  color: #ff8888;
+  color: var(--color-red);
   font-size: 15px;
   margin: 6px 0 0 0;
   text-align: center;

@@ -72,6 +72,19 @@ export async function getObjectives(req: AuthRequest, res: Response) {
         keyResults: {
           include: {
             updates: true,
+            assignments: { include: { user: { select: { id: true, name: true, role: true, department: true } } } },
+            departments: true,
+            initiatives: {
+              include: {
+                team: { select: { id: true, name: true, department: true } },
+                owner: { select: { id: true, name: true, email: true, position: true } },
+                kpis: {
+                  include: {
+                    assignments: { include: { user: { select: { id: true, name: true } } } },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -126,6 +139,32 @@ export async function deleteObjective(req: AuthRequest, res: Response) {
     return res.status(200).json({ message: 'Objective and its Key Results deleted successfully' });
   } catch (error) {
     console.error('Delete objective error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+// GET /api/objectives/manager-overview
+export async function getManagerOverview(req: AuthRequest, res: Response) {
+  try {
+    const objectives = await prisma.objective.findMany({
+      include: {
+        keyResults: {
+          include: {
+            assignments: { include: { user: true } },
+            initiatives: {
+              include: {
+                team: true,
+                kpis: { include: { assignments: { include: { user: true } } } }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.status(200).json(objectives);
+  } catch (error) {
+    console.error('Get manager overview error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
