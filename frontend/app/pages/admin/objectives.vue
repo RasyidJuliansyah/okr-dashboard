@@ -904,7 +904,7 @@ const userList = ref([]);
 const availableDepartments = [
   { value: "STRATEGIC", label: "Strategic" },
   { value: "FINANCE", label: "Finance" },
-  { value: "BUSINESS", label: "Business" },
+  // { value: "BUSINESS", label: "Business" },
   { value: "B2S", label: "B2S" },
   { value: "B2B_EXPANSION", label: "B2B Expansion" },
   { value: "B2B_CORPORATION", label: "B2B Corporation" },
@@ -914,9 +914,7 @@ const availableDepartments = [
   { value: "TECHOPS", label: "TechOps" },
   { value: "EDUCATION", label: "Education" },
   { value: "SSC", label: "SSC" },
-  { value: "DESIGN", label: "Design" },
-  { value: "DATA", label: "Data" },
-  { value: "HR", label: "HR" },
+  // { value: "HR", label: "HR" },
 ];
 
 const newObjective = ref({
