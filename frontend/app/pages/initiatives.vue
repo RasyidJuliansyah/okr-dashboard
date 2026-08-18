@@ -420,7 +420,9 @@
             <label>Parent Key Result *</label>
             <select v-model="initiativeForm.keyResultId" class="form-input">
               <option value="">-- Pilih Key Result --</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">{{ kr.title }}</option>
+              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+                {{ kr.objective?.title ? `[${kr.objective.title}] ` : '' }}{{ kr.title }}
+              </option>
             </select>
 
             <label>Tim / Departemen *</label>
@@ -524,7 +526,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import BulkUploadModal from '~/components/BulkUploadModal.vue';
 
@@ -565,7 +567,7 @@ const roleIcon = computed(() => {
   if (isCLevel.value) return '📊';
   if (isManager.value) return '👔';
   if (isLeader.value) return '🛡️';
-  return '👤';
+  return '👥';
 });
 
 const scopeDescription = computed(() => {
@@ -578,7 +580,7 @@ const scopeDescription = computed(() => {
   if (isLeader.value) {
     return 'Menampilkan inisiatif Anda (P) dan seluruh anggota tim (T) di bawah pimpinan Anda.';
   }
-  return 'Fokus menampilkan inisiatif milik Anda sendiri (T).';
+  return 'Menampilkan seluruh inisiatif dalam departemen Anda. Anda hanya dapat memindahkan kartu milik Anda sendiri.';
 });
 
 // ─── State ───
@@ -618,7 +620,36 @@ const initiativeForm = ref({
 const teamSearch = ref('');
 const userSearch = ref('');
 
-const availableTeams = computed(() => allTeams.value);
+const availableTeams = computed(() => {
+  if (isLeader.value) {
+    const userTeamId = auth.user?.teamId;
+    const userDept = (auth.user as any)?.department;
+    return allTeams.value.filter((t: any) =>
+      t.leaderId === auth.user?.id ||
+      (userTeamId && t.id === userTeamId) ||
+      (userDept && t.department === userDept)
+    );
+  }
+  return allTeams.value;
+});
+
+// Fetch team members reactively for LEADER when team is selected
+const teamMembers = ref<any[]>([]);
+
+watch(() => initiativeForm.value.teamId, async (newTeamId) => {
+  if (isLeader.value && newTeamId) {
+    try {
+      const res = await fetch(`${API}/users/teams/${newTeamId}/members`, {
+        headers: getHeaders()
+      });
+      if (res.ok) {
+        teamMembers.value = await res.json();
+      }
+    } catch (err) {
+      teamMembers.value = [];
+    }
+  }
+});
 
 // Subordinates list based on role
 const availableOwners = computed(() => {
@@ -626,8 +657,7 @@ const availableOwners = computed(() => {
     return auth.user ? [auth.user] : [];
   }
   if (isLeader.value) {
-    const leaderTeamId = auth.user?.teamId;
-    return allUsers.value.filter((u: any) => u.teamId === leaderTeamId || u.id === auth.user?.id);
+    return teamMembers.value.length > 0 ? teamMembers.value : allUsers.value.filter((u: any) => u.teamId === auth.user?.teamId || u.id === auth.user?.id);
   }
   if (isManager.value) {
     const dept = (auth.user as any)?.department;
@@ -646,6 +676,12 @@ const filteredTeams = computed(() => {
 const filteredUsers = computed(() => {
   if (isTeam.value && auth.user) {
     return [auth.user];
+  }
+  if (isLeader.value) {
+    const base = teamMembers.value.length > 0 ? teamMembers.value : availableOwners.value;
+    if (!userSearch.value.trim()) return base;
+    const q = userSearch.value.toLowerCase();
+    return base.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
   }
   const baseUsers = availableOwners.value;
   if (!userSearch.value.trim()) return baseUsers;
@@ -742,10 +778,9 @@ async function fetchInitiatives() {
 
 async function fetchAllKrs() {
   try {
-    const objRes = await fetch(`${API}/objectives`, { headers: getHeaders() });
-    if (objRes.ok) {
-      const objs = await objRes.json();
-      allKrs.value = objs.flatMap((o: any) => o.keyResults || []);
+    const res = await fetch(`${API}/key-results/dropdown`, { headers: getHeaders() });
+    if (res.ok) {
+      allKrs.value = await res.json();
     }
   } catch (err) {}
 }

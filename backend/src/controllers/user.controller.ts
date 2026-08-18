@@ -353,3 +353,40 @@ export async function updateTeam(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+// GET /api/teams/:id/members — Ambil member dari tim tertentu
+export async function getTeamMembers(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { role, id: userId } = req.user!;
+
+    // LEADER: hanya bisa melihat member tim yang dipimpinnya / tim miliknya / tim di departemennya
+    if (role === 'LEADER') {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { teamId: true, department: true }
+      });
+      const team = await prisma.team.findUnique({ where: { id } });
+      const isAllowed = team && (
+        team.leaderId === userId ||
+        team.id === dbUser?.teamId ||
+        (dbUser?.department && team.department === dbUser.department)
+      );
+      if (!isAllowed) {
+        return res.status(403).json({ message: 'Forbidden: Bukan tim yang Anda pimpin' });
+      }
+    }
+
+    const members = await prisma.user.findMany({
+      where: { teamId: id },
+      select: { id: true, name: true, email: true, role: true, position: true },
+      orderBy: { name: 'asc' },
+    });
+
+    return res.status(200).json(members);
+  } catch (error) {
+    console.error('Get team members error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+

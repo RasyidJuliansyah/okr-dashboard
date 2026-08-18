@@ -16,9 +16,34 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
     if (krId) where.keyResultId = krId as string;
     if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
 
-    // 1. TEAM (T): HANYA melihat card inisiatif miliknya sendiri
+    // 1. TEAM (T): melihat semua inisiatif dalam departemen yang sama
     if (role === 'TEAM') {
-      where.ownerId = userId;
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true, teamId: true }
+      });
+
+      if (dbUser?.department) {
+        // Ambil semua tim di departemen yang sama
+        const deptTeams = await prisma.team.findMany({
+          where: { department: dbUser.department },
+          select: { id: true }
+        });
+        const deptTeamIds = deptTeams.map(t => t.id);
+
+        // Tampilkan inisiatif dari seluruh tim dalam departemen ini
+        where.teamId = { in: deptTeamIds };
+      } else if (dbUser?.teamId) {
+        // Fallback: jika user tidak punya department, scope ke tim sendiri
+        where.teamId = dbUser.teamId;
+      } else {
+        // Fallback terakhir: hanya milik sendiri
+        where.ownerId = userId;
+      }
+
+      // Filter ownerId tambahan dari query param tetap bisa diterapkan
+      if (ownerId) where.ownerId = ownerId as string;
+      if (teamId) where.teamId = teamId as string;
     }
 
     // 2. LEADER (P): melihat card miliknya sendiri + semua card anggota tim di bawahnya
@@ -109,6 +134,154 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
   }
 }
 
+async function getLeaderTeamIds(userId: string): Promise<string[]> {
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { teamId: true, department: true }
+  });
+  const leaderTeams = await prisma.team.findMany({
+    where: { leaderId: userId },
+    select: { id: true }
+  });
+  const teamIdSet = new Set<string>(leaderTeams.map(t => t.id));
+  if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
+  if (dbUser?.department) {
+    const deptTeams = await prisma.team.findMany({
+      where: { department: dbUser.department },
+      select: { id: true }
+    });
+    deptTeams.forEach(t => teamIdSet.add(t.id));
+  }
+  return Array.from(teamIdSet);
+}
+
+// GET /api/initiatives/progress — Initiative progress per role
+export async function getInitiativeProgress(req: AuthRequest, res: Response) {
+  try {
+    const { role, id: userId } = req.user!;
+    let where: any = {};
+
+    // LEADER: hanya tim yang dipimpin
+    if (role === 'LEADER') {
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      where.teamId = { in: leaderTeamIds };
+    }
+    // MANAGER: semua tim di departemennya
+    else if (role === 'MANAGER') {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true }
+      });
+      if (dbUser?.department) {
+        const deptTeams = await prisma.team.findMany({
+          where: { department: dbUser.department },
+          select: { id: true }
+        });
+        where.teamId = { in: deptTeams.map(t => t.id) };
+      }
+    }
+    // ADMIN & C_LEVEL: semua (no filter)
+
+    const initiatives = await prisma.initiative.findMany({
+      where,
+      include: {
+        keyResult: {
+          select: {
+            id: true, title: true, bscPerspective: true,
+            targetValue: true, currentValue: true, status: true,
+            objective: { select: { id: true, title: true, quarter: true } }
+          }
+        },
+        team: { select: { id: true, name: true, department: true } },
+        owner: { select: { id: true, name: true, position: true } },
+        kpis: {
+          include: {
+            assignments: {
+              include: { user: { select: { id: true, name: true } } }
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Kalkulasi progress per Initiative dari KPI
+    const enriched = initiatives.map(init => {
+      const kpiProgress = init.kpis.map(kpi => {
+        const pct = kpi.targetValue > 0
+          ? Math.min(100, Math.max(0, (kpi.currentValue / kpi.targetValue) * 100))
+          : 0;
+        return { ...kpi, progressPercent: Math.round(pct * 10) / 10 };
+      });
+
+      const avgProgress = kpiProgress.length > 0
+        ? kpiProgress.reduce((sum, k) => sum + k.progressPercent, 0) / kpiProgress.length
+        : (init.targetValue > 0
+            ? Math.min(100, (init.currentValue / init.targetValue) * 100)
+            : 0);
+
+      const completedKpis = kpiProgress.filter(k => k.progressPercent >= 100).length;
+
+      return {
+        ...init,
+        kpis: kpiProgress,
+        calculatedProgress: Math.round(avgProgress * 10) / 10,
+        completedKpis,
+        totalKpis: kpiProgress.length,
+      };
+    });
+
+    // Group by KR untuk tampilan hierarkis
+    const byKeyResult: Record<string, any> = {};
+    for (const init of enriched) {
+      const krId = init.keyResultId;
+      if (!byKeyResult[krId]) {
+        byKeyResult[krId] = {
+          keyResult: init.keyResult,
+          initiatives: [],
+          krProgress: 0,
+        };
+      }
+      byKeyResult[krId].initiatives.push(init);
+    }
+
+    // Hitung progress KR dari Initiative (weighted average)
+    for (const kr of Object.values(byKeyResult)) {
+      const totalWeight = kr.initiatives.reduce((s: number, i: any) => s + (i.weight || 1), 0);
+      kr.krProgress = totalWeight > 0
+        ? Math.round(
+            kr.initiatives.reduce(
+              (s: number, i: any) => s + i.calculatedProgress * (i.weight || 1), 0
+            ) / totalWeight * 10
+          ) / 10
+        : 0;
+    }
+
+    return res.status(200).json({
+      role,
+      initiatives: enriched,
+      byKeyResult: Object.values(byKeyResult),
+      summary: {
+        totalInitiatives: enriched.length,
+        totalKpis: enriched.reduce((s, i) => s + i.totalKpis, 0),
+        completedKpis: enriched.reduce((s, i) => s + i.completedKpis, 0),
+        avgProgress: enriched.length > 0
+          ? Math.round(enriched.reduce((s, i) => s + i.calculatedProgress, 0) / enriched.length * 10) / 10
+          : 0,
+        byKanbanStatus: {
+          TODO: enriched.filter(i => i.kanbanStatus === 'TODO').length,
+          IN_PROGRESS: enriched.filter(i => i.kanbanStatus === 'IN_PROGRESS').length,
+          DONE: enriched.filter(i => i.kanbanStatus === 'DONE').length,
+          DROP: enriched.filter(i => i.kanbanStatus === 'DROP').length,
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get initiative progress error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 export async function createInitiative(req: AuthRequest, res: Response) {
   try {
     let { keyResultId, teamId, ownerId, title, description, targetValue, unit, kanbanStatus, weight } = req.body;
@@ -130,8 +303,18 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 
     // LEADER (P): Jika teamId belum ditentukan, pakai tim yang dipimpin
     if (role === 'LEADER' && !teamId) {
-      const leaderTeam = await prisma.team.findFirst({ where: { leaderId: userId } });
-      teamId = leaderTeam?.id || dbUser?.teamId;
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      teamId = leaderTeamIds[0] || dbUser?.teamId;
+    }
+
+    // LEADER: Validasi bahwa teamId yang dipilih adalah tim yang dipimpin/dipunyai Leader
+    if (role === 'LEADER' && teamId) {
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      if (!leaderTeamIds.includes(teamId)) {
+        return res.status(403).json({
+          message: 'Anda hanya bisa membuat inisiatif untuk tim yang Anda pimpin'
+        });
+      }
     }
 
     if (!teamId) {
@@ -467,11 +650,12 @@ export async function deleteKpi(req: AuthRequest, res: Response) {
   }
 }
 
-// POST /api/kpis/:id/assign — Admin assign user(s) ke KPI
+// POST /api/kpis/:id/assign — Admin / Leader assign user(s) ke KPI
 export async function assignUsersToKpi(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { userIds } = req.body; // array of userId strings
+    const { role, id: userId } = req.user!;
 
     if (!Array.isArray(userIds) || userIds.length === 0) {
       return res.status(400).json({ message: 'userIds harus berupa array dan tidak boleh kosong' });
@@ -480,15 +664,45 @@ export async function assignUsersToKpi(req: AuthRequest, res: Response) {
     const kpi = await prisma.kpi.findUnique({ where: { id } });
     if (!kpi) return res.status(404).json({ message: 'KPI tidak ditemukan' });
 
+    // LEADER: validasi KPI milik tim yang dipimpin & userIds adalah anggota tim
+    if (role === 'LEADER') {
+      const initiative = await prisma.initiative.findUnique({
+        where: { id: kpi.initiativeId }
+      });
+      if (!initiative) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
+
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+
+      if (!leaderTeamIds.includes(initiative.teamId)) {
+        return res.status(403).json({
+          message: 'Anda hanya bisa assign member untuk KPI di tim yang Anda pimpin'
+        });
+      }
+
+      // Validasi semua userIds adalah anggota tim Leader
+      const validMembers = await prisma.user.findMany({
+        where: { id: { in: userIds }, teamId: { in: leaderTeamIds } },
+        select: { id: true }
+      });
+      const invalidIds = userIds.filter((uid: string) =>
+        !validMembers.map(m => m.id).includes(uid)
+      );
+      if (invalidIds.length > 0) {
+        return res.status(403).json({
+          message: 'Beberapa user bukan anggota tim Anda dan tidak bisa di-assign'
+        });
+      }
+    }
+
     // Upsert assignments
     const results = [];
-    for (const userId of userIds) {
+    for (const uId of userIds) {
       const existing = await prisma.kpiAssignment.findUnique({
-        where: { kpiId_userId: { kpiId: id, userId } },
+        where: { kpiId_userId: { kpiId: id, userId: uId } },
       });
       if (!existing) {
         const assignment = await prisma.kpiAssignment.create({
-          data: { kpiId: id, userId },
+          data: { kpiId: id, userId: uId },
         });
         results.push(assignment);
       }
@@ -576,9 +790,8 @@ export async function approveKpiUpdate(req: AuthRequest, res: Response) {
     }
 
     if (role === 'LEADER') {
-      const leaderTeams = await prisma.team.findMany({ where: { leaderId: managerId } });
-      const teamIds = leaderTeams.map(t => t.id);
-      if (!teamIds.includes(kpiUpdate.kpi.initiative.teamId)) {
+      const leaderTeamIds = await getLeaderTeamIds(managerId);
+      if (!leaderTeamIds.includes(kpiUpdate.kpi.initiative.teamId)) {
         return res.status(403).json({ message: 'Forbidden: KPI update is from a different team' });
       }
     }
@@ -594,6 +807,66 @@ export async function approveKpiUpdate(req: AuthRequest, res: Response) {
         data: { currentValue: kpiUpdate.newValue },
       }),
     ]);
+
+    // ═══ AUTO-CASCADE: KPI → Initiative → KR ═══
+
+    // 1. Recalculate Initiative.currentValue dari rata-rata KPI progress
+    const allKpis = await prisma.kpi.findMany({
+      where: { initiativeId: kpiUpdate.kpi.initiativeId },
+    });
+    const initiative = await prisma.initiative.findUnique({
+      where: { id: kpiUpdate.kpi.initiativeId }
+    });
+
+    if (initiative && allKpis.length > 0 && initiative.targetValue > 0) {
+      const avgKpiPercent = allKpis.reduce((sum, k) => {
+        return sum + (k.targetValue > 0 ? (k.currentValue / k.targetValue) : 0);
+      }, 0) / allKpis.length;
+      const newInitiativeValue = Math.round(avgKpiPercent * initiative.targetValue * 100) / 100;
+
+      await prisma.initiative.update({
+        where: { id: initiative.id },
+        data: { currentValue: newInitiativeValue }
+      });
+
+      // 2. Recalculate KR.currentValue dari weighted average Initiative progress
+      const allInitiatives = await prisma.initiative.findMany({
+        where: { keyResultId: initiative.keyResultId },
+        include: { kpis: true }
+      });
+      const kr = await prisma.keyResult.findUnique({
+        where: { id: initiative.keyResultId }
+      });
+
+      if (kr && allInitiatives.length > 0 && kr.targetValue > 0) {
+        const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
+        const weightedAvgPercent = allInitiatives.reduce((sum, init) => {
+          // Hitung progress tiap initiative dari KPI-nya
+          let initProgress = 0;
+          if (init.kpis.length > 0) {
+            initProgress = init.kpis.reduce((s, k) => {
+              return s + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0);
+            }, 0) / init.kpis.length;
+          } else if (init.targetValue > 0) {
+            initProgress = init.currentValue / init.targetValue;
+          }
+          return sum + initProgress * (init.weight || 1);
+        }, 0) / (totalWeight || 1);
+
+        const newKrValue = Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
+
+        // Auto-status berdasarkan threshold
+        const krProgress = newKrValue / kr.targetValue;
+        let newStatus = 'ON_TRACK';
+        if (krProgress < 0.5) newStatus = 'OFF_TRACK';
+        else if (krProgress < 0.8) newStatus = 'AT_RISK';
+
+        await prisma.keyResult.update({
+          where: { id: kr.id },
+          data: { currentValue: newKrValue, status: newStatus }
+        });
+      }
+    }
 
     return res.status(200).json({ message: 'Update disetujui', update: approved });
   } catch (error) {

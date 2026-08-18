@@ -15,7 +15,7 @@ const DEPARTMENTS = [
   { value: 'TECHDEV', name: 'Techdev' },
   { value: 'TECHOPS', name: 'TechOps' },
   { value: 'EDUCATION', name: 'Education' },
-  { value: 'SSC', name: 'SSC' },
+  { value: 'SSC', name: 'Shared Service Center' },
   { value: 'DESIGN', name: 'Design' },
   { value: 'DATA', name: 'Data' },
   { value: 'HR', name: 'HR' },

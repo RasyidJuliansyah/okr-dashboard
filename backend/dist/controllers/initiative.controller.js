@@ -30,9 +30,35 @@ async function getInitiatives(req, res) {
             where.keyResultId = krId;
         if (kanbanStatus)
             where.kanbanStatus = kanbanStatus;
-        // 1. TEAM (T): HANYA melihat card inisiatif miliknya sendiri
+        // 1. TEAM (T): melihat semua inisiatif dalam departemen yang sama
         if (role === 'TEAM') {
-            where.ownerId = userId;
+            const dbUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { department: true, teamId: true }
+            });
+            if (dbUser?.department) {
+                // Ambil semua tim di departemen yang sama
+                const deptTeams = await prisma.team.findMany({
+                    where: { department: dbUser.department },
+                    select: { id: true }
+                });
+                const deptTeamIds = deptTeams.map(t => t.id);
+                // Tampilkan inisiatif dari seluruh tim dalam departemen ini
+                where.teamId = { in: deptTeamIds };
+            }
+            else if (dbUser?.teamId) {
+                // Fallback: jika user tidak punya department, scope ke tim sendiri
+                where.teamId = dbUser.teamId;
+            }
+            else {
+                // Fallback terakhir: hanya milik sendiri
+                where.ownerId = userId;
+            }
+            // Filter ownerId tambahan dari query param tetap bisa diterapkan
+            if (ownerId)
+                where.ownerId = ownerId;
+            if (teamId)
+                where.teamId = teamId;
         }
         // 2. LEADER (P): melihat card miliknya sendiri + semua card anggota tim di bawahnya
         else if (role === 'LEADER') {

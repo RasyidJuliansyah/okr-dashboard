@@ -8,6 +8,7 @@ import {
   bulkUploadEmployees,
   getTeams,
   updateTeam,
+  getTeamMembers,
 } from "../controllers/user.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
@@ -38,6 +39,9 @@ router.patch(
 
 // GET /api/teams — Semua role bisa melihat daftar team
 router.get("/teams", authMiddleware, roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]), getTeams);
+
+// GET /api/teams/:id/members — Ambil member dari tim tertentu
+router.get("/teams/:id/members", authMiddleware, roleGuard(["ADMIN", "MANAGER", "LEADER"]), getTeamMembers);
 
 // PATCH /api/teams/:id — Admin update leader & dept sebuah team
 router.patch("/teams/:id", authMiddleware, roleGuard(["ADMIN"]), updateTeam);

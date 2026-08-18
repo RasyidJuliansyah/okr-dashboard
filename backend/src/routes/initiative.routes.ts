@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getInitiatives,
+  getInitiativeProgress,
   createInitiative,
   updateInitiative,
   deleteInitiative,
@@ -24,6 +25,7 @@ const router = Router();
 
 // Initiative
 router.get('/', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getInitiatives);
+router.get('/progress', authMiddleware, roleGuard(['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER']), getInitiativeProgress);
 router.post('/', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), createInitiative);
 router.put('/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), updateInitiative);
 router.patch('/:id/kanban-status', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), updateInitiativeKanbanStatus);

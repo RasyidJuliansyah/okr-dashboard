@@ -4,6 +4,7 @@ const express_1 = require("express");
 const keyresult_controller_1 = require("../controllers/keyresult.controller");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
+router.get('/dropdown', auth_middleware_1.authMiddleware, (0, auth_middleware_1.roleGuard)(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), keyresult_controller_1.getKrsForInitiativeDropdown);
 // Manajemen KR (hanya Admin)
 router.post('/', auth_middleware_1.authMiddleware, (0, auth_middleware_1.roleGuard)(['ADMIN']), keyresult_controller_1.createKeyResult);
 router.put('/:id', auth_middleware_1.authMiddleware, (0, auth_middleware_1.roleGuard)(['ADMIN']), keyresult_controller_1.updateKeyResult);

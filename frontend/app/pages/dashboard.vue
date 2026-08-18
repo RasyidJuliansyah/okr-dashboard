@@ -212,23 +212,107 @@
         </div>
       </section>
 
-      <!-- ─── SECTION: LEADER VIEW ─── -->
-      <section v-if="userRole === 'LEADER'" class="role-section">
-        <h3 class="section-title">🏆 Initiative Tim Saya</h3>
-        <div v-if="leaderInitiatives.length === 0" class="empty-state">
-          Belum ada Initiative untuk tim yang kamu pimpin.
+      <!-- ─── SECTION: INITIATIVE PROGRESS (Leader, Manager, C-Level, Admin) ─── -->
+      <section v-if="showInitiativeProgress" class="role-section">
+        <div class="section-title-row">
+          <h3 class="section-title">🏆 Progress Capaian Initiative</h3>
+          <span class="count-badge-sub">
+            {{ initProgressData.summary?.totalInitiatives || 0 }} Initiative
+          </span>
         </div>
-        <div v-for="init in leaderInitiatives" :key="init.id" class="initiative-card card">
-          <div class="init-header">
-            <span class="init-title">{{ init.title }}</span>
-            <span class="team-badge">{{ init.team?.name }}</span>
+
+        <!-- Summary Cards Grid -->
+        <div class="init-summary-grid">
+          <div class="init-summary-card card">
+            <span class="summary-val">{{ initProgressData.summary?.avgProgress || 0 }}%</span>
+            <span class="summary-lbl">Rata-rata Progress</span>
           </div>
-          <div class="init-kr-context">KR: {{ init.keyResult?.title }}</div>
-          <div class="init-kpis">
-            <span v-for="kpi in init.kpis" :key="kpi.id" class="kpi-chip">
-              {{ kpi.title }} ({{ kpi.currentValue }}/{{ kpi.targetValue }})
+          <div class="init-summary-card card">
+            <span class="summary-val">
+              {{ initProgressData.summary?.completedKpis || 0 }}/{{ initProgressData.summary?.totalKpis || 0 }}
             </span>
+            <span class="summary-lbl">KPI Selesai</span>
           </div>
+          <div class="init-summary-card card">
+            <span class="summary-val done-val">
+              {{ initProgressData.summary?.byKanbanStatus?.DONE || 0 }}
+            </span>
+            <span class="summary-lbl">Initiative Done</span>
+          </div>
+          <div class="init-summary-card card">
+            <span class="summary-val progress-val">
+              {{ initProgressData.summary?.byKanbanStatus?.IN_PROGRESS || 0 }}
+            </span>
+            <span class="summary-lbl">In Progress</span>
+          </div>
+        </div>
+
+        <!-- Grouped by Key Result -->
+        <div v-for="group in initProgressData.byKeyResult" :key="group.keyResult?.id"
+             class="kr-group-card card">
+          <div class="kr-group-header">
+            <div class="kr-group-title-wrap">
+              <span class="perspective-badge" :class="group.keyResult?.bscPerspective?.toLowerCase()">
+                {{ formatPerspective(group.keyResult?.bscPerspective) }}
+              </span>
+              <h4>{{ group.keyResult?.title }}</h4>
+              <span class="kr-obj-context" v-if="group.keyResult?.objective">
+                📎 {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.quarter }})
+              </span>
+            </div>
+            <div class="kr-group-progress-info">
+              <span class="kr-progress-pct">{{ group.krProgress }}%</span>
+              <div class="kr-mini-progress-track">
+                <div class="kr-mini-progress-bar" :style="{ width: group.krProgress + '%' }"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Initiative rows under this KR -->
+          <div v-for="init in group.initiatives" :key="init.id" class="init-progress-row">
+            <div class="init-row-header">
+              <div class="init-row-left">
+                <span class="kanban-dot" :class="init.kanbanStatus?.toLowerCase()"></span>
+                <span class="init-row-title">{{ init.title }}</span>
+                <span class="team-mini-badge">{{ init.team?.name }}</span>
+              </div>
+              <div class="init-row-right">
+                <span class="init-pct">{{ init.calculatedProgress }}%</span>
+                <span class="kpi-count-mini">
+                  {{ init.completedKpis }}/{{ init.totalKpis }} KPI
+                </span>
+              </div>
+            </div>
+            <div class="init-progress-track">
+              <div class="init-progress-bar"
+                :class="getProgressColorClass(init.calculatedProgress)"
+                :style="{ width: init.calculatedProgress + '%' }">
+              </div>
+            </div>
+
+            <!-- KPI detail rows -->
+            <div v-if="init.kpis?.length" class="kpi-detail-grid">
+              <div v-for="kpi in init.kpis" :key="kpi.id" class="kpi-detail-row">
+                <span class="kpi-detail-name">🎯 {{ kpi.title }}</span>
+                <span class="kpi-detail-val">
+                  {{ kpi.currentValue }}/{{ kpi.targetValue }} {{ kpi.unit }}
+                </span>
+                <div class="kpi-mini-track">
+                  <div class="kpi-mini-bar" :style="{ width: kpi.progressPercent + '%' }"></div>
+                </div>
+                <span class="kpi-mini-pct">{{ kpi.progressPercent }}%</span>
+                <div class="kpi-assignees-mini">
+                  <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-mini">
+                    👤 {{ a.user?.name }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!initProgressData.byKeyResult?.length" class="empty-state">
+          Belum ada Initiative yang terdaftar pada lingkup ini.
         </div>
       </section>
 
@@ -470,6 +554,30 @@ const pendingApprovals = ref([]);
 const leadingTeams = ref([]);
 const leaderInitiatives = ref([]);
 
+// State & Computed untuk Initiative Progress (Leader, Manager, C-Level, Admin)
+const initProgressData = ref({ initiatives: [], byKeyResult: [], summary: {} });
+
+const showInitiativeProgress = computed(() => {
+  return ['LEADER', 'MANAGER', 'C_LEVEL', 'ADMIN'].includes(userRole.value);
+});
+
+function getProgressColorClass(pct) {
+  if (pct >= 80) return 'progress-high';
+  if (pct >= 50) return 'progress-mid';
+  return 'progress-low';
+}
+
+async function fetchInitiativeProgress() {
+  try {
+    const res = await $fetch(`${config.public.apiBase}/initiatives/progress`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    initProgressData.value = res || { initiatives: [], byKeyResult: [], summary: {} };
+  } catch (err) {
+    console.error("Error fetching initiative progress:", err);
+  }
+}
+
 const summaryData = ref({});
 const currentScope = ref("self");
 const loading = ref(false);
@@ -668,6 +776,9 @@ onMounted(() => {
     currentScope.value = "self";
   }
   fetchDashboardData();
+  if (showInitiativeProgress.value) {
+    fetchInitiativeProgress();
+  }
 });
 
 // ─── KPI Submit Modal (TEAM) ───
@@ -1761,4 +1872,261 @@ async function handleReject() {
   color: rgba(255,255,255,0.6);
 }
 .modal-close-btn:hover { color: #fff; }
+
+/* ─── INITIATIVE PROGRESS STYLES ─── */
+.count-badge-sub {
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(14, 151, 214, 0.12);
+  color: #0E97D6;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.init-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .init-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.init-summary-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.summary-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0E97D6;
+}
+
+.summary-val.done-val { color: #10B981; }
+.summary-val.progress-val { color: #3B82F6; }
+
+.summary-lbl {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 4px;
+}
+
+.kr-group-card {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.kr-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  margin-bottom: 16px;
+}
+
+.kr-group-title-wrap h4 {
+  margin: 6px 0 4px 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.kr-obj-context {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.kr-group-progress-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 120px;
+}
+
+.kr-progress-pct {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0E97D6;
+}
+
+.kr-mini-progress-track {
+  width: 120px;
+  height: 8px;
+  background: var(--bg-input, #e2e8f0);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.kr-mini-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0E97D6, #10B981);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.init-progress-row {
+  background: var(--bg-input, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.init-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.init-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kanban-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.kanban-dot.todo { background: #94a3b8; }
+.kanban-dot.in_progress { background: #0E97D6; }
+.kanban-dot.done { background: #10B981; }
+.kanban-dot.drop { background: #ef4444; }
+
+.init-row-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.team-mini-badge {
+  font-size: 0.7rem;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.init-row-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.init-pct {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #0E97D6;
+}
+
+.kpi-count-mini {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  background: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+
+.init-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.init-progress-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.init-progress-bar.progress-high { background: #10B981; }
+.init-progress-bar.progress-mid { background: #0E97D6; }
+.init-progress-bar.progress-low { background: #f59e0b; }
+
+.kpi-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.kpi-detail-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 40px 1.5fr;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  background: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .kpi-detail-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+.kpi-detail-name {
+  font-weight: 500;
+  color: var(--text-primary, #334155);
+}
+
+.kpi-detail-val {
+  color: var(--text-secondary, #64748b);
+}
+
+.kpi-mini-track {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.kpi-mini-bar {
+  height: 100%;
+  background: #0E97D6;
+  border-radius: 3px;
+}
+
+.kpi-mini-pct {
+  font-weight: 600;
+  color: #0E97D6;
+}
+
+.kpi-assignees-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.assignee-mini {
+  font-size: 0.7rem;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
 </style>

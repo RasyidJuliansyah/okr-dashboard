@@ -8,10 +8,18 @@ import {
   assignUsersToKeyResult,
   getKeyResultAssignments,
   getMyAssignedKrs,
+  getKrsForInitiativeDropdown,
 } from '../controllers/keyresult.controller';
 import { authMiddleware, roleGuard } from '../middleware/auth.middleware';
 
 const router = Router();
+
+router.get(
+  '/dropdown',
+  authMiddleware,
+  roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']),
+  getKrsForInitiativeDropdown
+);
 
 // Manajemen KR (hanya Admin)
 router.post('/', authMiddleware, roleGuard(['ADMIN']), createKeyResult);

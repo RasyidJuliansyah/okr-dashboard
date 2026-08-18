@@ -8,44 +8,69 @@
             Kelola Inisiatif yang dikerjakan oleh Tim Anda beserta KPI-nya.
           </p>
         </div>
+        <div class="header-actions">
+          <button class="primary-btn" @click="openAddInitiativeModal">
+            + Tambah Inisiatif
+          </button>
+        </div>
       </div>
 
       <div v-if="loading" class="alert alert-info">Memuat data...</div>
       <div v-else-if="errorMsg" class="alert alert-error">{{ errorMsg }}</div>
       <div v-else-if="initiatives.length === 0" class="empty-state card">
-        Belum ada Inisiatif. Silakan buat melalui menu "KR Saya".
+        Belum ada Inisiatif. Klik "+ Tambah Inisiatif" untuk membuat inisiatif baru.
       </div>
 
       <div v-for="initiative in initiatives" :key="initiative.id" class="initiative-block card">
         <div class="initiative-header">
-          <div>
-            <h3>{{ initiative.title }}</h3>
-            <span class="team-badge">Tim: {{ initiative.team?.name }}</span>
-            <span class="kr-badge">KR: {{ initiative.keyResult?.title }}</span>
+          <div class="init-header-top">
+            <div>
+              <h3>{{ initiative.title }}</h3>
+              <span class="team-badge">Tim: {{ initiative.team?.name }}</span>
+              <span class="kr-badge">KR: {{ initiative.keyResult?.title }}</span>
+            </div>
+            <div class="init-progress-badge">
+              <span class="pct-val">{{ getInitiativeProgressPct(initiative) }}%</span>
+              <span class="pct-lbl">Progress</span>
+            </div>
+          </div>
+          <!-- Progress bar for Initiative -->
+          <div class="init-progress-track">
+            <div class="init-progress-bar" :style="{ width: getInitiativeProgressPct(initiative) + '%' }"></div>
           </div>
         </div>
 
         <div class="kpi-list">
-          <div v-if="initiative.kpis?.length === 0" class="empty-kpi">Belum ada KPI di Initiative ini. (KPI di-assign oleh Admin)</div>
+          <div v-if="initiative.kpis?.length === 0" class="empty-kpi">
+            Belum ada KPI di Initiative ini.
+          </div>
           <div v-for="kpi in initiative.kpis" :key="kpi.id" class="kpi-row">
             <div class="kpi-info">
-              <span class="kpi-name">{{ kpi.title }}</span>
+              <span class="kpi-name">🎯 {{ kpi.title }}</span>
               <div class="kpi-details">
-                <span class="kpi-target">Target: {{ kpi.targetValue }} {{ kpi.unit }}</span>
+                <span class="kpi-target">Target: {{ kpi.targetValue }} {{ kpi.unit || '' }}</span>
                 <span class="kpi-current">Saat ini: {{ kpi.currentValue }}</span>
-                <span class="kpi-status" :class="getStatusClass(kpi.status)">{{ kpi.status }}</span>
+                <span class="kpi-pct-tag">{{ getKpiProgressPct(kpi) }}%</span>
+              </div>
+              <div class="kpi-mini-track">
+                <div class="kpi-mini-bar" :style="{ width: getKpiProgressPct(kpi) + '%' }"></div>
               </div>
             </div>
             
             <div class="kpi-assignees">
-              <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-chip">{{ a.user?.name }}</span>
-              <span v-if="kpi.assignments.length === 0" class="text-sm text-gray">Belum ada assignee</span>
+              <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-chip">👤 {{ a.user?.name }}</span>
+              <span v-if="!kpi.assignments || kpi.assignments.length === 0" class="text-sm text-gray">Belum ada assignee</span>
             </div>
             
             <div class="kpi-actions">
               <button 
+                class="secondary-btn small"
+                @click="openAssignModal(kpi, initiative)"
+              >
+                👥 Assign
+              </button>
+              <button 
                 class="primary-btn small" 
-                v-if="hasPendingUpdates(kpi)"
                 @click="openReviewModal(kpi)"
               >
                 Review Update
@@ -55,13 +80,13 @@
         </div>
       </div>
       
-      <!-- Modal Review -->
+      <!-- Modal Review Progress -->
       <div v-if="showReviewModal" class="modal-overlay" @click.self="showReviewModal = false">
         <div class="modal-box">
           <h3>Review Progress KPI</h3>
           <p class="mb-4">KPI: <strong>{{ selectedKpi?.title }}</strong></p>
           
-          <div v-if="pendingUpdates.length === 0">Tidak ada update pending.</div>
+          <div v-if="pendingUpdates.length === 0" class="text-gray">Tidak ada update pending.</div>
           
           <div v-for="upd in pendingUpdates" :key="upd.id" class="update-card">
             <div class="update-meta">
@@ -89,12 +114,81 @@
         </div>
       </div>
 
+      <!-- Modal Assign Member ke KPI -->
+      <div v-if="showAssignModal" class="modal-overlay" @click.self="showAssignModal = false">
+        <div class="modal-box">
+          <h3>Assign Member ke KPI</h3>
+          <p class="mb-4">KPI: <strong>{{ selectedKpi?.title }}</strong></p>
+          <p class="text-sm text-gray mb-2">Pilih anggota tim Anda yang bertanggung jawab atas KPI ini:</p>
+
+          <div v-if="teamMembers.length === 0" class="text-gray">Belum ada anggota tim terdaftar.</div>
+          <div class="member-checkbox-list">
+            <label v-for="member in teamMembers" :key="member.id" class="checkbox-item">
+              <input 
+                type="checkbox" 
+                :value="member.id" 
+                v-model="selectedAssigneeIds" 
+              />
+              <span>👤 {{ member.name }} ({{ member.position || member.role }})</span>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showAssignModal = false">Batal</button>
+            <button class="primary-btn" @click="saveKpiAssignment">Simpan Assignment</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Tambah Initiative -->
+      <div v-if="showAddInitiativeModal" class="modal-overlay" @click.self="showAddInitiativeModal = false">
+        <div class="modal-box">
+          <h3>Tambah Inisiatif Baru</h3>
+          
+          <label class="form-label">Judul Inisiatif *</label>
+          <input v-model="initiativeForm.title" class="form-input mb-3" placeholder="Nama inisiatif..." />
+
+          <label class="form-label">Parent Key Result *</label>
+          <select v-model="initiativeForm.keyResultId" class="form-input mb-3">
+            <option value="">-- Pilih Key Result --</option>
+            <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
+              {{ kr.objective?.title ? `[${kr.objective.title}] ` : '' }}{{ kr.title }}
+            </option>
+          </select>
+
+          <label class="form-label">Tim *</label>
+          <select v-model="initiativeForm.teamId" class="form-input mb-3">
+            <option value="">-- Pilih Tim --</option>
+            <option v-for="team in leaderTeams" :key="team.id" :value="team.id">{{ team.name }}</option>
+          </select>
+
+          <div class="form-row-2 mb-3">
+            <div>
+              <label class="form-label">Target Value</label>
+              <input v-model.number="initiativeForm.targetValue" type="number" class="form-input" />
+            </div>
+            <div>
+              <label class="form-label">Satuan (Unit)</label>
+              <input v-model="initiativeForm.unit" class="form-input" placeholder="%, session, tasks..." />
+            </div>
+          </div>
+
+          <label class="form-label">Bobot Inisiatif *</label>
+          <input v-model.number="initiativeForm.weight" type="number" step="0.1" min="0.1" class="form-input mb-3" />
+
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showAddInitiativeModal = false">Batal</button>
+            <button class="primary-btn" @click="saveInitiative">Simpan Inisiatif</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useRouter } from 'vue-router';
 
@@ -111,6 +205,25 @@ const pendingUpdates = ref([]);
 const rejectingId = ref(null);
 const rejectNote = ref('');
 
+// Assign Member Modal state
+const showAssignModal = ref(false);
+const teamMembers = ref([]);
+const selectedAssigneeIds = ref([]);
+const activeInitiative = ref(null);
+
+// Create Initiative Modal state
+const showAddInitiativeModal = ref(false);
+const availableKrs = ref([]);
+const leaderTeams = ref([]);
+const initiativeForm = ref({
+  title: '',
+  keyResultId: '',
+  teamId: '',
+  targetValue: 0,
+  unit: '',
+  weight: 1.0,
+});
+
 const config = useRuntimeConfig();
 const API = config.public.apiBase || 'http://localhost:3001/api';
 
@@ -126,7 +239,11 @@ onMounted(async () => {
     router.push('/login');
     return;
   }
-  await fetchInitiatives();
+  await Promise.all([
+    fetchInitiatives(),
+    fetchLeaderTeams(),
+    fetchKrsDropdown(),
+  ]);
 });
 
 async function fetchInitiatives() {
@@ -143,13 +260,50 @@ async function fetchInitiatives() {
   }
 }
 
-function hasPendingUpdates(kpi) {
-  // We need to know if there are pending updates. 
-  // Ideally backend returns pendingCount or we fetch it. 
-  // Wait, backend getInitiatives includes kpis, but does it include updates? 
-  // Let's check backend initiative.controller.ts getInitiatives. It only includes kpis and assignments.
-  // I will just show the button and fetch inside the modal, or always show "Review Update" button.
-  return true; 
+async function fetchLeaderTeams() {
+  try {
+    const res = await fetch(`${API}/users/teams`, { headers: getHeaders() });
+    if (res.ok) {
+      const teams = await res.json();
+      if (authStore.user?.role === 'ADMIN') {
+        leaderTeams.value = teams;
+      } else {
+        const userTeamId = authStore.user?.teamId;
+        const userDept = authStore.user?.department;
+        leaderTeams.value = teams.filter(t =>
+          t.leaderId === authStore.user?.id ||
+          (userTeamId && t.id === userTeamId) ||
+          (userDept && t.department === userDept)
+        );
+      }
+    }
+  } catch (err) {}
+}
+
+async function fetchKrsDropdown() {
+  try {
+    const res = await fetch(`${API}/key-results/dropdown`, { headers: getHeaders() });
+    if (res.ok) {
+      availableKrs.value = await res.json();
+    }
+  } catch (err) {}
+}
+
+function getKpiProgressPct(kpi) {
+  if (!kpi || !kpi.targetValue || kpi.targetValue <= 0) return 0;
+  const pct = (kpi.currentValue / kpi.targetValue) * 100;
+  return Math.min(100, Math.round(pct * 10) / 10);
+}
+
+function getInitiativeProgressPct(init) {
+  if (!init || !init.kpis || init.kpis.length === 0) {
+    if (init.targetValue > 0) {
+      return Math.min(100, Math.round((init.currentValue / init.targetValue) * 100));
+    }
+    return 0;
+  }
+  const sum = init.kpis.reduce((acc, k) => acc + getKpiProgressPct(k), 0);
+  return Math.round((sum / init.kpis.length) * 10) / 10;
 }
 
 async function openReviewModal(kpi) {
@@ -165,6 +319,86 @@ async function openReviewModal(kpi) {
     pendingUpdates.value = allUpdates.filter(u => u.status === 'PENDING_APPROVAL');
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function openAssignModal(kpi, initiative) {
+  selectedKpi.value = kpi;
+  activeInitiative.value = initiative;
+  selectedAssigneeIds.value = kpi.assignments ? kpi.assignments.map(a => a.userId) : [];
+  showAssignModal.value = true;
+  
+  try {
+    const res = await fetch(`${API}/users/teams/${initiative.teamId}/members`, { headers: getHeaders() });
+    if (res.ok) {
+      teamMembers.value = await res.json();
+    }
+  } catch (err) {
+    teamMembers.value = [];
+  }
+}
+
+async function saveKpiAssignment() {
+  if (!selectedKpi.value) return;
+  try {
+    const res = await fetch(`${API}/initiatives/kpis/${selectedKpi.value.id}/assign`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ userIds: selectedAssigneeIds.value })
+    });
+    if (res.ok) {
+      showAssignModal.value = false;
+      await fetchInitiatives();
+    } else {
+      const err = await res.json();
+      alert(err.message || 'Gagal menyimpan assignment');
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function openAddInitiativeModal() {
+  initiativeForm.value = {
+    title: '',
+    keyResultId: availableKrs.value[0]?.id || '',
+    teamId: leaderTeams.value[0]?.id || '',
+    targetValue: 0,
+    unit: '',
+    weight: 1.0,
+  };
+  showAddInitiativeModal.value = true;
+}
+
+async function saveInitiative() {
+  if (!initiativeForm.value.title.trim()) {
+    alert('Judul Inisiatif wajib diisi');
+    return;
+  }
+  if (!initiativeForm.value.keyResultId) {
+    alert('Key Result wajib dipilih');
+    return;
+  }
+  if (!initiativeForm.value.teamId) {
+    alert('Tim wajib dipilih');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/initiatives`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(initiativeForm.value)
+    });
+    if (res.ok) {
+      showAddInitiativeModal.value = false;
+      await fetchInitiatives();
+    } else {
+      const err = await res.json();
+      alert(err.message || 'Gagal menyimpan inisiatif');
+    }
+  } catch (err) {
+    alert(err.message);
   }
 }
 
@@ -203,13 +437,6 @@ async function confirmReject(updateId) {
     console.error(e);
   }
 }
-
-function getStatusClass(status) {
-  if (status === 'ON_TRACK') return 'text-green';
-  if (status === 'AT_RISK') return 'text-yellow';
-  if (status === 'OFF_TRACK') return 'text-red';
-  return 'text-gray';
-}
 </script>
 
 <style scoped>
@@ -220,25 +447,34 @@ function getStatusClass(status) {
 .header-title h2 { font-size: 24px; font-weight: 600; color: #1e293b; margin: 0 0 8px 0; }
 .section-desc { font-size: 14px; color: #64748b; margin: 0; }
 .initiative-block { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+
 .initiative-header { border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
-.initiative-header h3 { margin: 0 0 8px 0; font-size: 18px; color: #0f172a; }
+.init-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.init-header-top h3 { margin: 0 0 8px 0; font-size: 18px; color: #0f172a; }
 .team-badge { font-size: 12px; color: #0ea5e9; font-weight: 500; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; margin-right: 8px; }
 .kr-badge { font-size: 12px; color: #475569; font-weight: 500; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
 
+.init-progress-badge { text-align: right; }
+.pct-val { font-size: 20px; font-weight: 700; color: #0ea5e9; display: block; }
+.pct-lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+
+.init-progress-track { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.init-progress-bar { height: 100%; background: linear-gradient(90deg, #0ea5e9, #10b981); border-radius: 4px; transition: width 0.3s ease; }
+
 .kpi-list { display: flex; flex-direction: column; gap: 12px; }
 .empty-kpi { color: #94a3b8; font-size: 14px; font-style: italic; }
-.kpi-row { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.kpi-row { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 14px 16px; border-radius: 10px; border: 1px solid #e2e8f0; gap: 12px; }
 .kpi-info { flex: 2; }
-.kpi-name { font-weight: 600; color: #1e293b; display: block; margin-bottom: 4px; }
-.kpi-details { display: flex; gap: 16px; font-size: 13px; color: #64748b; }
+.kpi-name { font-weight: 600; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; }
+.kpi-details { display: flex; gap: 12px; font-size: 12px; color: #64748b; margin-bottom: 6px; align-items: center; }
+.kpi-pct-tag { background: #e0f2fe; color: #0284c7; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+
+.kpi-mini-track { width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.kpi-mini-bar { height: 100%; background: #0ea5e9; border-radius: 3px; transition: width 0.3s ease; }
+
 .kpi-assignees { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
 .assignee-chip { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #475569; }
 .kpi-actions { flex: 0 0 auto; display: flex; gap: 8px; }
-
-.text-green { color: #166534; font-weight: 500;}
-.text-yellow { color: #854d0e; font-weight: 500;}
-.text-red { color: #991b1b; font-weight: 500;}
-.text-gray { color: #64748b; }
 
 .primary-btn { background: #0ea5e9; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
 .primary-btn:hover { background: #0284c7; }
@@ -249,17 +485,27 @@ function getStatusClass(status) {
 .danger-btn.small { padding: 4px 12px; font-size: 13px; }
 
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-box { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal-box { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto; }
 .update-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
 .update-meta { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .update-note { font-style: italic; color: #475569; margin: 0 0 12px 0; font-size: 14px; }
 .update-actions { display: flex; gap: 8px; }
 .reject-form { display: flex; flex-direction: column; gap: 8px; }
-.form-input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+
+.form-label { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block; }
+.form-input { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.member-checkbox-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px; }
+.checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+
 .flex-gap { display: flex; gap: 8px; }
-.modal-actions { display: flex; justify-content: flex-end; margin-top: 24px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .alert { padding: 12px; border-radius: 8px; margin-bottom: 16px; }
 .alert-error { background: #fee2e2; color: #991b1b; }
 .alert-info { background: #e0f2fe; color: #075985; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
 .mb-4 { margin-bottom: 16px; }
+.text-sm { font-size: 12px; }
+.text-gray { color: #64748b; }
 </style>

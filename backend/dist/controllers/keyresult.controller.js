@@ -8,6 +8,7 @@ exports.updateKeyResult = updateKeyResult;
 exports.assignUsersToKeyResult = assignUsersToKeyResult;
 exports.getKeyResultAssignments = getKeyResultAssignments;
 exports.getMyAssignedKrs = getMyAssignedKrs;
+exports.getKrsForInitiativeDropdown = getKrsForInitiativeDropdown;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const VALID_BSC_PERSPECTIVES = ['FINANCIAL', 'CUSTOMER', 'INTERNAL_PROCESS', 'LEARNING_GROWTH'];
@@ -395,6 +396,81 @@ async function getMyAssignedKrs(req, res) {
     }
     catch (error) {
         console.error('Get my assigned KRs error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}
+// GET /api/key-results/dropdown
+// Mengembalikan KR yang relevan dengan scope user yang login, untuk dropdown modal buat inisiatif
+async function getKrsForInitiativeDropdown(req, res) {
+    try {
+        const { role, id: userId } = req.user;
+        let krWhere = {};
+        if (role === 'ADMIN' || role === 'C_LEVEL') {
+            // Admin & C-Level: lihat semua KR perusahaan
+            krWhere = {};
+        }
+        else if (role === 'MANAGER') {
+            // Manager: kombinasi KR yang di-assign ke dia UNION KR yang dept-nya cocok
+            const managedDepts = await prisma.department.findMany({
+                where: { managerId: userId },
+                select: { value: true }
+            });
+            const dbUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { department: true }
+            });
+            const deptValues = managedDepts.map(d => d.value);
+            if (dbUser?.department)
+                deptValues.push(dbUser.department);
+            krWhere = {
+                OR: [
+                    { assignments: { some: { userId } } },
+                    { departments: { some: { department: { in: deptValues } } } }
+                ]
+            };
+        }
+        else if (role === 'LEADER') {
+            // Leader: kombinasi KR yang di-assign ke dia UNION KR yang dept-nya cocok
+            const dbUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { department: true }
+            });
+            krWhere = {
+                OR: [
+                    { assignments: { some: { userId } } },
+                    ...(dbUser?.department
+                        ? [{ departments: { some: { department: dbUser.department } } }]
+                        : [])
+                ]
+            };
+        }
+        else {
+            // TEAM: KR yang terkait dengan tim mereka (via inisiatif yang sudah ada)
+            const dbUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { teamId: true }
+            });
+            if (dbUser?.teamId) {
+                krWhere = {
+                    initiatives: { some: { teamId: dbUser.teamId } }
+                };
+            }
+            else {
+                // Fallback: tampilkan KR yang di-assign ke user ini
+                krWhere = { assignments: { some: { userId } } };
+            }
+        }
+        const keyResults = await prisma.keyResult.findMany({
+            where: krWhere,
+            include: {
+                objective: { select: { id: true, title: true, quarter: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        return res.status(200).json(keyResults);
+    }
+    catch (error) {
+        console.error('Get KRs for dropdown error:', error);
         return res.status(500).json({ message: 'Internal server error' });
     }
 }
