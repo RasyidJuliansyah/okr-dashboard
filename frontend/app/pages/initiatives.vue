@@ -82,6 +82,17 @@
               <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">{{ kr.title }}</option>
             </select>
           </div>
+
+          <!-- Filter Bulan / Sprint -->
+          <div class="filter-item">
+            <label>Filter Bulan / Sprint:</label>
+            <select v-model="selectedSprintMonth" class="filter-select">
+              <option value="">Semua Bulan / Sprint</option>
+              <option v-for="m in availableSprintMonths" :key="m" :value="m">
+                📅 {{ formatSprintLabel(m) }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -137,6 +148,16 @@
                 </span>
               </div>
 
+              <!-- Date Range & Sprint Meta Row -->
+              <div class="card-dates-sprint-row" v-if="ini.startDate || ini.dueDate || ini.sprintMonth">
+                <span v-if="ini.sprintMonth" class="sprint-pill">
+                  🏃 {{ formatSprintLabel(ini.sprintMonth) }}
+                </span>
+                <span v-if="ini.startDate || ini.dueDate" class="date-range-pill" :class="{ overdue: isOverdue(ini) }">
+                  🗓️ {{ formatDateShort(ini.startDate) }} – {{ formatDateShort(ini.dueDate) }}
+                </span>
+              </div>
+
               <!-- KPIs summary chips -->
               <div class="card-kpis-summary" v-if="ini.kpis?.length">
                 <span class="kpi-count-tag">
@@ -149,6 +170,9 @@
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
                     👤 {{ ini.owner.name }}
+                    <span v-if="getMemberAchievement(ini.ownerId)" class="owner-ach-pill" :class="getAchColorClass(getMemberAchievement(ini.ownerId).achievementPct)">
+                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                    </span>
                   </span>
                 </div>
               </div>
@@ -220,6 +244,16 @@
                 </span>
               </div>
 
+              <!-- Date Range & Sprint Meta Row -->
+              <div class="card-dates-sprint-row" v-if="ini.startDate || ini.dueDate || ini.sprintMonth">
+                <span v-if="ini.sprintMonth" class="sprint-pill">
+                  🏃 {{ formatSprintLabel(ini.sprintMonth) }}
+                </span>
+                <span v-if="ini.startDate || ini.dueDate" class="date-range-pill" :class="{ overdue: isOverdue(ini) }">
+                  🗓️ {{ formatDateShort(ini.startDate) }} – {{ formatDateShort(ini.dueDate) }}
+                </span>
+              </div>
+
               <!-- KPIs summary chips -->
               <div class="card-kpis-summary" v-if="ini.kpis?.length">
                 <span class="kpi-count-tag in-progress">
@@ -232,6 +266,9 @@
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
                     👤 {{ ini.owner.name }}
+                    <span v-if="getMemberAchievement(ini.ownerId)" class="owner-ach-pill" :class="getAchColorClass(getMemberAchievement(ini.ownerId).achievementPct)">
+                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                    </span>
                   </span>
                 </div>
               </div>
@@ -304,11 +341,33 @@
                 </span>
               </div>
 
+              <!-- Date Range & Sprint Meta Row -->
+              <div class="card-dates-sprint-row" v-if="ini.startDate || ini.dueDate || ini.sprintMonth">
+                <span v-if="ini.sprintMonth" class="sprint-pill">
+                  🏃 {{ formatSprintLabel(ini.sprintMonth) }}
+                </span>
+                <span v-if="ini.startDate || ini.dueDate" class="date-range-pill" :class="{ overdue: isOverdue(ini) }">
+                  🗓️ {{ formatDateShort(ini.startDate) }} – {{ formatDateShort(ini.dueDate) }}
+                </span>
+              </div>
+
+              <!-- Achieved Value Row for DONE cards -->
+              <div class="card-achieved-row" v-if="ini.kanbanStatus === 'DONE' || ini.achievedValue !== null">
+                <span class="achieved-label">🏆 Capaian Akhir:</span>
+                <strong class="achieved-val">
+                  {{ ini.achievedValue ?? ini.currentValue }} / {{ ini.targetValue }} {{ ini.unit || '' }}
+                  ({{ calculateAchievedPercent(ini) }}%)
+                </strong>
+              </div>
+
               <div class="card-footer-meta">
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
                     👤 {{ ini.owner.name }}
+                    <span v-if="getMemberAchievement(ini.ownerId)" class="owner-ach-pill" :class="getAchColorClass(getMemberAchievement(ini.ownerId).achievementPct)">
+                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                    </span>
                   </span>
                 </div>
               </div>
@@ -475,6 +534,28 @@
                   <option value="DONE">✅ Done</option>
                   <option value="DROP">❌ Drop</option>
                 </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>📅 Tanggal Mulai Pengerjaan</label>
+                <input v-model="initiativeForm.startDate" type="date" class="form-input" />
+              </div>
+              <div>
+                <label>🎯 Target Tanggal Selesai</label>
+                <input v-model="initiativeForm.dueDate" type="date" class="form-input" />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>🏃 Bulan / Sprint</label>
+                <input v-model="initiativeForm.sprintMonth" type="month" class="form-input" />
+              </div>
+              <div>
+                <label>🏆 Hasil Capaian Akhir (Selesai)</label>
+                <input v-model.number="initiativeForm.achievedValue" type="number" class="form-input" placeholder="Opsional (Diisi jika DONE)" />
               </div>
             </div>
           </div>
@@ -694,6 +775,50 @@ const showKpiModal = ref(false);
 const selectedInitiativeForKpi = ref<any>(null);
 const kpiForm = ref({ title: '', targetValue: 0, unit: '' });
 
+// Sprint Month filter & helper functions
+const selectedSprintMonth = ref('');
+
+const availableSprintMonths = computed(() => {
+  const months = new Set<string>();
+  for (const ini of initiatives.value) {
+    if (ini.sprintMonth) months.add(ini.sprintMonth);
+  }
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  months.add(currentMonth);
+  return Array.from(months).sort().reverse();
+});
+
+function formatDateShort(dateStr: string | null | undefined) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatSprintLabel(sprint: string | null | undefined) {
+  if (!sprint) return '';
+  if (/^\d{4}-\d{2}$/.test(sprint)) {
+    const [year, month] = sprint.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+  }
+  return sprint;
+}
+
+function isOverdue(ini: any) {
+  if (!ini.dueDate || ini.kanbanStatus === 'DONE' || ini.kanbanStatus === 'DROP') return false;
+  const due = new Date(ini.dueDate);
+  const now = new Date();
+  return due < now;
+}
+
+function calculateAchievedPercent(ini: any) {
+  const achieved = ini.achievedValue !== null && ini.achievedValue !== undefined ? ini.achievedValue : ini.currentValue;
+  if (!ini.targetValue || ini.targetValue <= 0) return 100;
+  return Math.round((achieved / ini.targetValue) * 100);
+}
+
 // ─── Filtered Lists per Kanban Column ───
 const filteredInitiatives = computed(() => {
   return initiatives.value.filter((ini: any) => {
@@ -716,6 +841,9 @@ const filteredInitiatives = computed(() => {
 
     // KR Filter
     if (selectedKrId.value && ini.keyResultId !== selectedKrId.value) return false;
+
+    // Sprint / Month Filter
+    if (selectedSprintMonth.value && ini.sprintMonth !== selectedSprintMonth.value) return false;
 
     return true;
   });
@@ -785,35 +913,109 @@ async function fetchAllKrs() {
   } catch (err) {}
 }
 
-async function fetchAllTeams() {
-  try {
-    const res = await fetch(`${API}/users/teams`, { headers: getHeaders() });
-    if (res.ok) allTeams.value = await res.json();
-  } catch (err) {}
+// Member 100% Achievement State & Helper
+const memberProgressList = ref<any[]>([]);
+const selectedAchDepartment = ref('');
+const selectedAchSort = ref('highest'); // 'highest', 'lowest', 'name_asc'
+
+const availableAchDepartments = computed(() => {
+  const depts = new Set<string>();
+  for (const m of memberProgressList.value) {
+    if (m.department) depts.add(m.department);
+  }
+  return Array.from(depts).sort();
+});
+
+const displayedMemberProgressList = computed(() => {
+  let list = [...memberProgressList.value];
+
+  // Filter Departemen
+  if (selectedAchDepartment.value) {
+    list = list.filter((m: any) => m.department === selectedAchDepartment.value);
+  }
+
+  // Sort Pengurutan
+  if (selectedAchSort.value === 'highest') {
+    list.sort((a, b) => b.achievementPct - a.achievementPct);
+  } else if (selectedAchSort.value === 'lowest') {
+    list.sort((a, b) => a.achievementPct - b.achievementPct);
+  } else if (selectedAchSort.value === 'name_asc') {
+    list.sort((a, b) => (a.userName || '').localeCompare(b.userName || ''));
+  }
+
+  return list;
+});
+
+const memberProgressMap = computed(() => {
+  const map: Record<string, any> = {};
+  for (const m of memberProgressList.value) {
+    map[m.userId] = m;
+  }
+  return map;
+});
+
+function getMemberAchievement(userId: string) {
+  if (!userId) return null;
+  // TEAM role: ONLY sees their own percentage!
+  if (isTeam.value && userId !== auth.user?.id) {
+    return null;
+  }
+  return memberProgressMap.value[userId] || null;
 }
 
-async function fetchAllUsers() {
+function getAchColorClass(pct: number) {
+  if (pct >= 80) return 'ach-high';
+  if (pct >= 50) return 'ach-mid';
+  return 'ach-low';
+}
+
+async function fetchMemberProgress() {
   try {
-    const res = await fetch(`${API}/users`, { headers: getHeaders() });
-    if (res.ok) allUsers.value = await res.json();
-  } catch (err) {}
+    const res = await fetch(`${API}/initiatives/member-progress`, { headers: getHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      memberProgressList.value = data.members || [];
+    }
+  } catch (err) {
+    console.error('Fetch member progress error:', err);
+  }
 }
 
 async function moveCard(id: string, newStatus: string) {
   try {
-    // Optimistic UI update
     const item = initiatives.value.find((i: any) => i.id === id);
-    if (item) item.kanbanStatus = newStatus;
+    let achievedValueToSubmit: number | undefined = undefined;
+
+    if (newStatus === 'DONE' && item) {
+      const input = prompt(
+        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${item.targetValue} ${item.unit || ''}):`,
+        item.achievedValue !== null && item.achievedValue !== undefined ? String(item.achievedValue) : String(item.targetValue)
+      );
+      if (input !== null && input.trim() !== '') {
+        const val = parseFloat(input);
+        if (!isNaN(val)) achievedValueToSubmit = val;
+      }
+    }
+
+    if (item) {
+      item.kanbanStatus = newStatus;
+      if (achievedValueToSubmit !== undefined) item.achievedValue = achievedValueToSubmit;
+    }
 
     const res = await fetch(`${API}/initiatives/${id}/kanban-status`, {
       method: 'PATCH',
       headers: getHeaders(),
-      body: JSON.stringify({ kanbanStatus: newStatus }),
+      body: JSON.stringify({
+        kanbanStatus: newStatus,
+        ...(achievedValueToSubmit !== undefined && { achievedValue: achievedValueToSubmit })
+      }),
     });
 
     if (!res.ok) {
       await fetchInitiatives(); // revert on error
       errorMessage.value = 'Gagal memindahkan inisiatif';
+    } else {
+      await fetchInitiatives();
     }
   } catch (err: any) {
     await fetchInitiatives();
@@ -825,6 +1027,8 @@ function openAddInitiativeModal() {
   editingInitiative.value = null;
   teamSearch.value = '';
   userSearch.value = '';
+  const now = new Date();
+  const defaultSprint = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   initiativeForm.value = {
     title: '',
     description: '',
@@ -832,9 +1036,13 @@ function openAddInitiativeModal() {
     teamId: isTeam.value ? (auth.user?.teamId || availableTeams.value[0]?.id || '') : (selectedTeamId.value || ''),
     ownerId: isTeam.value ? (auth.user?.id || '') : '',
     targetValue: 0,
+    achievedValue: null,
     unit: '',
     kanbanStatus: 'TODO',
-    weight: 1.0
+    weight: 1.0,
+    startDate: '',
+    dueDate: '',
+    sprintMonth: defaultSprint
   };
   errorMessage.value = '';
   showInitiativeModal.value = true;
@@ -851,9 +1059,13 @@ function openEditInitiativeModal(ini: any) {
     teamId: ini.teamId || '',
     ownerId: ini.ownerId || '',
     targetValue: ini.targetValue || 0,
+    achievedValue: ini.achievedValue !== undefined && ini.achievedValue !== null ? ini.achievedValue : null,
     unit: ini.unit || '',
     kanbanStatus: ini.kanbanStatus || 'TODO',
-    weight: ini.weight !== undefined ? ini.weight : 1.0
+    weight: ini.weight !== undefined ? ini.weight : 1.0,
+    startDate: ini.startDate ? new Date(ini.startDate).toISOString().substring(0, 10) : '',
+    dueDate: ini.dueDate ? new Date(ini.dueDate).toISOString().substring(0, 10) : '',
+    sprintMonth: ini.sprintMonth || ''
   };
   errorMessage.value = '';
   showInitiativeModal.value = true;
@@ -958,12 +1170,27 @@ async function saveKpi() {
   }
 }
 
+async function fetchAllTeams() {
+  try {
+    const res = await fetch(`${API}/users/teams`, { headers: getHeaders() });
+    if (res.ok) allTeams.value = await res.json();
+  } catch (err) {}
+}
+
+async function fetchAllUsers() {
+  try {
+    const res = await fetch(`${API}/users`, { headers: getHeaders() });
+    if (res.ok) allUsers.value = await res.json();
+  } catch (err) {}
+}
+
 onMounted(async () => {
   await Promise.all([
     fetchInitiatives(),
     fetchAllKrs(),
     fetchAllTeams(),
     fetchAllUsers(),
+    fetchMemberProgress(),
   ]);
 });
 </script>
@@ -1582,5 +1809,241 @@ onMounted(async () => {
   background: #d1fae5;
   color: #065f46;
   border: 1px solid #6ee7b7;
+}
+
+/* ─── MEMBER 100% ACHIEVEMENT WIDGET STYLES ─── */
+.member-achievement-card {
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.widget-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+}
+
+.ach-controls-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ach-control-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ach-control-item label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.ach-filter-select {
+  padding: 5px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: #ffffff;
+  color: #1e293b;
+  outline: none;
+  cursor: pointer;
+}
+
+.ach-filter-select:focus {
+  border-color: #0E97D6;
+}
+
+.visibility-notice {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.team-notice { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+.leader-notice { background: rgba(14, 151, 214, 0.12); color: #0E97D6; }
+.manager-notice { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+.admin-notice { background: rgba(16, 185, 129, 0.12); color: #059669; }
+
+.member-achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.member-ach-card {
+  background: var(--bg-input, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.member-ach-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.member-ach-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.member-avatar {
+  font-size: 1.2rem;
+}
+
+.member-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary, #0f172a);
+  display: block;
+}
+
+.member-role-badge {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #475569;
+}
+.member-role-badge.leader { background: #e0f2fe; color: #0284c7; }
+.member-role-badge.manager { background: #f3e8ff; color: #7e22ce; }
+.member-role-badge.team { background: #ecfdf5; color: #047857; }
+
+.member-pct-wrap {
+  text-align: right;
+}
+
+.member-pct-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: block;
+}
+
+.member-pct-lbl {
+  font-size: 0.68rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.member-progress-track {
+  width: 100%;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.member-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.ach-high { color: #10B981; background: #10B981; }
+.ach-mid { color: #0E97D6; background: #0E97D6; }
+.ach-low { color: #f59e0b; background: #f59e0b; }
+
+.member-ach-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.dept-tag {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.owner-ach-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  background: rgba(14, 151, 214, 0.15);
+}
+
+/* ─── DATE RANGE, SPRINT & ACHIEVED VALUE STYLES ─── */
+.card-dates-sprint-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.sprint-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.date-range-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.date-range-pill.overdue {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+  font-weight: 700;
+}
+
+.card-achieved-row {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 6px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.achieved-label {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.achieved-val {
+  color: #047857;
+  font-weight: 800;
 }
 </style>

@@ -118,24 +118,30 @@ model CausalLink {
 }
 
 model Initiative {
-  id           String   @id @default(uuid())
-  keyResultId  String
-  keyResult    KeyResult @relation(fields: [keyResultId], references: [id])
-  teamId       String
-  team         Team     @relation(fields: [teamId], references: [id])
-  ownerId      String?
-  owner        User?    @relation("InitiativeOwner", fields: [ownerId], references: [id])
-  title        String
-  description  String?
-  targetValue  Float    @default(0)
-  currentValue Float    @default(0)
-  unit         String?
-  status       String   @default("ON_TRACK")
-  kanbanStatus String   @default("TODO") // TODO, IN_PROGRESS, DONE
-  weight       Float    @default(1.0)
-  kpis         Kpi[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String    @id @default(uuid())
+  keyResultId   String
+  keyResult     KeyResult @relation(fields: [keyResultId], references: [id])
+  teamId        String
+  team          Team      @relation(fields: [teamId], references: [id])
+  ownerId       String?
+  owner         User?     @relation("InitiativeOwner", fields: [ownerId], references: [id])
+  title         String
+  description   String?
+  targetValue   Float     @default(0)
+  currentValue  Float     @default(0)
+  achievedValue Float?
+  unit          String?
+  status        String    @default("ON_TRACK")
+  kanbanStatus  String    @default("TODO") // TODO, IN_PROGRESS, DONE
+  weight        Float     @default(1.0)
+  startDate     DateTime?
+  dueDate       DateTime?
+  sprintMonth   String?   // e.g., "2026-08"
+  kpis          Kpi[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([sprintMonth])
 }
 
 model Kpi {

@@ -50,7 +50,6 @@
                 </div>
                 <div class="ini-actions">
                   <button class="icon-btn" @click="startEditInitiative(ini, assign.keyResult)" title="Edit Inisiatif">✏️</button>
-                  <button class="icon-btn danger" @click="deleteInitiative(ini.id)" title="Hapus Inisiatif">🗑️</button>
                 </div>
               </li>
             </ul>

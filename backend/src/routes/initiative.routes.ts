@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getInitiatives,
   getInitiativeProgress,
+  getMemberProgress,
   createInitiative,
   updateInitiative,
   deleteInitiative,
@@ -26,10 +27,11 @@ const router = Router();
 // Initiative
 router.get('/', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getInitiatives);
 router.get('/progress', authMiddleware, roleGuard(['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER']), getInitiativeProgress);
+router.get('/member-progress', authMiddleware, roleGuard(['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER', 'TEAM']), getMemberProgress);
 router.post('/', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), createInitiative);
 router.put('/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), updateInitiative);
 router.patch('/:id/kanban-status', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), updateInitiativeKanbanStatus);
-router.delete('/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), deleteInitiative);
+router.delete('/:id', authMiddleware, roleGuard(['ADMIN']), deleteInitiative);
 router.get('/my-work/all', authMiddleware, getMyWork);
 router.get('/my-team', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getMyTeamInitiatives);
 

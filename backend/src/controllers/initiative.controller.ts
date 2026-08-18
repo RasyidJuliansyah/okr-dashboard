@@ -6,134 +6,6 @@ const prisma = new PrismaClient();
 
 // ─── INITIATIVE ────────────────────────────────────────────────────────────
 
-// GET /api/initiatives?krId=xxx&kanbanStatus=xxx&teamId=xxx&ownerId=xxx — list initiatives
-export async function getInitiatives(req: AuthRequest, res: Response) {
-  try {
-    const { krId, kanbanStatus, teamId, ownerId } = req.query;
-    const { role, id: userId } = req.user!;
-
-    let where: any = {};
-    if (krId) where.keyResultId = krId as string;
-    if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
-
-    // 1. TEAM (T): melihat semua inisiatif dalam departemen yang sama
-    if (role === 'TEAM') {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { department: true, teamId: true }
-      });
-
-      if (dbUser?.department) {
-        // Ambil semua tim di departemen yang sama
-        const deptTeams = await prisma.team.findMany({
-          where: { department: dbUser.department },
-          select: { id: true }
-        });
-        const deptTeamIds = deptTeams.map(t => t.id);
-
-        // Tampilkan inisiatif dari seluruh tim dalam departemen ini
-        where.teamId = { in: deptTeamIds };
-      } else if (dbUser?.teamId) {
-        // Fallback: jika user tidak punya department, scope ke tim sendiri
-        where.teamId = dbUser.teamId;
-      } else {
-        // Fallback terakhir: hanya milik sendiri
-        where.ownerId = userId;
-      }
-
-      // Filter ownerId tambahan dari query param tetap bisa diterapkan
-      if (ownerId) where.ownerId = ownerId as string;
-      if (teamId) where.teamId = teamId as string;
-    }
-
-    // 2. LEADER (P): melihat card miliknya sendiri + semua card anggota tim di bawahnya
-    else if (role === 'LEADER') {
-      const leaderTeams = await prisma.team.findMany({ where: { leaderId: userId }, select: { id: true } });
-      const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { teamId: true } });
-      const teamIdSet = new Set<string>(leaderTeams.map(t => t.id));
-      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
-      const teamIds = Array.from(teamIdSet);
-
-      if (ownerId) {
-        // Filter spesifik pegawai di bawahnya / dirinya
-        where.ownerId = ownerId as string;
-        where.OR = [
-          { teamId: { in: teamIds } },
-          { ownerId: userId }
-        ];
-      } else {
-        where.OR = [
-          { teamId: { in: teamIds } },
-          { ownerId: userId }
-        ];
-      }
-
-      if (teamId && teamIds.includes(teamId as string)) {
-        where.teamId = teamId as string;
-      }
-    }
-
-    // 3. MANAGER (M): melihat semua card P (Leader) dan T (Team) di departemen yang dikelola
-    else if (role === 'MANAGER') {
-      const managedDepts = await prisma.department.findMany({ where: { managerId: userId }, select: { value: true } });
-      const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { department: true, teamId: true } });
-      
-      const deptValues = new Set<string>(managedDepts.map(d => d.value));
-      if (dbUser?.department) deptValues.add(dbUser.department);
-
-      const deptTeams = await prisma.team.findMany({
-        where: {
-          OR: [
-            { department: { in: Array.from(deptValues) } },
-            { managerId: userId }
-          ]
-        },
-        select: { id: true }
-      });
-      
-      const teamIdSet = new Set<string>(deptTeams.map(t => t.id));
-      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
-      const teamIds = Array.from(teamIdSet);
-
-      where.teamId = { in: teamIds };
-
-      if (ownerId) {
-        where.ownerId = ownerId as string;
-      }
-
-      if (teamId && teamIds.includes(teamId as string)) {
-        where.teamId = teamId as string;
-      }
-    }
-
-    // 4. ADMIN & C_LEVEL: Seluruh departemen (Company-wide)
-    else {
-      if (teamId) where.teamId = teamId as string;
-      if (ownerId) where.ownerId = ownerId as string;
-    }
-
-    const initiatives = await prisma.initiative.findMany({
-      where,
-      include: {
-        keyResult: { select: { id: true, title: true, bscPerspective: true } },
-        team: { select: { id: true, name: true, department: true } },
-        owner: { select: { id: true, name: true, email: true, position: true } },
-        kpis: {
-          include: {
-            assignments: { include: { user: { select: { id: true, name: true } } } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return res.status(200).json(initiatives);
-  } catch (error) {
-    console.error('Get initiatives error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}
-
 async function getLeaderTeamIds(userId: string): Promise<string[]> {
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
@@ -153,6 +25,124 @@ async function getLeaderTeamIds(userId: string): Promise<string[]> {
     deptTeams.forEach(t => teamIdSet.add(t.id));
   }
   return Array.from(teamIdSet);
+}
+
+// GET /api/initiatives/member-progress — Capaian 100% per member dengan strict role-based visibility
+export async function getMemberProgress(req: AuthRequest, res: Response) {
+  try {
+    const { role, id: userId } = req.user!;
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { department: true, teamId: true }
+    });
+
+    // 1. Tentukan user mana saja yang boleh dilihat oleh req.user berdasarkan Role
+    let visibleUserIds: string[] = [];
+
+    if (role === 'TEAM') {
+      // TEAM HANYA boleh melihat dirinya sendiri!
+      visibleUserIds = [userId];
+    } else if (role === 'LEADER') {
+      // LEADER melihat dirinya + anggota tim yang dipimpin/dimilikinya/departemennya
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      const teamMembers = await prisma.user.findMany({
+        where: {
+          OR: [
+            { id: userId },
+            { teamId: { in: leaderTeamIds } },
+            ...(dbUser?.department ? [{ department: dbUser.department, role: 'TEAM' }] : [])
+          ]
+        },
+        select: { id: true }
+      });
+      visibleUserIds = teamMembers.map(u => u.id);
+    } else if (role === 'MANAGER') {
+      // MANAGER melihat dirinya + Leader & Team di departemennya
+      const deptUsers = await prisma.user.findMany({
+        where: {
+          OR: [
+            { id: userId },
+            ...(dbUser?.department ? [{ department: dbUser.department }] : [])
+          ]
+        },
+        select: { id: true }
+      });
+      visibleUserIds = deptUsers.map(u => u.id);
+    } else {
+      // ADMIN & C_LEVEL melihat semua user
+      const allUsers = await prisma.user.findMany({ select: { id: true } });
+      visibleUserIds = allUsers.map(u => u.id);
+    }
+
+    // 2. Ambil data KPI assignment untuk user-user yang diizinkan
+    const usersWithKpis = await prisma.user.findMany({
+      where: { id: { in: visibleUserIds } },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        position: true,
+        department: true,
+        team: { select: { id: true, name: true } },
+        kpiAssignments: {
+          include: {
+            kpi: {
+              include: {
+                initiative: { select: { id: true, title: true } }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    // 3. Hitung kumulatif progress 100% per member
+    const result = usersWithKpis.map(user => {
+      const kpis = user.kpiAssignments.map(a => a.kpi);
+      let totalPct = 0;
+      const kpiDetails = kpis.map(kpi => {
+        const pct = kpi.targetValue > 0
+          ? Math.min(100, Math.max(0, (kpi.currentValue / kpi.targetValue) * 100))
+          : 0;
+        totalPct += pct;
+        return {
+          id: kpi.id,
+          title: kpi.title,
+          currentValue: kpi.currentValue,
+          targetValue: kpi.targetValue,
+          unit: kpi.unit,
+          progressPct: Math.round(pct * 10) / 10,
+          initiativeTitle: kpi.initiative?.title
+        };
+      });
+
+      const overallProgress = kpis.length > 0
+        ? Math.round((totalPct / kpis.length) * 10) / 10
+        : 0;
+
+      return {
+        userId: user.id,
+        userName: user.name,
+        role: user.role,
+        position: user.position,
+        department: user.department,
+        teamName: user.team?.name,
+        totalAssignedTasks: kpis.length,
+        achievementPct: overallProgress, // Out of 100%
+        kpis: kpiDetails
+      };
+    });
+
+    return res.status(200).json({
+      role,
+      userCount: result.length,
+      members: result
+    });
+  } catch (error) {
+    console.error('Get member progress error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 }
 
 // GET /api/initiatives/progress — Initiative progress per role
@@ -282,9 +272,138 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
   }
 }
 
+// GET /api/initiatives?krId=xxx&kanbanStatus=xxx&teamId=xxx&ownerId=xxx&sprintMonth=xxx — list initiatives
+export async function getInitiatives(req: AuthRequest, res: Response) {
+  try {
+    const { krId, kanbanStatus, teamId, ownerId, sprintMonth } = req.query;
+    const { role, id: userId } = req.user!;
+
+    let where: any = {};
+    if (krId) where.keyResultId = krId as string;
+    if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
+    if (sprintMonth) where.sprintMonth = sprintMonth as string;
+
+    // 1. TEAM (T): melihat semua inisiatif dalam departemen yang sama
+    if (role === 'TEAM') {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true, teamId: true }
+      });
+
+      if (dbUser?.department) {
+        // Ambil semua tim di departemen yang sama
+        const deptTeams = await prisma.team.findMany({
+          where: { department: dbUser.department },
+          select: { id: true }
+        });
+        const deptTeamIds = deptTeams.map(t => t.id);
+
+        // Tampilkan inisiatif dari seluruh tim dalam departemen ini
+        where.teamId = { in: deptTeamIds };
+      } else if (dbUser?.teamId) {
+        // Fallback: jika user tidak punya department, scope ke tim sendiri
+        where.teamId = dbUser.teamId;
+      } else {
+        // Fallback terakhir: hanya milik sendiri
+        where.ownerId = userId;
+      }
+
+      // Filter ownerId tambahan dari query param tetap bisa diterapkan
+      if (ownerId) where.ownerId = ownerId as string;
+      if (teamId) where.teamId = teamId as string;
+    }
+
+    // 2. LEADER (P): melihat card miliknya sendiri + semua card anggota tim di bawahnya
+    else if (role === 'LEADER') {
+      const leaderTeams = await prisma.team.findMany({ where: { leaderId: userId }, select: { id: true } });
+      const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { teamId: true } });
+      const teamIdSet = new Set<string>(leaderTeams.map(t => t.id));
+      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
+      const teamIds = Array.from(teamIdSet);
+
+      if (ownerId) {
+        // Filter spesifik pegawai di bawahnya / dirinya
+        where.ownerId = ownerId as string;
+        where.OR = [
+          { teamId: { in: teamIds } },
+          { ownerId: userId }
+        ];
+      } else {
+        where.OR = [
+          { teamId: { in: teamIds } },
+          { ownerId: userId }
+        ];
+      }
+
+      if (teamId && teamIds.includes(teamId as string)) {
+        where.teamId = teamId as string;
+      }
+    }
+
+    // 3. MANAGER (M): melihat semua card P (Leader) dan T (Team) di departemen yang dikelola
+    else if (role === 'MANAGER') {
+      const managedDepts = await prisma.department.findMany({ where: { managerId: userId }, select: { value: true } });
+      const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { department: true, teamId: true } });
+      
+      const deptValues = new Set<string>(managedDepts.map(d => d.value));
+      if (dbUser?.department) deptValues.add(dbUser.department);
+
+      const deptTeams = await prisma.team.findMany({
+        where: {
+          OR: [
+            { department: { in: Array.from(deptValues) } },
+            { managerId: userId }
+          ]
+        },
+        select: { id: true }
+      });
+      
+      const teamIdSet = new Set<string>(deptTeams.map(t => t.id));
+      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
+      const teamIds = Array.from(teamIdSet);
+
+      where.teamId = { in: teamIds };
+
+      if (ownerId) {
+        where.ownerId = ownerId as string;
+      }
+
+      if (teamId && teamIds.includes(teamId as string)) {
+        where.teamId = teamId as string;
+      }
+    }
+
+    // 4. ADMIN & C_LEVEL: Seluruh departemen (Company-wide)
+    else {
+      if (teamId) where.teamId = teamId as string;
+      if (ownerId) where.ownerId = ownerId as string;
+    }
+
+    const initiatives = await prisma.initiative.findMany({
+      where,
+      include: {
+        keyResult: { select: { id: true, title: true, bscPerspective: true } },
+        team: { select: { id: true, name: true, department: true } },
+        owner: { select: { id: true, name: true, email: true, position: true } },
+        kpis: {
+          include: {
+            assignments: { include: { user: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.status(200).json(initiatives);
+  } catch (error) {
+    console.error('Get initiatives error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 export async function createInitiative(req: AuthRequest, res: Response) {
   try {
-    let { keyResultId, teamId, ownerId, title, description, targetValue, unit, kanbanStatus, weight } = req.body;
+    let { keyResultId, teamId, ownerId, title, description, targetValue, achievedValue, unit, kanbanStatus, weight, startDate, dueDate, sprintMonth } = req.body;
     const { role, id: userId } = req.user!;
 
     if (!keyResultId || !title) {
@@ -335,10 +454,14 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         title,
         description: description || null,
         targetValue: targetValue ? parseFloat(targetValue) : 0,
+        achievedValue: achievedValue !== undefined && achievedValue !== null && achievedValue !== '' ? parseFloat(achievedValue) : null,
         unit: unit || null,
         status: 'ON_TRACK',
         kanbanStatus: kanbanStatus || 'TODO',
         weight: weight !== undefined ? parseFloat(weight) : 1.0,
+        startDate: startDate ? new Date(startDate) : null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        sprintMonth: sprintMonth || null,
       },
       include: {
         team: true,
@@ -357,7 +480,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 export async function updateInitiative(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { title, description, ownerId, targetValue, unit, status, kanbanStatus, weight } = req.body;
+    const { title, description, ownerId, targetValue, achievedValue, unit, status, kanbanStatus, weight, startDate, dueDate, sprintMonth } = req.body;
     const { role, id: userId } = req.user!;
 
     const existing = await prisma.initiative.findUnique({ where: { id } });
@@ -375,10 +498,14 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
         ...(description !== undefined && { description }),
         ...(ownerId !== undefined && role !== 'TEAM' && { ownerId: ownerId || null }),
         ...(targetValue !== undefined && { targetValue: parseFloat(targetValue) }),
+        ...(achievedValue !== undefined && { achievedValue: achievedValue !== null && achievedValue !== '' ? parseFloat(achievedValue) : null }),
         ...(unit !== undefined && { unit }),
         ...(status !== undefined && { status }),
         ...(kanbanStatus !== undefined && { kanbanStatus }),
         ...(weight !== undefined && { weight: parseFloat(weight) }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+        ...(sprintMonth !== undefined && { sprintMonth: sprintMonth || null }),
       },
       include: {
         team: true,
@@ -397,7 +524,7 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
 export async function updateInitiativeKanbanStatus(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { kanbanStatus } = req.body;
+    const { kanbanStatus, achievedValue } = req.body;
     const { role, id: userId } = req.user!;
 
     if (!kanbanStatus || !['TODO', 'IN_PROGRESS', 'DONE', 'DROP'].includes(kanbanStatus)) {
@@ -414,7 +541,10 @@ export async function updateInitiativeKanbanStatus(req: AuthRequest, res: Respon
 
     const updated = await prisma.initiative.update({
       where: { id },
-      data: { kanbanStatus },
+      data: {
+        kanbanStatus,
+        ...(achievedValue !== undefined && { achievedValue: achievedValue !== null && achievedValue !== '' ? parseFloat(achievedValue) : null }),
+      },
       include: {
         keyResult: { select: { id: true, title: true, bscPerspective: true } },
         team: { select: { id: true, name: true, department: true } },
@@ -433,6 +563,11 @@ export async function updateInitiativeKanbanStatus(req: AuthRequest, res: Respon
 export async function deleteInitiative(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const { role } = req.user!;
+
+    if (role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden: Hanya Admin yang dapat menghapus inisiatif' });
+    }
 
     const existing = await prisma.initiative.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
@@ -937,3 +1072,4 @@ export async function getPendingKpiUpdates(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
+
