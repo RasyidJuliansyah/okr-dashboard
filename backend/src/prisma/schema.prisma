@@ -132,6 +132,7 @@ model Initiative {
   unit         String?
   status       String   @default("ON_TRACK")
   kanbanStatus String   @default("TODO") // TODO, IN_PROGRESS, DONE
+  weight       Float    @default(1.0)
   kpis         Kpi[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

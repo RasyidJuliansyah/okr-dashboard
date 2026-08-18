@@ -2,20 +2,20 @@ module.exports = {
   apps: [
     {
       name: 'okr-backend',
-      script: './backend/dist/index.js',
+      script: './dist/index.js',
       cwd: './backend',
       instances: 1,
       autorestart: true,
       watch: false,
       env: {
         PORT: 3001,
-        DATABASE_URL: 'file:./prod.db',
+        DATABASE_URL: 'file:./dev.db',
         NODE_ENV: 'production'
       }
     },
     {
       name: 'okr-frontend',
-      script: './frontend/.output/server/index.mjs',
+      script: './.output/server/index.mjs',
       cwd: './frontend',
       instances: 1,
       autorestart: true,

@@ -19,21 +19,38 @@
               keberhasilannya.
             </p>
           </div>
-          <button
-            type="button"
-            class="secondary-btn"
-            style="
-              white-space: nowrap;
-              display: inline-flex;
-              align-items: center;
-              gap: 6px;
-              padding: 6px 12px;
-              font-size: 0.83rem;
-            "
-            @click="showBulkKrModal = true"
-          >
-            📤 Bulk Upload KR (CSV)
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button
+              type="button"
+              class="secondary-btn"
+              style="
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                font-size: 0.83rem;
+              "
+              @click="openBulkUpload('objective')"
+            >
+              📤 Bulk Upload Objective (CSV)
+            </button>
+            <button
+              type="button"
+              class="secondary-btn"
+              style="
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                font-size: 0.83rem;
+              "
+              @click="openBulkUpload('kr')"
+            >
+              📤 Bulk Upload KR (CSV)
+            </button>
+          </div>
         </div>
 
         <form @submit.prevent="submitObjective" class="okr-form">
@@ -117,23 +134,6 @@
                 placeholder="Detail penjelasan mengenai sasaran ini..."
                 rows="2"
               ></textarea>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group half">
-                <label for="obj-quarter">Quarter / Periode *</label>
-                <select
-                  id="obj-quarter"
-                  v-model="newObjective.quarter"
-                  required
-                >
-                  <option value="" disabled>Pilih Quarter</option>
-                  <option value="Q1-2026">Q1-2026</option>
-                  <option value="Q2-2026">Q2-2026</option>
-                  <option value="Q3-2026">Q3-2026</option>
-                  <option value="Q4-2026">Q4-2026</option>
-                </select>
-              </div>
             </div>
           </template>
 
@@ -872,9 +872,9 @@
 
     <!-- Bulk Upload Modal -->
     <BulkUploadModal
-      v-if="showBulkKrModal"
-      type="kr"
-      @close="showBulkKrModal = false"
+      v-if="showBulkModal"
+      :type="bulkModalType"
+      @close="showBulkModal = false"
       @done="fetchObjectives"
     />
   </div>
@@ -888,7 +888,13 @@ import BulkUploadModal from "~/components/BulkUploadModal.vue";
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
-const showBulkKrModal = ref(false);
+const showBulkModal = ref(false);
+const bulkModalType = ref("kr");
+
+function openBulkUpload(type) {
+  bulkModalType.value = type;
+  showBulkModal.value = true;
+}
 const objectives = ref([]);
 const filterQuarter = ref("");
 const loading = ref(false);

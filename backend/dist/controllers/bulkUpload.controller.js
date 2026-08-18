@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bulkUploadKRs = bulkUploadKRs;
 exports.bulkUploadInitiatives = bulkUploadInitiatives;
+exports.bulkUploadObjectives = bulkUploadObjectives;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const VALID_BSC_PERSPECTIVES = ['FINANCIAL', 'CUSTOMER', 'INTERNAL_PROCESS', 'LEARNING_GROWTH'];
@@ -25,6 +26,8 @@ function normalizeKanbanStatus(val) {
     if (!val)
         return 'TODO';
     const clean = val.toUpperCase().trim().replace(/[-\s]+/g, '_');
+    if (clean === 'DROP' || clean === 'DROPPED' || clean === 'BATAL' || clean === 'CANCELLED')
+        return 'DROP';
     if (clean === 'DONE' || clean === 'SELESAI' || clean === 'COMPLETED')
         return 'DONE';
     if (clean === 'IN_PROGRESS' || clean === 'PROGRESS' || clean === 'SEDANG_BERJALAN' || clean === 'DOING')
@@ -389,6 +392,97 @@ async function bulkUploadInitiatives(req, res) {
     }
     catch (error) {
         console.error('Bulk upload initiatives error:', error);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+}
+/**
+ * POST /api/bulk-upload/objectives
+ * Body: {
+ *   objectives: Array<{
+ *     title: string;
+ *     description?: string;
+ *     quarter: string;
+ *     ownerName?: string; // or ownerId
+ *   }>
+ * }
+ */
+async function bulkUploadObjectives(req, res) {
+    try {
+        const { objectives } = req.body;
+        if (!Array.isArray(objectives) || objectives.length === 0) {
+            return res.status(400).json({ message: 'Payload objectives harus berupa array tidak kosong' });
+        }
+        // Preload users for owner mapping
+        const allUsers = await prisma.user.findMany({ select: { id: true, name: true, email: true } });
+        const userLookup = new Map();
+        for (const u of allUsers) {
+            userLookup.set(u.name.toLowerCase().trim(), u.id);
+            userLookup.set(u.email.toLowerCase().trim(), u.id);
+            userLookup.set(u.id.toLowerCase().trim(), u.id);
+        }
+        const results = {
+            total: objectives.length,
+            success: 0,
+            warned: 0,
+            errors: []
+        };
+        for (let index = 0; index < objectives.length; index++) {
+            const row = objectives[index];
+            const rowNum = index + 2;
+            const itemTitle = row.title ? String(row.title).trim() : `Baris #${rowNum}`;
+            try {
+                if (!row.title || !row.quarter) {
+                    results.errors.push({
+                        row: rowNum,
+                        item: itemTitle,
+                        reason: 'Judul objective (title) dan Quarter wajib diisi'
+                    });
+                    continue;
+                }
+                // Resolve Owner (optional)
+                let resolvedOwnerId = null;
+                const ownerWarnings = [];
+                const ownerKey = (row.ownerName || row.ownerId || '').toString().toLowerCase().trim();
+                if (ownerKey) {
+                    resolvedOwnerId = userLookup.get(ownerKey) || null;
+                    if (!resolvedOwnerId) {
+                        ownerWarnings.push(`Owner '${row.ownerName || row.ownerId}' tidak ditemukan`);
+                    }
+                }
+                const description = row.description ? String(row.description).trim() : null;
+                const quarter = String(row.quarter).trim();
+                await prisma.objective.create({
+                    data: {
+                        title: itemTitle,
+                        description,
+                        quarter,
+                        ownerId: resolvedOwnerId
+                    }
+                });
+                if (ownerWarnings.length > 0) {
+                    results.warned++;
+                    results.errors.push({
+                        row: rowNum,
+                        item: itemTitle,
+                        reason: `Objective dibuat, tetapi: ${ownerWarnings.join(', ')}`
+                    });
+                }
+                else {
+                    results.success++;
+                }
+            }
+            catch (err) {
+                results.errors.push({
+                    row: rowNum,
+                    item: itemTitle,
+                    reason: err.message || 'Gagal menyimpan Objective'
+                });
+            }
+        }
+        return res.status(200).json(results);
+    }
+    catch (error) {
+        console.error('Bulk upload objectives error:', error);
         return res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 }

@@ -85,6 +85,9 @@
                     <span class="chip-name">{{ m.name }}</span>
                     <span class="chip-pos">{{ m.position || 'Manager' }}</span>
                   </div>
+                  <button v-if="isAdmin" class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
+                    &times;
+                  </button>
                 </div>
                 <button v-if="isAdmin" class="assign-btn small" @click="openAssignRoleModal(dept.value, 'MANAGER')">
                   + Edit
@@ -119,6 +122,9 @@
                     <span class="chip-name">{{ m.name }}</span>
                     <span class="chip-pos">{{ m.position || 'Leader' }}</span>
                   </div>
+                  <button v-if="isAdmin" class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
+                    &times;
+                  </button>
                 </div>
                 <button v-if="isAdmin" class="assign-btn small" @click="openAssignRoleModal(dept.value, 'LEADER')">
                   + Edit
@@ -136,6 +142,9 @@
             <div class="role-member-list">
               <div v-if="getTeamMembers(dept.value).length === 0" class="empty-role">
                 <span class="empty-hint">Belum ada anggota Tim</span>
+                <button v-if="isAdmin" class="assign-btn" @click="openAssignRoleModal(dept.value, 'TEAM')">
+                  + Assign Anggota
+                </button>
               </div>
               <div v-else class="member-chips">
                 <div
@@ -150,7 +159,13 @@
                     <span class="chip-name">{{ m.name }}</span>
                     <span class="chip-pos">{{ m.position || 'Team Member' }}</span>
                   </div>
+                  <button v-if="isAdmin" class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
+                    &times;
+                  </button>
                 </div>
+                <button v-if="isAdmin" class="assign-btn small" @click="openAssignRoleModal(dept.value, 'TEAM')">
+                  + Edit
+                </button>
               </div>
             </div>
           </div>
@@ -623,12 +638,15 @@ function openAssignRoleModal(deptVal: string, role: string) {
     selectedRoleUserIds.value = mgrs.length ? [mgrs[0].id] : [];
   } else if (role === 'LEADER') {
     selectedRoleUserIds.value = getLeaders(deptVal).map(u => u.id);
+  } else if (role === 'TEAM') {
+    selectedRoleUserIds.value = getTeamMembers(deptVal).map(u => u.id);
   }
   showRoleModal.value = true;
 }
 
 async function saveRoleAssignment() {
   saving.value = true;
+  errorMsg.value = '';
   try {
     const deptObj = DEPARTMENTS.value.find(d => d.value === targetDept.value);
     if (!deptObj) return;
@@ -640,6 +658,33 @@ async function saveRoleAssignment() {
         headers: getHeaders(),
         body: JSON.stringify({ userId: mgrId }),
       });
+    } else {
+      const prevMembers = allUsers.value.filter(
+        u => u.department === targetDept.value && u.role === targetRole.value
+      );
+  
+      // Users to assign to this dept and role
+      for (const uid of selectedRoleUserIds.value) {
+        await fetch(`${API}/users/${uid}`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            role: targetRole.value,
+            department: targetDept.value,
+          }),
+        });
+      }
+  
+      // Users who were deselected (removed from this role & department)
+      for (const prev of prevMembers) {
+        if (!selectedRoleUserIds.value.includes(prev.id)) {
+          await fetch(`${API}/users/${prev.id}`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ department: null, role: 'TEAM' }),
+          });
+        }
+      }
     }
 
     showRoleModal.value = false;
@@ -650,6 +695,27 @@ async function saveRoleAssignment() {
     errorMsg.value = e.message;
   } finally {
     saving.value = false;
+  }
+}
+
+async function removeUserFromDept(userId: string) {
+  if (!confirm('Apakah Anda yakin ingin mengeluarkan pegawai ini dari struktur departemen? (Data master tidak akan terhapus)')) return;
+  try {
+    const res = await fetch(`${API}/users/${userId}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ department: null }),
+    });
+    if (res.ok) {
+      successMsg.value = 'Pegawai berhasil dikeluarkan dari departemen.';
+      await Promise.all([fetchDepartments(), fetchUsers()]);
+      setTimeout(() => successMsg.value = '', 3000);
+    } else {
+      const err = await res.json();
+      errorMsg.value = err.message || 'Gagal mengeluarkan pegawai';
+    }
+  } catch (e: any) {
+    errorMsg.value = e.message;
   }
 }
 
@@ -1210,4 +1276,24 @@ onMounted(async () => {
 
 .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+
+.remove-member-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  transition: all 0.2s ease;
+}
+.remove-member-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 </style>

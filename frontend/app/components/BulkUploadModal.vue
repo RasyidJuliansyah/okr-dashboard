@@ -4,21 +4,43 @@
       <div class="modal-header">
         <div class="modal-title-wrap">
           <div class="modal-badge-type">
-            {{ isKr ? 'Key Results (KR)' : 'Inisiatif Tim' }}
+            {{
+              isObjective
+                ? "Objective"
+                : isKr
+                  ? "Key Results (KR)"
+                  : "Inisiatif Tim"
+            }}
           </div>
-          <h3>Bulk Upload {{ isKr ? 'Key Results & RACI' : 'Inisiatif' }} (CSV)</h3>
+          <h3>
+            Bulk Upload
+            {{
+              isObjective
+                ? "Objective"
+                : isKr
+                  ? "Key Results & RACI"
+                  : "Inisiatif"
+            }}
+            (CSV)
+          </h3>
         </div>
         <button class="close-btn" @click="$emit('close')">&times;</button>
       </div>
 
       <!-- Steps Indicator -->
       <div class="steps-nav">
-        <div class="step-indicator" :class="{ active: currentStep === 1, done: currentStep > 1 }">
+        <div
+          class="step-indicator"
+          :class="{ active: currentStep === 1, done: currentStep > 1 }"
+        >
           <span class="step-num">1</span>
           <span class="step-text">Upload File</span>
         </div>
         <div class="step-divider"></div>
-        <div class="step-indicator" :class="{ active: currentStep === 2, done: currentStep > 2 }">
+        <div
+          class="step-indicator"
+          :class="{ active: currentStep === 2, done: currentStep > 2 }"
+        >
           <span class="step-num">2</span>
           <span class="step-text">Preview &amp; Validasi</span>
         </div>
@@ -30,7 +52,11 @@
       </div>
 
       <!-- Alert if any -->
-      <div v-if="localError" class="alert alert-error" style="margin-bottom: 1rem;">
+      <div
+        v-if="localError"
+        class="alert alert-error"
+        style="margin-bottom: 1rem"
+      >
         {{ localError }}
       </div>
 
@@ -39,50 +65,116 @@
         <div class="info-box">
           <div class="info-icon">💡</div>
           <div class="info-text">
-            <template v-if="isKr">
-              <p><strong>Format Kolom CSV untuk Key Result:</strong></p>
-              <code>objectiveId, title, targetValue, unit, bscPerspective, R, A, C, I, departments</code>
+            <template v-if="isObjective">
+              <p><strong>Format Kolom CSV untuk Objective:</strong></p>
+              <code>title, description, quarter, ownerName</code>
               <p class="text-sub">
-                * Kolom <strong>objectiveId</strong> bisa diisi ID atau Judul Objective.
-                * Kolom <strong>R, A, C, I</strong> diisi nama pegawai terdaftar (pisahkan koma untuk multi-nama).
+                * Kolom <strong>title</strong> dan
+                <strong>quarter</strong> (contoh: Q3-2026) wajib diisi. * Kolom
+                <strong>ownerName</strong> diisi nama atau email owner/PIC
+                terdaftar (opsional).
               </p>
             </template>
-            <template v-else>
-              <p><strong>Format Kolom CSV untuk Inisiatif:</strong></p>
-              <code>keyResultId, teamName, ownerName, title, description, targetValue, unit, kanbanStatus</code>
+            <template v-if="isKr">
+              <p><strong>Format Kolom CSV untuk Key Result:</strong></p>
+              <code
+                >objectiveId, title, targetValue, unit, bscPerspective, R, A, C,
+                I, departments</code
+              >
               <p class="text-sub">
-                * <strong>kanbanStatus</strong>: <code>TODO</code>, <code>IN_PROGRESS</code>, atau <code>DONE</code> (default: TODO).
-                Nama Owner dan Tim akan dicocokkan otomatis.
+                * Kolom <strong>objectiveId</strong> bisa diisi ID atau Judul
+                Objective. * Kolom <strong>R, A, C, I</strong> diisi nama
+                pegawai terdaftar (pisahkan koma untuk multi-nama).
+              </p>
+            </template>
+            <template v-else-if="!isObjective && !isKr">
+              <p><strong>Format Kolom CSV untuk Inisiatif:</strong></p>
+              <code
+                >keyResultId, teamName, ownerName, title, description,
+                targetValue, unit, kanbanStatus</code
+              >
+              <p class="text-sub">
+                * <strong>kanbanStatus</strong>: <code>TODO</code>,
+                <code>IN_PROGRESS</code>, atau <code>DONE</code> (default:
+                TODO). Nama Owner dan Tim akan dicocokkan otomatis.
               </p>
             </template>
           </div>
         </div>
 
         <!-- Target Objective Selector for KR -->
-        <div v-if="isKr && availableObjectives.length > 0" class="form-group" style="margin-bottom: 1.25rem;">
-          <label style="font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">
-            Target Objective Default (Otomatis digunakan jika baris CSV tidak mencantumkan objectiveId):
+        <div
+          v-if="isKr && availableObjectives.length > 0"
+          class="form-group"
+          style="margin-bottom: 1.25rem"
+        >
+          <label
+            style="
+              font-size: 0.85rem;
+              font-weight: 600;
+              color: #334155;
+              margin-bottom: 4px;
+              display: block;
+            "
+          >
+            Target Objective Default (Otomatis digunakan jika baris CSV tidak
+            mencantumkan objectiveId):
           </label>
-          <select v-model="targetObjectiveId" class="form-input" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
-            <option value="">-- Gunakan Objective dari CSV / Objective Pertama --</option>
-            <option v-for="obj in availableObjectives" :key="obj.id" :value="obj.id">
+          <select
+            v-model="targetObjectiveId"
+            class="form-input"
+            style="
+              width: 100%;
+              padding: 8px 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 8px;
+            "
+          >
+            <option value="">
+              -- Gunakan Objective dari CSV / Objective Pertama --
+            </option>
+            <option
+              v-for="obj in availableObjectives"
+              :key="obj.id"
+              :value="obj.id"
+            >
               {{ obj.title }}
             </option>
           </select>
         </div>
 
         <div class="action-row-template">
-          <button type="button" class="secondary-btn template-btn" @click="downloadTemplate">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
+          <button
+            type="button"
+            class="secondary-btn template-btn"
+            @click="downloadTemplate"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Download Template CSV {{ isKr ? 'KR' : 'Inisiatif' }}
+            Download Template CSV
+            {{ isObjective ? "Objective" : isKr ? "KR" : "Inisiatif" }}
           </button>
         </div>
 
-        <div class="upload-dropzone" :class="{ 'is-dragging': isDragging }" @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false" @drop.prevent="handleDrop">
+        <div
+          class="upload-dropzone"
+          :class="{ 'is-dragging': isDragging }"
+          @dragover.prevent="isDragging = true"
+          @dragleave.prevent="isDragging = false"
+          @drop.prevent="handleDrop"
+        >
           <input
             id="bulk-csv-input"
             type="file"
@@ -92,14 +184,27 @@
           />
           <label for="bulk-csv-input" class="upload-dropzone-label">
             <div class="upload-icon-svg">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0E97D6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="12" y1="18" x2="12" y2="12"/>
-                <polyline points="9 15 12 12 15 15"/>
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0E97D6"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="12" y1="18" x2="12" y2="12" />
+                <polyline points="9 15 12 12 15 15" />
               </svg>
             </div>
-            <div class="upload-text-main">Pilih file CSV atau seret ke sini</div>
+            <div class="upload-text-main">
+              Pilih file CSV atau seret ke sini
+            </div>
             <div class="upload-text-hint">Ukuran file maksimal 5MB (.csv)</div>
           </label>
         </div>
@@ -109,19 +214,34 @@
       <div v-if="currentStep === 2" class="step-content">
         <div class="preview-header-bar">
           <div class="preview-count">
-            <strong>Preview Data: {{ parsedRows.length }} baris terdeteksi</strong>
+            <strong
+              >Preview Data: {{ parsedRows.length }} baris terdeteksi</strong
+            >
           </div>
           <div class="preview-badges">
             <span class="count-pill valid">🟢 {{ validCount }} Valid</span>
-            <span v-if="warningCount > 0" class="count-pill warning">🟡 {{ warningCount }} Perlu Cek</span>
-            <span v-if="errorCount > 0" class="count-pill error">🔴 {{ errorCount }} Error</span>
+            <span v-if="warningCount > 0" class="count-pill warning"
+              >🟡 {{ warningCount }} Perlu Cek</span
+            >
+            <span v-if="errorCount > 0" class="count-pill error"
+              >🔴 {{ errorCount }} Error</span
+            >
           </div>
         </div>
 
         <div class="preview-table-container">
           <table class="preview-table">
             <thead>
-              <tr v-if="isKr">
+              <tr v-if="isObjective">
+                <th>#</th>
+                <th>Status</th>
+                <th>Judul Objective</th>
+                <th>Deskripsi</th>
+                <th>Quarter</th>
+                <th>Owner PIC</th>
+                <th>Catatan / Masalah</th>
+              </tr>
+              <tr v-else-if="isKr">
                 <th>#</th>
                 <th>Status</th>
                 <th>Judul KR</th>
@@ -144,21 +264,60 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in parsedRows" :key="row._rowNum" :class="{ 'row-has-error': row._status === 'ERROR', 'row-has-warning': row._status === 'WARNING' }">
+              <tr
+                v-for="row in parsedRows"
+                :key="row._rowNum"
+                :class="{
+                  'row-has-error': row._status === 'ERROR',
+                  'row-has-warning': row._status === 'WARNING',
+                }"
+              >
                 <td class="col-num">{{ row._rowNum }}</td>
                 <td>
-                  <span v-if="row._status === 'VALID'" class="badge-status valid">VALID</span>
-                  <span v-else-if="row._status === 'WARNING'" class="badge-status warning">WARNING</span>
+                  <span
+                    v-if="row._status === 'VALID'"
+                    class="badge-status valid"
+                    >VALID</span
+                  >
+                  <span
+                    v-else-if="row._status === 'WARNING'"
+                    class="badge-status warning"
+                    >WARNING</span
+                  >
                   <span v-else class="badge-status error">ERROR</span>
                 </td>
-                
+
+                <!-- Objective Columns -->
+                <template v-if="isObjective">
+                  <td class="col-title" :title="row.title">
+                    {{ row.title || "-" }}
+                  </td>
+                  <td>{{ row.description || "-" }}</td>
+                  <td>
+                    <span class="quarter-chip">{{ row.quarter || "-" }}</span>
+                  </td>
+                  <td>{{ row.ownerName || "-" }}</td>
+                </template>
+
                 <!-- KR Columns -->
-                <template v-if="isKr">
-                  <td class="col-title" :title="row.title">{{ row.title || '-' }}</td>
-                  <td class="col-target">{{ row.targetValue }} {{ row.unit }}</td>
-                  <td><span class="perspective-chip">{{ row.bscPerspective || 'FINANCIAL' }}</span></td>
-                  <td><span class="raci-chip r">{{ row.R || '-' }}</span></td>
-                  <td><span class="raci-chip a">{{ row.A || '-' }}</span></td>
+                <template v-else-if="isKr">
+                  <td class="col-title" :title="row.title">
+                    {{ row.title || "-" }}
+                  </td>
+                  <td class="col-target">
+                    {{ row.targetValue }} {{ row.unit }}
+                  </td>
+                  <td>
+                    <span class="perspective-chip">{{
+                      row.bscPerspective || "FINANCIAL"
+                    }}</span>
+                  </td>
+                  <td>
+                    <span class="raci-chip r">{{ row.R || "-" }}</span>
+                  </td>
+                  <td>
+                    <span class="raci-chip a">{{ row.A || "-" }}</span>
+                  </td>
                   <td>
                     <span v-if="row.C" class="raci-chip c">C: {{ row.C }}</span>
                     <span v-if="row.I" class="raci-chip i">I: {{ row.I }}</span>
@@ -168,15 +327,31 @@
 
                 <!-- Initiative Columns -->
                 <template v-else>
-                  <td class="col-title" :title="row.title">{{ row.title || '-' }}</td>
-                  <td><span class="team-chip">{{ row.teamName || row.teamId || '-' }}</span></td>
-                  <td>{{ row.ownerName || row.ownerId || '-' }}</td>
-                  <td class="col-target">{{ row.targetValue || '0' }} {{ row.unit || '' }}</td>
-                  <td><span class="kanban-chip" :class="(row.kanbanStatus || 'TODO').toLowerCase()">{{ row.kanbanStatus || 'TODO' }}</span></td>
+                  <td class="col-title" :title="row.title">
+                    {{ row.title || "-" }}
+                  </td>
+                  <td>
+                    <span class="team-chip">{{
+                      row.teamName || row.teamId || "-"
+                    }}</span>
+                  </td>
+                  <td>{{ row.ownerName || row.ownerId || "-" }}</td>
+                  <td class="col-target">
+                    {{ row.targetValue || "0" }} {{ row.unit || "" }}
+                  </td>
+                  <td>
+                    <span
+                      class="kanban-chip"
+                      :class="(row.kanbanStatus || 'TODO').toLowerCase()"
+                      >{{ row.kanbanStatus || "TODO" }}</span
+                    >
+                  </td>
                 </template>
 
                 <td class="col-issue">
-                  <span v-if="row._issues?.length" class="issue-text">{{ row._issues.join(', ') }}</span>
+                  <span v-if="row._issues?.length" class="issue-text">{{
+                    row._issues.join(", ")
+                  }}</span>
                   <span v-else class="text-muted">Siap diimport</span>
                 </td>
               </tr>
@@ -194,7 +369,11 @@
             :disabled="isSubmitting || (validCount === 0 && warningCount === 0)"
             @click="submitBulkUpload"
           >
-            {{ isSubmitting ? 'Mengimport Data...' : `Konfirmasi Import (${validCount + warningCount} Data)` }}
+            {{
+              isSubmitting
+                ? "Mengimport Data..."
+                : `Konfirmasi Import (${validCount + warningCount} Data)`
+            }}
           </button>
         </div>
       </div>
@@ -203,7 +382,7 @@
       <div v-if="currentStep === 3" class="step-content result-content">
         <div class="result-icon-celebrate">🎉</div>
         <h4>Proses Bulk Upload Selesai!</h4>
-        <p class="text-muted" style="margin-bottom: 1.5rem;">
+        <p class="text-muted" style="margin-bottom: 1.5rem">
           Ringkasan hasil penyimpanan data ke sistem:
         </p>
 
@@ -223,10 +402,17 @@
         </div>
 
         <!-- Detail Error List -->
-        <div v-if="uploadResult?.errors?.length" class="result-errors-accordion">
+        <div
+          v-if="uploadResult?.errors?.length"
+          class="result-errors-accordion"
+        >
           <h5>Detail Catatan / Error:</h5>
           <div class="error-items-list">
-            <div v-for="(err, idx) in uploadResult.errors" :key="idx" class="error-item-card">
+            <div
+              v-for="(err, idx) in uploadResult.errors"
+              :key="idx"
+              class="error-item-card"
+            >
               <span class="err-row-badge">Baris {{ err.row }}</span>
               <strong class="err-item-title">{{ err.item }}:</strong>
               <span class="err-reason">{{ err.reason }}</span>
@@ -234,7 +420,10 @@
           </div>
         </div>
 
-        <div class="modal-footer" style="justify-content: center; margin-top: 1.5rem;">
+        <div
+          class="modal-footer"
+          style="justify-content: center; margin-top: 1.5rem"
+        >
           <button type="button" class="primary-btn" @click="finishImport">
             Selesai &amp; Perbarui Tampilan
           </button>
@@ -245,51 +434,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
 
 const props = withDefaults(
   defineProps<{
-    type: 'kr' | 'initiative';
+    type: "objective" | "kr" | "initiative";
     defaultObjectiveId?: string;
     defaultKeyResultId?: string;
   }>(),
   {
-    type: 'kr',
-    defaultObjectiveId: '',
-    defaultKeyResultId: '',
-  }
+    type: "kr",
+    defaultObjectiveId: "",
+    defaultKeyResultId: "",
+  },
 );
 
 const emit = defineEmits<{
-  (e: 'close'): void;
-  (e: 'done'): void;
+  (e: "close"): void;
+  (e: "done"): void;
 }>();
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
 
-const isKr = computed(() => props.type === 'kr');
+const isObjective = computed(() => props.type === "objective");
+const isKr = computed(() => props.type === "kr");
+const isInitiative = computed(() => props.type === "initiative");
 
 const currentStep = ref<1 | 2 | 3>(1);
 const isDragging = ref(false);
 const isSubmitting = ref(false);
-const localError = ref('');
+const localError = ref("");
 const parsedRows = ref<any[]>([]);
 const uploadResult = ref<any>(null);
 
 const availableObjectives = ref<any[]>([]);
-const targetObjectiveId = ref(props.defaultObjectiveId || '');
+const targetObjectiveId = ref(props.defaultObjectiveId || "");
 
 onMounted(async () => {
   if (isKr.value) {
     try {
       const res = await fetch(`${API}/objectives`, {
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${auth.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '')}`
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : "")}`,
+        },
       });
       if (res.ok) {
         availableObjectives.value = await res.json();
@@ -301,41 +492,59 @@ onMounted(async () => {
   }
 });
 
-const validCount = computed(() => parsedRows.value.filter(r => r._status === 'VALID').length);
-const warningCount = computed(() => parsedRows.value.filter(r => r._status === 'WARNING').length);
-const errorCount = computed(() => parsedRows.value.filter(r => r._status === 'ERROR').length);
+const validCount = computed(
+  () => parsedRows.value.filter((r) => r._status === "VALID").length,
+);
+const warningCount = computed(
+  () => parsedRows.value.filter((r) => r._status === "WARNING").length,
+);
+const errorCount = computed(
+  () => parsedRows.value.filter((r) => r._status === "ERROR").length,
+);
 
 // ─── Download Template ───
 function downloadTemplate() {
-  let headers = '';
-  let sampleContent = '';
-  let fileName = '';
+  let headers = "";
+  let sampleContent = "";
+  let fileName = "";
 
-  if (isKr.value) {
-    fileName = 'template_bulk_kr.csv';
-    headers = 'objectiveId,title,targetValue,unit,bscPerspective,R,A,C,I,departments';
-    const sampleObjId = targetObjectiveId.value || (availableObjectives.value[0]?.title || 'obj-1');
+  if (isObjective.value) {
+    fileName = "template_bulk_objective.csv";
+    headers = "title,description,quarter,ownerName";
+    sampleContent = [
+      headers,
+      `"Meningkatkan Penjualan B2B","Fokus pada segmen korporasi baru","Q3-2026","Budi Santoso"`,
+      `"Meningkatkan Kepuasan Pelanggan","Mengurangi response time support ticket","Q3-2026","Sarah Smith"`,
+      `"Peningkatan Infrastruktur TechOps","Migrasi server database utama","Q3-2026","John Doe"`,
+    ].join("\n");
+  } else if (isKr.value) {
+    fileName = "template_bulk_kr.csv";
+    headers =
+      "objectiveId,title,targetValue,unit,bscPerspective,R,A,C,I,departments";
+    const sampleObjId =
+      targetObjectiveId.value || availableObjectives.value[0]?.title || "obj-1";
     sampleContent = [
       headers,
       `"${sampleObjId}","Meningkatkan Revenue Q3 2026",2.5,"M USD",FINANCIAL,"Budi Santoso","Sarah Smith","John Doe","Jane Doe","FINANCE,BUSINESS"`,
       `"${sampleObjId}","Menurunkan Customer Churn Rate",2.0,"%","CUSTOMER","Sarah Smith","John Doe","","","PRODUCT_SERVICE"`,
       `"${sampleObjId}","Meningkatkan Uptime Server",99.9,"%","INTERNAL_PROCESS","John Doe","Bob Johnson","","","TECHOPS"`,
-    ].join('\n');
+    ].join("\n");
   } else {
-    fileName = 'template_bulk_inisiatif.csv';
-    headers = 'keyResultId,teamName,ownerName,title,description,targetValue,unit,kanbanStatus';
+    fileName = "template_bulk_inisiatif.csv";
+    headers =
+      "keyResultId,teamName,ownerName,title,description,targetValue,unit,kanbanStatus";
     sampleContent = [
       headers,
       'kr-1,"Engineering","John Doe","Optimalisasi Query Database","Refactor index database utama",10,"Tabel",TODO',
       'kr-1,"Product & Design","Sarah Smith","Redesign Checkout Flow","Pembaruan UX pembayaran",5,"Layar",IN_PROGRESS',
       'kr-2,"Growth & Marketing","Jane Doe","Kampanye Retensi Email","Automated onboarding drip",1000,"Email",DONE',
-    ].join('\n');
+    ].join("\n");
   }
 
-  const blob = new Blob([sampleContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
+  const blob = new Blob([sampleContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.setAttribute('download', fileName);
+  link.setAttribute("download", fileName);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -357,9 +566,9 @@ function handleDrop(e: DragEvent) {
 }
 
 function readFile(file: File) {
-  localError.value = '';
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    localError.value = 'File harus berformat .csv';
+  localError.value = "";
+  if (!file.name.toLowerCase().endsWith(".csv")) {
+    localError.value = "File harus berformat .csv";
     return;
   }
 
@@ -369,7 +578,7 @@ function readFile(file: File) {
       const text = evt.target?.result as string;
       parseCSVText(text);
     } catch (err: any) {
-      localError.value = 'Gagal membaca CSV: ' + err.message;
+      localError.value = "Gagal membaca CSV: " + err.message;
     }
   };
   reader.readAsText(file);
@@ -378,7 +587,7 @@ function readFile(file: File) {
 // ─── Robust CSV Parser supporting quotes ───
 function parseCSVLine(text: string): string[] {
   const result: string[] = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
 
   for (let i = 0; i < text.length; i++) {
@@ -390,9 +599,9 @@ function parseCSVLine(text: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === "," && !inQuotes) {
       result.push(current.trim());
-      current = '';
+      current = "";
     } else {
       current += char;
     }
@@ -402,13 +611,15 @@ function parseCSVLine(text: string): string[] {
 }
 
 function parseCSVText(rawText: string) {
-  const lines = rawText.split(/\r?\n/).filter(line => line.trim().length > 0);
+  const lines = rawText.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length < 2) {
-    localError.value = 'File CSV kosong atau hanya berisi baris header.';
+    localError.value = "File CSV kosong atau hanya berisi baris header.";
     return;
   }
 
-  const headerRow = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[\s_-]+/g, ''));
+  const headerRow = parseCSVLine(lines[0]).map((h) =>
+    h.toLowerCase().replace(/[\s_-]+/g, ""),
+  );
   const parsed: any[] = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -416,24 +627,31 @@ function parseCSVText(rawText: string) {
     const row: any = { _rowNum: i + 1, _issues: [] as string[] };
 
     headerRow.forEach((header, colIdx) => {
-      const val = values[colIdx] || '';
+      const val = values[colIdx] || "";
       row[header] = val;
       // Also map standard headers
-      if (header.includes('objective')) row.objectiveId = val;
-      if (header.includes('keyresult') || header === 'krid') row.keyResultId = val;
-      if (header === 'title' || header === 'judul' || header === 'nama') row.title = val;
-      if (header.includes('target')) row.targetValue = val;
-      if (header === 'unit' || header === 'satuan') row.unit = val;
-      if (header.includes('perspective') || header.includes('bsc')) row.bscPerspective = val;
-      if (header.includes('team') || header.includes('tim')) row.teamName = val;
-      if (header.includes('owner') || header.includes('pic')) row.ownerName = val;
-      if (header.includes('kanban') || header.includes('status')) row.kanbanStatus = val;
-      if (header === 'r') row.R = val;
-      if (header === 'a') row.A = val;
-      if (header === 'c') row.C = val;
-      if (header === 'i') row.I = val;
-      if (header.includes('dept') || header.includes('department')) row.departments = val;
-      if (header.includes('desc') || header.includes('deskripsi')) row.description = val;
+      if (header.includes("objective")) row.objectiveId = val;
+      if (header.includes("keyresult") || header === "krid")
+        row.keyResultId = val;
+      if (header === "title" || header === "judul" || header === "nama")
+        row.title = val;
+      if (header.includes("target")) row.targetValue = val;
+      if (header === "unit" || header === "satuan") row.unit = val;
+      if (header.includes("perspective") || header.includes("bsc"))
+        row.bscPerspective = val;
+      if (header.includes("team") || header.includes("tim")) row.teamName = val;
+      if (header.includes("owner") || header.includes("pic"))
+        row.ownerName = val;
+      if (header.includes("kanban") || header.includes("status"))
+        row.kanbanStatus = val;
+      if (header === "r") row.R = val;
+      if (header === "a") row.A = val;
+      if (header === "c") row.C = val;
+      if (header === "i") row.I = val;
+      if (header.includes("dept") || header.includes("department"))
+        row.departments = val;
+      if (header.includes("desc") || header.includes("deskripsi"))
+        row.description = val;
     });
 
     // Fallbacks from props or selected targetObjectiveId
@@ -449,50 +667,62 @@ function parseCSVText(rawText: string) {
     let hasWarning = false;
 
     if (!row.title) {
-      row._issues.push('Judul kosong');
+      row._issues.push("Judul kosong");
       hasError = true;
     }
 
-    if (isKr.value) {
-      if (row.targetValue === undefined || row.targetValue === '') {
-        row._issues.push('Target value kosong');
+    if (isObjective.value) {
+      if (!row.title) {
+        row._issues.push("Judul objective kosong");
         hasError = true;
-      } else if (isNaN(parseFloat(row.targetValue)) || parseFloat(row.targetValue) <= 0) {
-        row._issues.push('Target harus angka > 0');
+      }
+      if (!row.quarter) {
+        row._issues.push("Quarter kosong");
+        hasError = true;
+      }
+    } else if (isKr.value) {
+      if (row.targetValue === undefined || row.targetValue === "") {
+        row._issues.push("Target value kosong");
+        hasError = true;
+      } else if (
+        isNaN(parseFloat(row.targetValue)) ||
+        parseFloat(row.targetValue) <= 0
+      ) {
+        row._issues.push("Target harus angka > 0");
         hasError = true;
       }
       if (!row.R) {
-        row._issues.push('Belum ada Responsible (R)');
+        row._issues.push("Belum ada Responsible (R)");
         hasWarning = true;
       }
       if (!row.A) {
-        row._issues.push('Belum ada Accountable (A)');
+        row._issues.push("Belum ada Accountable (A)");
         hasWarning = true;
       }
     } else {
       if (!row.teamName && !row.teamId) {
-        row._issues.push('Tim belum diisi');
+        row._issues.push("Tim belum diisi");
         hasWarning = true;
       }
       if (!row.ownerName && !row.ownerId) {
-        row._issues.push('Owner belum diisi');
+        row._issues.push("Owner belum diisi");
         hasWarning = true;
       }
     }
 
     if (hasError) {
-      row._status = 'ERROR';
+      row._status = "ERROR";
     } else if (hasWarning) {
-      row._status = 'WARNING';
+      row._status = "WARNING";
     } else {
-      row._status = 'VALID';
+      row._status = "VALID";
     }
 
     parsed.push(row);
   }
 
   if (parsed.length === 0) {
-    localError.value = 'Tidak ada baris data yang berhasil diparsing.';
+    localError.value = "Tidak ada baris data yang berhasil diparsing.";
     return;
   }
 
@@ -502,55 +732,68 @@ function parseCSVText(rawText: string) {
 
 // ─── Submit Bulk Upload to Backend ───
 async function submitBulkUpload() {
-  localError.value = '';
+  localError.value = "";
   isSubmitting.value = true;
 
   try {
-    const validRows = parsedRows.value.filter(r => r._status !== 'ERROR');
+    const validRows = parsedRows.value.filter((r) => r._status !== "ERROR");
     if (validRows.length === 0) {
-      localError.value = 'Tidak ada baris yang valid untuk diimport.';
+      localError.value = "Tidak ada baris yang valid untuk diimport.";
       isSubmitting.value = false;
       return;
     }
 
     // Ensure fallback objectiveId
     if (isKr.value) {
-      validRows.forEach(r => {
-        if (!r.objectiveId) r.objectiveId = targetObjectiveId.value || props.defaultObjectiveId;
+      validRows.forEach((r) => {
+        if (!r.objectiveId)
+          r.objectiveId = targetObjectiveId.value || props.defaultObjectiveId;
       });
     }
 
-    const endpoint = isKr.value ? `${API}/bulk-upload/krs` : `${API}/bulk-upload/initiatives`;
-    const payload = isKr.value ? { keyResults: validRows } : { initiatives: validRows };
-    const token = auth.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '');
+    let endpoint = "";
+    let payload = {};
+    if (isObjective.value) {
+      endpoint = `${API}/bulk-upload/objectives`;
+      payload = { objectives: validRows };
+    } else if (isKr.value) {
+      endpoint = `${API}/bulk-upload/krs`;
+      payload = { keyResults: validRows };
+    } else {
+      endpoint = `${API}/bulk-upload/initiatives`;
+      payload = { initiatives: validRows };
+    }
+    const token =
+      auth.token ||
+      (typeof window !== "undefined" ? localStorage.getItem("auth_token") : "");
 
     const res = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.message || 'Gagal melakukan bulk upload');
+      throw new Error(errData.message || "Gagal melakukan bulk upload");
     }
 
     const resultData = await res.json();
     uploadResult.value = resultData;
     currentStep.value = 3;
   } catch (err: any) {
-    localError.value = err.message || 'Terjadi kesalahan saat upload';
+    localError.value = err.message || "Terjadi kesalahan saat upload";
   } finally {
     isSubmitting.value = false;
   }
 }
 
 function finishImport() {
-  emit('done');
-  emit('close');
+  emit("done");
+  emit("close");
 }
 </script>
 
@@ -598,7 +841,7 @@ function finishImport() {
 .modal-badge-type {
   font-size: 0.75rem;
   font-weight: 700;
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
   padding: 3px 8px;
   border-radius: 6px;
@@ -642,12 +885,12 @@ function finishImport() {
 }
 
 .step-indicator.active {
-  color: #0E97D6;
+  color: #0e97d6;
   font-weight: 600;
 }
 
 .step-indicator.done {
-  color: #10B981;
+  color: #10b981;
 }
 
 .step-num {
@@ -662,12 +905,12 @@ function finishImport() {
 }
 
 .step-indicator.active .step-num {
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
 }
 
 .step-indicator.done .step-num {
-  background: #10B981;
+  background: #10b981;
   color: #ffffff;
 }
 
@@ -735,7 +978,7 @@ function finishImport() {
   border-radius: 8px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #0E97D6;
+  color: #0e97d6;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -743,7 +986,7 @@ function finishImport() {
 
 .template-btn:hover {
   background: rgba(14, 151, 214, 0.05);
-  border-color: #0E97D6;
+  border-color: #0e97d6;
 }
 
 /* Dropzone */
@@ -757,8 +1000,9 @@ function finishImport() {
   cursor: pointer;
 }
 
-.upload-dropzone:hover, .upload-dropzone.is-dragging {
-  border-color: #0E97D6;
+.upload-dropzone:hover,
+.upload-dropzone.is-dragging {
+  border-color: #0e97d6;
   background: rgba(14, 151, 214, 0.04);
 }
 
@@ -805,9 +1049,18 @@ function finishImport() {
   border-radius: 6px;
 }
 
-.count-pill.valid { background: #d1fae5; color: #065f46; }
-.count-pill.warning { background: #fef3c7; color: #92400e; }
-.count-pill.error { background: #fee2e2; color: #991b1b; }
+.count-pill.valid {
+  background: #d1fae5;
+  color: #065f46;
+}
+.count-pill.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+.count-pill.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
 .preview-table-container {
   max-height: 380px;
@@ -883,9 +1136,18 @@ function finishImport() {
   border-radius: 4px;
 }
 
-.badge-status.valid { background: #d1fae5; color: #065f46; }
-.badge-status.warning { background: #fef3c7; color: #92400e; }
-.badge-status.error { background: #fee2e2; color: #991b1b; }
+.badge-status.valid {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-status.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
 .perspective-chip {
   font-size: 0.72rem;
@@ -903,10 +1165,23 @@ function finishImport() {
   margin-right: 4px;
 }
 
-.raci-chip.r { background: #e0f2fe; color: #0369a1; font-weight: 600; }
-.raci-chip.a { background: #fef3c7; color: #b45309; }
-.raci-chip.c { background: #f3e8ff; color: #7e22ce; }
-.raci-chip.i { background: #f1f5f9; color: #475569; }
+.raci-chip.r {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+}
+.raci-chip.a {
+  background: #fef3c7;
+  color: #b45309;
+}
+.raci-chip.c {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+.raci-chip.i {
+  background: #f1f5f9;
+  color: #475569;
+}
 
 .team-chip {
   font-size: 0.75rem;
@@ -922,9 +1197,18 @@ function finishImport() {
   border-radius: 4px;
 }
 
-.kanban-chip.todo { background: #e2e8f0; color: #334155; }
-.kanban-chip.in_progress { background: #dbeafe; color: #1d4ed8; }
-.kanban-chip.done { background: #d1fae5; color: #047857; }
+.kanban-chip.todo {
+  background: #e2e8f0;
+  color: #334155;
+}
+.kanban-chip.in_progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.kanban-chip.done {
+  background: #d1fae5;
+  color: #047857;
+}
 
 /* Results */
 .result-content {
@@ -950,9 +1234,21 @@ function finishImport() {
   border: 1px solid transparent;
 }
 
-.stat-box.success { background: #d1fae5; border-color: #a7f3d0; color: #065f46; }
-.stat-box.warning { background: #fef3c7; border-color: #fde68a; color: #92400e; }
-.stat-box.error { background: #fee2e2; border-color: #fecaca; color: #991b1b; }
+.stat-box.success {
+  background: #d1fae5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.stat-box.warning {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.stat-box.error {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
 
 .stat-val {
   font-size: 1.75rem;

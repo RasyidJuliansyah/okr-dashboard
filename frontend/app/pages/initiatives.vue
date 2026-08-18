@@ -127,9 +127,14 @@
               <h4 class="card-title">{{ ini.title }}</h4>
               <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
 
-              <div class="card-target-row" v-if="ini.targetValue">
-                <span class="target-label">Target:</span>
-                <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target:</span>
+                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                </span>
+                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
+                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                </span>
               </div>
 
               <!-- KPIs summary chips -->
@@ -205,9 +210,14 @@
               <h4 class="card-title">{{ ini.title }}</h4>
               <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
 
-              <div class="card-target-row" v-if="ini.targetValue">
-                <span class="target-label">Target:</span>
-                <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target:</span>
+                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                </span>
+                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
+                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                </span>
               </div>
 
               <!-- KPIs summary chips -->
@@ -284,6 +294,16 @@
               <h4 class="card-title text-done">{{ ini.title }}</h4>
               <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
 
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target:</span>
+                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                </span>
+                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
+                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                </span>
+              </div>
+
               <div class="card-footer-meta">
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
@@ -302,6 +322,79 @@
                 <div class="move-actions">
                   <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
                     &larr; Buka Kembali
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMN 4: DROP -->
+        <div
+          class="kanban-column"
+          :class="{ 'drop-active': dragOverColumn === 'DROP' }"
+          @dragover.prevent="canMoveCards ? dragOverColumn = 'DROP' : null"
+          @dragleave="dragOverColumn = null"
+          @drop="canMoveCards ? handleDrop('DROP') : null"
+        >
+          <div class="column-header drop-head">
+            <div class="col-title-wrap">
+              <span class="col-dot drop"></span>
+              <h4>DROP</h4>
+            </div>
+            <span class="col-count-badge">{{ dropList.length }}</span>
+          </div>
+
+          <div class="column-cards-list">
+            <div v-if="dropList.length === 0" class="kanban-empty-col">
+              Belum ada inisiatif yang dibatalkan
+            </div>
+
+            <div
+              v-for="ini in dropList"
+              :key="ini.id"
+              class="kanban-card card-drop"
+              :draggable="canMoveCards"
+              @dragstart="canMoveCards ? handleDragStart(ini) : null"
+            >
+              <div class="card-top-meta">
+                <span class="card-kr-badge" :title="ini.keyResult?.title">
+                  {{ ini.keyResult?.title || 'Key Result' }}
+                </span>
+                <span class="dropped-badge">❌ Drop</span>
+              </div>
+
+              <h4 class="card-title text-drop">{{ ini.title }}</h4>
+              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target:</span>
+                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                </span>
+                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
+                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                </span>
+              </div>
+
+              <div class="card-footer-meta">
+                <div class="card-team-owner">
+                  <span class="team-tag">{{ ini.team?.name }}</span>
+                  <span v-if="ini.owner?.name" class="owner-tag">
+                    👤 {{ ini.owner.name }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card Action Buttons -->
+              <div v-if="canMoveCards" class="card-hover-actions">
+                <div class="left-actions">
+                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)">✏️</button>
+                  <button v-if="isAdmin" class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                </div>
+                <div class="move-actions">
+                  <button class="move-btn" title="Pindah ke To Do" @click="moveCard(ini.id, 'TODO')">
+                    &larr; Aktifkan Kembali
                   </button>
                 </div>
               </div>
@@ -367,12 +460,21 @@
               </div>
             </div>
 
-            <label>Kolom Kanban (Status)</label>
-            <select v-model="initiativeForm.kanbanStatus" class="form-input">
-              <option value="TODO">📋 To Do</option>
-              <option value="IN_PROGRESS">⚡ In Progress</option>
-              <option value="DONE">✅ Done</option>
-            </select>
+            <div class="form-row-2">
+              <div>
+                <label>Bobot Inisiatif *</label>
+                <input v-model.number="initiativeForm.weight" type="number" step="0.1" min="0.1" class="form-input" placeholder="Contoh: 1.0" />
+              </div>
+              <div>
+                <label>Kolom Kanban (Status)</label>
+                <select v-model="initiativeForm.kanbanStatus" class="form-input">
+                  <option value="TODO">📋 To Do</option>
+                  <option value="IN_PROGRESS">⚡ In Progress</option>
+                  <option value="DONE">✅ Done</option>
+                  <option value="DROP">❌ Drop</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div class="modal-actions">
@@ -509,7 +611,8 @@ const initiativeForm = ref({
   ownerId: '',
   targetValue: 0,
   unit: '',
-  kanbanStatus: 'TODO'
+  kanbanStatus: 'TODO',
+  weight: 1.0
 });
 
 const teamSearch = ref('');
@@ -597,6 +700,12 @@ const inProgressList = computed(() => {
 const doneList = computed(() => {
   return filteredInitiatives.value.filter(
     (i: any) => i.kanbanStatus === 'DONE'
+  );
+});
+
+const dropList = computed(() => {
+  return filteredInitiatives.value.filter(
+    (i: any) => i.kanbanStatus === 'DROP'
   );
 });
 
@@ -689,7 +798,8 @@ function openAddInitiativeModal() {
     ownerId: isTeam.value ? (auth.user?.id || '') : '',
     targetValue: 0,
     unit: '',
-    kanbanStatus: 'TODO'
+    kanbanStatus: 'TODO',
+    weight: 1.0
   };
   errorMessage.value = '';
   showInitiativeModal.value = true;
@@ -707,7 +817,8 @@ function openEditInitiativeModal(ini: any) {
     ownerId: ini.ownerId || '',
     targetValue: ini.targetValue || 0,
     unit: ini.unit || '',
-    kanbanStatus: ini.kanbanStatus || 'TODO'
+    kanbanStatus: ini.kanbanStatus || 'TODO',
+    weight: ini.weight !== undefined ? ini.weight : 1.0
   };
   errorMessage.value = '';
   showInitiativeModal.value = true;
@@ -720,6 +831,10 @@ async function saveInitiative() {
   }
   if (!initiativeForm.value.keyResultId) {
     errorMessage.value = 'Key Result wajib dipilih';
+    return;
+  }
+  if (initiativeForm.value.weight === undefined || initiativeForm.value.weight === null || initiativeForm.value.weight <= 0) {
+    errorMessage.value = 'Bobot inisiatif wajib diisi dan harus bernilai lebih dari 0';
     return;
   }
 
@@ -996,7 +1111,7 @@ onMounted(async () => {
 /* Kanban Board Layout */
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -1054,6 +1169,7 @@ onMounted(async () => {
 .col-dot.todo { background: #94a3b8; }
 .col-dot.progress { background: #0E97D6; }
 .col-dot.done { background: #10B981; }
+.col-dot.drop { background: #ef4444; }
 
 .col-count-badge {
   font-size: 0.78rem;
@@ -1105,6 +1221,12 @@ onMounted(async () => {
 .card-done {
   border-left: 4px solid #10B981;
   background: #fafcfb;
+}
+
+.card-drop {
+  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+  opacity: 0.85;
 }
 
 .card-top-meta {
@@ -1159,6 +1281,17 @@ onMounted(async () => {
   color: #475569;
 }
 
+.card-title.text-drop {
+  color: #64748b;
+  text-decoration: line-through;
+}
+
+.dropped-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ef4444;
+}
+
 .card-desc {
   margin: 0 0 8px 0;
   font-size: 0.8rem;
@@ -1184,6 +1317,20 @@ onMounted(async () => {
 
 .target-val {
   color: var(--text-primary, #0f172a);
+}
+
+.weight-badge-mini {
+  font-size: 0.72rem;
+  background: var(--bg-input, #f1f5f9);
+  color: var(--text-secondary, #475569);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  border: 1px solid var(--border-color, #cbd5e1);
 }
 
 .card-kpis-summary {

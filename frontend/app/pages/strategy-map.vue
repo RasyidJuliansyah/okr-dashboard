@@ -55,6 +55,9 @@
                       formatPerspective(data.perspective)
                     }}</span>
                   </div>
+                  <div v-if="data.objectiveTitle" class="node-objective-label" :title="data.objectiveTitle">
+                    🎯 {{ data.objectiveTitle }}
+                  </div>
                   <p class="node-title">{{ data.title }}</p>
                   <div class="node-progress-row">
                     <div class="node-progress-track">
@@ -100,7 +103,7 @@
               <select id="source-kr" v-model="newLink.sourceKrId" required>
                 <option value="" disabled>Pilih Key Result</option>
                 <option v-for="kr in allKeyResults" :key="kr.id" :value="kr.id">
-                  [{{ formatPerspective(kr.bscPerspective) }}] {{ kr.title }}
+                  [{{ formatPerspective(kr.bscPerspective) }}] ({{ kr.objectiveTitle || 'Objective' }}) - {{ kr.title }}
                 </option>
               </select>
             </div>
@@ -112,7 +115,7 @@
               <select id="target-kr" v-model="newLink.targetKrId" required>
                 <option value="" disabled>Pilih Key Result</option>
                 <option v-for="kr in allKeyResults" :key="kr.id" :value="kr.id">
-                  [{{ formatPerspective(kr.bscPerspective) }}] {{ kr.title }}
+                  [{{ formatPerspective(kr.bscPerspective) }}] ({{ kr.objectiveTitle || 'Objective' }}) - {{ kr.title }}
                 </option>
               </select>
             </div>
@@ -350,6 +353,7 @@ async function fetchAllKeyResults() {
     objectives.forEach((obj) => {
       if (obj.keyResults) {
         obj.keyResults.forEach((kr) => {
+          kr.objectiveTitle = obj.title;
           krs.push(kr);
         });
       }
@@ -708,6 +712,18 @@ onMounted(async () => {
   line-height: 1.4;
   white-space: normal;
   color: white;
+}
+
+.node-objective-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a0aec0;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .node-progress-row {

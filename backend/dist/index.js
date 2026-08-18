@@ -23,6 +23,7 @@ app.use((0, cors_1.default)({
     origin: true, // Allow all origins for development
     credentials: true,
 }));
+app.options('*', (0, cors_1.default)({ origin: true, credentials: true }));
 app.use(express_1.default.json());
 // Routes
 app.use('/api/auth', auth_routes_1.default);

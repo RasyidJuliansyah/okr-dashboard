@@ -118,7 +118,7 @@ async function getInitiatives(req, res) {
 }
 async function createInitiative(req, res) {
     try {
-        let { keyResultId, teamId, ownerId, title, description, targetValue, unit, kanbanStatus } = req.body;
+        let { keyResultId, teamId, ownerId, title, description, targetValue, unit, kanbanStatus, weight } = req.body;
         const { role, id: userId } = req.user;
         if (!keyResultId || !title) {
             return res.status(400).json({ message: 'keyResultId dan title wajib diisi' });
@@ -157,6 +157,7 @@ async function createInitiative(req, res) {
                 unit: unit || null,
                 status: 'ON_TRACK',
                 kanbanStatus: kanbanStatus || 'TODO',
+                weight: weight !== undefined ? parseFloat(weight) : 1.0,
             },
             include: {
                 team: true,
@@ -174,7 +175,7 @@ async function createInitiative(req, res) {
 async function updateInitiative(req, res) {
     try {
         const { id } = req.params;
-        const { title, description, ownerId, targetValue, unit, status, kanbanStatus } = req.body;
+        const { title, description, ownerId, targetValue, unit, status, kanbanStatus, weight } = req.body;
         const { role, id: userId } = req.user;
         const existing = await prisma.initiative.findUnique({ where: { id } });
         if (!existing)
@@ -193,6 +194,7 @@ async function updateInitiative(req, res) {
                 ...(unit !== undefined && { unit }),
                 ...(status !== undefined && { status }),
                 ...(kanbanStatus !== undefined && { kanbanStatus }),
+                ...(weight !== undefined && { weight: parseFloat(weight) }),
             },
             include: {
                 team: true,
@@ -212,8 +214,8 @@ async function updateInitiativeKanbanStatus(req, res) {
         const { id } = req.params;
         const { kanbanStatus } = req.body;
         const { role, id: userId } = req.user;
-        if (!kanbanStatus || !['TODO', 'IN_PROGRESS', 'DONE'].includes(kanbanStatus)) {
-            return res.status(400).json({ message: "kanbanStatus harus 'TODO', 'IN_PROGRESS', atau 'DONE'" });
+        if (!kanbanStatus || !['TODO', 'IN_PROGRESS', 'DONE', 'DROP'].includes(kanbanStatus)) {
+            return res.status(400).json({ message: "kanbanStatus harus 'TODO', 'IN_PROGRESS', 'DONE', atau 'DROP'" });
         }
         const existing = await prisma.initiative.findUnique({ where: { id } });
         if (!existing)
