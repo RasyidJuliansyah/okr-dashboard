@@ -167,30 +167,7 @@
           </svg>
           <span>OKR Builder</span>
         </NuxtLink>
-        <NuxtLink
-          to="/admin/annual-bsc"
-          class="nav-item"
-          active-class="nav-active"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <line x1="9" y1="3" x2="9" y2="21" />
-            <line x1="15" y1="3" x2="15" y2="21" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="3" y1="15" x2="21" y2="15" />
-          </svg>
-          <span>BSC Tahunan</span>
-        </NuxtLink>
+
         <NuxtLink
           to="/initiatives"
           class="nav-item"
@@ -290,6 +267,14 @@
             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
           <span>OKR Overview</span>
+        </NuxtLink>
+        <NuxtLink to="/leader/my-krs" class="nav-item" active-class="nav-active" @click="emit('close')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
+          </svg>
+          <span>KR Saya</span>
         </NuxtLink>
       </div>
 

@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 export async function getAnnualKeyResults(req: AuthRequest, res: Response) {
   try {
     const { year, bscPerspective } = req.query;
+    const { id: userId, role } = req.user!;
 
     const where: any = {};
     if (year) {
@@ -18,12 +19,26 @@ export async function getAnnualKeyResults(req: AuthRequest, res: Response) {
       where.bscPerspective = String(bscPerspective);
     }
 
+    if (role === 'MANAGER') {
+      where.keyResults = {
+        some: {
+          assignments: {
+            some: {
+              userId
+            }
+          }
+        }
+      };
+    }
+
     const annualKrs = await prisma.annualKeyResult.findMany({
       where,
       include: {
         objective: { select: { id: true, title: true, year: true } },
         keyResults: {
           include: {
+            assignments: { include: { user: true } },
+            departments: true,
             initiatives: { select: { id: true, title: true, currentValue: true, targetValue: true } }
           }
         }

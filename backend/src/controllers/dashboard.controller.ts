@@ -73,22 +73,30 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
 
     // --- MANAGER: Objective & KR yang KrDepartment-nya cocok dengan dept Manager ---
     if (role === 'MANAGER') {
-      const managerDept = dbUser?.department;
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true }
+      });
+      const deptValues = managedDepts.map(d => d.value);
+      if (dbUser?.department && !deptValues.includes(dbUser.department)) {
+        deptValues.push(dbUser.department);
+      }
+      const managerDept = deptValues.join(', ') || dbUser?.department || '';
 
       let objectives: any[] = [];
-      if (managerDept) {
+      if (deptValues.length > 0) {
         objectives = await prisma.objective.findMany({
           where: {
             keyResults: {
               some: {
-                departments: { some: { department: managerDept } },
+                departments: { some: { department: { in: deptValues } } },
               },
             },
           },
           include: {
             keyResults: {
               where: {
-                departments: { some: { department: managerDept } },
+                departments: { some: { department: { in: deptValues } } },
               },
               include: {
                 assignments: {
@@ -108,7 +116,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           status: 'PENDING_APPROVAL',
           task: {
             initiative: {
-              team: { department: managerDept || undefined },
+              team: { department: { in: deptValues } },
             },
           },
         },

@@ -387,8 +387,30 @@
           Belum ada OKR yang terdaftar untuk periode ini.
         </div>
 
-        <div v-else class="objectives-list">
-          <div v-for="obj in objectives" :key="obj.id" class="objective-item">
+        <div v-else>
+          <!-- Bulk Select All / Delete Action Bar -->
+          <div v-if="allDisplayedKrs.length > 0" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input 
+                type="checkbox" 
+                :checked="isAllKrsSelected" 
+                @change="toggleSelectAllKrs" 
+                style="transform: scale(1.2); cursor: pointer;"
+              />
+              <span style="font-size: 14px; font-weight: 500; color: #334155;">Pilih Semua KR ({{ allDisplayedKrs.length }})</span>
+            </div>
+            <button 
+              v-if="selectedKrIds.length > 0" 
+              class="save-kr-btn" 
+              style="background: #ff4b4b; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 6px;" 
+              @click="triggerBulkDelete"
+            >
+              Hapus Terpilih ({{ selectedKrIds.length }})
+            </button>
+          </div>
+
+          <div class="objectives-list">
+            <div v-for="obj in objectives" :key="obj.id" class="objective-item">
             <div class="objective-item-header">
               <div>
                 <span class="year-badge">{{ obj.year }}</span>
@@ -398,7 +420,7 @@
                 </p>
               </div>
               <button
-                @click="deleteObjective(obj.id)"
+                @click.stop="deleteObjective(obj.id)"
                 class="delete-obj-btn"
                 title="Hapus Objective ini beserta seluruh Key Results nya"
               >
@@ -412,8 +434,14 @@
                 :key="kr.id"
                 class="kr-list-row"
               >
-                <div class="kr-list-row-header">
-                  <div class="kr-info">
+                <div class="kr-list-row-header" style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                  <input 
+                    type="checkbox" 
+                    :value="kr.id" 
+                    v-model="selectedKrIds"
+                    style="transform: scale(1.2); cursor: pointer; flex-shrink: 0;"
+                  />
+                  <div class="kr-info" style="flex: 1;">
                     <span class="kr-title">{{ kr.title }}</span>
                     <div class="kr-stats">
                       Target:
@@ -443,7 +471,7 @@
                         Edit
                       </button>
                       <button
-                        @click="deleteKr(kr.id)"
+                        @click.stop="deleteKr(kr.id)"
                         class="delete-kr-btn"
                         title="Hapus Metric (Key Result)"
                       >
@@ -541,6 +569,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </section>
     </div>
@@ -867,6 +896,47 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Delete Key Result Confirmation Modal -->
+    <div v-if="krToDelete" class="modal-overlay" @click.self="krToDelete = null">
+      <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <h3 style="margin-top: 0; color: #ff4b4b;">Konfirmasi Hapus</h3>
+        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569;">
+          Apakah Anda yakin ingin menghapus Key Result ini? Tindakan ini tidak dapat dibatalkan.
+        </p>
+        <div class="modal-actions" style="justify-content: center; gap: 12px;">
+          <button class="cancel-btn" @click="krToDelete = null">Batal</button>
+          <button class="save-kr-btn" style="background: #ff4b4b; color: white;" @click="confirmDeleteKr">Hapus</button>
+        </div>
+      </div>
+    </div>
+    <!-- Delete Objective Confirmation Modal -->
+    <div v-if="objectiveToDelete" class="modal-overlay" @click.self="objectiveToDelete = null">
+      <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <h3 style="margin-top: 0; color: #ff4b4b;">Konfirmasi Hapus Objective</h3>
+        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569;">
+          Apakah Anda yakin ingin menghapus Objective ini beserta seluruh Key Results di dalamnya? Tindakan ini tidak dapat dibatalkan.
+        </p>
+        <div class="modal-actions" style="justify-content: center; gap: 12px;">
+          <button class="cancel-btn" @click="objectiveToDelete = null">Batal</button>
+          <button class="save-kr-btn" style="background: #ff4b4b; color: white;" @click="confirmDeleteObjective">Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Delete Key Results Confirmation Modal -->
+    <div v-if="showBulkDeleteModal" class="modal-overlay" @click.self="showBulkDeleteModal = false">
+      <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <h3 style="margin-top: 0; color: #ff4b4b;">Konfirmasi Hapus Massal</h3>
+        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569;">
+          Apakah Anda yakin ingin menghapus <strong>{{ selectedKrIds.length }} Key Results</strong> yang terpilih? Tindakan ini akan menghapus semua Inisiatif dan Task terkait dan tidak dapat dibatalkan.
+        </p>
+        <div class="modal-actions" style="justify-content: center; gap: 12px;">
+          <button class="cancel-btn" @click="showBulkDeleteModal = false">Batal</button>
+          <button class="save-kr-btn" style="background: #ff4b4b; color: white;" @click="confirmBulkDeleteKrs">Hapus Semua</button>
+        </div>
       </div>
     </div>
 
@@ -1215,15 +1285,17 @@ async function submitObjective() {
   }
 }
 
-async function deleteObjective(id) {
-  if (
-    !confirm(
-      "Apakah Anda yakin ingin menghapus Objective ini beserta seluruh Key Results di dalamnya?",
-    )
-  ) {
-    return;
-  }
+const objectiveToDelete = ref(null);
 
+function deleteObjective(id) {
+  console.log("deleteObjective called with ID:", id);
+  objectiveToDelete.value = id;
+}
+
+async function confirmDeleteObjective() {
+  if (!objectiveToDelete.value) return;
+  const id = objectiveToDelete.value;
+  objectiveToDelete.value = null;
   try {
     await $fetch(`${config.public.apiBase}/objectives/${id}`, {
       method: "DELETE",
@@ -1233,7 +1305,7 @@ async function deleteObjective(id) {
     });
     fetchObjectives();
   } catch (err) {
-    console.error("Delete error:", err);
+    console.error("Delete objective error:", err);
     alert(err.data?.message || "Gagal menghapus Objective.");
   }
 }
@@ -1331,10 +1403,17 @@ async function submitEditKr() {
   }
 }
 
-async function deleteKr(id) {
-  if (!confirm("Apakah Anda yakin ingin menghapus Key Result ini?")) {
-    return;
-  }
+const krToDelete = ref(null);
+
+function deleteKr(id) {
+  console.log("deleteKr called with ID:", id);
+  krToDelete.value = id;
+}
+
+async function confirmDeleteKr() {
+  if (!krToDelete.value) return;
+  const id = krToDelete.value;
+  krToDelete.value = null;
   try {
     await $fetch(`${config.public.apiBase}/key-results/${id}`, {
       method: "DELETE",
@@ -1346,6 +1425,57 @@ async function deleteKr(id) {
   } catch (err) {
     console.error("Delete KR error:", err);
     alert(err.data?.message || "Gagal menghapus Key Result.");
+  }
+}
+
+const selectedKrIds = ref([]);
+const showBulkDeleteModal = ref(false);
+
+const allDisplayedKrs = computed(() => {
+  const krsList = [];
+  for (const obj of objectives.value) {
+    if (obj.keyResults) {
+      krsList.push(...obj.keyResults);
+    }
+  }
+  return krsList;
+});
+
+const isAllKrsSelected = computed(() => {
+  if (allDisplayedKrs.value.length === 0) return false;
+  return allDisplayedKrs.value.every((kr) => selectedKrIds.value.includes(kr.id));
+});
+
+function toggleSelectAllKrs() {
+  if (isAllKrsSelected.value) {
+    selectedKrIds.value = [];
+  } else {
+    selectedKrIds.value = allDisplayedKrs.value.map((kr) => kr.id);
+  }
+}
+
+function triggerBulkDelete() {
+  if (selectedKrIds.value.length === 0) return;
+  showBulkDeleteModal.value = true;
+}
+
+async function confirmBulkDeleteKrs() {
+  showBulkDeleteModal.value = false;
+  const idsToDelete = [...selectedKrIds.value];
+  selectedKrIds.value = [];
+  try {
+    await $fetch(`${config.public.apiBase}/key-results/bulk-delete`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        "Content-Type": "application/json",
+      },
+      body: { ids: idsToDelete },
+    });
+    fetchObjectives();
+  } catch (err) {
+    console.error("Bulk delete KR error:", err);
+    alert(err.data?.message || "Gagal menghapus Key Results terpilih.");
   }
 }
 

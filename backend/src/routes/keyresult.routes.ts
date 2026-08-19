@@ -9,6 +9,7 @@ import {
   getKeyResultAssignments,
   getMyAssignedKrs,
   getKrsForInitiativeDropdown,
+  bulkDeleteKeyResults,
 } from '../controllers/keyresult.controller';
 import { authMiddleware, roleGuard } from '../middleware/auth.middleware';
 
@@ -23,6 +24,7 @@ router.get(
 
 // Manajemen KR (hanya Admin)
 router.post('/', authMiddleware, roleGuard(['ADMIN']), createKeyResult);
+router.post('/bulk-delete', authMiddleware, roleGuard(['ADMIN']), bulkDeleteKeyResults);
 router.put('/:id', authMiddleware, roleGuard(['ADMIN']), updateKeyResult);
 router.delete('/:id', authMiddleware, roleGuard(['ADMIN']), deleteKeyResult);
 router.patch(
@@ -50,6 +52,6 @@ router.post(
 router.get('/:id/assignments', authMiddleware, getKeyResultAssignments);
 
 // My Assigned
-router.get('/my/assigned', authMiddleware, roleGuard(['LEADER', 'ADMIN']), getMyAssignedKrs);
+router.get('/my/assigned', authMiddleware, roleGuard(['LEADER', 'MANAGER', 'ADMIN']), getMyAssignedKrs);
 
 export default router;

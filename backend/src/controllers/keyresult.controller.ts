@@ -8,7 +8,7 @@ const VALID_BSC_PERSPECTIVES = ['FINANCIAL', 'CUSTOMER', 'INTERNAL_PROCESS', 'LE
 
 export async function createKeyResult(req: AuthRequest, res: Response) {
   try {
-    const { objectiveId, title, targetValue, currentValue, unit, bscPerspective } = req.body;
+    const { objectiveId, title, targetValue, currentValue, unit, bscPerspective, month, monthWeight, annualKeyResultId } = req.body;
 
     if (!objectiveId || !title || targetValue === undefined || !bscPerspective) {
       return res.status(400).json({
@@ -34,6 +34,9 @@ export async function createKeyResult(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: 'Objective not found' });
     }
 
+    const now = new Date();
+    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
     const newKR = await prisma.keyResult.create({
       data: {
         objectiveId,
@@ -43,6 +46,9 @@ export async function createKeyResult(req: AuthRequest, res: Response) {
         unit: unit || '%',
         bscPerspective,
         status: 'ON_TRACK',
+        month: month || defaultMonth,
+        monthWeight: monthWeight !== undefined ? parseFloat(monthWeight) : 1.0,
+        annualKeyResultId: annualKeyResultId || null,
       },
     });
 
@@ -114,6 +120,64 @@ export async function deleteKeyResult(req: AuthRequest, res: Response) {
     return res.status(200).json({ message: 'Key Result deleted successfully' });
   } catch (error) {
     console.error('Delete key result error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+export async function bulkDeleteKeyResults(req: AuthRequest, res: Response) {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'IDs must be a non-empty array' });
+    }
+
+    const krs = await prisma.keyResult.findMany({
+      where: { id: { in: ids } },
+      include: { initiatives: { include: { tasks: true } } },
+    });
+
+    const initiativeIds = krs.flatMap((kr) => kr.initiatives.map((i) => i.id));
+    const taskIds = krs.flatMap((kr) => kr.initiatives.flatMap((i) => i.tasks.map((k) => k.id)));
+
+    await prisma.$transaction([
+      prisma.taskUpdate.deleteMany({
+        where: { taskId: { in: taskIds } },
+      }),
+      prisma.taskAssignment.deleteMany({
+        where: { taskId: { in: taskIds } },
+      }),
+      prisma.task.deleteMany({
+        where: { id: { in: taskIds } },
+      }),
+      prisma.initiativeUpdate.deleteMany({
+        where: { initiativeId: { in: initiativeIds } },
+      }),
+      prisma.initiative.deleteMany({
+        where: { id: { in: initiativeIds } },
+      }),
+      prisma.krAssignment.deleteMany({
+        where: { keyResultId: { in: ids } },
+      }),
+      prisma.krDepartment.deleteMany({
+        where: { keyResultId: { in: ids } },
+      }),
+      prisma.krUpdate.deleteMany({
+        where: { keyResultId: { in: ids } },
+      }),
+      prisma.causalLink.deleteMany({
+        where: {
+          OR: [{ sourceKrId: { in: ids } }, { targetKrId: { in: ids } }],
+        },
+      }),
+      prisma.keyResult.deleteMany({
+        where: { id: { in: ids } },
+      }),
+    ]);
+
+    return res.status(200).json({ message: 'Key Results deleted successfully' });
+  } catch (error) {
+    console.error('Bulk delete key results error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -214,7 +278,7 @@ export async function getKeyResultHistory(req: AuthRequest, res: Response) {
 export async function updateKeyResult(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { title, targetValue, unit, bscPerspective } = req.body;
+    const { title, targetValue, unit, bscPerspective, month, monthWeight, annualKeyResultId } = req.body;
 
     if (!title || targetValue === undefined || !bscPerspective) {
       return res.status(400).json({
@@ -257,6 +321,9 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
         unit: unit || '%',
         bscPerspective,
         status: newStatus,
+        ...(month !== undefined && { month: month || null }),
+        ...(monthWeight !== undefined && { monthWeight: parseFloat(monthWeight) }),
+        ...(annualKeyResultId !== undefined && { annualKeyResultId: annualKeyResultId || null }),
       },
     });
 

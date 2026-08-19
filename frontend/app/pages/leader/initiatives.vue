@@ -235,9 +235,16 @@ function getHeaders() {
 }
 
 onMounted(async () => {
-  if (!authStore.isAuthenticated || !['LEADER', 'ADMIN'].includes(authStore.user?.role)) {
+  if (!authStore.isAuthenticated || !['LEADER', 'MANAGER', 'ADMIN'].includes(authStore.user?.role)) {
     router.push('/login');
     return;
+  }
+  if (authStore.user && (authStore.user.department === undefined || authStore.user.managedDepartments === undefined)) {
+    try {
+      await authStore.fetchUser();
+    } catch (err) {
+      console.error(err);
+    }
   }
   await Promise.all([
     fetchInitiatives(),
@@ -270,10 +277,12 @@ async function fetchLeaderTeams() {
       } else {
         const userTeamId = authStore.user?.teamId;
         const userDept = authStore.user?.department;
+        const managedDepts = authStore.user?.managedDepartments || [];
         leaderTeams.value = teams.filter(t =>
           t.leaderId === authStore.user?.id ||
           (userTeamId && t.id === userTeamId) ||
-          (userDept && t.department === userDept)
+          (userDept && t.department === userDept) ||
+          (t.department && managedDepts.includes(t.department))
         );
       }
     }

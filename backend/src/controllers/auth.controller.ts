@@ -17,6 +17,9 @@ export async function login(req: AuthRequest, res: Response) {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        managedDepartments: true
+      }
     });
 
     if (!user) {
@@ -47,6 +50,8 @@ export async function login(req: AuthRequest, res: Response) {
         email: user.email,
         role: user.role,
         teamId: user.teamId,
+        department: user.department,
+        managedDepartments: user.managedDepartments.map(d => d.value),
       },
     });
   } catch (error) {
@@ -69,6 +74,12 @@ export async function getMe(req: AuthRequest, res: Response) {
         email: true,
         role: true,
         teamId: true,
+        department: true,
+        managedDepartments: {
+          select: {
+            value: true
+          }
+        }
       },
     });
 
@@ -76,7 +87,10 @@ export async function getMe(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    return res.status(200).json(user);
+    return res.status(200).json({
+      ...user,
+      managedDepartments: user.managedDepartments.map(d => d.value)
+    });
   } catch (error) {
     console.error('getMe error:', error);
     return res.status(500).json({ message: 'Internal server error' });

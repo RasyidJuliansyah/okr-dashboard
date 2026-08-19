@@ -6,6 +6,8 @@ export interface User {
   email: string;
   role: string;
   teamId?: string | null;
+  department?: string | null;
+  managedDepartments?: string[];
 }
 
 export const useAuthStore = defineStore('auth', {

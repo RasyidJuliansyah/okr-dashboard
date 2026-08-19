@@ -5,7 +5,8 @@
         <div class="header-title">
           <h2>KR yang Di-assign ke Saya</h2>
           <p class="section-desc">
-            Key Results yang menjadi tanggung jawab Anda. Anda bisa membuat Inisiatif dari sini.
+            Key Results yang menjadi tanggung jawab Anda. Anda bisa membuat
+            Inisiatif dari sini.
           </p>
         </div>
       </div>
@@ -15,65 +16,142 @@
       <div v-else-if="krs.length === 0" class="empty-state card">
         Tidak ada KR yang di-assign ke Anda.
       </div>
-      
+
       <div v-else class="kr-list">
         <div v-for="assign in krs" :key="assign.id" class="kr-card card">
           <div class="kr-header">
             <div>
               <h3>{{ assign.keyResult.title }}</h3>
               <div class="kr-meta">
-                <span class="badge">Objective: {{ assign.keyResult.objective.title }}</span>
-                <span class="badge">BSC: {{ assign.keyResult.bscPerspective }}</span>
-                <span class="badge" :class="getStatusClass(assign.keyResult.status)">Status: {{ assign.keyResult.status }}</span>
+                <span class="badge"
+                  >Objective: {{ assign.keyResult.objective.title }}</span
+                >
+                <span class="badge"
+                  >BSC: {{ assign.keyResult.bscPerspective }}</span
+                >
+                <span
+                  class="badge"
+                  :class="getStatusClass(assign.keyResult.status)"
+                  >Status: {{ assign.keyResult.status }}</span
+                >
                 <span class="badge bg-blue">RACI: {{ assign.raciRole }}</span>
               </div>
             </div>
             <div class="kr-progress">
               <div class="progress-bar-container">
-                <div class="progress-bar" :style="{ width: getProgressPercent(assign.keyResult) + '%' }"></div>
+                <div
+                  class="progress-bar"
+                  :style="{
+                    width: getProgressPercent(assign.keyResult) + '%',
+                  }"
+                ></div>
               </div>
-              <span class="progress-text">{{ assign.keyResult.currentValue }} / {{ assign.keyResult.targetValue }} {{ assign.keyResult.unit }} ({{ getProgressPercent(assign.keyResult).toFixed(1) }}%)</span>
+              <span class="progress-text"
+                >{{ assign.keyResult.currentValue }} /
+                {{ assign.keyResult.targetValue }}
+                {{ assign.keyResult.unit }} ({{
+                  getProgressPercent(assign.keyResult).toFixed(1)
+                }}%)</span
+              >
             </div>
           </div>
-          
+
           <div class="initiatives-section">
-            <h4>Inisiatif yang sudah dibuat ({{ assign.keyResult.initiatives?.length || 0 }}):</h4>
-            <ul v-if="assign.keyResult.initiatives?.length > 0" class="ini-list-items">
-              <li v-for="ini in assign.keyResult.initiatives" :key="ini.id" class="ini-item-row">
+            <h4>
+              Inisiatif yang sudah dibuat ({{
+                assign.keyResult.initiatives?.length || 0
+              }}):
+            </h4>
+            <ul
+              v-if="assign.keyResult.initiatives?.length > 0"
+              class="ini-list-items"
+            >
+              <li
+                v-for="ini in assign.keyResult.initiatives"
+                :key="ini.id"
+                class="ini-item-row"
+              >
                 <div class="ini-info-col">
                   <span class="ini-title">{{ ini.title }}</span>
                   <div class="ini-sub-meta">
                     <span class="badge-team">→ {{ ini.team?.name }}</span>
-                    <span v-if="ini.owner" class="badge-owner">{{ ini.owner.name }}</span>
-                    <span class="badge" :class="getStatusClass(ini.status)">{{ ini.status }}</span>
+                    <span v-if="ini.owner" class="badge-owner">{{
+                      ini.owner.name
+                    }}</span>
+                    <span class="badge" :class="getStatusClass(ini.status)">{{
+                      ini.status
+                    }}</span>
                   </div>
                 </div>
                 <div class="ini-actions">
-                  <button class="icon-btn" @click="startEditInitiative(ini, assign.keyResult)" title="Edit Inisiatif"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+                  <button
+                    class="icon-btn"
+                    @click="startEditInitiative(ini, assign.keyResult)"
+                    title="Edit Inisiatif"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </li>
             </ul>
             <p v-else class="text-gray text-sm">Belum ada Inisiatif</p>
-            <button class="primary-btn mt-2" @click="openInitiativeModal(assign.keyResult)">+ Buat Inisiatif dari KR ini</button>
+            <button
+              class="primary-btn mt-2"
+              @click="openInitiativeModal(assign.keyResult)"
+            >
+              + Buat Inisiatif dari KR ini
+            </button>
           </div>
         </div>
       </div>
-      
+
       <!-- MODAL: Buat / Edit Inisiatif -->
-      <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+      <div
+        v-if="showModal"
+        class="modal-overlay"
+        @click.self="showModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
-            <h3>{{ editingIni ? 'Edit Inisiatif' : 'Buat Inisiatif Baru' }}</h3>
-            <button class="modal-close-btn" @click="showModal = false">&times;</button>
+            <h3>{{ editingIni ? "Edit Inisiatif" : "Buat Inisiatif Baru" }}</h3>
+            <button class="modal-close-btn" @click="showModal = false">
+              &times;
+            </button>
           </div>
-          <p class="mb-4">Untuk KR: <strong>{{ selectedKr?.title }}</strong></p>
-          
+          <p class="mb-4">
+            Untuk KR: <strong>{{ selectedKr?.title }}</strong>
+          </p>
+
           <label>Judul Inisiatif *</label>
-          <input v-model="form.title" class="form-input" placeholder="Contoh: Kampanye B2B" />
-          
+          <input
+            v-model="form.title"
+            class="form-input"
+            placeholder="Contoh: Kampanye B2B"
+          />
+
           <label>Deskripsi</label>
-          <textarea v-model="form.description" class="form-input" rows="3"></textarea>
-          
+          <textarea
+            v-model="form.description"
+            class="form-input"
+            rows="3"
+          ></textarea>
+
           <label>Pilih Tim / Departemen Anda *</label>
           <div class="searchable-field">
             <input
@@ -84,12 +162,17 @@
             />
             <select v-model="form.teamId" class="form-input">
               <option value="">-- Pilih Tim / Departemen --</option>
-              <option v-for="team in filteredLeaderTeams" :key="team.id" :value="team.id">
-                {{ team.name }}
+              <option
+                v-for="team in filteredLeaderTeams"
+                :key="team.id"
+                :value="team.id"
+              >
+                {{ team.name
+                }}{{ team.department ? ` - ${team.department}` : "" }}
               </option>
             </select>
           </div>
-          
+
           <label>PIC Pegawai (Penanggung Jawab)</label>
           <div class="searchable-field">
             <input
@@ -100,24 +183,46 @@
             />
             <select v-model="form.ownerId" class="form-input">
               <option value="">-- Pilih Pegawai (Opsional) --</option>
-              <option v-for="user in filteredLeaderUsers" :key="user.id" :value="user.id">
+              <option
+                v-for="user in filteredLeaderUsers"
+                :key="user.id"
+                :value="user.id"
+              >
                 {{ user.name }}
               </option>
             </select>
           </div>
-          
+
           <label>Target Value</label>
-          <input v-model.number="form.targetValue" type="number" class="form-input" />
-          
+          <input
+            v-model.number="form.targetValue"
+            type="number"
+            class="form-input"
+          />
+
           <label>Unit</label>
           <input v-model="form.unit" class="form-input" placeholder="%" />
-          
-          <div v-if="modalError" class="alert alert-error mt-2">{{ modalError }}</div>
-          
+
+          <div v-if="modalError" class="alert alert-error mt-2">
+            {{ modalError }}
+          </div>
+
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showModal = false">Batal</button>
-            <button class="primary-btn" @click="saveInitiative" :disabled="saving">
-              {{ saving ? 'Menyimpan...' : editingIni ? 'Simpan Perubahan' : 'Simpan' }}
+            <button class="secondary-btn" @click="showModal = false">
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="saveInitiative"
+              :disabled="saving"
+            >
+              {{
+                saving
+                  ? "Menyimpan..."
+                  : editingIni
+                    ? "Simpan Perubahan"
+                    : "Simpan"
+              }}
             </button>
           </div>
         </div>
@@ -127,9 +232,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
-import { useRouter } from 'vue-router';
+import { ref, computed, watch, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
+import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -138,51 +243,108 @@ const krs = ref([]);
 const myTeams = ref([]);
 const userList = ref([]);
 const loading = ref(true);
-const errorMsg = ref('');
+const errorMsg = ref("");
 
-const leaderTeamSearch = ref('');
-const leaderUserSearch = ref('');
+
+const leaderTeamSearch = ref("");
+const leaderUserSearch = ref("");
 
 const filteredLeaderTeams = computed(() => {
   if (!leaderTeamSearch.value.trim()) return myTeams.value;
   const q = leaderTeamSearch.value.toLowerCase();
-  return myTeams.value.filter((t) => t.name && t.name.toLowerCase().includes(q));
+  return myTeams.value.filter(
+    (t) =>
+      (t.name && t.name.toLowerCase().includes(q)) ||
+      (t.department && t.department.toLowerCase().includes(q)),
+  );
 });
 
 const filteredLeaderUsers = computed(() => {
-  if (!leaderUserSearch.value.trim()) return userList.value;
+  let list = userList.value;
+
+  // Find selected team's department
+  const selectedTeam = myTeams.value.find((t) => t.id === form.value.teamId);
+
+  if (selectedTeam && selectedTeam.department) {
+    // Filter to show only employees in the selected team's department
+    list = list.filter(
+      (u) =>
+        u.department &&
+        u.department.toLowerCase() === selectedTeam.department.toLowerCase(),
+    );
+  } else {
+    // Fallback: Filter by all departments managed/owned by this manager/leader
+    const leaderDept = authStore.user?.department;
+    const managedDepts = authStore.user?.managedDepartments || [];
+
+    if (leaderDept || managedDepts.length > 0) {
+      list = list.filter((u) => {
+        if (!u.department) return false;
+        const deptLower = u.department.toLowerCase();
+        const isPrimaryDept =
+          leaderDept && deptLower === leaderDept.toLowerCase();
+        const isManagedDept = managedDepts.some(
+          (d) => d.toLowerCase() === deptLower,
+        );
+        return isPrimaryDept || isManagedDept;
+      });
+    }
+  }
+
+  if (!leaderUserSearch.value.trim()) return list;
   const q = leaderUserSearch.value.toLowerCase();
-  return userList.value.filter((u) => u.name && u.name.toLowerCase().includes(q));
+  return list.filter((u) => u.name && u.name.toLowerCase().includes(q));
 });
 
 const showModal = ref(false);
 const editingIni = ref(null);
 const saving = ref(false);
-const modalError = ref('');
+const modalError = ref("");
 const selectedKr = ref(null);
 const form = ref({
-  title: '',
-  description: '',
-  teamId: '',
-  ownerId: '',
+  title: "",
+  description: "",
+  teamId: "",
+  ownerId: "",
   targetValue: 0,
-  unit: ''
 });
 
+watch(
+  () => form.value.teamId,
+  (newTeamId) => {
+    // Reset ownerId if team changes, to avoid assigning a PIC from a different department/team
+    form.value.ownerId = "";
+  },
+);
+
 const config = useRuntimeConfig();
-const API = config.public.apiBase || 'http://localhost:3001/api';
+const API = config.public.apiBase || "http://localhost:3001/api";
 
 function getHeaders() {
   return {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     Authorization: `Bearer ${authStore.token}`,
   };
 }
 
 onMounted(async () => {
-  if (!authStore.isAuthenticated || !['LEADER', 'ADMIN'].includes(authStore.user?.role)) {
-    router.push('/login');
+  if (
+    !authStore.isAuthenticated ||
+    !["LEADER", "MANAGER", "ADMIN"].includes(authStore.user?.role)
+  ) {
+    router.push("/login");
     return;
+  }
+  if (
+    authStore.user &&
+    (authStore.user.department === undefined ||
+      authStore.user.managedDepartments === undefined)
+  ) {
+    try {
+      await authStore.fetchUser();
+    } catch (err) {
+      console.error(err);
+    }
   }
   await Promise.all([fetchData(), fetchMyTeams(), fetchUsers()]);
 });
@@ -194,16 +356,18 @@ async function fetchUsers() {
       userList.value = await res.json();
     }
   } catch (err) {
-    console.error('Error fetch users:', err);
+    console.error("Error fetch users:", err);
   }
 }
 
 async function fetchData() {
   loading.value = true;
-  errorMsg.value = '';
+  errorMsg.value = "";
   try {
-    const res = await fetch(`${API}/key-results/my/assigned`, { headers: getHeaders() });
-    if (!res.ok) throw new Error('Gagal memuat KR');
+    const res = await fetch(`${API}/key-results/my/assigned`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Gagal memuat KR");
     const data = await res.json();
     krs.value = data;
   } catch (err) {
@@ -218,8 +382,16 @@ async function fetchMyTeams() {
     const res = await fetch(`${API}/users/teams`, { headers: getHeaders() });
     if (res.ok) {
       const teams = await res.json();
-      // Filter only teams led by this leader
-      myTeams.value = teams.filter(t => t.leaderId === authStore.user.id);
+      const userTeamId = authStore.user?.teamId;
+      const userDept = authStore.user?.department;
+      const managedDepts = authStore.user?.managedDepartments || [];
+      myTeams.value = teams.filter(
+        (t) =>
+          t.leaderId === authStore.user?.id ||
+          (userTeamId && t.id === userTeamId) ||
+          (userDept && t.department === userDept) ||
+          (t.department && managedDepts.includes(t.department)),
+      );
     }
   } catch (e) {
     console.error(e);
@@ -234,53 +406,57 @@ function getProgressPercent(kr) {
 }
 
 function getStatusClass(status) {
-  if (status === 'ON_TRACK') return 'bg-green';
-  if (status === 'AT_RISK') return 'bg-yellow';
-  if (status === 'OFF_TRACK') return 'bg-red';
-  return 'bg-gray';
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  if (status === "OFF_TRACK") return "bg-red";
+  return "bg-gray";
 }
 
 function openInitiativeModal(kr) {
   editingIni.value = null;
   selectedKr.value = kr;
-  leaderTeamSearch.value = '';
-  leaderUserSearch.value = '';
+  leaderTeamSearch.value = "";
+  leaderUserSearch.value = "";
   form.value = {
-    title: '',
-    description: '',
-    teamId: myTeams.value[0]?.id || '',
-    ownerId: '',
+    title: "",
+    description: "",
+    teamId: myTeams.value[0]?.id || "",
+    ownerId: "",
     targetValue: 0,
-    unit: '%'
+    unit: "%",
   };
-  modalError.value = '';
+  modalError.value = "";
   showModal.value = true;
 }
 
 function startEditInitiative(ini, kr) {
   editingIni.value = ini;
   selectedKr.value = kr || ini.keyResult;
-  leaderTeamSearch.value = '';
-  leaderUserSearch.value = '';
+  leaderTeamSearch.value = "";
+  leaderUserSearch.value = "";
   form.value = {
     title: ini.title,
-    description: ini.description || '',
-    teamId: ini.teamId || myTeams.value[0]?.id || '',
-    ownerId: ini.ownerId || '',
+    description: ini.description || "",
+    teamId: ini.teamId || myTeams.value[0]?.id || "",
+    ownerId: ini.ownerId || "",
     targetValue: ini.targetValue || 0,
-    unit: ini.unit || '%'
+    unit: ini.unit || "%",
   };
-  modalError.value = '';
+  modalError.value = "";
   showModal.value = true;
 }
 
 async function deleteInitiative(id) {
-  if (!confirm("Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?")) {
+  if (
+    !confirm(
+      "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?",
+    )
+  ) {
     return;
   }
   try {
     const res = await fetch(`${API}/initiatives/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: getHeaders(),
     });
     if (!res.ok) {
@@ -296,45 +472,47 @@ async function deleteInitiative(id) {
 
 async function saveInitiative() {
   if (!form.value.title || !form.value.teamId) {
-    modalError.value = 'Judul dan Tim wajib diisi';
+    modalError.value = "Judul dan Tim wajib diisi";
     return;
   }
-  
+
   saving.value = true;
-  modalError.value = '';
+  modalError.value = "";
   try {
     let res;
     if (editingIni.value) {
       res = await fetch(`${API}/initiatives/${editingIni.value.id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: getHeaders(),
-        body: JSON.stringify(form.value)
+        body: JSON.stringify(form.value),
       });
     } else {
       res = await fetch(`${API}/initiatives`, {
-        method: 'POST',
+        method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({
           ...form.value,
-          keyResultId: selectedKr.value.id
-        })
+          keyResultId: selectedKr.value.id,
+        }),
       });
     }
-    
+
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.message);
     }
-    
+
     showModal.value = false;
     editingIni.value = null;
     await fetchData();
   } catch (e) {
-    modalError.value = e.message || 'Gagal menyimpan inisiatif';
+    modalError.value = e.message || "Gagal menyimpan inisiatif";
   } finally {
     saving.value = false;
   }
 }
+
+
 </script>
 
 <style scoped>
@@ -367,7 +545,7 @@ async function saveInitiative() {
 }
 
 .header-title h2 {
-  font-family: 'Rubik', sans-serif;
+  font-family: "Rubik", sans-serif;
   font-size: 24px;
   font-weight: 600;
   color: #1e293b;
@@ -375,7 +553,7 @@ async function saveInitiative() {
 }
 
 .section-desc {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 14px;
   color: #64748b;
   margin: 0;
@@ -430,11 +608,26 @@ async function saveInitiative() {
   margin-right: 8px;
 }
 
-.bg-green { background: #dcfce7; color: #166534; }
-.bg-yellow { background: #fef08a; color: #854d0e; }
-.bg-red { background: #fee2e2; color: #991b1b; }
-.bg-blue { background: #dbeafe; color: #1e40af; }
-.bg-gray { background: #f1f5f9; color: #475569; }
+.bg-green {
+  background: #dcfce7;
+  color: #166534;
+}
+.bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+.bg-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.bg-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.bg-gray {
+  background: #f1f5f9;
+  color: #475569;
+}
 
 .kr-progress {
   width: 200px;
@@ -499,8 +692,13 @@ async function saveInitiative() {
   cursor: pointer;
   transition: background 0.2s;
 }
-.primary-btn:hover { background: #0284c7; }
-.primary-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+.primary-btn:hover {
+  background: #0284c7;
+}
+.primary-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
 
 .secondary-btn {
   background: white;
@@ -511,15 +709,24 @@ async function saveInitiative() {
   font-weight: 500;
   cursor: pointer;
 }
-.secondary-btn:hover { background: #f8fafc; }
+.secondary-btn:hover {
+  background: #f8fafc;
+}
 
-.mt-2 { margin-top: 8px; }
-.mb-4 { margin-bottom: 16px; }
+.mt-2 {
+  margin-top: 8px;
+}
+.mb-4 {
+  margin-bottom: 16px;
+}
 
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -538,7 +745,9 @@ async function saveInitiative() {
   align-items: center;
   margin-bottom: 12px;
 }
-.modal-header h3 { margin: 0; }
+.modal-header h3 {
+  margin: 0;
+}
 .modal-close-btn {
   background: none;
   border: none;
@@ -547,7 +756,9 @@ async function saveInitiative() {
   color: #64748b;
   padding: 0;
 }
-.modal-close-btn:hover { color: #0f172a; }
+.modal-close-btn:hover {
+  color: #0f172a;
+}
 .form-input {
   width: 100%;
   padding: 8px 12px;
@@ -562,9 +773,19 @@ async function saveInitiative() {
   gap: 12px;
   margin-top: 24px;
 }
-.alert { padding: 12px; border-radius: 8px; margin-bottom: 16px; }
-.alert-error { background: #fee2e2; color: #991b1b; }
-.alert-info { background: #e0f2fe; color: #075985; }
+.alert {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.alert-info {
+  background: #e0f2fe;
+  color: #075985;
+}
 .searchable-field {
   display: flex;
   flex-direction: column;

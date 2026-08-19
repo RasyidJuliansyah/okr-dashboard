@@ -6,6 +6,10 @@ export default defineNuxtRouteMiddleware((to, from) => {
 
   const auth = useAuthStore();
 
+  if (auth.isAuthenticated && auth.user && (auth.user.department === undefined || auth.user.managedDepartments === undefined)) {
+    auth.fetchUser().catch((err) => console.error('Failed to auto-fetch user info:', err));
+  }
+
   if (!auth.isAuthenticated && to.path !== '/login') {
     return navigateTo('/login');
   }

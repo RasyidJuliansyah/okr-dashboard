@@ -93,12 +93,21 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
       });
       visibleUserIds = teamMembers.map(u => u.id);
     } else if (role === 'MANAGER') {
-      // MANAGER melihat dirinya + Leader & Team di departemennya
+      // MANAGER melihat dirinya + Leader & Team di seluruh departemen yang dikelolanya
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true }
+      });
+      const deptList = managedDepts.map(d => d.value);
+      if (dbUser?.department && !deptList.includes(dbUser.department)) {
+        deptList.push(dbUser.department);
+      }
+
       const deptUsers = await prisma.user.findMany({
         where: {
           OR: [
             { id: userId },
-            ...(dbUser?.department ? [{ department: dbUser.department }] : [])
+            { department: { in: deptList } }
           ]
         },
         select: { id: true }
@@ -507,8 +516,17 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 
     const kr = await prisma.keyResult.findUnique({ where: { id: keyResultId } });
     if (!kr) return res.status(404).json({ message: 'KeyResult tidak ditemukan' });
+    
+    // Auto-heal kr.month if it is null/empty to allow initiative creation
     if (!kr.month) {
-      return res.status(400).json({ message: 'Target KeyResult harus merupakan KR Bulanan (sprint-level)' });
+      const now = new Date();
+      const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const krMonth = sprintMonth || defaultMonth;
+      await prisma.keyResult.update({
+        where: { id: keyResultId },
+        data: { month: krMonth }
+      });
+      kr.month = krMonth;
     }
 
     const finalOwnerId = ownerId || (role === 'TEAM' ? userId : null);
