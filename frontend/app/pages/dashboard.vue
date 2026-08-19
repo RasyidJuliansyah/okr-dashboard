@@ -192,7 +192,7 @@
 
       <!-- ─── SECTION: TEAM VIEW ─── -->
       <section v-if="userRole === 'TEAM'" class="role-section">
-        <h3 class="section-title">📋 KPI Saya</h3>
+        <h3 class="section-title">KPI Saya</h3>
         <div v-if="myKpis.length === 0" class="empty-state">
           Belum ada KPI yang di-assign ke kamu.
         </div>
@@ -208,14 +208,14 @@
             </div>
           </div>
           <div class="kpi-initiative">Initiative: {{ kpi.initiative?.title }}</div>
-          <button class="primary-btn" @click="openKpiSubmitModal(kpi)">📤 Submit Update</button>
+          <button class="primary-btn" @click="openKpiSubmitModal(kpi)">Submit Update</button>
         </div>
       </section>
 
       <!-- ─── SECTION: INITIATIVE PROGRESS (Leader, Manager, C-Level, Admin) ─── -->
       <section v-if="showInitiativeProgress" class="role-section">
         <div class="section-title-row">
-          <h3 class="section-title">🏆 Progress Capaian Initiative</h3>
+          <h3 class="section-title">Progress Capaian Initiative</h3>
           <span class="count-badge-sub">
             {{ initProgressData.summary?.totalInitiatives || 0 }} Initiative
           </span>
@@ -257,7 +257,7 @@
               </span>
               <h4>{{ group.keyResult?.title }}</h4>
               <span class="kr-obj-context" v-if="group.keyResult?.objective">
-                📎 {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.quarter }})
+                {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.quarter }})
               </span>
             </div>
             <div class="kr-group-progress-info">
@@ -293,7 +293,7 @@
             <!-- KPI detail rows -->
             <div v-if="init.kpis?.length" class="kpi-detail-grid">
               <div v-for="kpi in init.kpis" :key="kpi.id" class="kpi-detail-row">
-                <span class="kpi-detail-name">🎯 {{ kpi.title }}</span>
+                <span class="kpi-detail-name">{{ kpi.title }}</span>
                 <span class="kpi-detail-val">
                   {{ kpi.currentValue }}/{{ kpi.targetValue }} {{ kpi.unit }}
                 </span>
@@ -303,7 +303,7 @@
                 <span class="kpi-mini-pct">{{ kpi.progressPercent }}%</span>
                 <div class="kpi-assignees-mini">
                   <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-mini">
-                    👤 {{ a.user?.name }}
+                    {{ a.user?.name }}
                   </span>
                 </div>
               </div>
@@ -318,7 +318,7 @@
 
       <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
       <section v-if="userRole === 'MANAGER' && pendingApprovals.length > 0" class="role-section">
-        <h3 class="section-title">🔔 Approval KPI Pending ({{ pendingApprovals.length }})</h3>
+        <h3 class="section-title">Approval KPI Pending ({{ pendingApprovals.length }})</h3>
         <div v-for="update in pendingApprovals" :key="update.id" class="approval-card card">
           <div class="approval-info">
             <strong>{{ update.kpi?.title }}</strong>
@@ -329,8 +329,8 @@
           </div>
           <div v-if="update.note" class="approval-note">Catatan: {{ update.note }}</div>
           <div class="approval-actions">
-            <button class="approve-btn" @click="handleApprove(update.id)">✅ Approve</button>
-            <button class="reject-btn" @click="openRejectModal(update)">❌ Reject</button>
+            <button class="approve-btn" @click="handleApprove(update.id)">Approve</button>
+            <button class="reject-btn" @click="openRejectModal(update)">Reject</button>
           </div>
         </div>
       </section>
@@ -520,7 +520,7 @@
                       :to="`/kr-history?krId=${kr.id}&krTitle=${encodeURIComponent(kr.title)}&krTarget=${kr.targetValue}&krUnit=${encodeURIComponent(kr.unit)}`"
                       class="history-btn"
                     >
-                      📈 Lihat History
+                      Lihat History
                     </NuxtLink>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 <template>
-  <div class="dashboard-root">
-    <!-- <div class="dashboard-card"> -->
-    <div class="welcome-header">
+  <!-- <div class="dashboard-root"> -->
+  <!-- <div class="dashboard-card"> -->
+  <!-- <div class="welcome-header">
       <div class="user-avatar">{{ userInitial }}</div>
       <div>
         <h1>Selamat Datang, {{ auth.user?.name || "User" }}!</h1>
@@ -10,9 +10,9 @@
       <div class="index-theme-toggle">
         <ThemeToggle />
       </div>
-    </div>
+    </div> -->
 
-    <div class="user-details">
+  <!-- <div class="user-details">
       <div class="detail-row">
         <span class="label">User ID:</span>
         <span class="value code">{{ auth.user?.id }}</span>
@@ -27,9 +27,9 @@
         <span class="label">Team ID:</span>
         <span class="value code">{{ auth.user?.teamId }}</span>
       </div>
-    </div>
+    </div> -->
 
-    <div class="action-section">
+  <!-- <div class="action-section">
       <NuxtLink to="/dashboard" class="admin-panel-btn">
         Lihat Dashboard OKR
       </NuxtLink>
@@ -48,9 +48,7 @@
         Update Capaian
       </NuxtLink>
       <button @click="handleLogout" class="logout-btn">Keluar</button>
-    </div>
-  </div>
-  <!-- </div> -->
+    </div> -->
 </template>
 
 <script setup>

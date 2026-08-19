@@ -265,7 +265,7 @@ function getPerspectiveIcon(p) {
   if (p === "CUSTOMER") return;
   if (p === "INTERNAL_PROCESS") return;
   if (p === "LEARNING_GROWTH") return;
-  return "📊";
+  return "";
 }
 
 function selectQuadrant(key) {

@@ -9,44 +9,77 @@
             <span class="view-badge">Kanban Board</span>
           </div>
           <p class="section-desc">
-            Pantau dan kelola eksekusi seluruh inisiatif kerja melalui 3 tahapan alur: To Do, In Progress, dan Done.
+            Pantau dan kelola eksekusi seluruh inisiatif kerja melalui 3 tahapan
+            alur: To Do, In Progress, dan Done.
           </p>
-          
+
           <!-- Scope Notice Badge -->
           <div class="scope-banner" :class="userRoleClass">
             <span class="scope-icon">{{ roleIcon }}</span>
             <span class="scope-text">
-              <strong>Scope Akses ({{ auth.user?.role }}):</strong> {{ scopeDescription }}
+              <strong>Scope Akses ({{ auth.user?.role }}):</strong>
+              {{ scopeDescription }}
             </span>
           </div>
         </div>
 
         <div class="header-action-group">
-          <button v-if="isAdmin" class="secondary-btn" @click="showBulkModal = true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
+          <button
+            v-if="isAdmin"
+            class="secondary-btn"
+            @click="showBulkModal = true"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             Bulk Upload CSV
           </button>
-          <button v-if="canCreateInitiative" class="primary-btn" @click="openAddInitiativeModal">
+          <button
+            v-if="canCreateInitiative"
+            class="primary-btn"
+            @click="openAddInitiativeModal"
+          >
             + Tambah Inisiatif
           </button>
         </div>
       </div>
 
       <!-- Alert -->
-      <div v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-      <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
+      <div v-if="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
+      <div v-if="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
 
       <!-- Filters & Search Bar -->
       <div class="kanban-filter-card card">
         <div class="filter-controls-row">
           <div class="search-input-wrap">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="search-icon"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               v-model="searchQuery"
@@ -60,7 +93,9 @@
             <label>Filter Tim:</label>
             <select v-model="selectedTeamId" class="filter-select">
               <option value="">Semua Tim ({{ availableTeams.length }})</option>
-              <option v-for="t in availableTeams" :key="t.id" :value="t.id">{{ t.name }}</option>
+              <option v-for="t in availableTeams" :key="t.id" :value="t.id">
+                {{ t.name }}
+              </option>
             </select>
           </div>
 
@@ -68,9 +103,11 @@
           <div v-if="!isTeam && availableOwners.length > 0" class="filter-item">
             <label>Filter Pegawai (PIC):</label>
             <select v-model="selectedOwnerId" class="filter-select">
-              <option value="">Semua Pegawai ({{ availableOwners.length }})</option>
+              <option value="">
+                Semua Pegawai ({{ availableOwners.length }})
+              </option>
               <option v-for="u in availableOwners" :key="u.id" :value="u.id">
-                👤 {{ u.name }} ({{ u.role }})
+                {{ u.name }} ({{ u.role }})
               </option>
             </select>
           </div>
@@ -79,7 +116,9 @@
             <label>Filter Key Result:</label>
             <select v-model="selectedKrId" class="filter-select">
               <option value="">Semua Key Result ({{ allKrs.length }})</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">{{ kr.title }}</option>
+              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+                {{ kr.title }}
+              </option>
             </select>
           </div>
 
@@ -89,7 +128,7 @@
             <select v-model="selectedSprintMonth" class="filter-select">
               <option value="">Semua Bulan / Sprint</option>
               <option v-for="m in availableSprintMonths" :key="m" :value="m">
-                📅 {{ formatSprintLabel(m) }}
+                {{ formatSprintLabel(m) }}
               </option>
             </select>
           </div>
@@ -102,7 +141,7 @@
         <div
           class="kanban-column"
           :class="{ 'drop-active': dragOverColumn === 'TODO' }"
-          @dragover.prevent="canMoveCards ? dragOverColumn = 'TODO' : null"
+          @dragover.prevent="canMoveCards ? (dragOverColumn = 'TODO') : null"
           @dragleave="dragOverColumn = null"
           @drop="canMoveCards ? handleDrop('TODO') : null"
         >
@@ -118,7 +157,7 @@
             <div v-if="todoList.length === 0" class="kanban-empty-col">
               Belum ada inisiatif di kolom ini
             </div>
-            
+
             <div
               v-for="ini in todoList"
               :key="ini.id"
@@ -128,40 +167,60 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
-                <span v-if="ini.keyResult?.bscPerspective" class="perspective-pill" :class="ini.keyResult.bscPerspective.toLowerCase()">
+                <span
+                  v-if="ini.keyResult?.bscPerspective"
+                  class="perspective-pill"
+                  :class="ini.keyResult.bscPerspective.toLowerCase()"
+                >
                   {{ ini.keyResult.bscPerspective }}
                 </span>
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
                 </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                <span
+                  class="weight-badge-mini"
+                  title="Bobot Inisiatif terhadap KR"
+                >
+                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                 </span>
               </div>
 
               <!-- Date Range & Sprint Meta Row -->
-              <div class="card-dates-sprint-row" v-if="ini.startDate || ini.dueDate || ini.sprintMonth">
+              <div
+                class="card-dates-sprint-row"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+              >
                 <span v-if="ini.sprintMonth" class="sprint-pill">
-                  🏃 {{ formatSprintLabel(ini.sprintMonth) }}
+                  {{ formatSprintLabel(ini.sprintMonth) }}
                 </span>
-                <span v-if="ini.startDate || ini.dueDate" class="date-range-pill" :class="{ overdue: isOverdue(ini) }">
-                  🗓️ {{ formatDateShort(ini.startDate) }} – {{ formatDateShort(ini.dueDate) }}
+                <span
+                  v-if="ini.startDate || ini.dueDate"
+                  class="date-range-pill"
+                  :class="{ overdue: isOverdue(ini) }"
+                >
+                  {{ formatDateShort(ini.startDate) }} –
+                  {{ formatDateShort(ini.dueDate) }}
                 </span>
               </div>
 
               <!-- KPIs summary chips -->
               <div class="card-kpis-summary" v-if="ini.kpis?.length">
                 <span class="kpi-count-tag">
-                  🎯 {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }} selesai)
+                  {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }}
+                  selesai)
                 </span>
               </div>
 
@@ -169,8 +228,16 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
-                    <span v-if="getMemberAchievement(ini.ownerId)" class="owner-ach-pill" :class="getAchColorClass(getMemberAchievement(ini.ownerId).achievementPct)">
+                    {{ ini.owner.name }}
+                    <span
+                      v-if="getMemberAchievement(ini.ownerId)"
+                      class="owner-ach-pill"
+                      :class="
+                        getAchColorClass(
+                          getMemberAchievement(ini.ownerId).achievementPct,
+                        )
+                      "
+                    >
                       {{ getMemberAchievement(ini.ownerId).achievementPct }}%
                     </span>
                   </span>
@@ -180,12 +247,69 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
-                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Tambah KPI" @click="openAddKpiModal(ini)">+ KPI</button>
-                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button v-if="isAdmin" class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah KPI"
+                    @click="openAddKpiModal(ini)"
+                  >
+                    + KPI
+                  </button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit Inisiatif"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke In Progress"
+                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+                  >
                     Maju &rarr;
                   </button>
                 </div>
@@ -198,7 +322,9 @@
         <div
           class="kanban-column"
           :class="{ 'drop-active': dragOverColumn === 'IN_PROGRESS' }"
-          @dragover.prevent="canMoveCards ? dragOverColumn = 'IN_PROGRESS' : null"
+          @dragover.prevent="
+            canMoveCards ? (dragOverColumn = 'IN_PROGRESS') : null
+          "
           @dragleave="dragOverColumn = null"
           @drop="canMoveCards ? handleDrop('IN_PROGRESS') : null"
         >
@@ -224,40 +350,62 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
-                <span v-if="ini.keyResult?.bscPerspective" class="perspective-pill" :class="ini.keyResult.bscPerspective.toLowerCase()">
+                <span
+                  v-if="ini.keyResult?.bscPerspective"
+                  class="perspective-pill"
+                  :class="ini.keyResult.bscPerspective.toLowerCase()"
+                >
                   {{ ini.keyResult.bscPerspective }}
                 </span>
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
                 </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                <span
+                  class="weight-badge-mini"
+                  title="Bobot Inisiatif terhadap KR"
+                >
+                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                 </span>
               </div>
 
               <!-- Date Range & Sprint Meta Row -->
-              <div class="card-dates-sprint-row" v-if="ini.startDate || ini.dueDate || ini.sprintMonth">
+              <div
+                class="card-dates-sprint-row"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+              >
                 <span v-if="ini.sprintMonth" class="sprint-pill">
-                  🏃 {{ formatSprintLabel(ini.sprintMonth) }}
+                  {{ formatSprintLabel(ini.sprintMonth) }}
                 </span>
-                <span v-if="ini.startDate || ini.dueDate" class="date-range-pill" :class="{ overdue: isOverdue(ini) }">
-                  🗓️ {{ formatDateShort(ini.startDate) }} – {{ formatDateShort(ini.dueDate) }}
+                <span
+                  v-if="ini.startDate || ini.dueDate"
+                  class="date-range-pill"
+                  :class="{ overdue: isOverdue(ini) }"
+                >
+                  {{ formatDateShort(ini.startDate) }} –
+                  {{ formatDateShort(ini.dueDate) }}
                 </span>
               </div>
 
               <!-- KPIs summary chips -->
               <div class="card-kpis-summary" v-if="ini.kpis?.length">
                 <span class="kpi-count-tag in-progress">
-                  ⚡ {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }}/{{ ini.kpis.length }} selesai)
+                  {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }}/{{
+                    ini.kpis.length
+                  }}
+                  selesai)
                 </span>
               </div>
 
@@ -265,8 +413,16 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
-                    <span v-if="getMemberAchievement(ini.ownerId)" class="owner-ach-pill" :class="getAchColorClass(getMemberAchievement(ini.ownerId).achievementPct)">
+                    {{ ini.owner.name }}
+                    <span
+                      v-if="getMemberAchievement(ini.ownerId)"
+                      class="owner-ach-pill"
+                      :class="
+                        getAchColorClass(
+                          getMemberAchievement(ini.ownerId).achievementPct,
+                        )
+                      "
+                    >
                       {{ getMemberAchievement(ini.ownerId).achievementPct }}%
                     </span>
                   </span>
@@ -276,15 +432,76 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
-                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Tambah KPI" @click="openAddKpiModal(ini)">+ KPI</button>
-                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button v-if="isAdmin" class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah KPI"
+                    @click="openAddKpiModal(ini)"
+                  >
+                    + KPI
+                  </button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit Inisiatif"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Kembalikan ke To Do" @click="moveCard(ini.id, 'TODO')">
+                  <button
+                    class="move-btn"
+                    title="Kembalikan ke To Do"
+                    @click="moveCard(ini.id, 'TODO')"
+                  >
                     &larr; Mundur
                   </button>
-                  <button class="move-btn primary" title="Selesaikan ke Done" @click="moveCard(ini.id, 'DONE')">
+                  <button
+                    class="move-btn primary"
+                    title="Selesaikan ke Done"
+                    @click="moveCard(ini.id, 'DONE')"
+                  >
                     Selesai &rarr;
                   </button>
                 </div>
@@ -297,7 +514,7 @@
         <div
           class="kanban-column"
           :class="{ 'drop-active': dragOverColumn === 'DONE' }"
-          @dragover.prevent="canMoveCards ? dragOverColumn = 'DONE' : null"
+          @dragover.prevent="canMoveCards ? (dragOverColumn = 'DONE') : null"
           @dragleave="dragOverColumn = null"
           @drop="canMoveCards ? handleDrop('DONE') : null"
         >
@@ -323,40 +540,60 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
-                <span class="completed-checkmark-badge">✅ Selesai</span>
+                <span class="completed-checkmark-badge">Selesai</span>
               </div>
 
               <h4 class="card-title text-done">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
                 </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                <span
+                  class="weight-badge-mini"
+                  title="Bobot Inisiatif terhadap KR"
+                >
+                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                 </span>
               </div>
 
               <!-- Date Range & Sprint Meta Row -->
-              <div class="card-dates-sprint-row" v-if="ini.startDate || ini.dueDate || ini.sprintMonth">
+              <div
+                class="card-dates-sprint-row"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+              >
                 <span v-if="ini.sprintMonth" class="sprint-pill">
-                  🏃 {{ formatSprintLabel(ini.sprintMonth) }}
+                  {{ formatSprintLabel(ini.sprintMonth) }}
                 </span>
-                <span v-if="ini.startDate || ini.dueDate" class="date-range-pill" :class="{ overdue: isOverdue(ini) }">
-                  🗓️ {{ formatDateShort(ini.startDate) }} – {{ formatDateShort(ini.dueDate) }}
+                <span
+                  v-if="ini.startDate || ini.dueDate"
+                  class="date-range-pill"
+                  :class="{ overdue: isOverdue(ini) }"
+                >
+                  {{ formatDateShort(ini.startDate) }} –
+                  {{ formatDateShort(ini.dueDate) }}
                 </span>
               </div>
 
               <!-- Achieved Value Row for DONE cards -->
-              <div class="card-achieved-row" v-if="ini.kanbanStatus === 'DONE' || ini.achievedValue !== null">
-                <span class="achieved-label">🏆 Capaian Akhir:</span>
+              <div
+                class="card-achieved-row"
+                v-if="ini.kanbanStatus === 'DONE' || ini.achievedValue !== null"
+              >
+                <span class="achieved-label">Capaian Akhir:</span>
                 <strong class="achieved-val">
-                  {{ ini.achievedValue ?? ini.currentValue }} / {{ ini.targetValue }} {{ ini.unit || '' }}
-                  ({{ calculateAchievedPercent(ini) }}%)
+                  {{ ini.achievedValue ?? ini.currentValue }} /
+                  {{ ini.targetValue }} {{ ini.unit || "" }} ({{
+                    calculateAchievedPercent(ini)
+                  }}%)
                 </strong>
               </div>
 
@@ -364,8 +601,16 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
-                    <span v-if="getMemberAchievement(ini.ownerId)" class="owner-ach-pill" :class="getAchColorClass(getMemberAchievement(ini.ownerId).achievementPct)">
+                    {{ ini.owner.name }}
+                    <span
+                      v-if="getMemberAchievement(ini.ownerId)"
+                      class="owner-ach-pill"
+                      :class="
+                        getAchColorClass(
+                          getMemberAchievement(ini.ownerId).achievementPct,
+                        )
+                      "
+                    >
                       {{ getMemberAchievement(ini.ownerId).achievementPct }}%
                     </span>
                   </span>
@@ -375,11 +620,61 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
-                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button v-if="isAdmin" class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke In Progress"
+                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+                  >
                     &larr; Buka Kembali
                   </button>
                 </div>
@@ -392,7 +687,7 @@
         <div
           class="kanban-column"
           :class="{ 'drop-active': dragOverColumn === 'DROP' }"
-          @dragover.prevent="canMoveCards ? dragOverColumn = 'DROP' : null"
+          @dragover.prevent="canMoveCards ? (dragOverColumn = 'DROP') : null"
           @dragleave="dragOverColumn = null"
           @drop="canMoveCards ? handleDrop('DROP') : null"
         >
@@ -418,21 +713,28 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
-                <span class="dropped-badge">❌ Drop</span>
+                <span class="dropped-badge">Drop</span>
               </div>
 
               <h4 class="card-title text-drop">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
                 </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                <span
+                  class="weight-badge-mini"
+                  title="Bobot Inisiatif terhadap KR"
+                >
+                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                 </span>
               </div>
 
@@ -440,7 +742,7 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
+                    {{ ini.owner.name }}
                   </span>
                 </div>
               </div>
@@ -448,11 +750,61 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
-                  <button v-if="canManageInitiative(ini)" class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button v-if="isAdmin" class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Pindah ke To Do" @click="moveCard(ini.id, 'TODO')">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke To Do"
+                    @click="moveCard(ini.id, 'TODO')"
+                  >
                     &larr; Aktifkan Kembali
                   </button>
                 </div>
@@ -463,24 +815,38 @@
       </div>
 
       <!-- ─── MODAL: Add/Edit Initiative ─── -->
-      <div v-if="showInitiativeModal" class="modal-overlay" @click.self="showInitiativeModal = false">
+      <div
+        v-if="showInitiativeModal"
+        class="modal-overlay"
+        @click.self="showInitiativeModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
-            <h3>{{ editingInitiative ? 'Edit' : 'Tambah' }} Inisiatif</h3>
-            <button class="modal-close-btn" @click="showInitiativeModal = false">&times;</button>
+            <h3>{{ editingInitiative ? "Edit" : "Tambah" }} Inisiatif</h3>
+            <button
+              class="modal-close-btn"
+              @click="showInitiativeModal = false"
+            >
+              &times;
+            </button>
           </div>
           <div class="modal-body-scroll">
             <label>Judul Inisiatif *</label>
-            <input v-model="initiativeForm.title" class="form-input" placeholder="Contoh: Optimalisasi query database..." />
+            <input
+              v-model="initiativeForm.title"
+              class="form-input"
+              placeholder="Contoh: Optimalisasi query database..."
+            />
 
-            <label>Deskripsi</label>
-            <textarea v-model="initiativeForm.description" class="form-input" rows="2" placeholder="Catatan dan ruang lingkup inisiatif..."></textarea>
+            <!-- <label>Deskripsi</label>
+            <textarea v-model="initiativeForm.description" class="form-input" rows="2" placeholder="Catatan dan ruang lingkup inisiatif..."></textarea> -->
 
             <label>Parent Key Result *</label>
             <select v-model="initiativeForm.keyResultId" class="form-input">
               <option value="">-- Pilih Key Result --</option>
               <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
-                {{ kr.objective?.title ? `[${kr.objective.title}] ` : '' }}{{ kr.title }}
+                {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
+                }}{{ kr.title }}
               </option>
             </select>
 
@@ -489,12 +855,18 @@
               v-model="teamSearch"
               type="text"
               class="form-input"
-              style="margin-bottom: 6px;"
-              placeholder="🔍 Cari departemen / tim..."
+              style="margin-bottom: 6px"
+              placeholder="Cari departemen / tim..."
             />
             <select v-model="initiativeForm.teamId" class="form-input">
               <option value="">-- Pilih Tim / Departemen --</option>
-              <option v-for="team in filteredTeams" :key="team.id" :value="team.id">{{ team.name }}</option>
+              <option
+                v-for="team in filteredTeams"
+                :key="team.id"
+                :value="team.id"
+              >
+                {{ team.name }}
+              </option>
             </select>
 
             <label>PIC Pegawai (Penanggung Jawab)</label>
@@ -502,94 +874,171 @@
               v-model="userSearch"
               type="text"
               class="form-input"
-              style="margin-bottom: 6px;"
-              placeholder="🔍 Cari nama pegawai..."
+              style="margin-bottom: 6px"
+              placeholder="Cari nama pegawai..."
             />
             <select v-model="initiativeForm.ownerId" class="form-input">
               <option value="">-- Pilih Pegawai (Opsional) --</option>
-              <option v-for="user in filteredUsers" :key="user.id" :value="user.id">{{ user.name }} ({{ user.position || 'Staff' }})</option>
+              <option
+                v-for="user in filteredUsers"
+                :key="user.id"
+                :value="user.id"
+              >
+                {{ user.name }} ({{ user.position || "Staff" }})
+              </option>
             </select>
 
             <div class="form-row-2">
               <div>
                 <label>Target Value</label>
-                <input v-model.number="initiativeForm.targetValue" type="number" class="form-input" />
+                <input
+                  v-model.number="initiativeForm.targetValue"
+                  type="number"
+                  class="form-input"
+                />
               </div>
               <div>
                 <label>Unit / Satuan</label>
-                <input v-model="initiativeForm.unit" class="form-input" placeholder="%, Sesi, tasks..." />
+                <input
+                  v-model="initiativeForm.unit"
+                  class="form-input"
+                  placeholder="%, Sesi, tasks..."
+                />
               </div>
             </div>
 
             <div class="form-row-2">
               <div>
-                <label>Bobot Inisiatif *</label>
-                <input v-model.number="initiativeForm.weight" type="number" step="0.1" min="0.1" class="form-input" placeholder="Contoh: 1.0" />
+                <label>Tanggal Mulai Pengerjaan</label>
+                <input
+                  v-model="initiativeForm.startDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Target Tanggal Selesai</label>
+                <input
+                  v-model="initiativeForm.dueDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>Bulan / Sprint</label>
+                <input
+                  v-model="initiativeForm.sprintMonth"
+                  type="month"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Hasil Capaian Akhir (Selesai)</label>
+                <input
+                  v-model.number="initiativeForm.achievedValue"
+                  type="number"
+                  class="form-input"
+                  placeholder="Opsional (Diisi jika DONE)"
+                />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>Bobot Inisiatif (%) *</label>
+                <input
+                  v-model.number="initiativeForm.weight"
+                  type="number"
+                  step="1"
+                  min="0.1"
+                  max="100"
+                  class="form-input"
+                  placeholder="Contoh: 25"
+                />
+                <p
+                  v-if="weightBudgetInfo"
+                  class="weight-hint"
+                  :class="{
+                    'weight-hint-warning': weightBudgetInfo.remaining <= 0,
+                  }"
+                >
+                  Terpakai {{ weightBudgetInfo.used.toFixed(1) }}% · Sisa
+                  {{ weightBudgetInfo.remaining.toFixed(1) }}% untuk sprint ini
+                </p>
+                <p v-else class="weight-hint">
+                  Pilih PIC Pegawai &amp; Bulan/Sprint untuk melihat sisa bobot
+                </p>
               </div>
               <div>
                 <label>Kolom Kanban (Status)</label>
-                <select v-model="initiativeForm.kanbanStatus" class="form-input">
-                  <option value="TODO">📋 To Do</option>
-                  <option value="IN_PROGRESS">⚡ In Progress</option>
-                  <option value="DONE">✅ Done</option>
-                  <option value="DROP">❌ Drop</option>
+                <select
+                  v-model="initiativeForm.kanbanStatus"
+                  class="form-input"
+                >
+                  <option value="TODO">To Do</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="DONE">Done</option>
+                  <option value="DROP">Drop</option>
                 </select>
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div>
-                <label>📅 Tanggal Mulai Pengerjaan</label>
-                <input v-model="initiativeForm.startDate" type="date" class="form-input" />
-              </div>
-              <div>
-                <label>🎯 Target Tanggal Selesai</label>
-                <input v-model="initiativeForm.dueDate" type="date" class="form-input" />
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div>
-                <label>🏃 Bulan / Sprint</label>
-                <input v-model="initiativeForm.sprintMonth" type="month" class="form-input" />
-              </div>
-              <div>
-                <label>🏆 Hasil Capaian Akhir (Selesai)</label>
-                <input v-model.number="initiativeForm.achievedValue" type="number" class="form-input" placeholder="Opsional (Diisi jika DONE)" />
               </div>
             </div>
           </div>
 
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showInitiativeModal = false">Batal</button>
+            <button class="secondary-btn" @click="showInitiativeModal = false">
+              Batal
+            </button>
             <button class="primary-btn" @click="saveInitiative">Simpan</button>
           </div>
         </div>
       </div>
 
       <!-- ─── MODAL: Add/Edit KPI ─── -->
-      <div v-if="showKpiModal" class="modal-overlay" @click.self="showKpiModal = false">
+      <div
+        v-if="showKpiModal"
+        class="modal-overlay"
+        @click.self="showKpiModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
             <h3>Tambah KPI untuk: {{ selectedInitiativeForKpi?.title }}</h3>
-            <button class="modal-close-btn" @click="showKpiModal = false">&times;</button>
+            <button class="modal-close-btn" @click="showKpiModal = false">
+              &times;
+            </button>
           </div>
           <div class="modal-body-scroll">
             <label>Judul KPI *</label>
-            <input v-model="kpiForm.title" class="form-input" placeholder="Contoh: Selesaikan 10 unit test..." />
+            <input
+              v-model="kpiForm.title"
+              class="form-input"
+              placeholder="Contoh: Selesaikan 10 unit test..."
+            />
             <div class="form-row-2">
               <div>
                 <label>Target Value *</label>
-                <input v-model.number="kpiForm.targetValue" type="number" class="form-input" />
+                <input
+                  v-model.number="kpiForm.targetValue"
+                  type="number"
+                  class="form-input"
+                />
               </div>
               <div>
                 <label>Satuan (Unit)</label>
-                <input v-model="kpiForm.unit" class="form-input" placeholder="%, task, doc..." />
+                <input
+                  v-model="kpiForm.unit"
+                  class="form-input"
+                  placeholder="%, task, doc..."
+                />
               </div>
             </div>
           </div>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showKpiModal = false">Batal</button>
+            <button class="secondary-btn" @click="showKpiModal = false">
+              Batal
+            </button>
             <button class="primary-btn" @click="saveKpi">Simpan KPI</button>
           </div>
         </div>
@@ -607,25 +1056,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
-import BulkUploadModal from '~/components/BulkUploadModal.vue';
+import { ref, computed, watch, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
+import BulkUploadModal from "~/components/BulkUploadModal.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
 
 const getHeaders = () => ({
-  'Content-Type': 'application/json',
+  "Content-Type": "application/json",
   Authorization: `Bearer ${auth.token}`,
 });
 
 // ─── Roles & Permissions ───
-const isAdmin = computed(() => auth.user?.role === 'ADMIN');
-const isCLevel = computed(() => auth.user?.role === 'C_LEVEL');
-const isManager = computed(() => auth.user?.role === 'MANAGER');
-const isLeader = computed(() => auth.user?.role === 'LEADER');
-const isTeam = computed(() => auth.user?.role === 'TEAM');
+const isAdmin = computed(() => auth.user?.role === "ADMIN");
+const isCLevel = computed(() => auth.user?.role === "C_LEVEL");
+const isManager = computed(() => auth.user?.role === "MANAGER");
+const isLeader = computed(() => auth.user?.role === "LEADER");
+const isTeam = computed(() => auth.user?.role === "TEAM");
 
 const canMoveCards = computed(() => true); // All roles can move cards they are authorized to manage
 const canCreateInitiative = computed(() => true); // All roles can create initiative
@@ -639,29 +1088,29 @@ function canManageInitiative(ini: any) {
 }
 
 const userRoleClass = computed(() => {
-  const r = (auth.user?.role || '').toLowerCase();
+  const r = (auth.user?.role || "").toLowerCase();
   return `scope-${r}`;
 });
 
 const roleIcon = computed(() => {
-  if (isAdmin.value) return '👑';
-  if (isCLevel.value) return '📊';
-  if (isManager.value) return '👔';
-  if (isLeader.value) return '🛡️';
-  return '👥';
+  if (isAdmin.value) return "";
+  if (isCLevel.value) return "";
+  if (isManager.value) return "";
+  if (isLeader.value) return "";
+  return "";
 });
 
 const scopeDescription = computed(() => {
   if (isAdmin.value || isCLevel.value) {
-    return 'Menampilkan seluruh inisiatif di semua departemen perusahaan (Company-wide).';
+    return "Menampilkan seluruh inisiatif di semua departemen perusahaan (Company-wide).";
   }
   if (isManager.value) {
-    return 'Menampilkan seluruh inisiatif Leader (P) dan Anggota Tim (T) di departemen Anda.';
+    return "Menampilkan seluruh inisiatif Leader (P) dan Anggota Tim (T) di departemen Anda.";
   }
   if (isLeader.value) {
-    return 'Menampilkan inisiatif Anda (P) dan seluruh anggota tim (T) di bawah pimpinan Anda.';
+    return "Menampilkan inisiatif Anda (P) dan seluruh anggota tim (T) di bawah pimpinan Anda.";
   }
-  return 'Menampilkan seluruh inisiatif dalam departemen Anda. Anda hanya dapat memindahkan kartu milik Anda sendiri.';
+  return "Menampilkan seluruh inisiatif dalam departemen Anda. Anda hanya dapat memindahkan kartu milik Anda sendiri.";
 });
 
 // ─── State ───
@@ -670,12 +1119,12 @@ const allKrs = ref<any[]>([]);
 const allTeams = ref<any[]>([]);
 const allUsers = ref<any[]>([]);
 
-const searchQuery = ref('');
-const selectedTeamId = ref('');
-const selectedOwnerId = ref('');
-const selectedKrId = ref('');
-const errorMessage = ref('');
-const successMessage = ref('');
+const searchQuery = ref("");
+const selectedTeamId = ref("");
+const selectedOwnerId = ref("");
+const selectedKrId = ref("");
+const errorMessage = ref("");
+const successMessage = ref("");
 
 const showBulkModal = ref(false);
 
@@ -687,28 +1136,33 @@ const dragOverColumn = ref<string | null>(null);
 const showInitiativeModal = ref(false);
 const editingInitiative = ref<any>(null);
 const initiativeForm = ref({
-  title: '',
-  description: '',
-  keyResultId: '',
-  teamId: '',
-  ownerId: '',
+  title: "",
+  description: "",
+  keyResultId: "",
+  teamId: "",
+  ownerId: "",
   targetValue: 0,
-  unit: '',
-  kanbanStatus: 'TODO',
-  weight: 1.0
+  achievedValue: null as number | null,
+  unit: "",
+  kanbanStatus: "TODO",
+  weight: 1.0,
+  startDate: "",
+  dueDate: "",
+  sprintMonth: "",
 });
 
-const teamSearch = ref('');
-const userSearch = ref('');
+const teamSearch = ref("");
+const userSearch = ref("");
 
 const availableTeams = computed(() => {
   if (isLeader.value) {
     const userTeamId = auth.user?.teamId;
     const userDept = (auth.user as any)?.department;
-    return allTeams.value.filter((t: any) =>
-      t.leaderId === auth.user?.id ||
-      (userTeamId && t.id === userTeamId) ||
-      (userDept && t.department === userDept)
+    return allTeams.value.filter(
+      (t: any) =>
+        t.leaderId === auth.user?.id ||
+        (userTeamId && t.id === userTeamId) ||
+        (userDept && t.department === userDept),
     );
   }
   return allTeams.value;
@@ -717,20 +1171,23 @@ const availableTeams = computed(() => {
 // Fetch team members reactively for LEADER when team is selected
 const teamMembers = ref<any[]>([]);
 
-watch(() => initiativeForm.value.teamId, async (newTeamId) => {
-  if (isLeader.value && newTeamId) {
-    try {
-      const res = await fetch(`${API}/users/teams/${newTeamId}/members`, {
-        headers: getHeaders()
-      });
-      if (res.ok) {
-        teamMembers.value = await res.json();
+watch(
+  () => initiativeForm.value.teamId,
+  async (newTeamId) => {
+    if (isLeader.value && newTeamId) {
+      try {
+        const res = await fetch(`${API}/users/teams/${newTeamId}/members`, {
+          headers: getHeaders(),
+        });
+        if (res.ok) {
+          teamMembers.value = await res.json();
+        }
+      } catch (err) {
+        teamMembers.value = [];
       }
-    } catch (err) {
-      teamMembers.value = [];
     }
-  }
-});
+  },
+);
 
 // Subordinates list based on role
 const availableOwners = computed(() => {
@@ -738,12 +1195,18 @@ const availableOwners = computed(() => {
     return auth.user ? [auth.user] : [];
   }
   if (isLeader.value) {
-    return teamMembers.value.length > 0 ? teamMembers.value : allUsers.value.filter((u: any) => u.teamId === auth.user?.teamId || u.id === auth.user?.id);
+    return teamMembers.value.length > 0
+      ? teamMembers.value
+      : allUsers.value.filter(
+          (u: any) => u.teamId === auth.user?.teamId || u.id === auth.user?.id,
+        );
   }
   if (isManager.value) {
     const dept = (auth.user as any)?.department;
     if (!dept) return allUsers.value;
-    return allUsers.value.filter((u: any) => u.department === dept || u.id === auth.user?.id);
+    return allUsers.value.filter(
+      (u: any) => u.department === dept || u.id === auth.user?.id,
+    );
   }
   return allUsers.value; // Admin & C-Level
 });
@@ -751,7 +1214,9 @@ const availableOwners = computed(() => {
 const filteredTeams = computed(() => {
   if (!teamSearch.value.trim()) return availableTeams.value;
   const q = teamSearch.value.toLowerCase();
-  return availableTeams.value.filter((t: any) => t.name && t.name.toLowerCase().includes(q));
+  return availableTeams.value.filter(
+    (t: any) => t.name && t.name.toLowerCase().includes(q),
+  );
 });
 
 const filteredUsers = computed(() => {
@@ -759,7 +1224,8 @@ const filteredUsers = computed(() => {
     return [auth.user];
   }
   if (isLeader.value) {
-    const base = teamMembers.value.length > 0 ? teamMembers.value : availableOwners.value;
+    const base =
+      teamMembers.value.length > 0 ? teamMembers.value : availableOwners.value;
     if (!userSearch.value.trim()) return base;
     const q = userSearch.value.toLowerCase();
     return base.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
@@ -767,16 +1233,62 @@ const filteredUsers = computed(() => {
   const baseUsers = availableOwners.value;
   if (!userSearch.value.trim()) return baseUsers;
   const q = userSearch.value.toLowerCase();
-  return baseUsers.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
+  return baseUsers.filter(
+    (u: any) => u.name && u.name.toLowerCase().includes(q),
+  );
 });
+
+// Bobot (%) inisiatif per pegawai per sprint — total seluruh card milik satu
+// pegawai pada satu sprint tidak boleh melebihi 100%.
+function computeUsedWeight(
+  ownerId: string,
+  sprintMonth: string,
+  excludeId?: string,
+) {
+  return initiatives.value
+    .filter(
+      (i: any) =>
+        i.ownerId === ownerId &&
+        i.sprintMonth === sprintMonth &&
+        i.kanbanStatus !== "DROP" &&
+        i.id !== excludeId,
+    )
+    .reduce((sum: number, i: any) => sum + (i.weight || 0), 0);
+}
+
+const weightBudgetInfo = computed(() => {
+  const { ownerId, sprintMonth } = initiativeForm.value;
+  if (!ownerId || !sprintMonth) return null;
+  const used = computeUsedWeight(
+    ownerId,
+    sprintMonth,
+    editingInitiative.value?.id,
+  );
+  return { used, remaining: Math.max(0, 100 - used) };
+});
+
+watch(
+  [() => initiativeForm.value.ownerId, () => initiativeForm.value.sprintMonth],
+  () => {
+    if (editingInitiative.value) return; // jangan timpa bobot saat mode edit
+    const { ownerId, sprintMonth } = initiativeForm.value;
+    if (ownerId && sprintMonth) {
+      const remaining = Math.max(
+        0,
+        100 - computeUsedWeight(ownerId, sprintMonth),
+      );
+      initiativeForm.value.weight = Math.round(remaining * 10) / 10;
+    }
+  },
+);
 
 // KPI modal state
 const showKpiModal = ref(false);
 const selectedInitiativeForKpi = ref<any>(null);
-const kpiForm = ref({ title: '', targetValue: 0, unit: '' });
+const kpiForm = ref({ title: "", targetValue: 0, unit: "" });
 
 // Sprint Month filter & helper functions
-const selectedSprintMonth = ref('');
+const selectedSprintMonth = ref("");
 
 const availableSprintMonths = computed(() => {
   const months = new Set<string>();
@@ -784,37 +1296,52 @@ const availableSprintMonths = computed(() => {
     if (ini.sprintMonth) months.add(ini.sprintMonth);
   }
   const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   months.add(currentMonth);
   return Array.from(months).sort().reverse();
 });
 
 function formatDateShort(dateStr: string | null | undefined) {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function formatSprintLabel(sprint: string | null | undefined) {
-  if (!sprint) return '';
+  if (!sprint) return "";
   if (/^\d{4}-\d{2}$/.test(sprint)) {
-    const [year, month] = sprint.split('-');
+    const [year, month] = sprint.split("-");
     const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-    return date.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+    return date.toLocaleDateString("id-ID", {
+      month: "short",
+      year: "numeric",
+    });
   }
   return sprint;
 }
 
 function isOverdue(ini: any) {
-  if (!ini.dueDate || ini.kanbanStatus === 'DONE' || ini.kanbanStatus === 'DROP') return false;
+  if (
+    !ini.dueDate ||
+    ini.kanbanStatus === "DONE" ||
+    ini.kanbanStatus === "DROP"
+  )
+    return false;
   const due = new Date(ini.dueDate);
   const now = new Date();
   return due < now;
 }
 
 function calculateAchievedPercent(ini: any) {
-  const achieved = ini.achievedValue !== null && ini.achievedValue !== undefined ? ini.achievedValue : ini.currentValue;
+  const achieved =
+    ini.achievedValue !== null && ini.achievedValue !== undefined
+      ? ini.achievedValue
+      : ini.currentValue;
   if (!ini.targetValue || ini.targetValue <= 0) return 100;
   return Math.round((achieved / ini.targetValue) * 100);
 }
@@ -826,24 +1353,36 @@ const filteredInitiatives = computed(() => {
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase().trim();
       const matchTitle = ini.title && ini.title.toLowerCase().includes(q);
-      const matchDesc = ini.description && ini.description.toLowerCase().includes(q);
-      const matchKr = ini.keyResult?.title && ini.keyResult.title.toLowerCase().includes(q);
-      const matchTeam = ini.team?.name && ini.team.name.toLowerCase().includes(q);
-      const matchOwner = ini.owner?.name && ini.owner.name.toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc && !matchKr && !matchTeam && !matchOwner) return false;
+      const matchDesc =
+        ini.description && ini.description.toLowerCase().includes(q);
+      const matchKr =
+        ini.keyResult?.title && ini.keyResult.title.toLowerCase().includes(q);
+      const matchTeam =
+        ini.team?.name && ini.team.name.toLowerCase().includes(q);
+      const matchOwner =
+        ini.owner?.name && ini.owner.name.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchKr && !matchTeam && !matchOwner)
+        return false;
     }
 
     // Team Filter
-    if (selectedTeamId.value && ini.teamId !== selectedTeamId.value) return false;
+    if (selectedTeamId.value && ini.teamId !== selectedTeamId.value)
+      return false;
 
     // Owner (PIC) Filter
-    if (selectedOwnerId.value && ini.ownerId !== selectedOwnerId.value) return false;
+    if (selectedOwnerId.value && ini.ownerId !== selectedOwnerId.value)
+      return false;
 
     // KR Filter
-    if (selectedKrId.value && ini.keyResultId !== selectedKrId.value) return false;
+    if (selectedKrId.value && ini.keyResultId !== selectedKrId.value)
+      return false;
 
     // Sprint / Month Filter
-    if (selectedSprintMonth.value && ini.sprintMonth !== selectedSprintMonth.value) return false;
+    if (
+      selectedSprintMonth.value &&
+      ini.sprintMonth !== selectedSprintMonth.value
+    )
+      return false;
 
     return true;
   });
@@ -851,25 +1390,25 @@ const filteredInitiatives = computed(() => {
 
 const todoList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => !i.kanbanStatus || i.kanbanStatus === 'TODO'
+    (i: any) => !i.kanbanStatus || i.kanbanStatus === "TODO",
   );
 });
 
 const inProgressList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === 'IN_PROGRESS'
+    (i: any) => i.kanbanStatus === "IN_PROGRESS",
   );
 });
 
 const doneList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === 'DONE'
+    (i: any) => i.kanbanStatus === "DONE",
   );
 });
 
 const dropList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === 'DROP'
+    (i: any) => i.kanbanStatus === "DROP",
   );
 });
 
@@ -900,13 +1439,15 @@ async function fetchInitiatives() {
       initiatives.value = await res.json();
     }
   } catch (err: any) {
-    errorMessage.value = 'Gagal memuat data inisiatif';
+    errorMessage.value = "Gagal memuat data inisiatif";
   }
 }
 
 async function fetchAllKrs() {
   try {
-    const res = await fetch(`${API}/key-results/dropdown`, { headers: getHeaders() });
+    const res = await fetch(`${API}/key-results/dropdown`, {
+      headers: getHeaders(),
+    });
     if (res.ok) {
       allKrs.value = await res.json();
     }
@@ -915,8 +1456,8 @@ async function fetchAllKrs() {
 
 // Member 100% Achievement State & Helper
 const memberProgressList = ref<any[]>([]);
-const selectedAchDepartment = ref('');
-const selectedAchSort = ref('highest'); // 'highest', 'lowest', 'name_asc'
+const selectedAchDepartment = ref("");
+const selectedAchSort = ref("highest"); // 'highest', 'lowest', 'name_asc'
 
 const availableAchDepartments = computed(() => {
   const depts = new Set<string>();
@@ -931,16 +1472,18 @@ const displayedMemberProgressList = computed(() => {
 
   // Filter Departemen
   if (selectedAchDepartment.value) {
-    list = list.filter((m: any) => m.department === selectedAchDepartment.value);
+    list = list.filter(
+      (m: any) => m.department === selectedAchDepartment.value,
+    );
   }
 
   // Sort Pengurutan
-  if (selectedAchSort.value === 'highest') {
+  if (selectedAchSort.value === "highest") {
     list.sort((a, b) => b.achievementPct - a.achievementPct);
-  } else if (selectedAchSort.value === 'lowest') {
+  } else if (selectedAchSort.value === "lowest") {
     list.sort((a, b) => a.achievementPct - b.achievementPct);
-  } else if (selectedAchSort.value === 'name_asc') {
-    list.sort((a, b) => (a.userName || '').localeCompare(b.userName || ''));
+  } else if (selectedAchSort.value === "name_asc") {
+    list.sort((a, b) => (a.userName || "").localeCompare(b.userName || ""));
   }
 
   return list;
@@ -964,20 +1507,22 @@ function getMemberAchievement(userId: string) {
 }
 
 function getAchColorClass(pct: number) {
-  if (pct >= 80) return 'ach-high';
-  if (pct >= 50) return 'ach-mid';
-  return 'ach-low';
+  if (pct >= 80) return "ach-high";
+  if (pct >= 50) return "ach-mid";
+  return "ach-low";
 }
 
 async function fetchMemberProgress() {
   try {
-    const res = await fetch(`${API}/initiatives/member-progress`, { headers: getHeaders() });
+    const res = await fetch(`${API}/initiatives/member-progress`, {
+      headers: getHeaders(),
+    });
     if (res.ok) {
       const data = await res.json();
       memberProgressList.value = data.members || [];
     }
   } catch (err) {
-    console.error('Fetch member progress error:', err);
+    console.error("Fetch member progress error:", err);
   }
 }
 
@@ -986,12 +1531,14 @@ async function moveCard(id: string, newStatus: string) {
     const item = initiatives.value.find((i: any) => i.id === id);
     let achievedValueToSubmit: number | undefined = undefined;
 
-    if (newStatus === 'DONE' && item) {
+    if (newStatus === "DONE" && item) {
       const input = prompt(
-        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${item.targetValue} ${item.unit || ''}):`,
-        item.achievedValue !== null && item.achievedValue !== undefined ? String(item.achievedValue) : String(item.targetValue)
+        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${item.targetValue} ${item.unit || ""}):`,
+        item.achievedValue !== null && item.achievedValue !== undefined
+          ? String(item.achievedValue)
+          : String(item.targetValue),
       );
-      if (input !== null && input.trim() !== '') {
+      if (input !== null && input.trim() !== "") {
         const val = parseFloat(input);
         if (!isNaN(val)) achievedValueToSubmit = val;
       }
@@ -999,21 +1546,24 @@ async function moveCard(id: string, newStatus: string) {
 
     if (item) {
       item.kanbanStatus = newStatus;
-      if (achievedValueToSubmit !== undefined) item.achievedValue = achievedValueToSubmit;
+      if (achievedValueToSubmit !== undefined)
+        item.achievedValue = achievedValueToSubmit;
     }
 
     const res = await fetch(`${API}/initiatives/${id}/kanban-status`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify({
         kanbanStatus: newStatus,
-        ...(achievedValueToSubmit !== undefined && { achievedValue: achievedValueToSubmit })
+        ...(achievedValueToSubmit !== undefined && {
+          achievedValue: achievedValueToSubmit,
+        }),
       }),
     });
 
     if (!res.ok) {
       await fetchInitiatives(); // revert on error
-      errorMessage.value = 'Gagal memindahkan inisiatif';
+      errorMessage.value = "Gagal memindahkan inisiatif";
     } else {
       await fetchInitiatives();
     }
@@ -1025,68 +1575,96 @@ async function moveCard(id: string, newStatus: string) {
 
 function openAddInitiativeModal() {
   editingInitiative.value = null;
-  teamSearch.value = '';
-  userSearch.value = '';
+  teamSearch.value = "";
+  userSearch.value = "";
   const now = new Date();
-  const defaultSprint = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const defaultSprint = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   initiativeForm.value = {
-    title: '',
-    description: '',
-    keyResultId: selectedKrId.value || '',
-    teamId: isTeam.value ? (auth.user?.teamId || availableTeams.value[0]?.id || '') : (selectedTeamId.value || ''),
-    ownerId: isTeam.value ? (auth.user?.id || '') : '',
+    title: "",
+    description: "",
+    keyResultId: selectedKrId.value || "",
+    teamId: isTeam.value
+      ? auth.user?.teamId || availableTeams.value[0]?.id || ""
+      : selectedTeamId.value || "",
+    ownerId: isTeam.value ? auth.user?.id || "" : "",
     targetValue: 0,
     achievedValue: null,
-    unit: '',
-    kanbanStatus: 'TODO',
+    unit: "",
+    kanbanStatus: "TODO",
     weight: 1.0,
-    startDate: '',
-    dueDate: '',
-    sprintMonth: defaultSprint
+    startDate: "",
+    dueDate: "",
+    sprintMonth: defaultSprint,
   };
-  errorMessage.value = '';
+  errorMessage.value = "";
   showInitiativeModal.value = true;
 }
 
 function openEditInitiativeModal(ini: any) {
   editingInitiative.value = ini;
-  teamSearch.value = '';
-  userSearch.value = '';
+  teamSearch.value = "";
+  userSearch.value = "";
   initiativeForm.value = {
-    title: ini.title || '',
-    description: ini.description || '',
-    keyResultId: ini.keyResultId || '',
-    teamId: ini.teamId || '',
-    ownerId: ini.ownerId || '',
+    title: ini.title || "",
+    description: ini.description || "",
+    keyResultId: ini.keyResultId || "",
+    teamId: ini.teamId || "",
+    ownerId: ini.ownerId || "",
     targetValue: ini.targetValue || 0,
-    achievedValue: ini.achievedValue !== undefined && ini.achievedValue !== null ? ini.achievedValue : null,
-    unit: ini.unit || '',
-    kanbanStatus: ini.kanbanStatus || 'TODO',
+    achievedValue:
+      ini.achievedValue !== undefined && ini.achievedValue !== null
+        ? ini.achievedValue
+        : null,
+    unit: ini.unit || "",
+    kanbanStatus: ini.kanbanStatus || "TODO",
     weight: ini.weight !== undefined ? ini.weight : 1.0,
-    startDate: ini.startDate ? new Date(ini.startDate).toISOString().substring(0, 10) : '',
-    dueDate: ini.dueDate ? new Date(ini.dueDate).toISOString().substring(0, 10) : '',
-    sprintMonth: ini.sprintMonth || ''
+    startDate: ini.startDate
+      ? new Date(ini.startDate).toISOString().substring(0, 10)
+      : "",
+    dueDate: ini.dueDate
+      ? new Date(ini.dueDate).toISOString().substring(0, 10)
+      : "",
+    sprintMonth: ini.sprintMonth || "",
   };
-  errorMessage.value = '';
+  errorMessage.value = "";
   showInitiativeModal.value = true;
 }
 
 async function saveInitiative() {
   if (!initiativeForm.value.title.trim()) {
-    errorMessage.value = 'Judul inisiatif wajib diisi';
+    errorMessage.value = "Judul inisiatif wajib diisi";
     return;
   }
   if (!initiativeForm.value.keyResultId) {
-    errorMessage.value = 'Key Result wajib dipilih';
+    errorMessage.value = "Key Result wajib dipilih";
     return;
   }
-  if (initiativeForm.value.weight === undefined || initiativeForm.value.weight === null || initiativeForm.value.weight <= 0) {
-    errorMessage.value = 'Bobot inisiatif wajib diisi dan harus bernilai lebih dari 0';
+  if (
+    initiativeForm.value.weight === undefined ||
+    initiativeForm.value.weight === null ||
+    initiativeForm.value.weight <= 0 ||
+    initiativeForm.value.weight > 100
+  ) {
+    errorMessage.value =
+      "Bobot inisiatif wajib diisi, dengan nilai antara 0.1% - 100%";
     return;
   }
 
+  if (initiativeForm.value.ownerId && initiativeForm.value.sprintMonth) {
+    const used = computeUsedWeight(
+      initiativeForm.value.ownerId,
+      initiativeForm.value.sprintMonth,
+      editingInitiative.value?.id,
+    );
+    const total = used + initiativeForm.value.weight;
+    if (total > 100.01) {
+      errorMessage.value = `Total bobot pegawai ini pada sprint tersebut menjadi ${total.toFixed(1)}%, melebihi batas 100%. Sisa bobot tersedia: ${Math.max(0, 100 - used).toFixed(1)}%`;
+      return;
+    }
+  }
+
   if (isTeam.value) {
-    initiativeForm.value.ownerId = auth.user?.id || '';
+    initiativeForm.value.ownerId = auth.user?.id || "";
     if (!initiativeForm.value.teamId && auth.user?.teamId) {
       initiativeForm.value.teamId = auth.user.teamId;
     }
@@ -1098,23 +1676,27 @@ async function saveInitiative() {
 
   try {
     const isEdit = !!editingInitiative.value;
-    const url = isEdit ? `${API}/initiatives/${editingInitiative.value.id}` : `${API}/initiatives`;
-    const method = isEdit ? 'PUT' : 'POST';
+    const url = isEdit
+      ? `${API}/initiatives/${editingInitiative.value.id}`
+      : `${API}/initiatives`;
+    const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
       method,
       headers: getHeaders(),
-      body: JSON.stringify(initiativeForm.value)
+      body: JSON.stringify(initiativeForm.value),
     });
 
     if (res.ok) {
       showInitiativeModal.value = false;
-      successMessage.value = isEdit ? 'Inisiatif berhasil diperbarui' : 'Inisiatif baru berhasil dibuat';
-      setTimeout(() => successMessage.value = '', 3000);
+      successMessage.value = isEdit
+        ? "Inisiatif berhasil diperbarui"
+        : "Inisiatif baru berhasil dibuat";
+      setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      errorMessage.value = err.message || 'Gagal menyimpan inisiatif';
+      errorMessage.value = err.message || "Gagal menyimpan inisiatif";
     }
   } catch (err: any) {
     errorMessage.value = err.message;
@@ -1122,19 +1704,19 @@ async function saveInitiative() {
 }
 
 async function deleteInitiative(id: string) {
-  if (!confirm('Hapus inisiatif ini beserta seluruh KPI di dalamnya?')) return;
+  if (!confirm("Hapus inisiatif ini beserta seluruh KPI di dalamnya?")) return;
   try {
     const res = await fetch(`${API}/initiatives/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders()
+      method: "DELETE",
+      headers: getHeaders(),
     });
     if (res.ok) {
-      successMessage.value = 'Inisiatif berhasil dihapus';
-      setTimeout(() => successMessage.value = '', 3000);
+      successMessage.value = "Inisiatif berhasil dihapus";
+      setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      errorMessage.value = err.message || 'Gagal menghapus';
+      errorMessage.value = err.message || "Gagal menghapus";
     }
   } catch (err: any) {
     errorMessage.value = err.message;
@@ -1143,27 +1725,30 @@ async function deleteInitiative(id: string) {
 
 function openAddKpiModal(ini: any) {
   selectedInitiativeForKpi.value = ini;
-  kpiForm.value = { title: '', targetValue: 0, unit: '' };
+  kpiForm.value = { title: "", targetValue: 0, unit: "" };
   showKpiModal.value = true;
 }
 
 async function saveKpi() {
   if (!kpiForm.value.title.trim()) {
-    alert('Judul KPI wajib diisi');
+    alert("Judul KPI wajib diisi");
     return;
   }
   try {
-    const res = await fetch(`${API}/initiatives/${selectedInitiativeForKpi.value.id}/kpis`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(kpiForm.value)
-    });
+    const res = await fetch(
+      `${API}/initiatives/${selectedInitiativeForKpi.value.id}/kpis`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(kpiForm.value),
+      },
+    );
     if (res.ok) {
       showKpiModal.value = false;
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      alert(err.message || 'Gagal membuat KPI');
+      alert(err.message || "Gagal membuat KPI");
     }
   } catch (err: any) {
     alert(err.message);
@@ -1234,7 +1819,7 @@ onMounted(async () => {
   font-size: 0.75rem;
   font-weight: 700;
   background: rgba(14, 151, 214, 0.12);
-  color: #0E97D6;
+  color: #0e97d6;
   padding: 3px 8px;
   border-radius: 6px;
   text-transform: uppercase;
@@ -1257,11 +1842,31 @@ onMounted(async () => {
   font-size: 0.82rem;
 }
 
-.scope-banner.scope-admin { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
-.scope-banner.scope-c_level { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-.scope-banner.scope-manager { background: #fefce8; border: 1px solid #fef08a; color: #854d0e; }
-.scope-banner.scope-leader { background: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; }
-.scope-banner.scope-team { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; }
+.scope-banner.scope-admin {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+.scope-banner.scope-c_level {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+.scope-banner.scope-manager {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  color: #854d0e;
+}
+.scope-banner.scope-leader {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #6b21a8;
+}
+.scope-banner.scope-team {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
 
 .header-action-group {
   display: flex;
@@ -1270,7 +1875,7 @@ onMounted(async () => {
 }
 
 .primary-btn {
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
   border: none;
   padding: 8px 16px;
@@ -1349,7 +1954,7 @@ onMounted(async () => {
 }
 
 .search-input:focus {
-  border-color: #0E97D6;
+  border-color: #0e97d6;
   background: #ffffff;
 }
 
@@ -1396,7 +2001,7 @@ onMounted(async () => {
 
 .kanban-column.drop-active {
   background: rgba(14, 151, 214, 0.04);
-  border: 2px dashed #0E97D6;
+  border: 2px dashed #0e97d6;
 }
 
 .column-header {
@@ -1428,10 +2033,18 @@ onMounted(async () => {
   border-radius: 50%;
 }
 
-.col-dot.todo { background: #94a3b8; }
-.col-dot.progress { background: #0E97D6; }
-.col-dot.done { background: #10B981; }
-.col-dot.drop { background: #ef4444; }
+.col-dot.todo {
+  background: #94a3b8;
+}
+.col-dot.progress {
+  background: #0e97d6;
+}
+.col-dot.done {
+  background: #10b981;
+}
+.col-dot.drop {
+  background: #ef4444;
+}
 
 .col-count-badge {
   font-size: 0.78rem;
@@ -1477,11 +2090,11 @@ onMounted(async () => {
 }
 
 .card-in-progress {
-  border-left: 4px solid #0E97D6;
+  border-left: 4px solid #0e97d6;
 }
 
 .card-done {
-  border-left: 4px solid #10B981;
+  border-left: 4px solid #10b981;
   background: #fafcfb;
 }
 
@@ -1520,15 +2133,27 @@ onMounted(async () => {
   text-transform: uppercase;
 }
 
-.perspective-pill.financial { background: #e0f2fe; color: #0284c7; }
-.perspective-pill.customer { background: #fef3c7; color: #d97706; }
-.perspective-pill.internal_process { background: #f3e8ff; color: #9333ea; }
-.perspective-pill.learning_growth { background: #d1fae5; color: #059669; }
+.perspective-pill.financial {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.perspective-pill.customer {
+  background: #fef3c7;
+  color: #d97706;
+}
+.perspective-pill.internal_process {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+.perspective-pill.learning_growth {
+  background: #d1fae5;
+  color: #059669;
+}
 
 .completed-checkmark-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #10B981;
+  color: #10b981;
 }
 
 .card-title {
@@ -1595,6 +2220,17 @@ onMounted(async () => {
   border: 1px solid var(--border-color, #cbd5e1);
 }
 
+.weight-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #475569);
+  margin: 4px 0 0;
+}
+
+.weight-hint-warning {
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .card-kpis-summary {
   margin-bottom: 8px;
 }
@@ -1653,7 +2289,8 @@ onMounted(async () => {
   border-top: 1px dashed var(--border-color, #e2e8f0);
 }
 
-.left-actions, .move-actions {
+.left-actions,
+.move-actions {
   display: flex;
   gap: 4px;
 }
@@ -1666,6 +2303,9 @@ onMounted(async () => {
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:hover {
@@ -1680,8 +2320,8 @@ onMounted(async () => {
 
 .move-btn {
   background: #ffffff;
-  border: 1px solid #0E97D6;
-  color: #0E97D6;
+  border: 1px solid #0e97d6;
+  color: #0e97d6;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;
@@ -1695,7 +2335,7 @@ onMounted(async () => {
 }
 
 .move-btn.primary {
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
 }
 
@@ -1774,7 +2414,7 @@ onMounted(async () => {
 }
 
 .form-input:focus {
-  border-color: #0E97D6;
+  border-color: #0e97d6;
 }
 
 .form-row-2 {
@@ -1857,7 +2497,7 @@ onMounted(async () => {
 }
 
 .ach-filter-select:focus {
-  border-color: #0E97D6;
+  border-color: #0e97d6;
 }
 
 .visibility-notice {
@@ -1867,10 +2507,22 @@ onMounted(async () => {
   border-radius: 20px;
 }
 
-.team-notice { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
-.leader-notice { background: rgba(14, 151, 214, 0.12); color: #0E97D6; }
-.manager-notice { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
-.admin-notice { background: rgba(16, 185, 129, 0.12); color: #059669; }
+.team-notice {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+.leader-notice {
+  background: rgba(14, 151, 214, 0.12);
+  color: #0e97d6;
+}
+.manager-notice {
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
+}
+.admin-notice {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
 
 .member-achievement-grid {
   display: grid;
@@ -1887,12 +2539,14 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .member-ach-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .member-ach-header {
@@ -1927,9 +2581,18 @@ onMounted(async () => {
   background: #e2e8f0;
   color: #475569;
 }
-.member-role-badge.leader { background: #e0f2fe; color: #0284c7; }
-.member-role-badge.manager { background: #f3e8ff; color: #7e22ce; }
-.member-role-badge.team { background: #ecfdf5; color: #047857; }
+.member-role-badge.leader {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.member-role-badge.manager {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+.member-role-badge.team {
+  background: #ecfdf5;
+  color: #047857;
+}
 
 .member-pct-wrap {
   text-align: right;
@@ -1960,9 +2623,18 @@ onMounted(async () => {
   transition: width 0.4s ease;
 }
 
-.ach-high { color: #10B981; background: #10B981; }
-.ach-mid { color: #0E97D6; background: #0E97D6; }
-.ach-low { color: #f59e0b; background: #f59e0b; }
+.ach-high {
+  color: #10b981;
+  background: #10b981;
+}
+.ach-mid {
+  color: #0e97d6;
+  background: #0e97d6;
+}
+.ach-low {
+  color: #dc2626;
+  background: #fca5a5;
+}
 
 .member-ach-footer {
   display: flex;

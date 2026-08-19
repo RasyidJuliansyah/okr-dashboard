@@ -5,34 +5,49 @@
       <div class="header-section card">
         <div class="header-left-title">
           <div class="title-with-badge">
-            <h2>📊 Progress Capaian Task Member</h2>
+            <h2>Progress Capaian Task Member</h2>
             <span class="view-badge">Target 100% Bulanan</span>
           </div>
           <p class="section-desc">
-            Pantau dan evaluasi kumulatif capaian target 100% dari seluruh task/KPI yang di-assign kepada setiap member.
+            Pantau dan evaluasi capaian target 100% setiap member, dihitung dari
+            bobot (%) tiap card inisiatif yang dimiliki dikali progress card
+            tersebut.
           </p>
-          
+
           <!-- Scope Notice Badge -->
           <div class="scope-banner" :class="userRoleClass">
             <span class="scope-icon">{{ roleIcon }}</span>
             <span class="scope-text">
-              <strong>Scope Visibilitas ({{ auth.user?.role }}):</strong> {{ scopeDescription }}
+              <strong>Scope Visibilitas ({{ auth.user?.role }}):</strong>
+              {{ scopeDescription }}
             </span>
           </div>
         </div>
       </div>
 
       <!-- Alert Messages -->
-      <div v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+      <div v-if="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
 
       <!-- Filters & Controls Card -->
       <div class="filter-card card">
         <div class="filter-controls-row">
           <!-- Search Bar -->
           <div class="search-input-wrap">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="search-icon"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               v-model="searchQuery"
@@ -46,9 +61,34 @@
           <div v-if="isAdmin || isCLevel" class="filter-item">
             <label>Filter Departemen:</label>
             <select v-model="selectedDepartment" class="filter-select">
-              <option value="">Semua Departemen ({{ availableDepartments.length }})</option>
-              <option v-for="dept in availableDepartments" :key="dept" :value="dept">
-                🏢 {{ dept }}
+              <option value="">
+                Semua Departemen ({{ availableDepartments.length }})
+              </option>
+              <option
+                v-for="dept in availableDepartments"
+                :key="dept"
+                :value="dept"
+              >
+                {{ dept }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Filter Sprint / Bulan -->
+          <div class="filter-item">
+            <label>Bulan / Sprint:</label>
+            <select
+              v-model="selectedSprintMonth"
+              class="filter-select"
+              @change="fetchMemberProgress"
+            >
+              <option value="">Semua Sprint (Kumulatif)</option>
+              <option
+                v-for="sprint in availableSprintMonths"
+                :key="sprint"
+                :value="sprint"
+              >
+                {{ formatSprintLabel(sprint) }}
               </option>
             </select>
           </div>
@@ -57,9 +97,9 @@
           <div class="filter-item">
             <label>Urutkan Capaian:</label>
             <select v-model="selectedSort" class="filter-select">
-              <option value="highest">📈 Capaian Tertinggi</option>
-              <option value="lowest">📉 Capaian Terendah</option>
-              <option value="name_asc">🔤 Nama (A - Z)</option>
+              <option value="highest">Capaian Tertinggi</option>
+              <option value="lowest">Capaian Terendah</option>
+              <option value="name_asc">Nama (A - Z)</option>
             </select>
           </div>
         </div>
@@ -68,17 +108,40 @@
       <!-- Grid Cards Capaian Member -->
       <div class="cards-section">
         <div v-if="loading" class="loading-state card">
-          <span class="loading-spinner">⚡ Memuat data capaian member...</span>
+          <span class="loading-spinner">Memuat data capaian member...</span>
         </div>
 
         <div v-else-if="displayedMembers.length === 0" class="empty-state card">
-          <div class="empty-icon">📂</div>
+          <div class="empty-icon">
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+              <path
+                d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+              />
+            </svg>
+          </div>
           <h4>Tidak Ada Data Member</h4>
-          <p class="text-secondary">Tidak ditemukan member yang sesuai dengan filter atau scope visibilitas Anda.</p>
+          <p class="text-secondary">
+            Tidak ditemukan member yang sesuai dengan filter atau scope
+            visibilitas Anda.
+          </p>
         </div>
 
         <div v-else class="member-grid">
-          <div v-for="m in displayedMembers" :key="m.userId" class="member-card card">
+          <div
+            v-for="m in displayedMembers"
+            :key="m.userId"
+            class="member-card card"
+          >
             <div class="member-card-header">
               <div class="member-profile">
                 <div class="member-avatar-circle">
@@ -87,15 +150,24 @@
                 <div class="member-meta">
                   <h3 class="member-name">{{ m.userName }}</h3>
                   <div class="badges-row">
-                    <span class="role-pill" :class="m.role?.toLowerCase()">{{ m.position || m.role }}</span>
-                    <span v-if="m.teamName" class="team-pill">{{ m.teamName }}</span>
-                    <span v-if="m.department" class="dept-pill">{{ m.department }}</span>
+                    <span class="role-pill" :class="m.role?.toLowerCase()">{{
+                      m.position || m.role
+                    }}</span>
+                    <!-- <span v-if="m.teamName" class="team-pill">{{
+                      m.teamName
+                    }}</span> -->
+                    <!-- <span v-if="m.department" class="dept-pill">{{
+                      m.department
+                    }}</span> -->
                   </div>
                 </div>
               </div>
 
               <div class="pct-badge-container">
-                <div class="pct-val" :class="getAchColorClass(m.achievementPct)">
+                <div
+                  class="pct-val"
+                  :class="getAchColorClass(m.achievementPct)"
+                >
                   {{ m.achievementPct }}%
                 </div>
                 <div class="pct-sub">/ 100% Target</div>
@@ -116,31 +188,60 @@
             <!-- Tasks Summary & Expansion Footer -->
             <div class="member-card-footer">
               <div class="task-count-label">
-                ⚡ <strong>{{ m.totalAssignedTasks }}</strong> KPI/Task Di-assign
+                <strong>{{ m.totalAssignedTasks }}</strong> Card Inisiatif
+                <span
+                  class="total-weight-tag"
+                  :class="{ 'weight-incomplete': m.totalWeight < 99.9 }"
+                  :title="
+                    m.totalWeight < 99.9
+                      ? 'Total bobot belum mencapai 100%'
+                      : 'Total bobot lengkap 100%'
+                  "
+                >
+                  Total Bobot: {{ m.totalWeight }}%
+                </span>
               </div>
               <button class="detail-toggle-btn" @click="toggleExpand(m.userId)">
-                {{ expandedUserIds.includes(m.userId) ? 'Sembunyikan Task ▲' : 'Lihat Rincian Task ▼' }}
+                {{
+                  expandedUserIds.includes(m.userId)
+                    ? "Sembunyikan Rincian ▲"
+                    : "Lihat Rincian Card ▼"
+                }}
               </button>
             </div>
 
-            <!-- Expanded Task Details -->
-            <div v-if="expandedUserIds.includes(m.userId)" class="expanded-kpis-list">
-              <h5 class="kpis-list-title">📋 Daftar KPI / Task Di-assign:</h5>
-              <div v-if="m.kpis?.length === 0" class="no-kpis">Belum ada KPI yang di-assign.</div>
+            <!-- Expanded Initiative Card Details -->
+            <div
+              v-if="expandedUserIds.includes(m.userId)"
+              class="expanded-kpis-list"
+            >
+              <h5 class="kpis-list-title">Daftar Card Inisiatif:</h5>
+              <div v-if="m.initiatives?.length === 0" class="no-kpis">
+                Belum ada card inisiatif yang dimiliki.
+              </div>
               <div v-else class="kpi-items-wrapper">
-                <div v-for="kpi in m.kpis" :key="kpi.id" class="kpi-detail-item">
+                <div
+                  v-for="ini in m.initiatives"
+                  :key="ini.id"
+                  class="kpi-detail-item"
+                >
                   <div class="kpi-info">
-                    <span class="kpi-title">{{ kpi.title }}</span>
-                    <span v-if="kpi.initiativeTitle" class="kpi-parent">in {{ kpi.initiativeTitle }}</span>
+                    <span class="kpi-title">{{ ini.title }}</span>
+                    <span v-if="ini.sprintMonth" class="kpi-parent"
+                      >sprint {{ formatSprintLabel(ini.sprintMonth) }}</span
+                    >
                   </div>
                   <div class="kpi-progress-info">
-                    <span class="kpi-vals">{{ kpi.currentValue }} / {{ kpi.targetValue }} {{ kpi.unit || '' }}</span>
-                    <span class="kpi-pct-tag" :class="getAchColorClass(kpi.progressPct)">{{ kpi.progressPct }}%</span>
+                    <span class="kpi-vals">Bobot {{ ini.weight }}%</span>
+                    <span
+                      class="kpi-pct-tag"
+                      :class="getAchColorClass(ini.progressPct)"
+                      >{{ ini.progressPct }}%</span
+                    >
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -149,73 +250,96 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
 
 const auth = useAuthStore();
-const API = useRuntimeConfig().public.apiBase || 'http://localhost:3001/api';
+const API = useRuntimeConfig().public.apiBase || "http://localhost:3001/api";
 
 function getHeaders() {
   return {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     Authorization: `Bearer ${auth.token}`,
   };
 }
 
 // Roles & Scope Computed
-const isAdmin = computed(() => auth.user?.role === 'ADMIN');
-const isCLevel = computed(() => auth.user?.role === 'C_LEVEL');
-const isManager = computed(() => auth.user?.role === 'MANAGER');
-const isLeader = computed(() => auth.user?.role === 'LEADER');
-const isTeam = computed(() => auth.user?.role === 'TEAM');
+const isAdmin = computed(() => auth.user?.role === "ADMIN");
+const isCLevel = computed(() => auth.user?.role === "C_LEVEL");
+const isManager = computed(() => auth.user?.role === "MANAGER");
+const isLeader = computed(() => auth.user?.role === "LEADER");
+const isTeam = computed(() => auth.user?.role === "TEAM");
 
 const userRoleClass = computed(() => {
-  if (isTeam.value) return 'team-banner';
-  if (isLeader.value) return 'leader-banner';
-  if (isManager.value) return 'manager-banner';
-  return 'admin-banner';
+  if (isTeam.value) return "team-banner";
+  if (isLeader.value) return "leader-banner";
+  if (isManager.value) return "manager-banner";
+  return "admin-banner";
 });
 
 const roleIcon = computed(() => {
-  if (isTeam.value) return '🔒';
-  if (isLeader.value) return '🛡️';
-  if (isManager.value) return '👔';
-  return '👑';
+  if (isTeam.value) return "";
+  if (isLeader.value) return "";
+  if (isManager.value) return "";
+  return "";
 });
 
 const scopeDescription = computed(() => {
-  if (isTeam.value) return 'Hanya menampilkan persentase capaian target 100% pribadi Anda (Privat).';
-  if (isLeader.value) return 'Menampilkan capaian 100% seluruh anggota tim yang Anda pimpin.';
-  if (isManager.value) return 'Menampilkan capaian 100% seluruh Leader dan Team di departemen Anda.';
-  return 'Menampilkan capaian 100% seluruh member di perusahaan (Company-wide).';
+  if (isTeam.value)
+    return "Hanya menampilkan persentase capaian target 100% pribadi Anda (Privat).";
+  if (isLeader.value)
+    return "Menampilkan capaian 100% seluruh anggota tim yang Anda pimpin.";
+  if (isManager.value)
+    return "Menampilkan capaian 100% seluruh Leader dan Team di departemen Anda.";
+  return "Menampilkan capaian 100% seluruh member di perusahaan (Company-wide).";
 });
 
 // States
 const loading = ref(true);
-const errorMessage = ref('');
+const errorMessage = ref("");
 const memberProgressList = ref<any[]>([]);
-const searchQuery = ref('');
-const selectedDepartment = ref('');
-const selectedSort = ref('highest'); // 'highest', 'lowest', 'name_asc'
+const searchQuery = ref("");
+const selectedDepartment = ref("");
+const selectedSort = ref("highest"); // 'highest', 'lowest', 'name_asc'
 const expandedUserIds = ref<string[]>([]);
+const selectedSprintMonth = ref("");
+const availableSprintMonths = ref<string[]>([]);
+
+function formatSprintLabel(sprint: string | null | undefined) {
+  if (!sprint) return "";
+  if (/^\d{4}-\d{2}$/.test(sprint)) {
+    const [year, month] = sprint.split("-") as [string, string];
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString("id-ID", {
+      month: "short",
+      year: "numeric",
+    });
+  }
+  return sprint;
+}
 
 function toggleExpand(userId: string) {
   if (expandedUserIds.value.includes(userId)) {
-    expandedUserIds.value = expandedUserIds.value.filter(id => id !== userId);
+    expandedUserIds.value = expandedUserIds.value.filter((id) => id !== userId);
   } else {
     expandedUserIds.value.push(userId);
   }
 }
 
 function getInitials(name: string) {
-  if (!name) return 'U';
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  if (!name) return "U";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
 }
 
 function getAchColorClass(pct: number) {
-  if (pct >= 80) return 'ach-high';
-  if (pct >= 50) return 'ach-mid';
-  return 'ach-low';
+  if (pct >= 80) return "ach-high";
+  if (pct >= 50) return "ach-mid";
+  return "ach-low";
 }
 
 const availableDepartments = computed(() => {
@@ -232,11 +356,12 @@ const displayedMembers = computed(() => {
   // Search query
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase().trim();
-    list = list.filter((m: any) =>
-      (m.userName && m.userName.toLowerCase().includes(q)) ||
-      (m.position && m.position.toLowerCase().includes(q)) ||
-      (m.teamName && m.teamName.toLowerCase().includes(q)) ||
-      (m.role && m.role.toLowerCase().includes(q))
+    list = list.filter(
+      (m: any) =>
+        (m.userName && m.userName.toLowerCase().includes(q)) ||
+        (m.position && m.position.toLowerCase().includes(q)) ||
+        (m.teamName && m.teamName.toLowerCase().includes(q)) ||
+        (m.role && m.role.toLowerCase().includes(q)),
     );
   }
 
@@ -246,12 +371,12 @@ const displayedMembers = computed(() => {
   }
 
   // Sorting
-  if (selectedSort.value === 'highest') {
+  if (selectedSort.value === "highest") {
     list.sort((a, b) => b.achievementPct - a.achievementPct);
-  } else if (selectedSort.value === 'lowest') {
+  } else if (selectedSort.value === "lowest") {
     list.sort((a, b) => a.achievementPct - b.achievementPct);
-  } else if (selectedSort.value === 'name_asc') {
-    list.sort((a, b) => (a.userName || '').localeCompare(b.userName || ''));
+  } else if (selectedSort.value === "name_asc") {
+    list.sort((a, b) => (a.userName || "").localeCompare(b.userName || ""));
   }
 
   return list;
@@ -259,17 +384,23 @@ const displayedMembers = computed(() => {
 
 async function fetchMemberProgress() {
   loading.value = true;
-  errorMessage.value = '';
+  errorMessage.value = "";
   try {
-    const res = await fetch(`${API}/initiatives/member-progress`, { headers: getHeaders() });
+    const query = selectedSprintMonth.value
+      ? `?sprintMonth=${encodeURIComponent(selectedSprintMonth.value)}`
+      : "";
+    const res = await fetch(`${API}/initiatives/member-progress${query}`, {
+      headers: getHeaders(),
+    });
     if (res.ok) {
       const data = await res.json();
       memberProgressList.value = data.members || [];
+      availableSprintMonths.value = data.availableSprintMonths || [];
     } else {
-      errorMessage.value = 'Gagal memuat data capaian member';
+      errorMessage.value = "Gagal memuat data capaian member";
     }
   } catch (err: any) {
-    errorMessage.value = err.message || 'Terjadi kesalahan server';
+    errorMessage.value = err.message || "Terjadi kesalahan server";
   } finally {
     loading.value = false;
   }
@@ -313,7 +444,7 @@ onMounted(async () => {
 
 .view-badge {
   background: rgba(14, 151, 214, 0.12);
-  color: #0E97D6;
+  color: #0e97d6;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 3px 10px;
@@ -336,10 +467,26 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
-.team-banner { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
-.leader-banner { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
-.manager-banner { background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; }
-.admin-banner { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.team-banner {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.leader-banner {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+.manager-banner {
+  background: #faf5ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+.admin-banner {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
 
 .filter-card {
   padding: 1rem 1.25rem;
@@ -376,7 +523,9 @@ onMounted(async () => {
   outline: none;
 }
 
-.search-input:focus { border-color: #0E97D6; }
+.search-input:focus {
+  border-color: #0e97d6;
+}
 
 .filter-item {
   display: flex;
@@ -402,7 +551,9 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.filter-select:focus { border-color: #0E97D6; }
+.filter-select:focus {
+  border-color: #0e97d6;
+}
 
 /* Grid Cards (3 cards per row) */
 .member-grid {
@@ -430,7 +581,9 @@ onMounted(async () => {
   gap: 16px;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .member-card:hover {
@@ -457,7 +610,7 @@ onMounted(async () => {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0E97D6 0%, #0284c7 100%);
+  background: linear-gradient(135deg, #0e97d6 0%, #0284c7 100%);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -500,11 +653,21 @@ onMounted(async () => {
   color: #334155;
   letter-spacing: 0.3px;
 }
-.role-pill.leader { background: #e0f2fe; color: #0284c7; }
-.role-pill.manager { background: #f3e8ff; color: #7e22ce; }
-.role-pill.team { background: #ecfdf5; color: #047857; }
+.role-pill.leader {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.role-pill.manager {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+.role-pill.team {
+  background: #ecfdf5;
+  color: #047857;
+}
 
-.team-pill, .dept-pill {
+.team-pill,
+.dept-pill {
   font-size: 0.72rem;
   font-weight: 500;
   padding: 3px 8px;
@@ -551,9 +714,15 @@ onMounted(async () => {
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.ach-high { color: #10B981; background: #10B981; }
-.ach-mid { color: #0E97D6; background: #0E97D6; }
-.ach-low { color: #f59e0b; background: #f59e0b; }
+.ach-high {
+  color: #10b981;
+}
+.ach-mid {
+  color: #0e97d6;
+}
+.ach-low {
+  color: #dc2626;
+}
 
 .member-card-footer {
   display: flex;
@@ -567,18 +736,38 @@ onMounted(async () => {
 .task-count-label {
   color: #475569;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.total-weight-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.total-weight-tag.weight-incomplete {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
 }
 
 .detail-toggle-btn {
   background: rgba(14, 151, 214, 0.08);
   border: none;
-  color: #0E97D6;
+  color: #0e97d6;
   font-weight: 700;
   font-size: 0.78rem;
   cursor: pointer;
   padding: 4px 10px;
   border-radius: 6px;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .detail-toggle-btn:hover {
@@ -658,13 +847,22 @@ onMounted(async () => {
   border-radius: 5px;
 }
 
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
   padding: 3rem;
   text-align: center;
 }
 
-.empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
-.text-secondary { color: #64748b; font-size: 0.85rem; }
+.empty-icon {
+  display: flex;
+  justify-content: center;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+.text-secondary {
+  color: #64748b;
+  font-size: 0.85rem;
+}
 
 .alert {
   padding: 10px 14px;
@@ -672,5 +870,9 @@ onMounted(async () => {
   font-size: 0.85rem;
   margin-bottom: 1rem;
 }
-.alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
 </style>

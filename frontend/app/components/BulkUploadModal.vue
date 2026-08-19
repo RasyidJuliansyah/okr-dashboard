@@ -63,7 +63,7 @@
       <!-- STEP 1: Upload & Template -->
       <div v-if="currentStep === 1" class="step-content">
         <div class="info-box">
-          <div class="info-icon">💡</div>
+          <div class="info-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg></div>
           <div class="info-text">
             <template v-if="isObjective">
               <p><strong>Format Kolom CSV untuk Objective:</strong></p>
@@ -219,12 +219,12 @@
             >
           </div>
           <div class="preview-badges">
-            <span class="count-pill valid">🟢 {{ validCount }} Valid</span>
+            <span class="count-pill valid">{{ validCount }} Valid</span>
             <span v-if="warningCount > 0" class="count-pill warning"
-              >🟡 {{ warningCount }} Perlu Cek</span
+              >{{ warningCount }} Perlu Cek</span
             >
             <span v-if="errorCount > 0" class="count-pill error"
-              >🔴 {{ errorCount }} Error</span
+              >{{ errorCount }} Error</span
             >
           </div>
         </div>
@@ -380,7 +380,7 @@
 
       <!-- STEP 3: Results -->
       <div v-if="currentStep === 3" class="step-content result-content">
-        <div class="result-icon-celebrate">🎉</div>
+        <div class="result-icon-celebrate"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></div>
         <h4>Proses Bulk Upload Selesai!</h4>
         <p class="text-muted" style="margin-bottom: 1.5rem">
           Ringkasan hasil penyimpanan data ke sistem:
@@ -938,7 +938,8 @@ function finishImport() {
 }
 
 .info-icon {
-  font-size: 1.3rem;
+  color: #0e97d6;
+  flex-shrink: 0;
 }
 
 .info-text p {
@@ -1217,7 +1218,9 @@ function finishImport() {
 }
 
 .result-icon-celebrate {
-  font-size: 3rem;
+  display: flex;
+  justify-content: center;
+  color: #16a34a;
   margin-bottom: 0.5rem;
 }
 

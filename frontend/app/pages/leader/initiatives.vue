@@ -3,7 +3,7 @@
     <div class="admin-content">
       <div class="header-section card">
         <div class="header-title">
-          <h2>📌 Inisiatif Tim Saya</h2>
+          <h2>Inisiatif Tim Saya</h2>
           <p class="section-desc">
             Kelola Inisiatif yang dikerjakan oleh Tim Anda beserta KPI-nya.
           </p>
@@ -46,7 +46,7 @@
           </div>
           <div v-for="kpi in initiative.kpis" :key="kpi.id" class="kpi-row">
             <div class="kpi-info">
-              <span class="kpi-name">🎯 {{ kpi.title }}</span>
+              <span class="kpi-name">{{ kpi.title }}</span>
               <div class="kpi-details">
                 <span class="kpi-target">Target: {{ kpi.targetValue }} {{ kpi.unit || '' }}</span>
                 <span class="kpi-current">Saat ini: {{ kpi.currentValue }}</span>
@@ -58,7 +58,7 @@
             </div>
             
             <div class="kpi-assignees">
-              <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-chip">👤 {{ a.user?.name }}</span>
+              <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-chip">{{ a.user?.name }}</span>
               <span v-if="!kpi.assignments || kpi.assignments.length === 0" class="text-sm text-gray">Belum ada assignee</span>
             </div>
             
@@ -67,7 +67,7 @@
                 class="secondary-btn small"
                 @click="openAssignModal(kpi, initiative)"
               >
-                👥 Assign
+                Assign
               </button>
               <button 
                 class="primary-btn small" 
@@ -129,7 +129,7 @@
                 :value="member.id" 
                 v-model="selectedAssigneeIds" 
               />
-              <span>👤 {{ member.name }} ({{ member.position || member.role }})</span>
+              <span>{{ member.name }} ({{ member.position || member.role }})</span>
             </label>
           </div>
 

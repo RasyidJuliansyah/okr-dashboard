@@ -124,14 +124,14 @@
                   <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
                 </span>
                 <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
                 </span>
               </div>
 
               <!-- KPIs summary chips -->
               <div class="card-kpis-summary" v-if="ini.kpis?.length">
                 <span class="kpi-count-tag">
-                  🎯 {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }} selesai)
+                  {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }} selesai)
                 </span>
               </div>
 
@@ -139,7 +139,7 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
+                    {{ ini.owner.name }}
                   </span>
                 </div>
               </div>
@@ -148,8 +148,8 @@
               <div class="card-hover-actions">
                 <div class="left-actions">
                   <button class="action-btn" title="Tambah KPI" @click="openAddKpiModal(ini)">+ KPI</button>
-                  <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
                 </div>
                 <div class="move-actions">
                   <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
@@ -207,14 +207,14 @@
                   <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
                 </span>
                 <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
                 </span>
               </div>
 
               <!-- KPIs summary chips -->
               <div class="card-kpis-summary" v-if="ini.kpis?.length">
                 <span class="kpi-count-tag in-progress">
-                  ⚡ {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }}/{{ ini.kpis.length }} selesai)
+                  {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }}/{{ ini.kpis.length }} selesai)
                 </span>
               </div>
 
@@ -222,7 +222,7 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
+                    {{ ini.owner.name }}
                   </span>
                 </div>
               </div>
@@ -231,8 +231,8 @@
               <div class="card-hover-actions">
                 <div class="left-actions">
                   <button class="action-btn" title="Tambah KPI" @click="openAddKpiModal(ini)">+ KPI</button>
-                  <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
                 </div>
                 <div class="move-actions">
                   <button class="move-btn" title="Kembalikan ke To Do" @click="moveCard(ini.id, 'TODO')">
@@ -279,7 +279,7 @@
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
                   {{ ini.keyResult?.title || 'Key Result' }}
                 </span>
-                <span class="completed-checkmark-badge">✅ Selesai</span>
+                <span class="completed-checkmark-badge">Selesai</span>
               </div>
 
               <h4 class="card-title text-done">{{ ini.title }}</h4>
@@ -291,7 +291,7 @@
                   <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
                 </span>
                 <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
                 </span>
               </div>
 
@@ -299,7 +299,7 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
+                    {{ ini.owner.name }}
                   </span>
                 </div>
               </div>
@@ -307,8 +307,8 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
                 </div>
                 <div class="move-actions">
                   <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
@@ -352,7 +352,7 @@
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
                   {{ ini.keyResult?.title || 'Key Result' }}
                 </span>
-                <span class="dropped-badge">❌ Drop</span>
+                <span class="dropped-badge">Drop</span>
               </div>
 
               <h4 class="card-title text-drop">{{ ini.title }}</h4>
@@ -364,7 +364,7 @@
                   <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
                 </span>
                 <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  ⚖️ Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
                 </span>
               </div>
 
@@ -372,7 +372,7 @@
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
-                    👤 {{ ini.owner.name }}
+                    {{ ini.owner.name }}
                   </span>
                 </div>
               </div>
@@ -380,8 +380,8 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)">✏️</button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)">🗑️</button>
+                  <button class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
                 </div>
                 <div class="move-actions">
                   <button class="move-btn" title="Pindah ke To Do" @click="moveCard(ini.id, 'TODO')">
@@ -420,7 +420,7 @@
               type="text"
               class="form-input"
               style="margin-bottom: 6px;"
-              placeholder="🔍 Cari departemen / tim..."
+              placeholder="Cari departemen / tim..."
             />
             <select v-model="initiativeForm.teamId" class="form-input">
               <option value="">-- Pilih Tim / Departemen --</option>
@@ -433,7 +433,7 @@
               type="text"
               class="form-input"
               style="margin-bottom: 6px;"
-              placeholder="🔍 Cari nama pegawai..."
+              placeholder="Cari nama pegawai..."
             />
             <select v-model="initiativeForm.ownerId" class="form-input">
               <option value="">-- Pilih Pegawai (Opsional) --</option>
@@ -459,10 +459,10 @@
               <div>
                 <label>Kolom Kanban (Status)</label>
                 <select v-model="initiativeForm.kanbanStatus" class="form-input">
-                  <option value="TODO">📋 To Do</option>
-                  <option value="IN_PROGRESS">⚡ In Progress</option>
-                  <option value="DONE">✅ Done</option>
-                  <option value="DROP">❌ Drop</option>
+                  <option value="TODO">To Do</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="DONE">Done</option>
+                  <option value="DROP">Drop</option>
                 </select>
               </div>
             </div>
@@ -1301,6 +1301,9 @@ onMounted(async () => {
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:hover {

@@ -4,4 +4,8 @@ backend/dist
 .output
 .nuxt
 *.log
+.env
+.env.*
+!.env.example
+backend/scripts/migration-data/
 

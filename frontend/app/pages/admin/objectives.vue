@@ -33,7 +33,7 @@
               "
               @click="openBulkUpload('objective')"
             >
-              📤 Bulk Upload Objective (CSV)
+              Bulk Upload Objective (CSV)
             </button>
             <button
               type="button"
@@ -48,7 +48,7 @@
               "
               @click="openBulkUpload('kr')"
             >
-              📤 Bulk Upload KR (CSV)
+              Bulk Upload KR (CSV)
             </button>
           </div>
         </div>
@@ -460,7 +460,7 @@
                     @click="toggleInitiatives(kr.id)"
                   >
                     <span class="ini-count-badge"
-                      >📌 Inisiatif ({{ kr.initiatives?.length || 0 }})</span
+                      >Inisiatif ({{ kr.initiatives?.length || 0 }})</span
                     >
                     <span class="ini-toggle-icon">{{
                       expandedKrId === kr.id ? "▲" : "▼"
@@ -479,7 +479,7 @@
                           <span class="ini-title">{{ ini.title }}</span>
                           <div class="ini-meta-chips">
                             <span class="pic-chip" v-if="ini.owner"
-                              >👤 {{ ini.owner.name }}</span
+                              >{{ ini.owner.name }}</span
                             >
                             <span class="team-chip" v-if="ini.team">{{
                               ini.team.name
@@ -490,14 +490,14 @@
                                 @click.stop="startEditInitiative(ini, kr)"
                                 title="Edit Inisiatif"
                               >
-                                ✏️
+
                               </button>
                               <button
                                 class="ini-action-btn delete"
                                 @click.stop="deleteInitiative(ini.id)"
                                 title="Hapus Inisiatif"
                               >
-                                🗑️
+
                               </button>
                             </div>
                           </div>
@@ -746,7 +746,7 @@
                 v-model="employeeSearch"
                 type="text"
                 class="search-mini-input"
-                placeholder="🔍 Cari nama pegawai..."
+                placeholder="Cari nama pegawai..."
               />
               <select v-model="iniForm.ownerId" @change="onIniOwnerChange">
                 <option value="">-- Pilih Pegawai (Opsional) --</option>
@@ -767,7 +767,7 @@
                 v-model="teamSearch"
                 type="text"
                 class="search-mini-input"
-                placeholder="🔍 Cari nama departemen / tim..."
+                placeholder="Cari nama departemen / tim..."
               />
               <select v-model="iniForm.teamId" required>
                 <option value="" disabled>Pilih Tim / Departemen</option>

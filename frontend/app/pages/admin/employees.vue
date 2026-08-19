@@ -137,14 +137,14 @@
                   title="Edit Pegawai"
                   @click="openEditModal(emp)"
                 >
-                  ✏️
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                 </button>
                 <button
                   class="icon-btn delete-btn"
                   title="Hapus Pegawai"
                   @click="confirmDelete(emp)"
                 >
-                  🗑️
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                 </button>
               </td>
             </tr>
@@ -371,23 +371,23 @@
                       v-if="row._status === 'ERROR'"
                       class="badge badge-error"
                       :title="row._error"
-                      >🔴 ERROR</span
+                      >ERROR</span
                     >
                     <span
                       v-else-if="row._status === 'UPDATE'"
                       class="badge badge-warning"
-                      >🟡 UPDATE</span
+                      >UPDATE</span
                     >
-                    <span v-else class="badge badge-success">🟢 NEW</span>
+                    <span v-else class="badge badge-success">NEW</span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div class="import-summary-bar">
-            <span>✅ {{ validRowCount }} baris valid</span>
+            <span>{{ validRowCount }} baris valid</span>
             <span v-if="errorRowCount > 0" class="text-error"
-              >⚠️ {{ errorRowCount }} baris error</span
+              >{{ errorRowCount }} baris error</span
             >
           </div>
           <div class="modal-footer">
@@ -407,17 +407,19 @@
 
         <!-- Step 3: Result -->
         <div v-if="importStep === 3" class="import-step result-step">
-          <div class="success-icon">✅</div>
+          <div class="success-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+          </div>
           <h4>Import Selesai!</h4>
           <div class="result-stats">
             <div>
-              🟢 Pegawai baru: <strong>{{ importResult.success }}</strong>
+              Pegawai baru: <strong>{{ importResult.success }}</strong>
             </div>
             <div>
-              🟡 Data diperbarui: <strong>{{ importResult.updated }}</strong>
+              Data diperbarui: <strong>{{ importResult.updated }}</strong>
             </div>
             <div>
-              🔴 Gagal/Error: <strong>{{ importResult.errors.length }}</strong>
+              Gagal/Error: <strong>{{ importResult.errors.length }}</strong>
             </div>
           </div>
           <div v-if="importResult.errors.length > 0" class="error-details">
@@ -638,7 +640,7 @@ async function fetchDepartments() {
     // Add default icon for departments to match existing UI
     availableDepartments.value = response.map((d) => ({
       ...d,
-      icon: "🏢",
+      icon: "",
       label: d.name,
     }));
   } catch (err) {
@@ -1199,7 +1201,9 @@ onMounted(async () => {
   text-align: center;
 }
 .success-icon {
-  font-size: 3rem;
+  display: flex;
+  justify-content: center;
+  color: #16a34a;
   margin-bottom: 1rem;
 }
 .result-stats {

@@ -9,10 +9,10 @@ services:
     restart: always
     environment:
       - PORT=3001
-      - DATABASE_URL=file:/app/database/prod.db
+      # Point this at your managed MySQL instance, e.g.:
+      # mysql://USER:PASSWORD@HOST:3306/DATABASE_NAME
+      - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=super-secret-key-change-me-in-production
-    volumes:
-      - sqlite_data:/app/database
     ports:
       - "3001:3001"
 
@@ -29,6 +29,3 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-
-volumes:
-  sqlite_data:

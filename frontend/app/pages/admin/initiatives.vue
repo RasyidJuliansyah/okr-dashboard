@@ -10,10 +10,10 @@
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
           <NuxtLink to="/initiatives" class="secondary-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-            ⚡ Buka Kanban Board
+            Buka Kanban Board
           </NuxtLink>
           <button class="secondary-btn" @click="showBulkModal = true">
-            📤 Bulk Upload CSV
+            Bulk Upload CSV
           </button>
           <button class="primary-btn" @click="openAddInitiativeModal">+ Tambah Initiative</button>
         </div>
@@ -46,8 +46,8 @@
           </div>
           <div class="initiative-actions">
             <button class="secondary-btn" @click="openAddKpiModal(initiative)">+ KPI</button>
-            <button class="icon-btn" @click="openEditInitiativeModal(initiative)">✏️</button>
-            <button class="icon-btn danger" @click="deleteInitiative(initiative.id)">🗑️</button>
+            <button class="icon-btn" @click="openEditInitiativeModal(initiative)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+            <button class="icon-btn danger" @click="deleteInitiative(initiative.id)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
           </div>
         </div>
 
@@ -63,8 +63,8 @@
             </div>
             <div class="kpi-actions">
               <button class="secondary-btn small" @click="openAssignModal(kpi)">Assign</button>
-              <button class="icon-btn" @click="openEditKpiModal(kpi)">✏️</button>
-              <button class="icon-btn danger" @click="deleteKpi(kpi.id)">🗑️</button>
+              <button class="icon-btn" @click="openEditKpiModal(kpi)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+              <button class="icon-btn danger" @click="deleteKpi(kpi.id)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@
             type="text"
             class="form-input"
             style="margin-bottom: 6px;"
-            placeholder="🔍 Cari departemen / tim..."
+            placeholder="Cari departemen / tim..."
           />
           <select v-model="initiativeForm.teamId" class="form-input">
             <option value="">-- Pilih Tim / Departemen --</option>
@@ -104,7 +104,7 @@
             type="text"
             class="form-input"
             style="margin-bottom: 6px;"
-            placeholder="🔍 Cari nama pegawai..."
+            placeholder="Cari nama pegawai..."
           />
           <select v-model="initiativeForm.ownerId" class="form-input">
             <option value="">-- Pilih Pegawai (Opsional) --</option>
@@ -427,7 +427,7 @@ onMounted(async () => {
 .primary-btn:hover { background: #2563eb; }
 .secondary-btn { background: #333; color: white; }
 .secondary-btn:hover { background: #444; }
-.icon-btn { background: transparent; padding: 4px; font-size: 1.2rem; }
+.icon-btn { background: transparent; padding: 4px; display: inline-flex; align-items: center; justify-content: center; }
 .icon-btn:hover { transform: scale(1.1); }
 .alert { padding: 12px; border-radius: 6px; margin-bottom: 20px; }
 .alert-error { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }

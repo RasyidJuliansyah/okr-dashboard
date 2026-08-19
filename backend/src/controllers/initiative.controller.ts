@@ -6,6 +6,40 @@ const prisma = new PrismaClient();
 
 // ─── INITIATIVE ────────────────────────────────────────────────────────────
 
+// Bobot setiap initiative card adalah persentase (0-100). Total bobot seluruh
+// card milik satu pegawai (ownerId) pada satu sprint (sprintMonth) tidak boleh
+// melebihi 100%, agar beban kerja per-sprint pegawai selalu proporsional.
+const WEIGHT_BUDGET_MAX = 100;
+const WEIGHT_EPSILON = 0.01;
+
+async function getUsedWeight(ownerId: string, sprintMonth: string, excludeId?: string): Promise<number> {
+  const initiatives = await prisma.initiative.findMany({
+    where: {
+      ownerId,
+      sprintMonth,
+      kanbanStatus: { not: 'DROP' },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { weight: true },
+  });
+  return initiatives.reduce((sum, i) => sum + (i.weight || 0), 0);
+}
+
+// GET /api/initiatives/weight-budget — Cek sisa bobot (%) pegawai pada sprint tertentu
+export async function getInitiativeWeightBudget(req: AuthRequest, res: Response) {
+  try {
+    const { ownerId, sprintMonth, excludeId } = req.query as { ownerId?: string; sprintMonth?: string; excludeId?: string };
+    if (!ownerId || !sprintMonth) {
+      return res.status(400).json({ message: 'ownerId dan sprintMonth wajib diisi' });
+    }
+    const used = await getUsedWeight(ownerId, sprintMonth, excludeId);
+    return res.status(200).json({ used, remaining: Math.max(0, WEIGHT_BUDGET_MAX - used) });
+  } catch (error) {
+    console.error('Get initiative weight budget error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 async function getLeaderTeamIds(userId: string): Promise<string[]> {
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
@@ -31,6 +65,7 @@ async function getLeaderTeamIds(userId: string): Promise<string[]> {
 export async function getMemberProgress(req: AuthRequest, res: Response) {
   try {
     const { role, id: userId } = req.user!;
+    const { sprintMonth } = req.query as { sprintMonth?: string };
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { department: true, teamId: true }
@@ -74,8 +109,10 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
       visibleUserIds = allUsers.map(u => u.id);
     }
 
-    // 2. Ambil data KPI assignment untuk user-user yang diizinkan
-    const usersWithKpis = await prisma.user.findMany({
+    // 2. Ambil Initiative (card) yang dimiliki (ownerId) oleh user-user yang diizinkan.
+    // Capaian member sekarang dihitung dari bobot (%) tiap card, bukan rata-rata KPI polos,
+    // agar konsisten dengan aturan "total bobot card per pegawai per sprint = 100%".
+    const usersWithInitiatives = await prisma.user.findMany({
       where: { id: { in: visibleUserIds } },
       select: {
         id: true,
@@ -84,41 +121,62 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         position: true,
         department: true,
         team: { select: { id: true, name: true } },
-        kpiAssignments: {
-          include: {
-            kpi: {
-              include: {
-                initiative: { select: { id: true, title: true } }
-              }
-            }
-          }
-        }
+        ownedInitiatives: {
+          where: { kanbanStatus: { not: 'DROP' } },
+          select: {
+            id: true,
+            title: true,
+            weight: true,
+            kanbanStatus: true,
+            targetValue: true,
+            currentValue: true,
+            sprintMonth: true,
+            kpis: { select: { targetValue: true, currentValue: true } },
+          },
+        },
       },
       orderBy: { name: 'asc' }
     });
 
-    // 3. Hitung kumulatif progress 100% per member
-    const result = usersWithKpis.map(user => {
-      const kpis = user.kpiAssignments.map(a => a.kpi);
-      let totalPct = 0;
-      const kpiDetails = kpis.map(kpi => {
-        const pct = kpi.targetValue > 0
-          ? Math.min(100, Math.max(0, (kpi.currentValue / kpi.targetValue) * 100))
-          : 0;
-        totalPct += pct;
-        return {
-          id: kpi.id,
-          title: kpi.title,
-          currentValue: kpi.currentValue,
-          targetValue: kpi.targetValue,
-          unit: kpi.unit,
-          progressPct: Math.round(pct * 10) / 10,
-          initiativeTitle: kpi.initiative?.title
-        };
-      });
+    // 3. Hitung capaian weighted-average per member (opsional difilter per sprint)
+    const allSprintMonths = new Set<string>();
+    const result = usersWithInitiatives.map(user => {
+      const initiatives = user.ownedInitiatives
+        .filter(init => {
+          if (init.sprintMonth) allSprintMonths.add(init.sprintMonth);
+          return sprintMonth ? init.sprintMonth === sprintMonth : true;
+        })
+        .map(init => {
+          let progressPct: number;
+          if (init.kanbanStatus === 'DONE') {
+            progressPct = 100;
+          } else if (init.kpis.length > 0) {
+            progressPct = init.kpis.reduce((sum, k) => {
+              const pct = k.targetValue > 0
+                ? Math.min(100, Math.max(0, (k.currentValue / k.targetValue) * 100))
+                : 0;
+              return sum + pct;
+            }, 0) / init.kpis.length;
+          } else if (init.targetValue > 0) {
+            progressPct = Math.min(100, Math.max(0, (init.currentValue / init.targetValue) * 100));
+          } else {
+            progressPct = 0;
+          }
+          return {
+            id: init.id,
+            title: init.title,
+            weight: init.weight,
+            sprintMonth: init.sprintMonth,
+            kanbanStatus: init.kanbanStatus,
+            progressPct: Math.round(progressPct * 10) / 10,
+          };
+        });
 
-      const overallProgress = kpis.length > 0
-        ? Math.round((totalPct / kpis.length) * 10) / 10
+      const totalWeight = initiatives.reduce((s, i) => s + (i.weight || 0), 0);
+      const achievementPct = totalWeight > 0
+        ? Math.round(
+            initiatives.reduce((s, i) => s + i.progressPct * i.weight, 0) / totalWeight * 10
+          ) / 10
         : 0;
 
       return {
@@ -128,15 +186,18 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         position: user.position,
         department: user.department,
         teamName: user.team?.name,
-        totalAssignedTasks: kpis.length,
-        achievementPct: overallProgress, // Out of 100%
-        kpis: kpiDetails
+        totalAssignedTasks: initiatives.length,
+        totalWeight: Math.round(totalWeight * 10) / 10,
+        achievementPct, // Out of 100%, weighted by bobot tiap card inisiatif
+        initiatives
       };
     });
 
     return res.status(200).json({
       role,
       userCount: result.length,
+      sprintMonth: sprintMonth || null,
+      availableSprintMonths: Array.from(allSprintMonths).sort().reverse(),
       members: result
     });
   } catch (error) {
@@ -446,11 +507,28 @@ export async function createInitiative(req: AuthRequest, res: Response) {
     const kr = await prisma.keyResult.findUnique({ where: { id: keyResultId } });
     if (!kr) return res.status(404).json({ message: 'KeyResult tidak ditemukan' });
 
+    const finalOwnerId = ownerId || (role === 'TEAM' ? userId : null);
+    const parsedWeight = weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : 1.0;
+
+    if (isNaN(parsedWeight) || parsedWeight <= 0 || parsedWeight > WEIGHT_BUDGET_MAX) {
+      return res.status(400).json({ message: `Bobot inisiatif harus berupa angka lebih dari 0 dan maksimal ${WEIGHT_BUDGET_MAX}%` });
+    }
+
+    if (finalOwnerId && sprintMonth) {
+      const used = await getUsedWeight(finalOwnerId, sprintMonth);
+      const total = used + parsedWeight;
+      if (total > WEIGHT_BUDGET_MAX + WEIGHT_EPSILON) {
+        return res.status(400).json({
+          message: `Total bobot inisiatif pegawai ini pada sprint ${sprintMonth} akan menjadi ${total.toFixed(1)}%, melebihi batas ${WEIGHT_BUDGET_MAX}%. Sisa bobot tersedia: ${Math.max(0, WEIGHT_BUDGET_MAX - used).toFixed(1)}%`
+        });
+      }
+    }
+
     const initiative = await prisma.initiative.create({
       data: {
         keyResultId,
         teamId,
-        ownerId: ownerId || (role === 'TEAM' ? userId : null),
+        ownerId: finalOwnerId,
         title,
         description: description || null,
         targetValue: targetValue ? parseFloat(targetValue) : 0,
@@ -458,7 +536,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         unit: unit || null,
         status: 'ON_TRACK',
         kanbanStatus: kanbanStatus || 'TODO',
-        weight: weight !== undefined ? parseFloat(weight) : 1.0,
+        weight: parsedWeight,
         startDate: startDate ? new Date(startDate) : null,
         dueDate: dueDate ? new Date(dueDate) : null,
         sprintMonth: sprintMonth || null,
@@ -489,6 +567,26 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
     // TEAM hanya bisa edit inisiatif miliknya sendiri
     if (role === 'TEAM' && existing.ownerId !== userId) {
       return res.status(403).json({ message: 'Anda hanya bisa mengedit inisiatif milik sendiri' });
+    }
+
+    const effectiveOwnerId = role === 'TEAM'
+      ? existing.ownerId
+      : (ownerId !== undefined ? (ownerId || null) : existing.ownerId);
+    const effectiveSprintMonth = sprintMonth !== undefined ? (sprintMonth || null) : existing.sprintMonth;
+    const effectiveWeight = weight !== undefined ? parseFloat(weight) : existing.weight;
+
+    if (weight !== undefined && (isNaN(effectiveWeight) || effectiveWeight <= 0 || effectiveWeight > WEIGHT_BUDGET_MAX)) {
+      return res.status(400).json({ message: `Bobot inisiatif harus berupa angka lebih dari 0 dan maksimal ${WEIGHT_BUDGET_MAX}%` });
+    }
+
+    if (effectiveOwnerId && effectiveSprintMonth) {
+      const used = await getUsedWeight(effectiveOwnerId, effectiveSprintMonth, id);
+      const total = used + effectiveWeight;
+      if (total > WEIGHT_BUDGET_MAX + WEIGHT_EPSILON) {
+        return res.status(400).json({
+          message: `Total bobot inisiatif pegawai ini pada sprint ${effectiveSprintMonth} akan menjadi ${total.toFixed(1)}%, melebihi batas ${WEIGHT_BUDGET_MAX}%. Sisa bobot tersedia: ${Math.max(0, WEIGHT_BUDGET_MAX - used).toFixed(1)}%`
+        });
+      }
     }
 
     const updated = await prisma.initiative.update({
@@ -590,7 +688,11 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
 // GET /api/initiatives/my-work — Semua KPI yang di-assign ke user
 export async function getMyWork(req: AuthRequest, res: Response) {
   try {
-    const { id: userId } = req.user!;
+    const { id: userId, role } = req.user!;
+
+    // TEAM & LEADER lihat full history; MANAGER & C_LEVEL hanya 1 terakhir
+    const historyLimit = ['MANAGER', 'C_LEVEL'].includes(role) ? 1 : undefined;
+
     const kpiAssignments = await prisma.kpiAssignment.findMany({
       where: { userId },
       include: {
@@ -602,12 +704,101 @@ export async function getMyWork(req: AuthRequest, res: Response) {
                 team: true
               }
             },
-            updates: { orderBy: { createdAt: 'desc' }, take: 3 }
+            updates: {
+              orderBy: { createdAt: 'desc' },
+              ...(historyLimit !== undefined ? { take: historyLimit } : {})
+            }
           }
         }
       }
     });
-    return res.status(200).json(kpiAssignments);
+
+    // Ambil inisiatif tim user yang dimiliki sendiri
+    const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { teamId: true } });
+    let myInitiatives: any[] = [];
+    if (dbUser?.teamId) {
+      myInitiatives = await prisma.initiative.findMany({
+        where: { 
+          teamId: dbUser.teamId,
+          ownerId: userId
+        },
+        include: {
+          keyResult: { include: { objective: true } },
+          team: true,
+          owner: { select: { id: true, name: true } },
+          kpis: true,
+          progressUpdates: {
+            orderBy: { createdAt: 'desc' },
+            ...(historyLimit !== undefined ? { take: historyLimit } : {})
+          }
+        }
+      });
+    }
+
+    // Ambil data update/tugas dari anggota tim lainnya (selain dirinya)
+    let teamMembersWork: any = { kpiAssignments: [], initiatives: [] };
+    let teamIds: string[] = [];
+    if (dbUser?.teamId) {
+      teamIds.push(dbUser.teamId);
+    }
+    if (role === 'LEADER') {
+      const leadingTeams = await prisma.team.findMany({
+        where: { leaderId: userId },
+        select: { id: true }
+      });
+      teamIds.push(...leadingTeams.map(t => t.id));
+    }
+    const uniqueTeamIds = Array.from(new Set(teamIds));
+
+    if (uniqueTeamIds.length > 0) {
+      // KPI yang diassign ke anggota tim lain
+      const memberKpiAssignments = await prisma.kpiAssignment.findMany({
+        where: {
+          kpi: {
+            initiative: {
+              teamId: { in: uniqueTeamIds }
+            }
+          },
+          userId: { not: userId }
+        },
+        include: {
+          user: { select: { id: true, name: true } },
+          kpi: {
+            include: {
+              initiative: {
+                include: {
+                  keyResult: { include: { objective: true } },
+                  team: true
+                }
+              },
+              updates: { orderBy: { createdAt: 'desc' } }
+            }
+          }
+        }
+      });
+
+      // Inisiatif tim yang dimiliki anggota lain (atau belum diassign)
+      const memberInitiatives = await prisma.initiative.findMany({
+        where: {
+          teamId: { in: uniqueTeamIds },
+          OR: [
+            { ownerId: { not: userId } },
+            { ownerId: null }
+          ]
+        },
+        include: {
+          keyResult: { include: { objective: true } },
+          team: true,
+          owner: { select: { id: true, name: true } },
+          kpis: true,
+          progressUpdates: { orderBy: { createdAt: 'desc' } }
+        }
+      });
+
+      teamMembersWork = { kpiAssignments: memberKpiAssignments, initiatives: memberInitiatives };
+    }
+
+    return res.status(200).json({ kpiAssignments, myInitiatives, teamMembersWork });
   } catch (error) {
     console.error('Get my work error:', error);
     return res.status(500).json({ message: 'Internal server error' });
@@ -850,14 +1041,68 @@ export async function assignUsersToKpi(req: AuthRequest, res: Response) {
   }
 }
 
-// ─── KPI UPDATE (Submit / Approve / Reject) ────────────────────────────────
 
-// POST /api/kpis/:id/updates — TEAM member submit progress update
+// ─── HELPER: Cascade KPI value update ke Initiative → KR ──────────────────
+async function cascadeKpiValueUpdate(kpiId: string, initiativeId: string): Promise<void> {
+  // 1. Recalculate Initiative.currentValue dari rata-rata KPI progress
+  const allKpis = await prisma.kpi.findMany({ where: { initiativeId } });
+  const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
+
+  if (initiative && allKpis.length > 0 && initiative.targetValue > 0) {
+    const avgKpiPercent = allKpis.reduce((sum, k) => {
+      return sum + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0);
+    }, 0) / allKpis.length;
+    const newInitiativeValue = Math.round(avgKpiPercent * initiative.targetValue * 100) / 100;
+
+    await prisma.initiative.update({
+      where: { id: initiative.id },
+      data: { currentValue: newInitiativeValue },
+    });
+
+    // 2. Recalculate KR.currentValue dari weighted average Initiative progress
+    const allInitiatives = await prisma.initiative.findMany({
+      where: { keyResultId: initiative.keyResultId },
+      include: { kpis: true },
+    });
+    const kr = await prisma.keyResult.findUnique({ where: { id: initiative.keyResultId } });
+
+    if (kr && allInitiatives.length > 0 && kr.targetValue > 0) {
+      const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
+      const weightedAvgPercent = allInitiatives.reduce((sum, init) => {
+        let initProgress = 0;
+        if (init.kpis.length > 0) {
+          initProgress = init.kpis.reduce((s, k) => {
+            return s + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0);
+          }, 0) / init.kpis.length;
+        } else if (init.targetValue > 0) {
+          initProgress = init.currentValue / init.targetValue;
+        }
+        return sum + initProgress * (init.weight || 1);
+      }, 0) / (totalWeight || 1);
+
+      const newKrValue = Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
+
+      const krProgress = newKrValue / kr.targetValue;
+      let newStatus = 'ON_TRACK';
+      if (krProgress < 0.5) newStatus = 'OFF_TRACK';
+      else if (krProgress < 0.8) newStatus = 'AT_RISK';
+
+      await prisma.keyResult.update({
+        where: { id: kr.id },
+        data: { currentValue: newKrValue, status: newStatus },
+      });
+    }
+  }
+}
+
+// POST /api/kpis/:id/updates — Submit progress update (semua role yang di-assign ke KPI)
+// LEADER / MANAGER / ADMIN → auto-approve & langsung cascade
+// TEAM → PENDING_APPROVAL, menunggu persetujuan
 export async function submitKpiUpdate(req: AuthRequest, res: Response) {
   try {
     const { id: kpiId } = req.params;
     const { newValue, note } = req.body;
-    const { id: userId } = req.user!;
+    const { id: userId, role } = req.user!;
 
     if (newValue === undefined) {
       return res.status(400).json({ message: 'newValue wajib diisi' });
@@ -871,8 +1116,15 @@ export async function submitKpiUpdate(req: AuthRequest, res: Response) {
       return res.status(403).json({ message: 'Kamu tidak di-assign ke KPI ini' });
     }
 
-    const kpi = await prisma.kpi.findUnique({ where: { id: kpiId } });
+    const kpi = await prisma.kpi.findUnique({
+      where: { id: kpiId },
+      include: { initiative: true },
+    });
     if (!kpi) return res.status(404).json({ message: 'KPI tidak ditemukan' });
+
+    // LEADER, MANAGER, ADMIN → auto-approve (tidak perlu menunggu persetujuan)
+    const isAutoApprove = ['LEADER', 'MANAGER', 'ADMIN'].includes(role);
+    const updateStatus = isAutoApprove ? 'APPROVED' : 'PENDING_APPROVAL';
 
     const update = await prisma.kpiUpdate.create({
       data: {
@@ -881,11 +1133,26 @@ export async function submitKpiUpdate(req: AuthRequest, res: Response) {
         newValue: parseFloat(newValue),
         note: note || null,
         submittedBy: userId,
-        status: 'PENDING_APPROVAL',
+        status: updateStatus,
+        ...(isAutoApprove ? { reviewedBy: userId, reviewedAt: new Date() } : {}),
       },
     });
 
-    return res.status(201).json({ message: 'Update berhasil dikirim, menunggu persetujuan Manager', update });
+    if (isAutoApprove) {
+      // Langsung update currentValue KPI dan cascade ke Initiative & KR
+      await prisma.kpi.update({
+        where: { id: kpiId },
+        data: { currentValue: parseFloat(newValue) },
+      });
+      await cascadeKpiValueUpdate(kpiId, kpi.initiativeId);
+    }
+
+    return res.status(201).json({
+      message: isAutoApprove
+        ? 'Update berhasil disimpan dan langsung diterapkan'
+        : 'Update berhasil dikirim, menunggu persetujuan',
+      update,
+    });
   } catch (error) {
     console.error('Submit KPI update error:', error);
     return res.status(500).json({ message: 'Internal server error' });
@@ -908,6 +1175,7 @@ export async function getKpiUpdates(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
+
 
 // PATCH /api/kpi-updates/:updateId/approve — Manager / Leader approve
 export async function approveKpiUpdate(req: AuthRequest, res: Response) {
@@ -944,64 +1212,7 @@ export async function approveKpiUpdate(req: AuthRequest, res: Response) {
     ]);
 
     // ═══ AUTO-CASCADE: KPI → Initiative → KR ═══
-
-    // 1. Recalculate Initiative.currentValue dari rata-rata KPI progress
-    const allKpis = await prisma.kpi.findMany({
-      where: { initiativeId: kpiUpdate.kpi.initiativeId },
-    });
-    const initiative = await prisma.initiative.findUnique({
-      where: { id: kpiUpdate.kpi.initiativeId }
-    });
-
-    if (initiative && allKpis.length > 0 && initiative.targetValue > 0) {
-      const avgKpiPercent = allKpis.reduce((sum, k) => {
-        return sum + (k.targetValue > 0 ? (k.currentValue / k.targetValue) : 0);
-      }, 0) / allKpis.length;
-      const newInitiativeValue = Math.round(avgKpiPercent * initiative.targetValue * 100) / 100;
-
-      await prisma.initiative.update({
-        where: { id: initiative.id },
-        data: { currentValue: newInitiativeValue }
-      });
-
-      // 2. Recalculate KR.currentValue dari weighted average Initiative progress
-      const allInitiatives = await prisma.initiative.findMany({
-        where: { keyResultId: initiative.keyResultId },
-        include: { kpis: true }
-      });
-      const kr = await prisma.keyResult.findUnique({
-        where: { id: initiative.keyResultId }
-      });
-
-      if (kr && allInitiatives.length > 0 && kr.targetValue > 0) {
-        const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
-        const weightedAvgPercent = allInitiatives.reduce((sum, init) => {
-          // Hitung progress tiap initiative dari KPI-nya
-          let initProgress = 0;
-          if (init.kpis.length > 0) {
-            initProgress = init.kpis.reduce((s, k) => {
-              return s + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0);
-            }, 0) / init.kpis.length;
-          } else if (init.targetValue > 0) {
-            initProgress = init.currentValue / init.targetValue;
-          }
-          return sum + initProgress * (init.weight || 1);
-        }, 0) / (totalWeight || 1);
-
-        const newKrValue = Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
-
-        // Auto-status berdasarkan threshold
-        const krProgress = newKrValue / kr.targetValue;
-        let newStatus = 'ON_TRACK';
-        if (krProgress < 0.5) newStatus = 'OFF_TRACK';
-        else if (krProgress < 0.8) newStatus = 'AT_RISK';
-
-        await prisma.keyResult.update({
-          where: { id: kr.id },
-          data: { currentValue: newKrValue, status: newStatus }
-        });
-      }
-    }
+    await cascadeKpiValueUpdate(kpiUpdate.kpiId, kpiUpdate.kpi.initiativeId);
 
     return res.status(200).json({ message: 'Update disetujui', update: approved });
   } catch (error) {
@@ -1072,4 +1283,67 @@ export async function getPendingKpiUpdates(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
+
+// POST /api/initiatives/:id/progress-updates
+export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
+  try {
+    const { id: initiativeId } = req.params;
+    const { newValue, note, kanbanStatus } = req.body;
+    const { id: userId } = req.user!;
+
+    if (newValue === undefined) {
+      return res.status(400).json({ message: 'newValue wajib diisi' });
+    }
+
+    const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
+    if (!initiative) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
+
+    // Validasi apakah user tergolong dalam tim inisiatif tersebut
+    const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { teamId: true } });
+    if (dbUser?.teamId !== initiative.teamId) {
+      return res.status(403).json({ message: 'Anda bukan anggota tim inisiatif ini' });
+    }
+
+    const [update] = await prisma.$transaction([
+      prisma.initiativeUpdate.create({
+        data: {
+          initiativeId,
+          oldValue: initiative.currentValue,
+          newValue: parseFloat(newValue),
+          note: note || null,
+          kanbanStatus: kanbanStatus || null,
+          submittedBy: userId,
+        }
+      }),
+      prisma.initiative.update({
+        where: { id: initiativeId },
+        data: {
+          currentValue: parseFloat(newValue),
+          ...(kanbanStatus ? { kanbanStatus } : {})
+        }
+      })
+    ]);
+
+    return res.status(201).json({ message: 'Progress berhasil dicatat', update });
+  } catch (error) {
+    console.error('Submit initiative update error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+// GET /api/initiatives/:id/progress-updates
+export async function getInitiativeProgressUpdates(req: AuthRequest, res: Response) {
+  try {
+    const { id: initiativeId } = req.params;
+    const updates = await prisma.initiativeUpdate.findMany({
+      where: { initiativeId },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.status(200).json(updates);
+  } catch (error) {
+    console.error('Get initiative progress updates error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 

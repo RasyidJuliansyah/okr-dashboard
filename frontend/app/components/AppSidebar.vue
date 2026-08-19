@@ -283,7 +283,7 @@
       </div>
 
       <!-- Team menu -->
-      <div v-if="isTeam || isLeader || isAdmin" class="nav-group">
+      <div v-if="isTeam || isLeader || isManager || isAdmin" class="nav-group">
         <p class="nav-group-label">PEKERJAAN</p>
         <NuxtLink to="/team/my-work" class="nav-item" active-class="nav-active" @click="emit('close')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">

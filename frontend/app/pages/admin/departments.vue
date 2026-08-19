@@ -445,7 +445,7 @@
         <div v-if="selectedInitiativeId && selectedInitiativeKpis.length > 0" class="kpi-assign-section">
           <div v-for="kpi in selectedInitiativeKpis" :key="kpi.id" class="kpi-assign-row">
             <div class="kpi-assign-title">
-              📌 {{ kpi.title }}
+              {{ kpi.title }}
               <span class="kpi-target-badge">Target: {{ kpi.targetValue }} {{ kpi.unit }}</span>
             </div>
             <div class="user-pick-list compact">
@@ -587,7 +587,7 @@ function getAvatarColor(name) {
 }
 
 // ─── Fetch ───
-const FALLBACK_ICONS = ['🏢', '📊', '💼', '👥', '💡', '🌟', '⚡', '🚀'];
+const FALLBACK_ICONS = ['', '', '', '', '', '', '', ''];
 
 async function fetchDepartments() {
   try {

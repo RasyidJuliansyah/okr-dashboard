@@ -3,7 +3,7 @@
     <div class="admin-content">
       <div class="header-section card">
         <div class="header-title">
-          <h2>🏢 OKR Overview</h2>
+          <h2>OKR Overview</h2>
           <p class="section-desc">
             Pantau seluruh OKR perusahaan dan kelola persetujuan progress KPI.
           </p>
@@ -11,9 +11,9 @@
       </div>
 
       <div class="tabs mb-4">
-        <button class="tab-btn" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">📊 OKR Overview</button>
+        <button class="tab-btn" :class="{ active: activeTab === 'overview' }" @click="activeTab = 'overview'">OKR Overview</button>
         <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">
-          🕐 Pending Approval <span v-if="pendingCount > 0" class="badge-count">{{ pendingCount }}</span>
+          Pending Approval <span v-if="pendingCount > 0" class="badge-count">{{ pendingCount }}</span>
         </button>
       </div>
 

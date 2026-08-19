@@ -3,7 +3,7 @@
     <div class="admin-content">
       <div class="header-section card">
         <div class="header-title">
-          <h2>🎯 KR yang Di-assign ke Saya</h2>
+          <h2>KR yang Di-assign ke Saya</h2>
           <p class="section-desc">
             Key Results yang menjadi tanggung jawab Anda. Anda bisa membuat Inisiatif dari sini.
           </p>
@@ -37,19 +37,19 @@
           </div>
           
           <div class="initiatives-section">
-            <h4>📌 Inisiatif yang sudah dibuat ({{ assign.keyResult.initiatives?.length || 0 }}):</h4>
+            <h4>Inisiatif yang sudah dibuat ({{ assign.keyResult.initiatives?.length || 0 }}):</h4>
             <ul v-if="assign.keyResult.initiatives?.length > 0" class="ini-list-items">
               <li v-for="ini in assign.keyResult.initiatives" :key="ini.id" class="ini-item-row">
                 <div class="ini-info-col">
                   <span class="ini-title">{{ ini.title }}</span>
                   <div class="ini-sub-meta">
                     <span class="badge-team">→ {{ ini.team?.name }}</span>
-                    <span v-if="ini.owner" class="badge-owner">👤 {{ ini.owner.name }}</span>
+                    <span v-if="ini.owner" class="badge-owner">{{ ini.owner.name }}</span>
                     <span class="badge" :class="getStatusClass(ini.status)">{{ ini.status }}</span>
                   </div>
                 </div>
                 <div class="ini-actions">
-                  <button class="icon-btn" @click="startEditInitiative(ini, assign.keyResult)" title="Edit Inisiatif">✏️</button>
+                  <button class="icon-btn" @click="startEditInitiative(ini, assign.keyResult)" title="Edit Inisiatif"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
                 </div>
               </li>
             </ul>
@@ -80,7 +80,7 @@
               v-model="leaderTeamSearch"
               type="text"
               class="form-input search-mini"
-              placeholder="🔍 Cari nama departemen / tim..."
+              placeholder="Cari nama departemen / tim..."
             />
             <select v-model="form.teamId" class="form-input">
               <option value="">-- Pilih Tim / Departemen --</option>
@@ -96,7 +96,7 @@
               v-model="leaderUserSearch"
               type="text"
               class="form-input search-mini"
-              placeholder="🔍 Cari nama pegawai..."
+              placeholder="Cari nama pegawai..."
             />
             <select v-model="form.ownerId" class="form-input">
               <option value="">-- Pilih Pegawai (Opsional) --</option>
@@ -624,6 +624,9 @@ async function saveInitiative() {
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .icon-btn:hover {
   background: #f1f5f9;

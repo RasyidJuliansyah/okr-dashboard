@@ -1,5 +1,71 @@
+# Panduan Migrasi Database: SQLite ke MySQL
+
+Dokumen ini berisi panduan teknis langkah demi langkah untuk melakukan migrasi database sistem OKR & BSC Dashboard dari **SQLite** (lokal development) ke **MySQL** (staging / production).
+
+---
+
+## 📋 Ringkasan Perbedaan Utama (SQLite vs MySQL pada Prisma)
+
+| Fitur / Komponen | SQLite (Saat Ini) | MySQL (Tujuan Migrasi) |
+|---|---|---|
+| **Prisma Datasource Provider** | `"sqlite"` | `"mysql"` |
+| **DATABASE_URL** | `file:./dev.db` | `mysql://user:password@localhost:3306/okr_db` |
+| **String / Text Attribute** | Tidak mendukung `@db.Text` | Mendukung `@db.Text` atau `@db.VarChar(n)` |
+| **Migration Tool** | `npx prisma db push` | `npx prisma migrate dev` (menciptakan `.sql` migration files) |
+| **Tipe Data Waktu** | Simpan sebagai string ISO | Native `DATETIME(3)` / `TIMESTAMP` |
+
+---
+
+## 🛠️ Langkah-Langkah Migrasi
+
+### 1. Persiapan Server & Database MySQL
+Pastikan server MySQL (versi 8.0+ direkomendasikan) sudah berjalan.
+Buat database baru bernama `okr_dashboard`:
+```sql
+CREATE DATABASE okr_dashboard CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+---
+
+### 2. Update Environment Variables (`.env`)
+
+Ubah file `backend/.env`:
+
+```env
+# Sebelum (SQLite):
+# DATABASE_URL="file:./dev.db"
+
+# Sesudah (MySQL):
+DATABASE_URL="mysql://root:password_anda@localhost:3306/okr_dashboard"
+JWT_SECRET="rahasia_jwt_anda"
+PORT=3001
+```
+
+---
+
+### 3. Update `schema.prisma` untuk MySQL
+
+Buka file `backend/src/prisma/schema.prisma` dan sesuaikan blok `datasource`:
+
+```prisma
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+```
+
+> **Catatan Penting `@db.Text` di MySQL:**
+> Untuk kolom bermuatan teks panjang seperti `description` di `Objective`/`Initiative` atau `note`/`reviewNote` di `KpiUpdate` & `InitiativeUpdate`, secara opsional dapat ditambahkan atribut `@db.Text` agar MySQL menyimpannya sebagai tipe data `TEXT` (hingga 64KB) alih-alih `VARCHAR(191/255)`.
+
+#### Schema MySQL Rekomendasi (`schema.prisma`):
+
+```prisma
+datasource db {
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -39,7 +105,7 @@ model Team {
 model Objective {
   id          String      @id @default(uuid())
   title       String
-  description String?
+  description String?     @db.Text
   quarter     String
   ownerId     String?
   keyResults  KeyResult[]
@@ -98,7 +164,7 @@ model KrUpdate {
   keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
   oldValue    Float
   newValue    Float
-  note        String?
+  note        String?   @db.Text
   updatedBy   String
   updatedAt   DateTime  @default(now())
 
@@ -112,7 +178,7 @@ model CausalLink {
   targetKrId   String
   targetKr     KeyResult @relation("TargetKR", fields: [targetKrId], references: [id])
   relationship String
-  note         String?
+  note         String?   @db.Text
   createdBy    String
   createdAt    DateTime  @default(now())
 }
@@ -126,17 +192,17 @@ model Initiative {
   ownerId       String?
   owner         User?     @relation("InitiativeOwner", fields: [ownerId], references: [id])
   title         String
-  description   String?
+  description   String?   @db.Text
   targetValue   Float     @default(0)
   currentValue  Float     @default(0)
   achievedValue Float?
   unit          String?
   status        String    @default("ON_TRACK")
-  kanbanStatus  String    @default("TODO") // TODO, IN_PROGRESS, DONE
+  kanbanStatus  String    @default("TODO")
   weight        Float     @default(1.0)
   startDate     DateTime?
   dueDate       DateTime?
-  sprintMonth   String?   // e.g., "2026-08"
+  sprintMonth   String?
   kpis          Kpi[]
   progressUpdates InitiativeUpdate[]
   createdAt     DateTime  @default(now())
@@ -179,11 +245,11 @@ model KpiUpdate {
   kpi         Kpi       @relation(fields: [kpiId], references: [id])
   oldValue    Float
   newValue    Float
-  note        String?
+  note        String?   @db.Text
   submittedBy String
   status      String    @default("PENDING_APPROVAL")
   reviewedBy  String?
-  reviewNote  String?
+  reviewNote  String?   @db.Text
   reviewedAt  DateTime?
   createdAt   DateTime  @default(now())
 
@@ -205,11 +271,61 @@ model InitiativeUpdate {
   initiative   Initiative @relation(fields: [initiativeId], references: [id])
   oldValue     Float
   newValue     Float
-  note         String?
+  note         String?    @db.Text
   kanbanStatus String?
   submittedBy  String
   createdAt    DateTime   @default(now())
 
   @@index([initiativeId, createdAt])
 }
+```
 
+---
+
+### 4. Eksekusi Migrasi Struktur Database Ke MySQL
+
+Jalankan perintah berikut di direktori `backend/`:
+
+```bash
+cd backend
+
+# 1. Generate Prisma Client baru sesuai schema MySQL
+npx prisma generate
+
+# 2. Buat & jalankan migrasi ke MySQL
+npx prisma migrate dev --name init_mysql
+```
+
+Jika tidak ingin membuat file folder `prisma/migrations` dan langsung mendorong struktur tabel:
+```bash
+npx prisma db push
+```
+
+---
+
+### 5. Transfer Data dari SQLite (`dev.db`) ke MySQL (Opsional)
+
+Jika Anda memiliki data pengembangan di SQLite lokal yang ingin dipindahkan ke MySQL:
+
+#### Opsi A: Menggunakan Tool `sqlite3` + Mysql Dump Converter
+Gunakan paket CLI seperti `sqlite3-to-mysql` atau `pgloader` / DB management tool (DBeaver / DataGrip).
+
+#### Opsi B: Menggunakan Script Node.js Data Migration (Rekomendasi)
+Anda dapat membuat script sejenis `backend/src/scripts/migrate-data.ts`:
+
+```typescript
+import { PrismaClient as SqliteClient } from '@prisma/client'; // dari SQLite dev.db
+import { PrismaClient as MysqlClient } from '@prisma/client';  // dari MySQL DB
+
+// 1. Baca data dari SQLite dev.db
+// 2. Insert bertahap sesuai urutan FK (User -> Team -> Objective -> KeyResult -> Initiative -> Kpi -> Updates)
+```
+
+---
+
+### 6. Verifikasi Setelah Migrasi
+
+Setelah migrasi selesai:
+1. Pastikan server backend berjalan tanpa error: `npm run dev` atau `npm run build && npm start`.
+2. Lakukan uji coba login untuk semua role (`TEAM`, `LEADER`, `MANAGER`, `C_LEVEL`, `ADMIN`).
+3. Coba lakukan update progress pada Inisiatif dan KPI untuk memastikan transaksi MySQL dan CASCADE berjalan dengan sempurna.

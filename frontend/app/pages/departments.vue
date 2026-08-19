@@ -237,7 +237,7 @@
             v-model="roleSearch"
             type="text"
             class="form-input"
-            placeholder="🔍 Cari nama atau email pegawai..."
+            placeholder="Cari nama atau email pegawai..."
           />
         </div>
 
@@ -412,11 +412,11 @@ const userRoleClass = computed(() => {
 });
 
 const roleIcon = computed(() => {
-  if (isAdmin.value) return '👑';
-  if (isCLevel.value) return '📊';
-  if (isManager.value) return '👔';
-  if (isLeader.value) return '🛡️';
-  return '👥';
+  if (isAdmin.value) return '';
+  if (isCLevel.value) return '';
+  if (isManager.value) return '';
+  if (isLeader.value) return '';
+  return '';
 });
 
 const scopeDescription = computed(() => {
@@ -531,7 +531,7 @@ function getAvatarColor(name: string) {
 }
 
 // ─── Fetch ───
-const FALLBACK_ICONS = ['🏢', '📊', '💼', '👥', '💡', '🌟', '⚡', '🚀'];
+const FALLBACK_ICONS = ['', '', '', '', '', '', '', ''];
 
 async function fetchDepartments() {
   try {

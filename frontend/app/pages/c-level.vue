@@ -227,7 +227,7 @@
       <section class="critical-card card" v-if="data.criticalKrs.length > 0">
         <div class="critical-header">
           <div>
-            <h2>🚨 Key Results Kritis</h2>
+            <h2>Key Results Kritis</h2>
             <p class="section-sub">KR dengan status At Risk atau Off Track yang memerlukan perhatian segera</p>
           </div>
           <span class="critical-count-badge">{{ data.criticalKrs.length }} KR</span>
@@ -281,7 +281,7 @@
       </section>
 
       <div v-else class="no-critical card">
-        <p>✅ Tidak ada KR kritis saat ini. Semua indikator dalam kondisi On Track!</p>
+        <p>Tidak ada KR kritis saat ini. Semua indikator dalam kondisi On Track!</p>
       </div>
     </template>
 
@@ -335,8 +335,8 @@ function perspectiveLabel(key) {
 }
 
 function perspectiveIcon(key) {
-  const map = { FINANCIAL: '💰', CUSTOMER: '🤝', INTERNAL_PROCESS: '⚙️', LEARNING_GROWTH: '📈' };
-  return map[key] || '📊';
+  const map = { FINANCIAL: '', CUSTOMER: '', INTERNAL_PROCESS: '', LEARNING_GROWTH: '' };
+  return map[key] || '';
 }
 
 function perspectiveClass(key) {

@@ -19,6 +19,9 @@ import {
   getMyWork,
   getMyTeamInitiatives,
   getPendingKpiUpdates,
+  getInitiativeWeightBudget,
+  submitInitiativeUpdate,
+  getInitiativeProgressUpdates,
 } from '../controllers/initiative.controller';
 import { authMiddleware, roleGuard } from '../middleware/auth.middleware';
 
@@ -28,12 +31,16 @@ const router = Router();
 router.get('/', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getInitiatives);
 router.get('/progress', authMiddleware, roleGuard(['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER']), getInitiativeProgress);
 router.get('/member-progress', authMiddleware, roleGuard(['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER', 'TEAM']), getMemberProgress);
+router.get('/weight-budget', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getInitiativeWeightBudget);
 router.post('/', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), createInitiative);
 router.put('/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), updateInitiative);
 router.patch('/:id/kanban-status', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER', 'TEAM']), updateInitiativeKanbanStatus);
 router.delete('/:id', authMiddleware, roleGuard(['ADMIN']), deleteInitiative);
 router.get('/my-work/all', authMiddleware, getMyWork);
 router.get('/my-team', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getMyTeamInitiatives);
+router.post('/:id/progress-updates', authMiddleware, roleGuard(['TEAM', 'LEADER', 'ADMIN']), submitInitiativeUpdate);
+router.get('/:id/progress-updates', authMiddleware, getInitiativeProgressUpdates);
+
 
 // KPI di bawah Initiative
 router.get('/:initiativeId/kpis', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getKpisForInitiative);
@@ -43,7 +50,7 @@ router.post('/:initiativeId/kpis', authMiddleware, roleGuard(['ADMIN', 'MANAGER'
 router.put('/kpis/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), updateKpi);
 router.delete('/kpis/:id', authMiddleware, roleGuard(['ADMIN']), deleteKpi);
 router.post('/kpis/:id/assign', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), assignUsersToKpi);
-router.post('/kpis/:id/updates', authMiddleware, roleGuard(['TEAM']), submitKpiUpdate);
+router.post('/kpis/:id/updates', authMiddleware, roleGuard(['TEAM', 'LEADER', 'MANAGER', 'ADMIN']), submitKpiUpdate);
 router.get('/kpis/:id/updates', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getKpiUpdates);
 
 // Pending KPI Updates
