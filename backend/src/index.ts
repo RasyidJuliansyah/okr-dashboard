@@ -11,6 +11,7 @@ import userRoutes from './routes/user.routes';
 import initiativeRoutes from './routes/initiative.routes';
 import departmentRoutes from './routes/department.routes';
 import bulkUploadRoutes from './routes/bulkUpload.routes';
+import annualKeyResultRoutes from './routes/annualKeyResult.routes';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/initiatives', initiativeRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/bulk-upload', bulkUploadRoutes);
+app.use('/api/annual-key-results', annualKeyResultRoutes);
 
 // Base route for sanity check
 app.get('/', (req, res) => {

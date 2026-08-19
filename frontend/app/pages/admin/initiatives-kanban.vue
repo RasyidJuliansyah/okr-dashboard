@@ -128,10 +128,10 @@
                 </span>
               </div>
 
-              <!-- KPIs summary chips -->
-              <div class="card-kpis-summary" v-if="ini.kpis?.length">
-                <span class="kpi-count-tag">
-                  {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }} selesai)
+              <!-- Tasks summary chips -->
+              <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                <span class="task-count-tag">
+                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }} selesai)
                 </span>
               </div>
 
@@ -147,7 +147,7 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Tambah KPI" @click="openAddKpiModal(ini)">+ KPI</button>
+                  <button class="action-btn" title="Tambah Task" @click="openAddTaskModal(ini)">+ Task</button>
                   <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
                   <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
                 </div>
@@ -211,10 +211,10 @@
                 </span>
               </div>
 
-              <!-- KPIs summary chips -->
-              <div class="card-kpis-summary" v-if="ini.kpis?.length">
-                <span class="kpi-count-tag in-progress">
-                  {{ ini.kpis.length }} KPI ({{ getCompletedKpisCount(ini) }}/{{ ini.kpis.length }} selesai)
+              <!-- Tasks summary chips -->
+              <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                <span class="task-count-tag in-progress">
+                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}/{{ ini.tasks.length }} selesai)
                 </span>
               </div>
 
@@ -230,7 +230,7 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Tambah KPI" @click="openAddKpiModal(ini)">+ KPI</button>
+                  <button class="action-btn" title="Tambah Task" @click="openAddTaskModal(ini)">+ Task</button>
                   <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
                   <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
                 </div>
@@ -475,30 +475,30 @@
         </div>
       </div>
 
-      <!-- ─── MODAL: Add/Edit KPI ─── -->
-      <div v-if="showKpiModal" class="modal-overlay" @click.self="showKpiModal = false">
+      <!-- ─── MODAL: Add/Edit Task ─── -->
+      <div v-if="showTaskModal" class="modal-overlay" @click.self="showTaskModal = false">
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Tambah KPI untuk: {{ selectedInitiativeForKpi?.title }}</h3>
-            <button class="modal-close-btn" @click="showKpiModal = false">&times;</button>
+            <h3>Tambah Task untuk: {{ selectedInitiativeForTask?.title }}</h3>
+            <button class="modal-close-btn" @click="showTaskModal = false">&times;</button>
           </div>
           <div class="modal-body-scroll">
-            <label>Judul KPI *</label>
-            <input v-model="kpiForm.title" class="form-input" placeholder="Contoh: Selesaikan 10 unit test..." />
+            <label>Judul Task *</label>
+            <input v-model="taskForm.title" class="form-input" placeholder="Contoh: Selesaikan 10 unit test..." />
             <div class="form-row-2">
               <div>
                 <label>Target Value *</label>
-                <input v-model.number="kpiForm.targetValue" type="number" class="form-input" />
+                <input v-model.number="taskForm.targetValue" type="number" class="form-input" />
               </div>
               <div>
                 <label>Satuan (Unit)</label>
-                <input v-model="kpiForm.unit" class="form-input" placeholder="%, task, doc..." />
+                <input v-model="taskForm.unit" class="form-input" placeholder="%, task, doc..." />
               </div>
             </div>
           </div>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showKpiModal = false">Batal</button>
-            <button class="primary-btn" @click="saveKpi">Simpan KPI</button>
+            <button class="secondary-btn" @click="showTaskModal = false">Batal</button>
+            <button class="primary-btn" @click="saveTask">Simpan Task</button>
           </div>
         </div>
       </div>
@@ -576,10 +576,10 @@ const filteredUsers = computed(() => {
   return allUsers.value.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
 });
 
-// KPI modal state
-const showKpiModal = ref(false);
-const selectedInitiativeForKpi = ref<any>(null);
-const kpiForm = ref({ title: '', targetValue: 0, unit: '' });
+// Task modal state
+const showTaskModal = ref(false);
+const selectedInitiativeForTask = ref<any>(null);
+const taskForm = ref({ title: '', targetValue: 0, unit: '' });
 
 // ─── Filtered Lists per Kanban Column ───
 const filteredInitiatives = computed(() => {
@@ -629,9 +629,9 @@ const dropList = computed(() => {
   );
 });
 
-function getCompletedKpisCount(ini: any) {
-  if (!ini.kpis) return 0;
-  return ini.kpis.filter((k: any) => k.currentValue >= k.targetValue).length;
+function getCompletedTasksCount(ini: any) {
+  if (!ini.tasks) return 0;
+  return ini.tasks.filter((k: any) => k.currentValue >= k.targetValue).length;
 }
 
 // ─── Drag & Drop Handlers ───
@@ -788,7 +788,7 @@ async function saveInitiative() {
 }
 
 async function deleteInitiative(id: string) {
-  if (!confirm('Hapus inisiatif ini beserta seluruh KPI di dalamnya?')) return;
+  if (!confirm('Hapus inisiatif ini beserta seluruh Task di dalamnya?')) return;
   try {
     const res = await fetch(`${API}/initiatives/${id}`, {
       method: 'DELETE',
@@ -807,29 +807,29 @@ async function deleteInitiative(id: string) {
   }
 }
 
-function openAddKpiModal(ini: any) {
-  selectedInitiativeForKpi.value = ini;
-  kpiForm.value = { title: '', targetValue: 0, unit: '' };
-  showKpiModal.value = true;
+function openAddTaskModal(ini: any) {
+  selectedInitiativeForTask.value = ini;
+  taskForm.value = { title: '', targetValue: 0, unit: '' };
+  showTaskModal.value = true;
 }
 
-async function saveKpi() {
-  if (!kpiForm.value.title.trim()) {
-    alert('Judul KPI wajib diisi');
+async function saveTask() {
+  if (!taskForm.value.title.trim()) {
+    alert('Judul Task wajib diisi');
     return;
   }
   try {
-    const res = await fetch(`${API}/initiatives/${selectedInitiativeForKpi.value.id}/kpis`, {
+    const res = await fetch(`${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(kpiForm.value)
+      body: JSON.stringify(taskForm.value)
     });
     if (res.ok) {
-      showKpiModal.value = false;
+      showTaskModal.value = false;
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      alert(err.message || 'Gagal membuat KPI');
+      alert(err.message || 'Gagal membuat Task');
     }
   } catch (err: any) {
     alert(err.message);
@@ -1230,11 +1230,11 @@ onMounted(async () => {
   border: 1px solid var(--border-color, #cbd5e1);
 }
 
-.card-kpis-summary {
+.card-tasks-summary {
   margin-bottom: 8px;
 }
 
-.kpi-count-tag {
+.task-count-tag {
   font-size: 0.75rem;
   background: #f1f5f9;
   color: #475569;
@@ -1243,7 +1243,7 @@ onMounted(async () => {
   display: inline-block;
 }
 
-.kpi-count-tag.in-progress {
+.task-count-tag.in-progress {
   background: rgba(14, 151, 214, 0.08);
   color: #0b7bb0;
 }

@@ -3,9 +3,9 @@
     <div class="admin-content">
       <div class="header-section card">
         <div class="header-title">
-          <h2>Manajemen Initiative & KPI</h2>
+          <h2>Manajemen Initiative & Task</h2>
           <p class="section-desc">
-            Kelola Initiative (level Tim) dan KPI (level Individu) yang menjadi turunan Key Result.
+            Kelola Initiative (level Tim) dan Task (level Individu) yang menjadi turunan Key Result.
           </p>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -45,26 +45,26 @@
             <span class="kr-badge">KR: {{ initiative.keyResult?.title }}</span>
           </div>
           <div class="initiative-actions">
-            <button class="secondary-btn" @click="openAddKpiModal(initiative)">+ KPI</button>
+            <button class="secondary-btn" @click="openAddTaskModal(initiative)">+ Task</button>
             <button class="icon-btn" @click="openEditInitiativeModal(initiative)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
             <button class="icon-btn danger" @click="deleteInitiative(initiative.id)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
           </div>
         </div>
 
-        <!-- KPI List -->
-        <div class="kpi-list">
-          <div v-if="initiative.kpis?.length === 0" class="empty-kpi">Belum ada KPI di Initiative ini.</div>
-          <div v-for="kpi in initiative.kpis" :key="kpi.id" class="kpi-row">
-            <span class="kpi-name">{{ kpi.title }}</span>
-            <span class="kpi-target">Target: {{ kpi.targetValue }} {{ kpi.unit }}</span>
-            <span class="kpi-current">Saat ini: {{ kpi.currentValue }}</span>
-            <div class="kpi-assignees">
-              <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-chip">{{ a.user?.name }}</span>
+        <!-- Task List -->
+        <div class="task-list">
+          <div v-if="initiative.tasks?.length === 0" class="empty-task">Belum ada Task di Initiative ini.</div>
+          <div v-for="task in initiative.tasks" :key="task.id" class="task-row">
+            <span class="task-name">{{ task.title }}</span>
+            <span class="task-target">Target: {{ task.targetValue }} {{ task.unit }}</span>
+            <span class="task-current">Saat ini: {{ task.currentValue }}</span>
+            <div class="task-assignees">
+              <span v-for="a in task.assignments" :key="a.userId" class="assignee-chip">{{ a.user?.name }}</span>
             </div>
-            <div class="kpi-actions">
-              <button class="secondary-btn small" @click="openAssignModal(kpi)">Assign</button>
-              <button class="icon-btn" @click="openEditKpiModal(kpi)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-              <button class="icon-btn danger" @click="deleteKpi(kpi.id)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
+            <div class="task-actions">
+              <button class="secondary-btn small" @click="openAssignModal(task)">Assign</button>
+              <button class="icon-btn" @click="openEditTaskModal(task)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+              <button class="icon-btn danger" @click="deleteTask(task.id)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
             </div>
           </div>
         </div>
@@ -121,32 +121,32 @@
         </div>
       </div>
 
-      <!-- ─── MODAL: Add/Edit KPI ─── -->
-      <div v-if="showKpiModal" class="modal-overlay" @click.self="showKpiModal = false">
+      <!-- ─── MODAL: Add/Edit Task ─── -->
+      <div v-if="showTaskModal" class="modal-overlay" @click.self="showTaskModal = false">
         <div class="modal-box">
           <div class="modal-header">
-            <h3>{{ editingKpi ? 'Edit' : 'Tambah' }} KPI</h3>
-            <button class="modal-close-btn" @click="showKpiModal = false">&times;</button>
+            <h3>{{ editingTask ? 'Edit' : 'Tambah' }} Task</h3>
+            <button class="modal-close-btn" @click="showTaskModal = false">&times;</button>
           </div>
-          <p>Initiative: <strong>{{ selectedInitiativeForKpi?.title }}</strong></p>
-          <label>Judul KPI *</label>
-          <input v-model="kpiForm.title" class="form-input" placeholder="Judul KPI..." />
+          <p>Initiative: <strong>{{ selectedInitiativeForTask?.title }}</strong></p>
+          <label>Judul Task *</label>
+          <input v-model="taskForm.title" class="form-input" placeholder="Judul Task..." />
           <label>Target Value *</label>
-          <input v-model.number="kpiForm.targetValue" type="number" class="form-input" />
+          <input v-model.number="taskForm.targetValue" type="number" class="form-input" />
           <label>Unit</label>
-          <input v-model="kpiForm.unit" class="form-input" placeholder="%, IDR, tasks..." />
+          <input v-model="taskForm.unit" class="form-input" placeholder="%, IDR, tasks..." />
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showKpiModal = false">Batal</button>
-            <button class="primary-btn" @click="saveKpi">Simpan</button>
+            <button class="secondary-btn" @click="showTaskModal = false">Batal</button>
+            <button class="primary-btn" @click="saveTask">Simpan</button>
           </div>
         </div>
       </div>
 
-      <!-- ─── MODAL: Assign Member ke KPI ─── -->
+      <!-- ─── MODAL: Assign Member ke Task ─── -->
       <div v-if="showAssignModal" class="modal-overlay" @click.self="showAssignModal = false">
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Assign Member ke KPI: {{ selectedKpiForAssign?.title }}</h3>
+            <h3>Assign Member ke Task: {{ selectedTaskForAssign?.title }}</h3>
             <button class="modal-close-btn" @click="showAssignModal = false">&times;</button>
           </div>
           <p>Pilih member untuk di-assign:</p>
@@ -218,15 +218,15 @@ const filteredUsers = computed(() => {
   return teamMembers.value.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
 });
 
-// KPI modal
-const showKpiModal = ref(false);
-const editingKpi = ref<any>(null);
-const selectedInitiativeForKpi = ref<any>(null);
-const kpiForm = ref({ title: '', targetValue: 0, unit: '' });
+// Task modal
+const showTaskModal = ref(false);
+const editingTask = ref<any>(null);
+const selectedInitiativeForTask = ref<any>(null);
+const taskForm = ref({ title: '', targetValue: 0, unit: '' });
 
 // Assign modal
 const showAssignModal = ref(false);
-const selectedKpiForAssign = ref<any>(null);
+const selectedTaskForAssign = ref<any>(null);
 const selectedMemberIds = ref<string[]>([]);
 
 // ─── Fetch ───
@@ -301,7 +301,7 @@ async function saveInitiative() {
 }
 
 async function deleteInitiative(id: string) {
-  if (!confirm('Hapus Initiative ini beserta semua KPI di dalamnya?')) return;
+  if (!confirm('Hapus Initiative ini beserta semua Task di dalamnya?')) return;
   const res = await fetch(`${API}/initiatives/${id}`, { method: 'DELETE', headers: getHeaders() });
   if (res.ok) {
     successMessage.value = 'Initiative berhasil dihapus';
@@ -310,34 +310,34 @@ async function deleteInitiative(id: string) {
   }
 }
 
-// ─── KPI CRUD ───
-function openAddKpiModal(initiative: any) {
-  editingKpi.value = null;
-  selectedInitiativeForKpi.value = initiative;
-  kpiForm.value = { title: '', targetValue: 0, unit: '' };
+// ─── Task CRUD ───
+function openAddTaskModal(initiative: any) {
+  editingTask.value = null;
+  selectedInitiativeForTask.value = initiative;
+  taskForm.value = { title: '', targetValue: 0, unit: '' };
   errorMessage.value = '';
-  showKpiModal.value = true;
+  showTaskModal.value = true;
 }
 
-function openEditKpiModal(kpi: any) {
-  editingKpi.value = kpi;
-  kpiForm.value = { title: kpi.title, targetValue: kpi.targetValue, unit: kpi.unit || '' };
-  showKpiModal.value = true;
+function openEditTaskModal(task: any) {
+  editingTask.value = task;
+  taskForm.value = { title: task.title, targetValue: task.targetValue, unit: task.unit || '' };
+  showTaskModal.value = true;
 }
 
-async function saveKpi() {
-  if (!kpiForm.value.title || kpiForm.value.targetValue === undefined) {
+async function saveTask() {
+  if (!taskForm.value.title || taskForm.value.targetValue === undefined) {
     errorMessage.value = 'Judul dan Target Value wajib diisi';
     return;
   }
-  const method = editingKpi.value ? 'PUT' : 'POST';
-  const url = editingKpi.value
-    ? `${API}/initiatives/kpis/${editingKpi.value.id}`
-    : `${API}/initiatives/${selectedInitiativeForKpi.value.id}/kpis`;
-  const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(kpiForm.value) });
+  const method = editingTask.value ? 'PUT' : 'POST';
+  const url = editingTask.value
+    ? `${API}/initiatives/tasks/${editingTask.value.id}`
+    : `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`;
+  const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(taskForm.value) });
   if (res.ok) {
-    showKpiModal.value = false;
-    successMessage.value = `KPI berhasil ${editingKpi.value ? 'diupdate' : 'dibuat'}`;
+    showTaskModal.value = false;
+    successMessage.value = `Task berhasil ${editingTask.value ? 'diupdate' : 'dibuat'}`;
     setTimeout(() => successMessage.value = '', 3000);
     await fetchInitiatives();
   } else {
@@ -346,25 +346,25 @@ async function saveKpi() {
   }
 }
 
-async function deleteKpi(id: string) {
-  if (!confirm('Hapus KPI ini?')) return;
-  const res = await fetch(`${API}/initiatives/kpis/${id}`, { method: 'DELETE', headers: getHeaders() });
+async function deleteTask(id: string) {
+  if (!confirm('Hapus Task ini?')) return;
+  const res = await fetch(`${API}/initiatives/tasks/${id}`, { method: 'DELETE', headers: getHeaders() });
   if (res.ok) {
-    successMessage.value = 'KPI berhasil dihapus';
+    successMessage.value = 'Task berhasil dihapus';
     setTimeout(() => successMessage.value = '', 3000);
     await fetchInitiatives();
   }
 }
 
 // ─── Assign ───
-function openAssignModal(kpi: any) {
-  selectedKpiForAssign.value = kpi;
-  selectedMemberIds.value = kpi.assignments?.map((a: any) => a.userId) || [];
+function openAssignModal(task: any) {
+  selectedTaskForAssign.value = task;
+  selectedMemberIds.value = task.assignments?.map((a: any) => a.userId) || [];
   showAssignModal.value = true;
 }
 
 async function saveAssignment() {
-  const res = await fetch(`${API}/initiatives/kpis/${selectedKpiForAssign.value.id}/assign`, {
+  const res = await fetch(`${API}/initiatives/tasks/${selectedTaskForAssign.value.id}/assign`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ userIds: selectedMemberIds.value }),
@@ -440,14 +440,14 @@ onMounted(async () => {
 .initiative-header h3 { margin: 0 0 8px 0; font-size: 1.2rem; }
 .team-badge, .kr-badge { display: inline-block; padding: 4px 8px; background: #2a2a2a; border-radius: 4px; font-size: 0.8rem; color: #aaa; margin-right: 8px; }
 .initiative-actions { display: flex; gap: 8px; }
-.kpi-list { display: flex; flex-direction: column; gap: 8px; }
-.empty-kpi { color: #666; font-style: italic; font-size: 0.9rem; }
-.kpi-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 12px; border-radius: 8px; }
-.kpi-name { font-weight: 500; flex: 1; }
-.kpi-target, .kpi-current { color: #aaa; font-size: 0.9rem; margin-right: 16px; }
-.kpi-assignees { display: flex; gap: 4px; flex-wrap: wrap; margin-right: 16px; }
+.task-list { display: flex; flex-direction: column; gap: 8px; }
+.empty-task { color: #666; font-style: italic; font-size: 0.9rem; }
+.task-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 12px; border-radius: 8px; }
+.task-name { font-weight: 500; flex: 1; }
+.task-target, .task-current { color: #aaa; font-size: 0.9rem; margin-right: 16px; }
+.task-assignees { display: flex; gap: 4px; flex-wrap: wrap; margin-right: 16px; }
 .assignee-chip { background: #3b82f6; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.75rem; }
-.kpi-actions { display: flex; gap: 8px; }
+.task-actions { display: flex; gap: 8px; }
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 999; }
 .modal-box { background: var(--card-bg, #1e1e1e); padding: 24px; border-radius: 12px; width: 400px; max-width: 90%; border: 1px solid #333; display: flex; flex-direction: column; gap: 12px; }
 .modal-box h3 { margin: 0; }

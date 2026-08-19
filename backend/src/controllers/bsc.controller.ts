@@ -12,13 +12,13 @@ export async function getBscOverview(req: AuthRequest, res: Response) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // Fetch all key results with their parent objectives
-    const keyResults = await prisma.keyResult.findMany({
+    // Fetch all annual key results with their parent objectives
+    const keyResults = await prisma.annualKeyResult.findMany({
       include: {
         objective: {
           select: {
             title: true,
-            quarter: true,
+            year: true,
           },
         },
       },
@@ -88,7 +88,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
     // 1. Fetch all KRs with context
     const keyResults = await prisma.keyResult.findMany({
       include: {
-        objective: { select: { title: true, quarter: true } },
+        objective: { select: { title: true, year: true } },
         assignments: {
           where: { raciRole: 'RESPONSIBLE' },
           include: { user: { select: { id: true, name: true, department: true } } },
@@ -180,7 +180,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
           targetValue: kr.targetValue,
           unit: kr.unit,
           objectiveTitle: kr.objective.title,
-          quarter: kr.objective.quarter,
+          year: kr.objective.year,
           responsible,
           departments: kr.departments.map(d => d.department),
         });

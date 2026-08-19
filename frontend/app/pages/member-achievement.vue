@@ -213,28 +213,28 @@
             <!-- Expanded Initiative Card Details -->
             <div
               v-if="expandedUserIds.includes(m.userId)"
-              class="expanded-kpis-list"
+              class="expanded-tasks-list"
             >
-              <h5 class="kpis-list-title">Daftar Card Inisiatif:</h5>
-              <div v-if="m.initiatives?.length === 0" class="no-kpis">
+              <h5 class="tasks-list-title">Daftar Card Inisiatif:</h5>
+              <div v-if="m.initiatives?.length === 0" class="no-tasks">
                 Belum ada card inisiatif yang dimiliki.
               </div>
-              <div v-else class="kpi-items-wrapper">
+              <div v-else class="task-items-wrapper">
                 <div
                   v-for="ini in m.initiatives"
                   :key="ini.id"
-                  class="kpi-detail-item"
+                  class="task-detail-item"
                 >
-                  <div class="kpi-info">
-                    <span class="kpi-title">{{ ini.title }}</span>
-                    <span v-if="ini.sprintMonth" class="kpi-parent"
+                  <div class="task-info">
+                    <span class="task-title">{{ ini.title }}</span>
+                    <span v-if="ini.sprintMonth" class="task-parent"
                       >sprint {{ formatSprintLabel(ini.sprintMonth) }}</span
                     >
                   </div>
-                  <div class="kpi-progress-info">
-                    <span class="kpi-vals">Bobot {{ ini.weight }}%</span>
+                  <div class="task-progress-info">
+                    <span class="task-vals">Bobot {{ ini.weight }}%</span>
                     <span
-                      class="kpi-pct-tag"
+                      class="task-pct-tag"
                       :class="getAchColorClass(ini.progressPct)"
                       >{{ ini.progressPct }}%</span
                     >
@@ -774,7 +774,7 @@ onMounted(async () => {
   background: rgba(14, 151, 214, 0.16);
 }
 
-.expanded-kpis-list {
+.expanded-tasks-list {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -782,26 +782,26 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
-.kpis-list-title {
+.tasks-list-title {
   margin: 0 0 10px 0;
   font-size: 0.8rem;
   font-weight: 700;
   color: #334155;
 }
 
-.no-kpis {
+.no-tasks {
   font-size: 0.78rem;
   color: #94a3b8;
   font-style: italic;
 }
 
-.kpi-items-wrapper {
+.task-items-wrapper {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.kpi-detail-item {
+.task-detail-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -811,36 +811,36 @@ onMounted(async () => {
   border: 1px solid #e2e8f0;
 }
 
-.kpi-info {
+.task-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.kpi-title {
+.task-title {
   font-size: 0.82rem;
   font-weight: 600;
   color: #0f172a;
 }
 
-.kpi-parent {
+.task-parent {
   font-size: 0.7rem;
   color: #64748b;
 }
 
-.kpi-progress-info {
+.task-progress-info {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.kpi-vals {
+.task-vals {
   font-size: 0.78rem;
   font-weight: 600;
   color: #334155;
 }
 
-.kpi-pct-tag {
+.task-pct-tag {
   font-size: 0.72rem;
   font-weight: 700;
   padding: 2px 7px;

@@ -8,21 +8,21 @@ generator client {
 }
 
 model User {
-  id             String          @id @default(uuid())
-  name           String
-  email          String          @unique
-  password       String
-  role           String          @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
-  department     String?
-  position       String?
-  teamId         String?
-  team           Team?           @relation("TeamMembers", fields: [teamId], references: [id])
-  leadingTeams   Team[]          @relation("TeamLeader")
-  assignments    KrAssignment[]
-  kpiAssignments KpiAssignment[]
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  password        String
+  role            String           @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
+  department      String?
+  position        String?
+  teamId          String?
+  team            Team?            @relation("TeamMembers", fields: [teamId], references: [id])
+  leadingTeams    Team[]           @relation("TeamLeader")
+  assignments     KrAssignment[]
+  taskAssignments TaskAssignment[]
   managedDepartments Department[]  @relation("DepartmentManager")
-  ownedInitiatives Initiative[]  @relation("InitiativeOwner")
-  createdAt      DateTime        @default(now())
+  ownedInitiatives Initiative[]    @relation("InitiativeOwner")
+  createdAt       DateTime         @default(now())
 }
 
 model Team {
@@ -37,33 +37,62 @@ model Team {
 }
 
 model Objective {
-  id          String      @id @default(uuid())
-  title       String
-  description String?
-  quarter     String
-  ownerId     String?
-  keyResults  KeyResult[]
-  createdAt   DateTime    @default(now())
+  id                String            @id @default(uuid())
+  title             String
+  description       String?
+  year              String            // Replaced quarter with year
+  ownerId           String?
+  keyResults        KeyResult[]
+  annualKeyResults  AnnualKeyResult[]
+  createdAt         DateTime          @default(now())
+}
+
+model AnnualKeyResult {
+  id             String      @id @default(uuid())
+  objectiveId    String
+  objective      Objective   @relation(fields: [objectiveId], references: [id])
+  title          String
+  description    String?
+  targetValue    Float
+  currentValue   Float       @default(0)
+  unit           String
+  bscPerspective String
+  year           String      // e.g. "2026"
+  status         String      @default("ON_TRACK")
+  keyResults     KeyResult[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([objectiveId])
+  @@index([year])
 }
 
 model KeyResult {
-  id             String         @id @default(uuid())
-  objectiveId    String
-  objective      Objective      @relation(fields: [objectiveId], references: [id])
-  title          String
-  targetValue    Float
-  currentValue   Float          @default(0)
-  unit           String
-  bscPerspective String
-  status         String         @default("ON_TRACK")
-  assignments    KrAssignment[]
-  departments    KrDepartment[]
-  updates        KrUpdate[]
-  initiatives    Initiative[]
-  sourceLinksA   CausalLink[]   @relation("SourceKR")
-  sourceLinksB   CausalLink[]   @relation("TargetKR")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                String           @id @default(uuid())
+  objectiveId       String
+  objective         Objective        @relation(fields: [objectiveId], references: [id])
+  annualKeyResultId String?          // BARU
+  annualKeyResult   AnnualKeyResult? @relation(fields: [annualKeyResultId], references: [id])
+  month             String?          // BARU, contoh "2026-08"
+  monthWeight       Float            @default(1.0)  // BARU
+  title             String
+  targetValue       Float
+  currentValue      Float            @default(0)
+  unit              String
+  bscPerspective    String
+  status            String           @default("ON_TRACK")
+  isManualOverride  Boolean          @default(false)  // BARU
+  assignments       KrAssignment[]
+  departments       KrDepartment[]
+  updates           KrUpdate[]
+  initiatives       Initiative[]
+  sourceLinksA      CausalLink[]     @relation("SourceKR")
+  sourceLinksB      CausalLink[]     @relation("TargetKR")
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([annualKeyResultId])
+  @@index([month])
 }
 
 model KrAssignment {
@@ -137,7 +166,7 @@ model Initiative {
   startDate     DateTime?
   dueDate       DateTime?
   sprintMonth   String?   // e.g., "2026-08"
-  kpis          Kpi[]
+  tasks         Task[]    // kpis Kpi[] -> tasks Task[]
   progressUpdates InitiativeUpdate[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -145,38 +174,39 @@ model Initiative {
   @@index([sprintMonth])
 }
 
-model Kpi {
-  id           String          @id @default(uuid())
+model Task {
+  id           String           @id @default(uuid())
   initiativeId String
-  initiative   Initiative      @relation(fields: [initiativeId], references: [id])
+  initiative   Initiative       @relation(fields: [initiativeId], references: [id])
   title        String
   targetValue  Float
-  currentValue Float           @default(0)
+  currentValue Float            @default(0)
+  weight       Float            @default(1.0) // BARU
   unit         String?
-  status       String          @default("ON_TRACK")
-  assignments  KpiAssignment[]
-  updates      KpiUpdate[]
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  status       String           @default("ON_TRACK")
+  assignments  TaskAssignment[]
+  updates      TaskUpdate[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 
-model KpiAssignment {
+model TaskAssignment {
   id         String   @id @default(uuid())
-  kpiId      String
-  kpi        Kpi      @relation(fields: [kpiId], references: [id])
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id])
   userId     String
   user       User     @relation(fields: [userId], references: [id])
   assignedAt DateTime @default(now())
 
-  @@unique([kpiId, userId])
-  @@index([kpiId])
+  @@unique([taskId, userId])
+  @@index([taskId])
   @@index([userId])
 }
 
-model KpiUpdate {
+model TaskUpdate {
   id          String    @id @default(uuid())
-  kpiId       String
-  kpi         Kpi       @relation(fields: [kpiId], references: [id])
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id])
   oldValue    Float
   newValue    Float
   note        String?
@@ -187,7 +217,7 @@ model KpiUpdate {
   reviewedAt  DateTime?
   createdAt   DateTime  @default(now())
 
-  @@index([kpiId, createdAt])
+  @@index([taskId, createdAt])
 }
 
 model Department {
@@ -212,4 +242,3 @@ model InitiativeUpdate {
 
   @@index([initiativeId, createdAt])
 }
-

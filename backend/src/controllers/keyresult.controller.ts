@@ -60,29 +60,32 @@ export async function deleteKeyResult(req: AuthRequest, res: Response) {
     // Check if KR exists
     const kr = await prisma.keyResult.findUnique({
       where: { id },
-      include: { initiatives: { include: { kpis: true } } },
+      include: { initiatives: { include: { tasks: true } } },
     });
     if (!kr) {
       return res.status(404).json({ message: 'Key Result not found' });
     }
 
     const initiativeIds = kr.initiatives.map((i) => i.id);
-    const kpiIds = kr.initiatives.flatMap((i) => i.kpis.map((k) => k.id));
+    const taskIds = kr.initiatives.flatMap((i) => i.tasks.map((k) => k.id));
 
     // Cascade delete in transaction to prevent Foreign Key Violation (P2003)
     await prisma.$transaction([
-      // 1. Delete KPI updates & KPI assignments
-      prisma.kpiUpdate.deleteMany({
-        where: { kpiId: { in: kpiIds } },
+      // 1. Delete Task updates & Task assignments
+      prisma.taskUpdate.deleteMany({
+        where: { taskId: { in: taskIds } },
       }),
-      prisma.kpiAssignment.deleteMany({
-        where: { kpiId: { in: kpiIds } },
+      prisma.taskAssignment.deleteMany({
+        where: { taskId: { in: taskIds } },
       }),
-      // 2. Delete KPIs
-      prisma.kpi.deleteMany({
-        where: { id: { in: kpiIds } },
+      // 2. Delete Tasks
+      prisma.task.deleteMany({
+        where: { id: { in: taskIds } },
       }),
-      // 3. Delete Initiatives
+      // 3. Delete Initiative Updates & Initiatives
+      prisma.initiativeUpdate.deleteMany({
+        where: { initiativeId: { in: initiativeIds } },
+      }),
       prisma.initiative.deleteMany({
         where: { id: { in: initiativeIds } },
       }),
@@ -137,6 +140,16 @@ export async function updateKeyResultProgress(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: 'Key Result not found' });
     }
 
+    const initiativeCount = await prisma.initiative.count({
+      where: { keyResultId: id },
+    });
+
+    if (initiativeCount > 0) {
+      return res.status(400).json({
+        message: 'KR ini punya Initiative aktif — update progress harus lewat Task/Initiative, bukan manual.',
+      });
+    }
+
     const oldValue = kr.currentValue;
     const progress = valueNum / kr.targetValue;
     let newStatus = 'ON_TRACK';
@@ -152,6 +165,7 @@ export async function updateKeyResultProgress(req: AuthRequest, res: Response) {
         data: {
           currentValue: valueNum,
           status: newStatus,
+          isManualOverride: true,
         },
       }),
       prisma.krUpdate.create({
@@ -164,6 +178,10 @@ export async function updateKeyResultProgress(req: AuthRequest, res: Response) {
         },
       }),
     ]);
+
+    if (result[0].annualKeyResultId) {
+      await cascadeMonthlyKrToAnnual(result[0].annualKeyResultId);
+    }
 
     return res.status(200).json({
       keyResult: result[0],
@@ -413,7 +431,7 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
           include: {
             objective: true,
             initiatives: {
-              include: { team: true, kpis: { include: { assignments: { include: { user: true } } } } }
+              include: { team: true, tasks: { include: { assignments: { include: { user: true } } } } }
             },
             departments: true
           }
@@ -492,7 +510,7 @@ export async function getKrsForInitiativeDropdown(req: AuthRequest, res: Respons
     const keyResults = await prisma.keyResult.findMany({
       where: krWhere,
       include: {
-        objective: { select: { id: true, title: true, quarter: true } }
+        objective: { select: { id: true, title: true, year: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -502,5 +520,27 @@ export async function getKrsForInitiativeDropdown(req: AuthRequest, res: Respons
     console.error('Get KRs for dropdown error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
+}
+
+export async function cascadeMonthlyKrToAnnual(annualKeyResultId: string): Promise<void> {
+  const monthlyKrs = await prisma.keyResult.findMany({ where: { annualKeyResultId } });
+  const annualKr = await prisma.annualKeyResult.findUnique({ where: { id: annualKeyResultId } });
+
+  if (!annualKr || monthlyKrs.length === 0 || annualKr.targetValue <= 0) return;
+
+  const totalWeight = monthlyKrs.reduce((s, kr) => s + (kr.monthWeight || 1), 0);
+  const weightedPercent = monthlyKrs.reduce((sum, kr) => {
+    const pct = kr.targetValue > 0 ? kr.currentValue / kr.targetValue : 0;
+    return sum + pct * (kr.monthWeight || 1);
+  }, 0) / (totalWeight || 1);
+
+  const newAnnualValue = Math.round(weightedPercent * annualKr.targetValue * 100) / 100;
+  const progress = newAnnualValue / annualKr.targetValue;
+  const newStatus = progress < 0.5 ? 'OFF_TRACK' : progress < 0.8 ? 'AT_RISK' : 'ON_TRACK';
+
+  await prisma.annualKeyResult.update({
+    where: { id: annualKeyResultId },
+    data: { currentValue: newAnnualValue, status: newStatus },
+  });
 }
 

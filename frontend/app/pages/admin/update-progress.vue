@@ -18,11 +18,11 @@
               class="search-input"
             />
             <!-- <select
-              v-model="filterQuarter"
+              v-model="filterYear"
               @change="fetchObjectives"
-              class="quarter-select"
+              class="year-select"
             >
-              <option value="">Semua Quarter</option>
+              <option value="">Semua Year</option>
               <option value="Q1-2026">Q1-2026</option>
               <option value="Q2-2026">Q2-2026</option>
               <option value="Q3-2026">Q3-2026</option>
@@ -49,7 +49,7 @@
             <div class="kr-card-main">
               <div class="kr-details">
                 <span class="parent-obj-title"
-                  >{{ kr.objectiveTitle }} ({{ kr.objectiveQuarter }})</span
+                  >{{ kr.objectiveTitle }} ({{ kr.objectiveYear }})</span
                 >
                 <h3>{{ kr.title }}</h3>
                 <div class="kr-meta-row">
@@ -171,7 +171,7 @@ const config = useRuntimeConfig();
 
 const objectives = ref([]);
 const loading = ref(false);
-const filterQuarter = ref("");
+const filterYear = ref("");
 const searchQuery = ref("");
 
 const updatePayloads = ref({});
@@ -190,7 +190,7 @@ const flatKeyResults = computed(() => {
         list.push({
           ...kr,
           objectiveTitle: obj.title,
-          objectiveQuarter: obj.quarter,
+          objectiveYear: obj.year,
         });
       });
     }
@@ -230,8 +230,8 @@ async function fetchObjectives() {
   loading.value = true;
   try {
     let url = `${config.public.apiBase}/objectives`;
-    if (filterQuarter.value) {
-      url += `?quarter=${filterQuarter.value}`;
+    if (filterYear.value) {
+      url += `?year=${filterYear.value}`;
     }
     const response = await $fetch(url, {
       headers: {
@@ -437,7 +437,7 @@ h2 {
 }
 
 .search-input,
-.quarter-select {
+.year-select {
   width: 850px;
   background: var(--input-bg);
   border: 1.5px solid var(--color-gamma-650);
@@ -449,7 +449,7 @@ h2 {
 }
 
 .search-input:focus,
-.quarter-select:focus {
+.year-select:focus {
   border: 1.5px solid var(--color-primary);
 }
 

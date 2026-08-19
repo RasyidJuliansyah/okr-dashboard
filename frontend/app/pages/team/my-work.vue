@@ -5,7 +5,7 @@
         <div class="header-title">
           <h2>Pekerjaan Saya</h2>
           <p class="section-desc">
-            Inisiatif tim dan KPI yang menjadi tanggung jawab Anda hari ini.
+            Inisiatif tim dan Task yang menjadi tanggung jawab Anda hari ini.
           </p>
         </div>
       </div>
@@ -83,21 +83,21 @@
               </div>
             </div>
             
-            <div v-if="ini.kpis?.length > 0" class="ini-kpis">
-              <h5>KPI Terkait:</h5>
-              <div class="kpi-progress-list">
-                <div v-for="kpi in ini.kpis" :key="kpi.id" class="kpi-progress-item">
-                  <div class="kpi-progress-header">
-                    <span class="kpi-title">{{ kpi.title }}</span>
-                    <span class="kpi-numbers">{{ kpi.currentValue }}/{{ kpi.targetValue }} {{ kpi.unit }}</span>
+            <div v-if="ini.tasks?.length > 0" class="ini-tasks">
+              <h5>Task Terkait:</h5>
+              <div class="task-progress-list">
+                <div v-for="task in ini.tasks" :key="task.id" class="task-progress-item">
+                  <div class="task-progress-header">
+                    <span class="task-title">{{ task.title }}</span>
+                    <span class="task-numbers">{{ task.currentValue }}/{{ task.targetValue }} {{ task.unit }}</span>
                   </div>
                   <div class="progress-bar-container small">
-                    <div class="progress-bar" :style="{ width: getProgressPercent(kpi) + '%' }"></div>
+                    <div class="progress-bar" :style="{ width: getProgressPercent(task) + '%' }"></div>
                   </div>
                 </div>
               </div>
             </div>
-            <div v-else class="text-sm text-gray mt-2">Belum ada KPI untuk inisiatif ini.</div>
+            <div v-else class="text-sm text-gray mt-2">Belum ada Task untuk inisiatif ini.</div>
 
             <div class="card-actions" style="margin-top: 16px;">
               <button class="secondary-btn full-width" style="width: 100%; border: 1px dashed #0ea5e9; color: #0ea5e9;" @click="openIniModal(ini)">📝 Laporkan Progress Inisiatif</button>
@@ -106,54 +106,54 @@
         </div>
       </div>
 
-      <h3 class="section-title mt-6">KPI Yang Di-Assign Ke Saya</h3>
-      <div v-if="!loading && kpiAssignments.length === 0" class="empty-state card">
-        Belum ada KPI yang di-assign ke Anda.
+      <h3 class="section-title mt-6">Task Yang Di-Assign Ke Saya</h3>
+      <div v-if="!loading && taskAssignments.length === 0" class="empty-state card">
+        Belum ada Task yang di-assign ke Anda.
       </div>
 
-      <div class="kpi-grid">
-        <div v-for="assign in kpiAssignments" :key="assign.id" class="kpi-card card">
-          <div class="kpi-header">
-            <h3>{{ assign.kpi.title }}</h3>
-            <span class="status-badge" :class="getStatusClass(assign.kpi.status)">{{ assign.kpi.status }}</span>
+      <div class="task-grid">
+        <div v-for="assign in taskAssignments" :key="assign.id" class="task-card card">
+          <div class="task-header">
+            <h3>{{ assign.task.title }}</h3>
+            <span class="status-badge" :class="getStatusClass(assign.task.status)">{{ assign.task.status }}</span>
           </div>
           
-          <div class="kpi-context">
-            <p><strong>KR:</strong> {{ assign.kpi.initiative?.keyResult?.title }}</p>
-            <p><strong>Inisiatif:</strong> {{ assign.kpi.initiative?.title }}</p>
+          <div class="task-context">
+            <p><strong>KR:</strong> {{ assign.task.initiative?.keyResult?.title }}</p>
+            <p><strong>Inisiatif:</strong> {{ assign.task.initiative?.title }}</p>
           </div>
           
-          <div class="kpi-progress-section">
+          <div class="task-progress-section">
             <div class="progress-labels">
-              <span>Target: <strong>{{ assign.kpi.targetValue }} {{ assign.kpi.unit }}</strong></span>
-              <span>Saat ini: <strong>{{ assign.kpi.currentValue }} {{ assign.kpi.unit }}</strong></span>
+              <span>Target: <strong>{{ assign.task.targetValue }} {{ assign.task.unit }}</strong></span>
+              <span>Saat ini: <strong>{{ assign.task.currentValue }} {{ assign.task.unit }}</strong></span>
             </div>
             <div class="progress-bar-container">
-              <div class="progress-bar" :style="{ width: getProgressPercent(assign.kpi) + '%' }"></div>
+              <div class="progress-bar" :style="{ width: getProgressPercent(assign.task) + '%' }"></div>
             </div>
           </div>
           
-          <div class="kpi-updates">
-            <div v-if="assign.kpi.updates?.length > 0">
+          <div class="task-updates">
+            <div v-if="assign.task.updates?.length > 0">
               <!-- Update terbaru selalu tampil -->
               <div class="update-latest">
-                <span class="update-timestamp">{{ formatDateTime(assign.kpi.updates[0].createdAt) }}</span>
-                <span class="update-val">Nilai dilaporkan: {{ assign.kpi.updates[0].newValue }}</span>
-                <span class="update-status" :class="'status-' + assign.kpi.updates[0].status.toLowerCase()">
-                  {{ getUpdateStatusLabel(assign.kpi.updates[0].status) }}
+                <span class="update-timestamp">{{ formatDateTime(assign.task.updates[0].createdAt) }}</span>
+                <span class="update-val">Nilai dilaporkan: {{ assign.task.updates[0].newValue }}</span>
+                <span class="update-status" :class="'status-' + assign.task.updates[0].status.toLowerCase()">
+                  {{ getUpdateStatusLabel(assign.task.updates[0].status) }}
                 </span>
-                <span v-if="assign.kpi.updates[0].note" class="history-note">"{{ assign.kpi.updates[0].note }}"</span>
+                <span v-if="assign.task.updates[0].note" class="history-note">"{{ assign.task.updates[0].note }}"</span>
               </div>
 
               <!-- Toggle history lama -->
-              <div v-if="assign.kpi.updates.length > 1 && ['TEAM', 'LEADER', 'ADMIN'].includes(userRole)">
-                <button class="toggle-history-btn" @click="toggleKpiHistory(assign.kpi.id)">
-                  {{ expandedKpiIds.includes(assign.kpi.id)
+              <div v-if="assign.task.updates.length > 1 && ['TEAM', 'LEADER', 'ADMIN'].includes(userRole)">
+                <button class="toggle-history-btn" @click="toggleTaskHistory(assign.task.id)">
+                  {{ expandedTaskIds.includes(assign.task.id)
                     ? '▲ Sembunyikan riwayat'
-                    : `▼ Lihat ${assign.kpi.updates.length - 1} riwayat sebelumnya` }}
+                    : `▼ Lihat ${assign.task.updates.length - 1} riwayat sebelumnya` }}
                 </button>
-                <div v-if="expandedKpiIds.includes(assign.kpi.id)" class="history-timeline">
-                  <div v-for="upd in assign.kpi.updates.slice(1)" :key="upd.id" class="history-item">
+                <div v-if="expandedTaskIds.includes(assign.task.id)" class="history-timeline">
+                  <div v-for="upd in assign.task.updates.slice(1)" :key="upd.id" class="history-item">
                     <span class="history-timestamp">{{ formatDateTime(upd.createdAt) }}</span>
                     <span class="history-value">Nilai: {{ upd.newValue }}</span>
                     <span class="update-status" :class="'status-' + upd.status.toLowerCase()">
@@ -171,7 +171,7 @@
           </div>
           
           <div class="card-actions">
-            <button class="primary-btn full-width" @click="openUpdateModal(assign.kpi)">Submit Update Progress</button>
+            <button class="primary-btn full-width" @click="openUpdateModal(assign.task)">Submit Update Progress</button>
           </div>
         </div>
       </div>
@@ -180,8 +180,8 @@
       <div v-if="['TEAM', 'LEADER', 'ADMIN'].includes(userRole)" class="team-section mt-8">
         <h3 class="section-title">👥 Pekerjaan Tim Saya</h3>
         
-        <div v-if="(teamMembersWork.kpiAssignments?.length || 0) === 0 && (teamMembersWork.initiatives?.length || 0) === 0" class="empty-state card mt-4">
-          Belum ada inisiatif atau KPI yang dikerjakan oleh anggota tim Anda.
+        <div v-if="(teamMembersWork.taskAssignments?.length || 0) === 0 && (teamMembersWork.initiatives?.length || 0) === 0" class="empty-state card mt-4">
+          Belum ada inisiatif atau Task yang dikerjakan oleh anggota tim Anda.
         </div>
 
         <div v-else>
@@ -241,55 +241,55 @@
             </div>
           </div>
 
-          <!-- Team KPIs -->
-          <div v-if="teamMembersWork.kpiAssignments?.length > 0">
-            <h4 class="text-gray mb-4">KPI Tim</h4>
-            <div class="kpi-grid">
-              <div v-for="assign in teamMembersWork.kpiAssignments" :key="'team_kpi_'+assign.id" class="kpi-card card">
+          <!-- Team Tasks -->
+          <div v-if="teamMembersWork.taskAssignments?.length > 0">
+            <h4 class="text-gray mb-4">Task Tim</h4>
+            <div class="task-grid">
+              <div v-for="assign in teamMembersWork.taskAssignments" :key="'team_task_'+assign.id" class="task-card card">
                 <div class="member-badge">
                   👤 {{ assign.user?.name }}
                 </div>
                 
-                <div class="kpi-header">
-                  <h3>{{ assign.kpi.title }}</h3>
-                  <span class="status-badge" :class="getStatusClass(assign.kpi.status)">{{ assign.kpi.status }}</span>
+                <div class="task-header">
+                  <h3>{{ assign.task.title }}</h3>
+                  <span class="status-badge" :class="getStatusClass(assign.task.status)">{{ assign.task.status }}</span>
                 </div>
 
-                <div class="kpi-context">
-                  <p><strong>KR:</strong> {{ assign.kpi.initiative?.keyResult?.title }}</p>
-                  <p><strong>Inisiatif:</strong> {{ assign.kpi.initiative?.title }}</p>
+                <div class="task-context">
+                  <p><strong>KR:</strong> {{ assign.task.initiative?.keyResult?.title }}</p>
+                  <p><strong>Inisiatif:</strong> {{ assign.task.initiative?.title }}</p>
                 </div>
 
-                <div class="kpi-progress-section">
+                <div class="task-progress-section">
                   <div class="progress-labels">
-                    <span>Target: <strong>{{ assign.kpi.targetValue }} {{ assign.kpi.unit }}</strong></span>
-                    <span>Saat ini: <strong>{{ assign.kpi.currentValue }} {{ assign.kpi.unit }}</strong></span>
+                    <span>Target: <strong>{{ assign.task.targetValue }} {{ assign.task.unit }}</strong></span>
+                    <span>Saat ini: <strong>{{ assign.task.currentValue }} {{ assign.task.unit }}</strong></span>
                   </div>
                   <div class="progress-bar-container">
-                    <div class="progress-bar" :style="{ width: getProgressPercent(assign.kpi) + '%' }"></div>
+                    <div class="progress-bar" :style="{ width: getProgressPercent(assign.task) + '%' }"></div>
                   </div>
                 </div>
 
                 <!-- Full history untuk LEADER melihat anggota tim -->
-                <div class="kpi-updates">
-                  <div v-if="assign.kpi.updates?.length > 0">
+                <div class="task-updates">
+                  <div v-if="assign.task.updates?.length > 0">
                     <div class="update-latest">
-                      <span class="update-timestamp">{{ formatDateTime(assign.kpi.updates[0].createdAt) }}</span>
-                      <span class="update-val">Nilai dilaporkan: {{ assign.kpi.updates[0].newValue }}</span>
-                      <span class="update-status" :class="'status-' + assign.kpi.updates[0].status.toLowerCase()">
-                        {{ getUpdateStatusLabel(assign.kpi.updates[0].status) }}
+                      <span class="update-timestamp">{{ formatDateTime(assign.task.updates[0].createdAt) }}</span>
+                      <span class="update-val">Nilai dilaporkan: {{ assign.task.updates[0].newValue }}</span>
+                      <span class="update-status" :class="'status-' + assign.task.updates[0].status.toLowerCase()">
+                        {{ getUpdateStatusLabel(assign.task.updates[0].status) }}
                       </span>
-                      <span v-if="assign.kpi.updates[0].note" class="history-note">"{{ assign.kpi.updates[0].note }}"</span>
+                      <span v-if="assign.task.updates[0].note" class="history-note">"{{ assign.task.updates[0].note }}"</span>
                     </div>
 
-                    <div v-if="assign.kpi.updates.length > 1">
-                      <button class="toggle-history-btn" @click="toggleKpiHistory('team_' + assign.kpi.id)">
-                        {{ expandedKpiIds.includes('team_' + assign.kpi.id)
+                    <div v-if="assign.task.updates.length > 1">
+                      <button class="toggle-history-btn" @click="toggleTaskHistory('team_' + assign.task.id)">
+                        {{ expandedTaskIds.includes('team_' + assign.task.id)
                           ? '▲ Sembunyikan riwayat'
-                          : `▼ Lihat ${assign.kpi.updates.length - 1} riwayat sebelumnya` }}
+                          : `▼ Lihat ${assign.task.updates.length - 1} riwayat sebelumnya` }}
                       </button>
-                      <div v-if="expandedKpiIds.includes('team_' + assign.kpi.id)" class="history-timeline">
-                        <div v-for="upd in assign.kpi.updates.slice(1)" :key="upd.id" class="history-item">
+                      <div v-if="expandedTaskIds.includes('team_' + assign.task.id)" class="history-timeline">
+                        <div v-for="upd in assign.task.updates.slice(1)" :key="upd.id" class="history-item">
                           <span class="history-timestamp">{{ formatDateTime(upd.createdAt) }}</span>
                           <span class="history-value">Nilai: {{ upd.newValue }}</span>
                           <span class="update-status" :class="'status-' + upd.status.toLowerCase()">
@@ -309,18 +309,18 @@
         </div>
       </div>
       
-      <!-- Modal Submit Update KPI -->
+      <!-- Modal Submit Update Task -->
       <div v-if="showUpdateModal" class="modal-overlay" @click.self="showUpdateModal = false">
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Submit Update Progress KPI</h3>
+            <h3>Submit Update Progress Task</h3>
             <button class="modal-close-btn" @click="showUpdateModal = false">&times;</button>
           </div>
-          <p class="mb-4">KPI: <strong>{{ selectedKpi?.title }}</strong></p>
+          <p class="mb-4">Task: <strong>{{ selectedTask?.title }}</strong></p>
           
           <div class="info-box mb-4">
-            Target: {{ selectedKpi?.targetValue }} {{ selectedKpi?.unit }}<br/>
-            Saat ini: {{ selectedKpi?.currentValue }} {{ selectedKpi?.unit }}
+            Target: {{ selectedTask?.targetValue }} {{ selectedTask?.unit }}<br/>
+            Saat ini: {{ selectedTask?.currentValue }} {{ selectedTask?.unit }}
           </div>
           
           <label>Nilai Baru (Kumulatif) *</label>
@@ -336,11 +336,11 @@
             ⏳ Update akan dikirim ke Leader/Manager untuk disetujui terlebih dahulu.
           </div>
 
-          <!-- Riwayat KPI updates sebelumnya -->
-          <div v-if="selectedKpi?.updates?.length > 0" class="mini-history mb-4" style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+          <!-- Riwayat Task updates sebelumnya -->
+          <div v-if="selectedTask?.updates?.length > 0" class="mini-history mb-4" style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
             <h5 style="margin: 0 0 8px 0; font-size: 13px; color: #475569;">Riwayat Update Sebelumnya:</h5>
             <div style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-              <div v-for="upd in selectedKpi.updates" :key="upd.id" style="font-size: 11px; padding: 6px; border: 1px solid #e2e8f0; border-radius: 6px;">
+              <div v-for="upd in selectedTask.updates" :key="upd.id" style="font-size: 11px; padding: 6px; border: 1px solid #e2e8f0; border-radius: 6px;">
                 <div style="display: flex; justify-content: space-between;">
                   <span style="color: #64748b;">{{ new Date(upd.createdAt).toLocaleDateString('id-ID') }}</span>
                   <span style="font-weight: 500;">Nilai: {{ upd.newValue }}</span>
@@ -417,7 +417,7 @@ import { useRouter } from 'vue-router';
 const authStore = useAuthStore();
 const router = useRouter();
 
-const kpiAssignments = ref([]);
+const taskAssignments = ref([]);
 const teamInitiatives = ref([]);
 const loading = ref(true);
 const errorMsg = ref('');
@@ -427,7 +427,7 @@ const showIniModal = ref(false);
 const saving = ref(false);
 const modalError = ref('');
 const successMsg = ref('');
-const selectedKpi = ref(null);
+const selectedTask = ref(null);
 const selectedIni = ref(null);
 
 const updateForm = ref({
@@ -462,14 +462,14 @@ onMounted(async () => {
   await fetchMyWork();
 });
 
-const teamMembersWork = ref({ kpiAssignments: [], initiatives: [] });
-const expandedKpiIds = ref([]);
+const teamMembersWork = ref({ taskAssignments: [], initiatives: [] });
+const expandedTaskIds = ref([]);
 const expandedIniIds = ref([]);
 
-function toggleKpiHistory(id) {
-  const idx = expandedKpiIds.value.indexOf(id);
-  if (idx === -1) expandedKpiIds.value.push(id);
-  else expandedKpiIds.value.splice(idx, 1);
+function toggleTaskHistory(id) {
+  const idx = expandedTaskIds.value.indexOf(id);
+  if (idx === -1) expandedTaskIds.value.push(id);
+  else expandedTaskIds.value.splice(idx, 1);
 }
 
 function toggleIniHistory(id) {
@@ -495,7 +495,7 @@ async function fetchMyWork() {
     const res = await fetch(`${API}/initiatives/my-work/all`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Gagal memuat pekerjaan');
     const data = await res.json();
-    kpiAssignments.value = data.kpiAssignments || [];
+    taskAssignments.value = data.taskAssignments || [];
     teamInitiatives.value = data.myInitiatives || [];
     if (data.teamMembersWork && Object.keys(data.teamMembersWork).length > 0) {
       teamMembersWork.value = data.teamMembersWork;
@@ -507,9 +507,9 @@ async function fetchMyWork() {
   }
 }
 
-function getProgressPercent(kpi) {
-  if (!kpi || !kpi.targetValue) return 0;
-  return Math.min(100, Math.max(0, (kpi.currentValue / kpi.targetValue) * 100));
+function getProgressPercent(task) {
+  if (!task || !task.targetValue) return 0;
+  return Math.min(100, Math.max(0, (task.currentValue / task.targetValue) * 100));
 }
 
 function getStatusClass(status) {
@@ -519,10 +519,10 @@ function getStatusClass(status) {
   return 'bg-gray';
 }
 
-function openUpdateModal(kpi) {
-  selectedKpi.value = kpi;
+function openUpdateModal(task) {
+  selectedTask.value = task;
   updateForm.value = {
-    newValue: kpi.currentValue,
+    newValue: task.currentValue,
     note: ''
   };
   modalError.value = '';
@@ -549,7 +549,7 @@ async function submitUpdate() {
   saving.value = true;
   modalError.value = '';
   try {
-    const res = await fetch(`${API}/initiatives/kpis/${selectedKpi.value.id}/updates`, {
+    const res = await fetch(`${API}/initiatives/tasks/${selectedTask.value.id}/updates`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(updateForm.value)
@@ -626,22 +626,22 @@ function getUpdateStatusLabel(status) {
 .header-title h2 { font-size: 24px; font-weight: 600; color: #1e293b; margin: 0 0 8px 0; }
 .section-desc { font-size: 14px; color: #64748b; margin: 0; }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.kpi-card { display: flex; flex-direction: column; gap: 16px; }
-.kpi-header { display: flex; justify-content: space-between; align-items: flex-start; }
-.kpi-header h3 { font-size: 16px; margin: 0; color: #0f172a; flex: 1; }
+.task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.task-card { display: flex; flex-direction: column; gap: 16px; }
+.task-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.task-header h3 { font-size: 16px; margin: 0; color: #0f172a; flex: 1; }
 .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
 
-.kpi-context { background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; color: #475569; }
-.kpi-context p { margin: 0 0 4px 0; }
-.kpi-context p:last-child { margin: 0; }
+.task-context { background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; color: #475569; }
+.task-context p { margin: 0 0 4px 0; }
+.task-context p:last-child { margin: 0; }
 
-.kpi-progress-section { display: flex; flex-direction: column; gap: 8px; }
+.task-progress-section { display: flex; flex-direction: column; gap: 8px; }
 .progress-labels { display: flex; justify-content: space-between; font-size: 13px; color: #475569; }
 .progress-bar-container { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
 .progress-bar { height: 100%; background: #0ea5e9; transition: width 0.3s; }
 
-.kpi-updates h4 { margin: 0 0 8px 0; font-size: 13px; color: #64748b; }
+.task-updates h4 { margin: 0 0 8px 0; font-size: 13px; color: #64748b; }
 .recent-update { display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; }
 .update-date { color: #94a3b8; }
 .update-val { font-weight: 500; color: #1e293b; }
@@ -755,13 +755,13 @@ function getUpdateStatusLabel(status) {
 .ini-context { background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; color: #475569; }
 .ini-context p { margin: 0 0 4px 0; }
 .ini-context p:last-child { margin: 0; }
-.ini-kpis { padding-top: 12px; border-top: 1px solid #f1f5f9; }
-.ini-kpis h5 { font-size: 13px; margin: 0 0 12px 0; color: #64748b; }
-.kpi-progress-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.kpi-progress-item { display: flex; flex-direction: column; gap: 6px; }
-.kpi-progress-header { display: flex; justify-content: space-between; font-size: 12px; }
-.kpi-title { font-weight: 500; color: #334155; }
-.kpi-numbers { color: #64748b; }
+.ini-tasks { padding-top: 12px; border-top: 1px solid #f1f5f9; }
+.ini-tasks h5 { font-size: 13px; margin: 0 0 12px 0; color: #64748b; }
+.task-progress-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.task-progress-item { display: flex; flex-direction: column; gap: 6px; }
+.task-progress-header { display: flex; justify-content: space-between; font-size: 12px; }
+.task-title { font-weight: 500; color: #334155; }
+.task-numbers { color: #64748b; }
 .progress-bar-container.small { height: 6px; }
 
 /* Modal Header styling */

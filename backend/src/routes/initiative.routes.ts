@@ -7,18 +7,18 @@ import {
   updateInitiative,
   deleteInitiative,
   updateInitiativeKanbanStatus,
-  getKpisForInitiative,
-  createKpi,
-  updateKpi,
-  deleteKpi,
-  assignUsersToKpi,
-  submitKpiUpdate,
-  getKpiUpdates,
-  approveKpiUpdate,
-  rejectKpiUpdate,
+  getTasksForInitiative,
+  createTask,
+  updateTask,
+  deleteTask,
+  assignUsersToTask,
+  submitTaskUpdate,
+  getTaskUpdates,
+  approveTaskUpdate,
+  rejectTaskUpdate,
   getMyWork,
   getMyTeamInitiatives,
-  getPendingKpiUpdates,
+  getPendingTaskUpdates,
   getInitiativeWeightBudget,
   submitInitiativeUpdate,
   getInitiativeProgressUpdates,
@@ -42,22 +42,22 @@ router.post('/:id/progress-updates', authMiddleware, roleGuard(['TEAM', 'LEADER'
 router.get('/:id/progress-updates', authMiddleware, getInitiativeProgressUpdates);
 
 
-// KPI di bawah Initiative
-router.get('/:initiativeId/kpis', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getKpisForInitiative);
-router.post('/:initiativeId/kpis', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), createKpi);
+// Task di bawah Initiative
+router.get('/:initiativeId/tasks', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getTasksForInitiative);
+router.post('/:initiativeId/tasks', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), createTask);
 
-// KPI standalone endpoints
-router.put('/kpis/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), updateKpi);
-router.delete('/kpis/:id', authMiddleware, roleGuard(['ADMIN']), deleteKpi);
-router.post('/kpis/:id/assign', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), assignUsersToKpi);
-router.post('/kpis/:id/updates', authMiddleware, roleGuard(['TEAM', 'LEADER', 'MANAGER', 'ADMIN']), submitKpiUpdate);
-router.get('/kpis/:id/updates', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getKpiUpdates);
+// Task standalone endpoints
+router.put('/tasks/:id', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), updateTask);
+router.delete('/tasks/:id', authMiddleware, roleGuard(['ADMIN']), deleteTask);
+router.post('/tasks/:id/assign', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'LEADER']), assignUsersToTask);
+router.post('/tasks/:id/updates', authMiddleware, roleGuard(['TEAM', 'LEADER', 'MANAGER', 'ADMIN']), submitTaskUpdate);
+router.get('/tasks/:id/updates', authMiddleware, roleGuard(['ADMIN', 'MANAGER', 'C_LEVEL', 'LEADER', 'TEAM']), getTaskUpdates);
 
-// Pending KPI Updates
-router.get('/kpi-updates/pending', authMiddleware, roleGuard(['MANAGER', 'ADMIN', 'C_LEVEL']), getPendingKpiUpdates);
+// Pending Task Updates
+router.get('/task-updates/pending', authMiddleware, roleGuard(['MANAGER', 'ADMIN', 'C_LEVEL']), getPendingTaskUpdates);
 
-// KPI Update approval
-router.patch('/kpi-updates/:updateId/approve', authMiddleware, roleGuard(['MANAGER', 'LEADER', 'ADMIN']), approveKpiUpdate);
-router.patch('/kpi-updates/:updateId/reject', authMiddleware, roleGuard(['MANAGER', 'LEADER', 'ADMIN']), rejectKpiUpdate);
+// Task Update approval
+router.patch('/task-updates/:updateId/approve', authMiddleware, roleGuard(['MANAGER', 'LEADER', 'ADMIN']), approveTaskUpdate);
+router.patch('/task-updates/:updateId/reject', authMiddleware, roleGuard(['MANAGER', 'LEADER', 'ADMIN']), rejectTaskUpdate);
 
 export default router;

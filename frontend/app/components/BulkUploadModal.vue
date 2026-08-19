@@ -67,10 +67,10 @@
           <div class="info-text">
             <template v-if="isObjective">
               <p><strong>Format Kolom CSV untuk Objective:</strong></p>
-              <code>title, description, quarter, ownerName</code>
+              <code>title, description, year, ownerName</code>
               <p class="text-sub">
                 * Kolom <strong>title</strong> dan
-                <strong>quarter</strong> (contoh: Q3-2026) wajib diisi. * Kolom
+                <strong>year</strong> (contoh: Q3-2026) wajib diisi. * Kolom
                 <strong>ownerName</strong> diisi nama atau email owner/PIC
                 terdaftar (opsional).
               </p>
@@ -237,7 +237,7 @@
                 <th>Status</th>
                 <th>Judul Objective</th>
                 <th>Deskripsi</th>
-                <th>Quarter</th>
+                <th>Year</th>
                 <th>Owner PIC</th>
                 <th>Catatan / Masalah</th>
               </tr>
@@ -294,7 +294,7 @@
                   </td>
                   <td>{{ row.description || "-" }}</td>
                   <td>
-                    <span class="quarter-chip">{{ row.quarter || "-" }}</span>
+                    <span class="year-chip">{{ row.year || "-" }}</span>
                   </td>
                   <td>{{ row.ownerName || "-" }}</td>
                 </template>
@@ -510,7 +510,7 @@ function downloadTemplate() {
 
   if (isObjective.value) {
     fileName = "template_bulk_objective.csv";
-    headers = "title,description,quarter,ownerName";
+    headers = "title,description,year,ownerName";
     sampleContent = [
       headers,
       `"Meningkatkan Penjualan B2B","Fokus pada segmen korporasi baru","Q3-2026","Budi Santoso"`,
@@ -676,8 +676,8 @@ function parseCSVText(rawText: string) {
         row._issues.push("Judul objective kosong");
         hasError = true;
       }
-      if (!row.quarter) {
-        row._issues.push("Quarter kosong");
+      if (!row.year) {
+        row._issues.push("Year kosong");
         hasError = true;
       }
     } else if (isKr.value) {

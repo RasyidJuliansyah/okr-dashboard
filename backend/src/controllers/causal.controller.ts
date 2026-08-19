@@ -54,7 +54,7 @@ export async function getStrategyMap(req: AuthRequest, res: Response) {
         objective: {
           select: {
             title: true,
-            quarter: true,
+            year: true,
           },
         },
       },
@@ -109,7 +109,7 @@ export async function getStrategyMap(req: AuthRequest, res: Response) {
             progress: Math.round(progress),
             perspective: kr.bscPerspective,
             objectiveTitle: kr.objective?.title,
-            objectiveQuarter: kr.objective?.quarter,
+            objectiveYear: kr.objective?.year,
           },
         });
       });

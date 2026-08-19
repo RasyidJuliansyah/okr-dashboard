@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { cascadeMonthlyKrToAnnual } from './keyresult.controller';
 
 const prisma = new PrismaClient();
 
@@ -110,7 +111,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
     }
 
     // 2. Ambil Initiative (card) yang dimiliki (ownerId) oleh user-user yang diizinkan.
-    // Capaian member sekarang dihitung dari bobot (%) tiap card, bukan rata-rata KPI polos,
+    // Capaian member sekarang dihitung dari bobot (%) tiap card, bukan rata-rata Task polos,
     // agar konsisten dengan aturan "total bobot card per pegawai per sprint = 100%".
     const usersWithInitiatives = await prisma.user.findMany({
       where: { id: { in: visibleUserIds } },
@@ -131,7 +132,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             targetValue: true,
             currentValue: true,
             sprintMonth: true,
-            kpis: { select: { targetValue: true, currentValue: true } },
+            tasks: { select: { targetValue: true, currentValue: true } },
           },
         },
       },
@@ -150,13 +151,13 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           let progressPct: number;
           if (init.kanbanStatus === 'DONE') {
             progressPct = 100;
-          } else if (init.kpis.length > 0) {
-            progressPct = init.kpis.reduce((sum, k) => {
+          } else if (init.tasks.length > 0) {
+            progressPct = init.tasks.reduce((sum, k) => {
               const pct = k.targetValue > 0
                 ? Math.min(100, Math.max(0, (k.currentValue / k.targetValue) * 100))
                 : 0;
               return sum + pct;
-            }, 0) / init.kpis.length;
+            }, 0) / init.tasks.length;
           } else if (init.targetValue > 0) {
             progressPct = Math.min(100, Math.max(0, (init.currentValue / init.targetValue) * 100));
           } else {
@@ -240,12 +241,12 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
           select: {
             id: true, title: true, bscPerspective: true,
             targetValue: true, currentValue: true, status: true,
-            objective: { select: { id: true, title: true, quarter: true } }
+            objective: { select: { id: true, title: true, year: true } }
           }
         },
         team: { select: { id: true, name: true, department: true } },
         owner: { select: { id: true, name: true, position: true } },
-        kpis: {
+        tasks: {
           include: {
             assignments: {
               include: { user: { select: { id: true, name: true } } }
@@ -256,29 +257,29 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Kalkulasi progress per Initiative dari KPI
+    // Kalkulasi progress per Initiative dari Task
     const enriched = initiatives.map(init => {
-      const kpiProgress = init.kpis.map(kpi => {
-        const pct = kpi.targetValue > 0
-          ? Math.min(100, Math.max(0, (kpi.currentValue / kpi.targetValue) * 100))
+      const taskProgress = init.tasks.map(task => {
+        const pct = task.targetValue > 0
+          ? Math.min(100, Math.max(0, (task.currentValue / task.targetValue) * 100))
           : 0;
-        return { ...kpi, progressPercent: Math.round(pct * 10) / 10 };
+        return { ...task, progressPercent: Math.round(pct * 10) / 10 };
       });
 
-      const avgProgress = kpiProgress.length > 0
-        ? kpiProgress.reduce((sum, k) => sum + k.progressPercent, 0) / kpiProgress.length
+      const avgProgress = taskProgress.length > 0
+        ? taskProgress.reduce((sum, k) => sum + k.progressPercent, 0) / taskProgress.length
         : (init.targetValue > 0
             ? Math.min(100, (init.currentValue / init.targetValue) * 100)
             : 0);
 
-      const completedKpis = kpiProgress.filter(k => k.progressPercent >= 100).length;
+      const completedTasks = taskProgress.filter(k => k.progressPercent >= 100).length;
 
       return {
         ...init,
-        kpis: kpiProgress,
+        tasks: taskProgress,
         calculatedProgress: Math.round(avgProgress * 10) / 10,
-        completedKpis,
-        totalKpis: kpiProgress.length,
+        completedTasks,
+        totalTasks: taskProgress.length,
       };
     });
 
@@ -314,8 +315,8 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
       byKeyResult: Object.values(byKeyResult),
       summary: {
         totalInitiatives: enriched.length,
-        totalKpis: enriched.reduce((s, i) => s + i.totalKpis, 0),
-        completedKpis: enriched.reduce((s, i) => s + i.completedKpis, 0),
+        totalTasks: enriched.reduce((s, i) => s + i.totalTasks, 0),
+        completedTasks: enriched.reduce((s, i) => s + i.completedTasks, 0),
         avgProgress: enriched.length > 0
           ? Math.round(enriched.reduce((s, i) => s + i.calculatedProgress, 0) / enriched.length * 10) / 10
           : 0,
@@ -446,7 +447,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         keyResult: { select: { id: true, title: true, bscPerspective: true } },
         team: { select: { id: true, name: true, department: true } },
         owner: { select: { id: true, name: true, email: true, position: true } },
-        kpis: {
+        tasks: {
           include: {
             assignments: { include: { user: { select: { id: true, name: true } } } },
           },
@@ -506,6 +507,9 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 
     const kr = await prisma.keyResult.findUnique({ where: { id: keyResultId } });
     if (!kr) return res.status(404).json({ message: 'KeyResult tidak ditemukan' });
+    if (!kr.month) {
+      return res.status(400).json({ message: 'Target KeyResult harus merupakan KR Bulanan (sprint-level)' });
+    }
 
     const finalOwnerId = ownerId || (role === 'TEAM' ? userId : null);
     const parsedWeight = weight !== undefined && weight !== null && weight !== '' ? parseFloat(weight) : 1.0;
@@ -657,7 +661,7 @@ export async function updateInitiativeKanbanStatus(req: AuthRequest, res: Respon
   }
 }
 
-// DELETE /api/initiatives/:id — Admin delete initiative (cascade hapus KPI)
+// DELETE /api/initiatives/:id — Admin delete initiative (cascade hapus Task & InitiativeUpdate)
 export async function deleteInitiative(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
@@ -670,13 +674,44 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
     const existing = await prisma.initiative.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
 
-    // Hapus KpiUpdate & KpiAssignment dari semua KPI child
-    const kpis = await prisma.kpi.findMany({ where: { initiativeId: id }, select: { id: true } });
-    const kpiIds = kpis.map(k => k.id);
-    await prisma.kpiUpdate.deleteMany({ where: { kpiId: { in: kpiIds } } });
-    await prisma.kpiAssignment.deleteMany({ where: { kpiId: { in: kpiIds } } });
-    await prisma.kpi.deleteMany({ where: { initiativeId: id } });
+    // Hapus InitiativeUpdate (riwayat progress inisiatif)
+    await prisma.initiativeUpdate.deleteMany({ where: { initiativeId: id } });
+
+    // Hapus TaskUpdate & TaskAssignment dari semua Task child
+    const tasks = await prisma.task.findMany({ where: { initiativeId: id }, select: { id: true } });
+    const taskIds = tasks.map(k => k.id);
+    await prisma.taskUpdate.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.taskAssignment.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.task.deleteMany({ where: { initiativeId: id } });
     await prisma.initiative.delete({ where: { id } });
+
+    // Recalculate parent KeyResult progress jika ada
+    if (existing.keyResultId) {
+      const remainingInitiatives = await prisma.initiative.findMany({
+        where: { keyResultId: existing.keyResultId }
+      });
+      let avgProgress = 0;
+      if (remainingInitiatives.length > 0) {
+        const totalProgress = remainingInitiatives.reduce((acc, ini) => {
+          const p = ini.targetValue > 0 ? Math.min(100, (ini.currentValue / ini.targetValue) * 100) : 0;
+          return acc + (p * (ini.weight || 1.0));
+        }, 0);
+        const totalWeight = remainingInitiatives.reduce((acc, ini) => acc + (ini.weight || 1.0), 0);
+        avgProgress = totalWeight > 0 ? totalProgress / totalWeight : 0;
+      }
+      const kr = await prisma.keyResult.findUnique({ where: { id: existing.keyResultId } });
+      if (kr) {
+        const newKrValue = (avgProgress / 100) * kr.targetValue;
+        let krStatus = 'ON_TRACK';
+        if (avgProgress < 50) krStatus = 'OFF_TRACK';
+        else if (avgProgress < 75) krStatus = 'AT_RISK';
+        
+        await prisma.keyResult.update({
+          where: { id: existing.keyResultId },
+          data: { currentValue: newKrValue, status: krStatus }
+        });
+      }
+    }
 
     return res.status(200).json({ message: 'Initiative berhasil dihapus' });
   } catch (error) {
@@ -685,7 +720,7 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
   }
 }
 
-// GET /api/initiatives/my-work — Semua KPI yang di-assign ke user
+// GET /api/initiatives/my-work — Semua Task yang di-assign ke user
 export async function getMyWork(req: AuthRequest, res: Response) {
   try {
     const { id: userId, role } = req.user!;
@@ -693,10 +728,10 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     // TEAM & LEADER lihat full history; MANAGER & C_LEVEL hanya 1 terakhir
     const historyLimit = ['MANAGER', 'C_LEVEL'].includes(role) ? 1 : undefined;
 
-    const kpiAssignments = await prisma.kpiAssignment.findMany({
+    const taskAssignments = await prisma.taskAssignment.findMany({
       where: { userId },
       include: {
-        kpi: {
+        task: {
           include: {
             initiative: {
               include: {
@@ -726,7 +761,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           keyResult: { include: { objective: true } },
           team: true,
           owner: { select: { id: true, name: true } },
-          kpis: true,
+          tasks: true,
           progressUpdates: {
             orderBy: { createdAt: 'desc' },
             ...(historyLimit !== undefined ? { take: historyLimit } : {})
@@ -736,7 +771,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     }
 
     // Ambil data update/tugas dari anggota tim lainnya (selain dirinya)
-    let teamMembersWork: any = { kpiAssignments: [], initiatives: [] };
+    let teamMembersWork: any = { taskAssignments: [], initiatives: [] };
     let teamIds: string[] = [];
     if (dbUser?.teamId) {
       teamIds.push(dbUser.teamId);
@@ -751,10 +786,10 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const uniqueTeamIds = Array.from(new Set(teamIds));
 
     if (uniqueTeamIds.length > 0) {
-      // KPI yang diassign ke anggota tim lain
-      const memberKpiAssignments = await prisma.kpiAssignment.findMany({
+      // Task yang diassign ke anggota tim lain
+      const memberTaskAssignments = await prisma.taskAssignment.findMany({
         where: {
-          kpi: {
+          task: {
             initiative: {
               teamId: { in: uniqueTeamIds }
             }
@@ -763,7 +798,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         },
         include: {
           user: { select: { id: true, name: true } },
-          kpi: {
+          task: {
             include: {
               initiative: {
                 include: {
@@ -790,15 +825,15 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           keyResult: { include: { objective: true } },
           team: true,
           owner: { select: { id: true, name: true } },
-          kpis: true,
+          tasks: true,
           progressUpdates: { orderBy: { createdAt: 'desc' } }
         }
       });
 
-      teamMembersWork = { kpiAssignments: memberKpiAssignments, initiatives: memberInitiatives };
+      teamMembersWork = { taskAssignments: memberTaskAssignments, initiatives: memberInitiatives };
     }
 
-    return res.status(200).json({ kpiAssignments, myInitiatives, teamMembersWork });
+    return res.status(200).json({ taskAssignments, myInitiatives, teamMembersWork });
   } catch (error) {
     console.error('Get my work error:', error);
     return res.status(500).json({ message: 'Internal server error' });
@@ -852,7 +887,7 @@ export async function getMyTeamInitiatives(req: AuthRequest, res: Response) {
         keyResult: { include: { objective: true } },
         team: true,
         owner: { select: { id: true, name: true, email: true, position: true } },
-        kpis: {
+        tasks: {
           include: {
             assignments: { include: { user: { select: { id: true, name: true } } } },
             updates: { orderBy: { createdAt: 'desc' }, take: 1 }
@@ -869,10 +904,10 @@ export async function getMyTeamInitiatives(req: AuthRequest, res: Response) {
   }
 }
 
-// ─── KPI ───────────────────────────────────────────────────────────────────
+// ─── Task ───────────────────────────────────────────────────────────────────
 
-// GET /api/initiatives/:initiativeId/kpis
-export async function getKpisForInitiative(req: AuthRequest, res: Response) {
+// GET /api/initiatives/:initiativeId/tasks
+export async function getTasksForInitiative(req: AuthRequest, res: Response) {
   try {
     const { initiativeId } = req.params;
     const { role, id: userId } = req.user!;
@@ -886,7 +921,7 @@ export async function getKpisForInitiative(req: AuthRequest, res: Response) {
       }
     }
 
-    const kpis = await prisma.kpi.findMany({
+    const tasks = await prisma.task.findMany({
       where: { initiativeId },
       include: {
         assignments: { include: { user: { select: { id: true, name: true, email: true } } } },
@@ -894,15 +929,15 @@ export async function getKpisForInitiative(req: AuthRequest, res: Response) {
       },
     });
 
-    return res.status(200).json(kpis);
+    return res.status(200).json(tasks);
   } catch (error) {
-    console.error('Get KPIs error:', error);
+    console.error('Get Tasks error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// POST /api/initiatives/:initiativeId/kpis — Admin create KPI
-export async function createKpi(req: AuthRequest, res: Response) {
+// POST /api/initiatives/:initiativeId/tasks — Admin create Task
+export async function createTask(req: AuthRequest, res: Response) {
   try {
     const { initiativeId } = req.params;
     const { title, targetValue, unit } = req.body;
@@ -914,7 +949,7 @@ export async function createKpi(req: AuthRequest, res: Response) {
     const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
     if (!initiative) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
 
-    const kpi = await prisma.kpi.create({
+    const task = await prisma.task.create({
       data: {
         initiativeId,
         title,
@@ -924,23 +959,23 @@ export async function createKpi(req: AuthRequest, res: Response) {
       },
     });
 
-    return res.status(201).json(kpi);
+    return res.status(201).json(task);
   } catch (error) {
-    console.error('Create KPI error:', error);
+    console.error('Create Task error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// PUT /api/kpis/:id — Admin update KPI
-export async function updateKpi(req: AuthRequest, res: Response) {
+// PUT /api/tasks/:id — Admin update Task
+export async function updateTask(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { title, targetValue, unit, status } = req.body;
 
-    const existing = await prisma.kpi.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ message: 'KPI tidak ditemukan' });
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ message: 'Task tidak ditemukan' });
 
-    const updated = await prisma.kpi.update({
+    const updated = await prisma.task.update({
       where: { id },
       data: {
         ...(title !== undefined && { title }),
@@ -952,32 +987,32 @@ export async function updateKpi(req: AuthRequest, res: Response) {
 
     return res.status(200).json(updated);
   } catch (error) {
-    console.error('Update KPI error:', error);
+    console.error('Update Task error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// DELETE /api/kpis/:id — Admin delete KPI
-export async function deleteKpi(req: AuthRequest, res: Response) {
+// DELETE /api/tasks/:id — Admin delete Task
+export async function deleteTask(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
 
-    const existing = await prisma.kpi.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ message: 'KPI tidak ditemukan' });
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ message: 'Task tidak ditemukan' });
 
-    await prisma.kpiUpdate.deleteMany({ where: { kpiId: id } });
-    await prisma.kpiAssignment.deleteMany({ where: { kpiId: id } });
-    await prisma.kpi.delete({ where: { id } });
+    await prisma.taskUpdate.deleteMany({ where: { taskId: id } });
+    await prisma.taskAssignment.deleteMany({ where: { taskId: id } });
+    await prisma.task.delete({ where: { id } });
 
-    return res.status(200).json({ message: 'KPI berhasil dihapus' });
+    return res.status(200).json({ message: 'Task berhasil dihapus' });
   } catch (error) {
-    console.error('Delete KPI error:', error);
+    console.error('Delete Task error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// POST /api/kpis/:id/assign — Admin / Leader assign user(s) ke KPI
-export async function assignUsersToKpi(req: AuthRequest, res: Response) {
+// POST /api/tasks/:id/assign — Admin / Leader assign user(s) ke Task
+export async function assignUsersToTask(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { userIds } = req.body; // array of userId strings
@@ -987,13 +1022,13 @@ export async function assignUsersToKpi(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: 'userIds harus berupa array dan tidak boleh kosong' });
     }
 
-    const kpi = await prisma.kpi.findUnique({ where: { id } });
-    if (!kpi) return res.status(404).json({ message: 'KPI tidak ditemukan' });
+    const task = await prisma.task.findUnique({ where: { id } });
+    if (!task) return res.status(404).json({ message: 'Task tidak ditemukan' });
 
-    // LEADER: validasi KPI milik tim yang dipimpin & userIds adalah anggota tim
+    // LEADER: validasi Task milik tim yang dipimpin & userIds adalah anggota tim
     if (role === 'LEADER') {
       const initiative = await prisma.initiative.findUnique({
-        where: { id: kpi.initiativeId }
+        where: { id: task.initiativeId }
       });
       if (!initiative) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
 
@@ -1001,7 +1036,7 @@ export async function assignUsersToKpi(req: AuthRequest, res: Response) {
 
       if (!leaderTeamIds.includes(initiative.teamId)) {
         return res.status(403).json({
-          message: 'Anda hanya bisa assign member untuk KPI di tim yang Anda pimpin'
+          message: 'Anda hanya bisa assign member untuk Task di tim yang Anda pimpin'
         });
       }
 
@@ -1023,12 +1058,12 @@ export async function assignUsersToKpi(req: AuthRequest, res: Response) {
     // Upsert assignments
     const results = [];
     for (const uId of userIds) {
-      const existing = await prisma.kpiAssignment.findUnique({
-        where: { kpiId_userId: { kpiId: id, userId: uId } },
+      const existing = await prisma.taskAssignment.findUnique({
+        where: { taskId_userId: { taskId: id, userId: uId } },
       });
       if (!existing) {
-        const assignment = await prisma.kpiAssignment.create({
-          data: { kpiId: id, userId: uId },
+        const assignment = await prisma.taskAssignment.create({
+          data: { taskId: id, userId: uId },
         });
         results.push(assignment);
       }
@@ -1036,23 +1071,25 @@ export async function assignUsersToKpi(req: AuthRequest, res: Response) {
 
     return res.status(200).json({ assigned: results.length, message: 'Assignment berhasil' });
   } catch (error) {
-    console.error('Assign users to KPI error:', error);
+    console.error('Assign users to Task error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 
-// ─── HELPER: Cascade KPI value update ke Initiative → KR ──────────────────
-async function cascadeKpiValueUpdate(kpiId: string, initiativeId: string): Promise<void> {
-  // 1. Recalculate Initiative.currentValue dari rata-rata KPI progress
-  const allKpis = await prisma.kpi.findMany({ where: { initiativeId } });
+// ─── HELPER: Cascade Task value update ke Initiative → KR ──────────────────
+export async function cascadeTaskValueUpdate(taskId: string, initiativeId: string): Promise<void> {
+  // 1. Recalculate Initiative.currentValue dari weighted average Task progress
+  const allTasks = await prisma.task.findMany({ where: { initiativeId } });
   const initiative = await prisma.initiative.findUnique({ where: { id: initiativeId } });
 
-  if (initiative && allKpis.length > 0 && initiative.targetValue > 0) {
-    const avgKpiPercent = allKpis.reduce((sum, k) => {
-      return sum + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0);
-    }, 0) / allKpis.length;
-    const newInitiativeValue = Math.round(avgKpiPercent * initiative.targetValue * 100) / 100;
+  if (initiative && allTasks.length > 0 && initiative.targetValue > 0) {
+    const totalTaskWeight = allTasks.reduce((s, t) => s + (t.weight || 1), 0);
+    const weightedTaskPercent = allTasks.reduce((sum, t) => {
+      const pct = t.targetValue > 0 ? t.currentValue / t.targetValue : 0;
+      return sum + pct * (t.weight || 1);
+    }, 0) / (totalTaskWeight || 1);
+    const newInitiativeValue = Math.round(weightedTaskPercent * initiative.targetValue * 100) / 100;
 
     await prisma.initiative.update({
       where: { id: initiative.id },
@@ -1062,7 +1099,7 @@ async function cascadeKpiValueUpdate(kpiId: string, initiativeId: string): Promi
     // 2. Recalculate KR.currentValue dari weighted average Initiative progress
     const allInitiatives = await prisma.initiative.findMany({
       where: { keyResultId: initiative.keyResultId },
-      include: { kpis: true },
+      include: { tasks: true },
     });
     const kr = await prisma.keyResult.findUnique({ where: { id: initiative.keyResultId } });
 
@@ -1070,10 +1107,11 @@ async function cascadeKpiValueUpdate(kpiId: string, initiativeId: string): Promi
       const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
       const weightedAvgPercent = allInitiatives.reduce((sum, init) => {
         let initProgress = 0;
-        if (init.kpis.length > 0) {
-          initProgress = init.kpis.reduce((s, k) => {
-            return s + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0);
-          }, 0) / init.kpis.length;
+        if (init.tasks.length > 0) {
+          const initTasksWeight = init.tasks.reduce((s, t) => s + (t.weight || 1), 0);
+          initProgress = init.tasks.reduce((s, k) => {
+            return s + (k.targetValue > 0 ? k.currentValue / k.targetValue : 0) * (k.weight || 1);
+          }, 0) / (initTasksWeight || 1);
         } else if (init.targetValue > 0) {
           initProgress = init.currentValue / init.targetValue;
         }
@@ -1087,20 +1125,25 @@ async function cascadeKpiValueUpdate(kpiId: string, initiativeId: string): Promi
       if (krProgress < 0.5) newStatus = 'OFF_TRACK';
       else if (krProgress < 0.8) newStatus = 'AT_RISK';
 
-      await prisma.keyResult.update({
+      const updatedKr = await prisma.keyResult.update({
         where: { id: kr.id },
         data: { currentValue: newKrValue, status: newStatus },
       });
+
+      // 3. Cascade to AnnualKeyResult
+      if (updatedKr.annualKeyResultId) {
+        await cascadeMonthlyKrToAnnual(updatedKr.annualKeyResultId);
+      }
     }
   }
 }
 
-// POST /api/kpis/:id/updates — Submit progress update (semua role yang di-assign ke KPI)
+// POST /api/tasks/:id/updates — Submit progress update (semua role yang di-assign ke Task)
 // LEADER / MANAGER / ADMIN → auto-approve & langsung cascade
 // TEAM → PENDING_APPROVAL, menunggu persetujuan
-export async function submitKpiUpdate(req: AuthRequest, res: Response) {
+export async function submitTaskUpdate(req: AuthRequest, res: Response) {
   try {
-    const { id: kpiId } = req.params;
+    const { id: taskId } = req.params;
     const { newValue, note } = req.body;
     const { id: userId, role } = req.user!;
 
@@ -1108,28 +1151,28 @@ export async function submitKpiUpdate(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: 'newValue wajib diisi' });
     }
 
-    // Pastikan user ini memang di-assign ke KPI ini
-    const assignment = await prisma.kpiAssignment.findUnique({
-      where: { kpiId_userId: { kpiId, userId } },
+    // Pastikan user ini memang di-assign ke Task ini
+    const assignment = await prisma.taskAssignment.findUnique({
+      where: { taskId_userId: { taskId, userId } },
     });
     if (!assignment) {
-      return res.status(403).json({ message: 'Kamu tidak di-assign ke KPI ini' });
+      return res.status(403).json({ message: 'Kamu tidak di-assign ke Task ini' });
     }
 
-    const kpi = await prisma.kpi.findUnique({
-      where: { id: kpiId },
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
       include: { initiative: true },
     });
-    if (!kpi) return res.status(404).json({ message: 'KPI tidak ditemukan' });
+    if (!task) return res.status(404).json({ message: 'Task tidak ditemukan' });
 
     // LEADER, MANAGER, ADMIN → auto-approve (tidak perlu menunggu persetujuan)
     const isAutoApprove = ['LEADER', 'MANAGER', 'ADMIN'].includes(role);
     const updateStatus = isAutoApprove ? 'APPROVED' : 'PENDING_APPROVAL';
 
-    const update = await prisma.kpiUpdate.create({
+    const update = await prisma.taskUpdate.create({
       data: {
-        kpiId,
-        oldValue: kpi.currentValue,
+        taskId,
+        oldValue: task.currentValue,
         newValue: parseFloat(newValue),
         note: note || null,
         submittedBy: userId,
@@ -1139,12 +1182,12 @@ export async function submitKpiUpdate(req: AuthRequest, res: Response) {
     });
 
     if (isAutoApprove) {
-      // Langsung update currentValue KPI dan cascade ke Initiative & KR
-      await prisma.kpi.update({
-        where: { id: kpiId },
+      // Langsung update currentValue Task dan cascade ke Initiative & KR
+      await prisma.task.update({
+        where: { id: taskId },
         data: { currentValue: parseFloat(newValue) },
       });
-      await cascadeKpiValueUpdate(kpiId, kpi.initiativeId);
+      await cascadeTaskValueUpdate(taskId, task.initiativeId);
     }
 
     return res.status(201).json({
@@ -1154,75 +1197,75 @@ export async function submitKpiUpdate(req: AuthRequest, res: Response) {
       update,
     });
   } catch (error) {
-    console.error('Submit KPI update error:', error);
+    console.error('Submit Task update error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// GET /api/kpis/:id/updates — Riwayat update KPI
-export async function getKpiUpdates(req: AuthRequest, res: Response) {
+// GET /api/tasks/:id/updates — Riwayat update Task
+export async function getTaskUpdates(req: AuthRequest, res: Response) {
   try {
-    const { id: kpiId } = req.params;
+    const { id: taskId } = req.params;
 
-    const updates = await prisma.kpiUpdate.findMany({
-      where: { kpiId },
+    const updates = await prisma.taskUpdate.findMany({
+      where: { taskId },
       orderBy: { createdAt: 'desc' },
     });
 
     return res.status(200).json(updates);
   } catch (error) {
-    console.error('Get KPI updates error:', error);
+    console.error('Get Task updates error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
 
-// PATCH /api/kpi-updates/:updateId/approve — Manager / Leader approve
-export async function approveKpiUpdate(req: AuthRequest, res: Response) {
+// PATCH /api/task-updates/:updateId/approve — Manager / Leader approve
+export async function approveTaskUpdate(req: AuthRequest, res: Response) {
   try {
     const { updateId } = req.params;
     const { id: managerId, role } = req.user!;
 
-    const kpiUpdate = await prisma.kpiUpdate.findUnique({
+    const taskUpdate = await prisma.taskUpdate.findUnique({
       where: { id: updateId },
-      include: { kpi: { include: { initiative: true } } },
+      include: { task: { include: { initiative: true } } },
     });
-    if (!kpiUpdate) return res.status(404).json({ message: 'Update tidak ditemukan' });
-    if (kpiUpdate.status !== 'PENDING_APPROVAL') {
+    if (!taskUpdate) return res.status(404).json({ message: 'Update tidak ditemukan' });
+    if (taskUpdate.status !== 'PENDING_APPROVAL') {
       return res.status(400).json({ message: 'Update ini sudah diproses sebelumnya' });
     }
 
     if (role === 'LEADER') {
       const leaderTeamIds = await getLeaderTeamIds(managerId);
-      if (!leaderTeamIds.includes(kpiUpdate.kpi.initiative.teamId)) {
-        return res.status(403).json({ message: 'Forbidden: KPI update is from a different team' });
+      if (!leaderTeamIds.includes(taskUpdate.task.initiative.teamId)) {
+        return res.status(403).json({ message: 'Forbidden: Task update is from a different team' });
       }
     }
 
-    // Update KpiUpdate status + update currentValue di Kpi
+    // Update TaskUpdate status + update currentValue di Task
     const [approved] = await prisma.$transaction([
-      prisma.kpiUpdate.update({
+      prisma.taskUpdate.update({
         where: { id: updateId },
         data: { status: 'APPROVED', reviewedBy: managerId, reviewedAt: new Date() },
       }),
-      prisma.kpi.update({
-        where: { id: kpiUpdate.kpiId },
-        data: { currentValue: kpiUpdate.newValue },
+      prisma.task.update({
+        where: { id: taskUpdate.taskId },
+        data: { currentValue: taskUpdate.newValue },
       }),
     ]);
 
-    // ═══ AUTO-CASCADE: KPI → Initiative → KR ═══
-    await cascadeKpiValueUpdate(kpiUpdate.kpiId, kpiUpdate.kpi.initiativeId);
+    // ═══ AUTO-CASCADE: Task → Initiative → KR ═══
+    await cascadeTaskValueUpdate(taskUpdate.taskId, taskUpdate.task.initiativeId);
 
     return res.status(200).json({ message: 'Update disetujui', update: approved });
   } catch (error) {
-    console.error('Approve KPI update error:', error);
+    console.error('Approve Task update error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// PATCH /api/kpi-updates/:updateId/reject — Manager / Leader reject
-export async function rejectKpiUpdate(req: AuthRequest, res: Response) {
+// PATCH /api/task-updates/:updateId/reject — Manager / Leader reject
+export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
   try {
     const { updateId } = req.params;
     const { reviewNote } = req.body;
@@ -1232,42 +1275,42 @@ export async function rejectKpiUpdate(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: 'reviewNote wajib diisi saat menolak update' });
     }
 
-    const kpiUpdate = await prisma.kpiUpdate.findUnique({ 
+    const taskUpdate = await prisma.taskUpdate.findUnique({ 
       where: { id: updateId },
-      include: { kpi: { include: { initiative: true } } },
+      include: { task: { include: { initiative: true } } },
     });
-    if (!kpiUpdate) return res.status(404).json({ message: 'Update tidak ditemukan' });
-    if (kpiUpdate.status !== 'PENDING_APPROVAL') {
+    if (!taskUpdate) return res.status(404).json({ message: 'Update tidak ditemukan' });
+    if (taskUpdate.status !== 'PENDING_APPROVAL') {
       return res.status(400).json({ message: 'Update ini sudah diproses sebelumnya' });
     }
 
     if (role === 'LEADER') {
       const leaderTeams = await prisma.team.findMany({ where: { leaderId: managerId } });
       const teamIds = leaderTeams.map(t => t.id);
-      if (!teamIds.includes(kpiUpdate.kpi.initiative.teamId)) {
-        return res.status(403).json({ message: 'Forbidden: KPI update is from a different team' });
+      if (!teamIds.includes(taskUpdate.task.initiative.teamId)) {
+        return res.status(403).json({ message: 'Forbidden: Task update is from a different team' });
       }
     }
 
-    const rejected = await prisma.kpiUpdate.update({
+    const rejected = await prisma.taskUpdate.update({
       where: { id: updateId },
       data: { status: 'REJECTED', reviewedBy: managerId, reviewNote, reviewedAt: new Date() },
     });
 
     return res.status(200).json({ message: 'Update ditolak', update: rejected });
   } catch (error) {
-    console.error('Reject KPI update error:', error);
+    console.error('Reject Task update error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
 
-// GET /api/kpi-updates/pending — Get all pending KPI updates for Manager
-export async function getPendingKpiUpdates(req: AuthRequest, res: Response) {
+// GET /api/task-updates/pending — Get all pending Task updates for Manager
+export async function getPendingTaskUpdates(req: AuthRequest, res: Response) {
   try {
-    const updates = await prisma.kpiUpdate.findMany({
+    const updates = await prisma.taskUpdate.findMany({
       where: { status: 'PENDING_APPROVAL' },
       include: {
-        kpi: {
+        task: {
           include: {
             initiative: {
               include: { team: true }
@@ -1279,7 +1322,7 @@ export async function getPendingKpiUpdates(req: AuthRequest, res: Response) {
     });
     return res.status(200).json(updates);
   } catch (error) {
-    console.error('Get pending KPI updates error:', error);
+    console.error('Get pending Task updates error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

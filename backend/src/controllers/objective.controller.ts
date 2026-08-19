@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 
 export async function createObjective(req: AuthRequest, res: Response) {
   try {
-    const { title, description, quarter, ownerId, keyResults } = req.body;
+    const { title, description, year, ownerId, keyResults } = req.body;
 
-    if (!title || !quarter) {
-      return res.status(400).json({ message: 'Title and quarter are required' });
+    if (!title || !year) {
+      return res.status(400).json({ message: 'Title and year are required' });
     }
 
     // Prepare nested key results creation if provided
@@ -39,7 +39,7 @@ export async function createObjective(req: AuthRequest, res: Response) {
       data: {
         title,
         description,
-        quarter,
+        year,
         ownerId: ownerId || req.user?.id || null,
         keyResults: {
           create: keyResultsData,
@@ -59,11 +59,11 @@ export async function createObjective(req: AuthRequest, res: Response) {
 
 export async function getObjectives(req: AuthRequest, res: Response) {
   try {
-    const { quarter } = req.query;
+    const { year } = req.query;
 
     const whereClause: any = {};
-    if (quarter) {
-      whereClause.quarter = String(quarter);
+    if (year) {
+      whereClause.year = String(year);
     }
 
     const objectives = await prisma.objective.findMany({
@@ -78,7 +78,7 @@ export async function getObjectives(req: AuthRequest, res: Response) {
               include: {
                 team: { select: { id: true, name: true, department: true } },
                 owner: { select: { id: true, name: true, email: true, position: true } },
-                kpis: {
+                tasks: {
                   include: {
                     assignments: { include: { user: { select: { id: true, name: true } } } },
                   },
@@ -154,7 +154,7 @@ export async function getManagerOverview(req: AuthRequest, res: Response) {
             initiatives: {
               include: {
                 team: true,
-                kpis: { include: { assignments: { include: { user: true } } } }
+                tasks: { include: { assignments: { include: { user: true } } } }
               }
             }
           }

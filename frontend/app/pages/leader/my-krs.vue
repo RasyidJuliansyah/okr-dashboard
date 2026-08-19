@@ -275,7 +275,7 @@ function startEditInitiative(ini, kr) {
 }
 
 async function deleteInitiative(id) {
-  if (!confirm("Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh KPI di dalamnya?")) {
+  if (!confirm("Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?")) {
     return;
   }
   try {

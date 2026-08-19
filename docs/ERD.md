@@ -1,21 +1,22 @@
 # ERD — OKR Dashboard
 
 Sumber kebenaran: [backend/src/prisma/schema.prisma](../backend/src/prisma/schema.prisma) (SQLite via Prisma).
-13 model, 4 lapisan: Identitas & Organisasi → Inti OKR → Eksekusi → Penugasan & Riwayat.
+14 model, 4 lapisan: Identitas & Organisasi → Inti OKR → Eksekusi → Penugasan & Riwayat.
 
 ## Alur cascade
 
 ```mermaid
 flowchart LR
-    O[Objective<br/>per kuartal] --> KR[Key Result<br/>+ BSC perspective]
+    O[Objective<br/>per tahun] --> AKR[AnnualKeyResult<br/>BSC Tahunan]
+    AKR --> KR[KeyResult<br/>KR Bulanan / Sprint]
     KR --> I[Initiative<br/>milik Team]
-    I --> K[KPI<br/>metrik eksekusi]
-    K -. KpiUpdate<br/>PENDING_APPROVAL .-> K
+    I --> T[Task<br/>metrik eksekusi]
+    T -. TaskUpdate<br/>PENDING_APPROVAL .-> T
     KR -. KrUpdate .-> KR
     KR -- CausalLink --> KR
 ```
 
-Progres mengalir ke atas: nilai KPI → `Initiative.currentValue` (berbobot `weight`) → `KeyResult.currentValue` → status Objective.
+Progres mengalir ke atas: nilai Task $\rightarrow$ `Initiative.currentValue` (berbobot `weight`) $\rightarrow$ `KeyResult.currentValue` (berbobot `weight`) $\rightarrow$ `AnnualKeyResult.currentValue` (berbobot `monthWeight`) $\rightarrow$ status Objective.
 
 ## Diagram relasi lengkap
 
@@ -50,19 +51,37 @@ erDiagram
         string id PK
         string title
         string description "nullable"
-        string quarter
+        string year
         string ownerId "nullable, soft ref User.id"
         datetime createdAt
+    }
+    AnnualKeyResult {
+        string id PK
+        string objectiveId FK
+        string title
+        string description "nullable"
+        float targetValue
+        float currentValue "default 0"
+        string unit
+        string bscPerspective
+        string year
+        string status "default ON_TRACK"
+        datetime createdAt
+        datetime updatedAt
     }
     KeyResult {
         string id PK
         string objectiveId FK
+        string annualKeyResultId FK "nullable"
+        string month "nullable, format YYYY-MM"
+        float monthWeight "default 1.0"
         string title
         float targetValue
         float currentValue "default 0"
         string unit
         string bscPerspective
         string status "default ON_TRACK"
+        boolean isManualOverride "default false"
         datetime createdAt
         datetime updatedAt
     }
@@ -91,12 +110,13 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    Kpi {
+    Task {
         string id PK
         string initiativeId FK
         string title
         float targetValue
         float currentValue "default 0"
+        float weight "default 1.0"
         string unit "nullable"
         string status "default ON_TRACK"
         datetime createdAt
@@ -116,9 +136,9 @@ erDiagram
         string department "soft ref Department.value"
         datetime createdAt
     }
-    KpiAssignment {
+    TaskAssignment {
         string id PK
-        string kpiId FK
+        string taskId FK
         string userId FK
         datetime assignedAt
     }
@@ -131,9 +151,9 @@ erDiagram
         string updatedBy "nama, bukan FK"
         datetime updatedAt
     }
-    KpiUpdate {
+    TaskUpdate {
         string id PK
-        string kpiId FK
+        string taskId FK
         float oldValue
         float newValue
         string note "nullable"
@@ -145,28 +165,30 @@ erDiagram
         datetime createdAt
     }
 
-    Objective  ||--o{ KeyResult     : "diturunkan jadi"
-    KeyResult  ||--o{ Initiative    : "dieksekusi lewat"
-    Initiative ||--o{ Kpi           : "diukur oleh"
-    KeyResult  ||--o{ CausalLink    : "sebagai sumber"
-    KeyResult  ||--o{ CausalLink    : "sebagai target"
-    KeyResult  ||--o{ KrUpdate      : "riwayat nilai"
-    Kpi        ||--o{ KpiUpdate     : "riwayat + approval"
-    KeyResult  ||--o{ KrAssignment  : "ditugaskan lewat"
-    User       ||--o{ KrAssignment  : "bertanggung jawab"
-    Kpi        ||--o{ KpiAssignment : "ditugaskan lewat"
-    User       ||--o{ KpiAssignment : "bertanggung jawab"
-    KeyResult  ||--o{ KrDepartment  : "dibagi ke divisi"
-    Team       ||--o{ User          : "beranggotakan"
-    User       ||--o{ Team          : "memimpin (leaderId)"
-    Team       ||--o{ Initiative    : "menjalankan"
-    User       ||--o{ Initiative    : "memiliki (ownerId)"
-    User       ||--o{ Department    : "memanajeri"
-    User       ||..o{ Objective     : "ownerId tanpa FK"
-    User       ||..o{ Team          : "managerId tanpa FK"
-    Department ||..o{ User          : "value tanpa FK"
-    Department ||..o{ Team          : "value tanpa FK"
-    Department ||..o{ KrDepartment  : "value tanpa FK"
+    Objective  ||--o{ AnnualKeyResult : "diturunkan jadi"
+    Objective  ||--o{ KeyResult        : "fallback/diturunkan jadi"
+    AnnualKeyResult ||--o{ KeyResult   : "memiliki anak bulanan"
+    KeyResult  ||--o{ Initiative       : "dieksekusi lewat"
+    Initiative ||--o{ Task             : "diukur oleh"
+    KeyResult  ||--o{ CausalLink       : "sebagai sumber"
+    KeyResult  ||--o{ CausalLink       : "sebagai target"
+    KeyResult  ||--o{ KrUpdate         : "riwayat nilai"
+    Task       ||--o{ TaskUpdate       : "riwayat + approval"
+    KeyResult  ||--o{ KrAssignment     : "ditugaskan lewat"
+    User       ||--o{ KrAssignment     : "bertanggung jawab"
+    Task       ||--o{ TaskAssignment   : "ditugaskan lewat"
+    User       ||--o{ TaskAssignment   : "bertanggung jawab"
+    KeyResult  ||--o{ KrDepartment     : "dibagi ke divisi"
+    Team       ||--o{ User             : "beranggotakan"
+    User       ||--o{ Team             : "memimpin (leaderId)"
+    Team       ||--o{ Initiative       : "menjalankan"
+    User       ||--o{ Initiative       : "memiliki (ownerId)"
+    User       ||--o{ Department       : "memanajeri"
+    User       ||..o{ Objective        : "ownerId tanpa FK"
+    User       ||..o{ Team             : "managerId tanpa FK"
+    Department ||..o{ User             : "value tanpa FK"
+    Department ||..o{ Team             : "value tanpa FK"
+    Department ||..o{ KrDepartment     : "value tanpa FK"
 ```
 
 Garis putus-putus = relasi logis yang **tidak** punya foreign key di database.
@@ -176,7 +198,7 @@ Garis putus-putus = relasi logis yang **tidak** punya foreign key di database.
 | Tabel | Menghubungkan | Unique constraint | Kolom tambahan |
 |---|---|---|---|
 | `KrAssignment` | KeyResult ↔ User | `[keyResultId, userId]` | `raciRole`, `assignedBy` |
-| `KpiAssignment` | Kpi ↔ User | `[kpiId, userId]` | — |
+| `TaskAssignment` | Task ↔ User | `[taskId, userId]` | — |
 | `KrDepartment` | KeyResult ↔ Department (by string) | `[keyResultId, department]` | — |
 
 ## Catatan integritas data
@@ -184,5 +206,5 @@ Garis putus-putus = relasi logis yang **tidak** punya foreign key di database.
 1. **`Objective.ownerId` tanpa relasi Prisma.** Field-nya ada tapi tidak dideklarasikan sebagai relasi, jadi objective bisa menunjuk user yang sudah dihapus. Sama untuk `Team.managerId`.
 2. **Divisi disimpan sebagai string di 3 tempat** (`User.department`, `Team.department`, `KrDepartment.department`) yang menunjuk `Department.value` tanpa FK. Rename satu divisi berarti update manual di semua tabel itu.
 3. **`KrAssignment.assignedBy` tidak konsisten:** [keyresult.controller.ts:326](../backend/src/controllers/keyresult.controller.ts#L326) mengisi `req.user?.id`, sementara [bulkUpload.controller.ts:204](../backend/src/controllers/bulkUpload.controller.ts#L204) mengisi nama user. Kolom yang sama menyimpan dua jenis nilai.
-4. **Kolom audit lain menyimpan nama, bukan id:** `KrUpdate.updatedBy`, `CausalLink.createdBy` menggunakan `name || email`. `KpiUpdate.submittedBy` menggunakan id.
+4. **Kolom audit lain menyimpan nama, bukan id:** `KrUpdate.updatedBy`, `CausalLink.createdBy` menggunakan `name || email`. `TaskUpdate.submittedBy` menggunakan id.
 5. **Tidak ada cascade delete di schema.** Penghapusan KR menghapus anak-anaknya lewat kode controller, bukan constraint database.

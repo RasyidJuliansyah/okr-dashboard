@@ -7,7 +7,7 @@
         <div class="header-title">
           <h2>Struktur Departemen</h2>
           <p class="section-desc">
-            Kelola hierarki organisasi per departemen. Assign Manager, Leader, dan anggota Team serta hubungkan mereka ke Key Result, Initiative, dan KPI.
+            Kelola hierarki organisasi per departemen. Assign Manager, Leader, dan anggota Team serta hubungkan mereka ke Key Result, Initiative, dan Task.
           </p>
         </div>
         <div class="header-actions" style="display: flex; gap: 1rem; align-items: center;">
@@ -155,7 +155,7 @@
             </div>
           </div>
 
-          <!-- Assign KR / Initiative / KPI Buttons -->
+          <!-- Assign KR / Initiative / Task Buttons -->
           <div class="dept-card-actions">
             <button class="action-btn kr-btn" @click="openAssignKrModal(dept.value)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -427,13 +427,13 @@
           <button class="close-btn" @click="showInitModal = false">&times;</button>
         </div>
         <p class="modal-subtitle">
-          Assign anggota <strong>{{ getDeptLabel(targetDept) }}</strong> ke KPI dalam Initiative.
+          Assign anggota <strong>{{ getDeptLabel(targetDept) }}</strong> ke Task dalam Initiative.
         </p>
 
         <!-- Initiative select -->
         <div class="form-group" style="margin-bottom: 0.75rem;">
           <label>Pilih Initiative *</label>
-          <select v-model="selectedInitiativeId" @change="loadInitiativeKpis" class="form-select">
+          <select v-model="selectedInitiativeId" @change="loadInitiativeTasks" class="form-select">
             <option value="">-- Pilih Initiative --</option>
             <option v-for="init in allInitiatives" :key="init.id" :value="init.id">
               {{ init.title }} (KR: {{ init.keyResult?.title || '-' }})
@@ -441,25 +441,25 @@
           </select>
         </div>
 
-        <!-- KPI List -->
-        <div v-if="selectedInitiativeId && selectedInitiativeKpis.length > 0" class="kpi-assign-section">
-          <div v-for="kpi in selectedInitiativeKpis" :key="kpi.id" class="kpi-assign-row">
-            <div class="kpi-assign-title">
-              {{ kpi.title }}
-              <span class="kpi-target-badge">Target: {{ kpi.targetValue }} {{ kpi.unit }}</span>
+        <!-- Task List -->
+        <div v-if="selectedInitiativeId && selectedInitiativeTasks.length > 0" class="task-assign-section">
+          <div v-for="task in selectedInitiativeTasks" :key="task.id" class="task-assign-row">
+            <div class="task-assign-title">
+              {{ task.title }}
+              <span class="task-target-badge">Target: {{ task.targetValue }} {{ task.unit }}</span>
             </div>
             <div class="user-pick-list compact">
               <label
                 v-for="user in getDeptAllMembers(targetDept)"
-                :key="kpi.id + '-' + user.id"
+                :key="task.id + '-' + user.id"
                 class="user-pick-item"
-                :class="{ selected: (kpiAssignMap[kpi.id] || []).includes(user.id) }"
+                :class="{ selected: (taskAssignMap[task.id] || []).includes(user.id) }"
               >
                 <input
                   type="checkbox"
                   :value="user.id"
-                  :checked="(kpiAssignMap[kpi.id] || []).includes(user.id)"
-                  @change="toggleKpiAssign(kpi.id, user.id, $event)"
+                  :checked="(taskAssignMap[task.id] || []).includes(user.id)"
+                  @change="toggleTaskAssign(task.id, user.id, $event)"
                 />
                 <div class="chip-avatar small" :style="{ background: getAvatarColor(user.name) }">
                   {{ getInitials(user.name) }}
@@ -472,13 +472,13 @@
             </div>
           </div>
         </div>
-        <div v-else-if="selectedInitiativeId && selectedInitiativeKpis.length === 0" class="empty-hint" style="padding: 1rem; text-align: center;">
-          Initiative ini belum memiliki KPI.
+        <div v-else-if="selectedInitiativeId && selectedInitiativeTasks.length === 0" class="empty-hint" style="padding: 1rem; text-align: center;">
+          Initiative ini belum memiliki Task.
         </div>
 
         <div class="modal-footer">
           <button class="secondary-btn" @click="showInitModal = false">Batal</button>
-          <button class="primary-btn" :disabled="saving || !selectedInitiativeId" @click="saveKpiAssignments">
+          <button class="primary-btn" :disabled="saving || !selectedInitiativeId" @click="saveTaskAssignments">
             {{ saving ? 'Menyimpan...' : 'Simpan Assignment' }}
           </button>
         </div>
@@ -523,8 +523,8 @@ const krAssign = ref({ responsibleId: '', accountableIds: [], consultedIds: [], 
 
 const showInitModal = ref(false);
 const selectedInitiativeId = ref('');
-const selectedInitiativeKpis = ref([]);
-const kpiAssignMap = ref({}); // { [kpiId]: userId[] }
+const selectedInitiativeTasks = ref([]);
+const taskAssignMap = ref({}); // { [taskId]: userId[] }
 
 const showAddDeptModal = ref(false);
 const newDeptForm = ref({ name: '', value: '' });
@@ -841,42 +841,42 @@ async function saveKrAssignment() {
   }
 }
 
-// ─── Assign Initiative KPI ───
+// ─── Assign Initiative Task ───
 function openAssignInitiativeModal(dept) {
   targetDept.value = dept;
   selectedInitiativeId.value = '';
-  selectedInitiativeKpis.value = [];
-  kpiAssignMap.value = {};
+  selectedInitiativeTasks.value = [];
+  taskAssignMap.value = {};
   showInitModal.value = true;
 }
 
-async function loadInitiativeKpis() {
+async function loadInitiativeTasks() {
   if (!selectedInitiativeId.value) return;
   const init = allInitiatives.value.find(i => i.id === selectedInitiativeId.value);
-  selectedInitiativeKpis.value = init?.kpis || [];
-  // build kpiAssignMap from existing assignments
+  selectedInitiativeTasks.value = init?.tasks || [];
+  // build taskAssignMap from existing assignments
   const map = {};
-  for (const kpi of selectedInitiativeKpis.value) {
-    map[kpi.id] = (kpi.assignments || []).map(a => a.userId);
+  for (const task of selectedInitiativeTasks.value) {
+    map[task.id] = (task.assignments || []).map(a => a.userId);
   }
-  kpiAssignMap.value = map;
+  taskAssignMap.value = map;
 }
 
-function toggleKpiAssign(kpiId, userId, event) {
-  if (!kpiAssignMap.value[kpiId]) kpiAssignMap.value[kpiId] = [];
+function toggleTaskAssign(taskId, userId, event) {
+  if (!taskAssignMap.value[taskId]) taskAssignMap.value[taskId] = [];
   if (event.target.checked) {
-    kpiAssignMap.value[kpiId].push(userId);
+    taskAssignMap.value[taskId].push(userId);
   } else {
-    kpiAssignMap.value[kpiId] = kpiAssignMap.value[kpiId].filter(id => id !== userId);
+    taskAssignMap.value[taskId] = taskAssignMap.value[taskId].filter(id => id !== userId);
   }
 }
 
-async function saveKpiAssignments() {
+async function saveTaskAssignments() {
   saving.value = true;
   errorMsg.value = '';
   try {
-    for (const [kpiId, userIds] of Object.entries(kpiAssignMap.value)) {
-      const res = await fetch(`${API}/initiatives/kpis/${kpiId}/assign`, {
+    for (const [taskId, userIds] of Object.entries(taskAssignMap.value)) {
+      const res = await fetch(`${API}/initiatives/tasks/${taskId}/assign`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ userIds }),
@@ -886,12 +886,12 @@ async function saveKpiAssignments() {
         throw new Error(err.message);
       }
     }
-    successMsg.value = 'KPI Assignment berhasil disimpan!';
+    successMsg.value = 'Task Assignment berhasil disimpan!';
     showInitModal.value = false;
     await fetchInitiatives();
     setTimeout(() => (successMsg.value = ''), 4000);
   } catch (e) {
-    errorMsg.value = e.message || 'Gagal menyimpan KPI assignment';
+    errorMsg.value = e.message || 'Gagal menyimpan Task assignment';
   } finally {
     saving.value = false;
   }
@@ -1235,14 +1235,14 @@ onMounted(async () => {
 .c-badge { background: #2563eb; }
 .i-badge { background: #7c3aed; }
 
-/* KPI Assign */
-.kpi-assign-section { display: flex; flex-direction: column; gap: 1rem; }
-.kpi-assign-row { display: flex; flex-direction: column; gap: 0.4rem; }
-.kpi-assign-title {
+/* Task Assign */
+.task-assign-section { display: flex; flex-direction: column; gap: 1rem; }
+.task-assign-row { display: flex; flex-direction: column; gap: 0.4rem; }
+.task-assign-title {
   font-size: 0.85rem; font-weight: 600; color: #2d3643;
   display: flex; align-items: center; gap: 0.5rem;
 }
-.kpi-target-badge {
+.task-target-badge {
   font-size: 0.75rem; font-weight: 400;
   background: #f0f3f9; color: #5e718d;
   padding: 0.15rem 0.5rem; border-radius: 8px;

@@ -18,17 +18,17 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       select: { teamId: true, department: true },
     });
 
-    // --- TEAM: hanya lihat Initiative & KPI milik tim sendiri ---
+    // --- TEAM: hanya lihat Initiative & Task milik tim sendiri ---
     if (role === 'TEAM') {
       if (!dbUser?.teamId) {
-        return res.status(200).json({ role, scope: 'team', initiatives: [], kpis: [] });
+        return res.status(200).json({ role, scope: 'team', initiatives: [], tasks: [] });
       }
 
       const initiatives = await prisma.initiative.findMany({
         where: { teamId: dbUser.teamId },
         include: {
           keyResult: { select: { id: true, title: true, bscPerspective: true } },
-          kpis: {
+          tasks: {
             include: {
               assignments: { where: { userId }, select: { userId: true } },
             },
@@ -36,8 +36,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         },
       });
 
-      // Hanya KPI yang di-assign ke user ini
-      const myKpis = await prisma.kpi.findMany({
+      // Hanya Task yang di-assign ke user ini
+      const myTasks = await prisma.task.findMany({
         where: { assignments: { some: { userId } } },
         include: {
           initiative: { select: { id: true, title: true, teamId: true } },
@@ -48,7 +48,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         },
       });
 
-      return res.status(200).json({ role, scope: 'team', initiatives, myKpis });
+      return res.status(200).json({ role, scope: 'team', initiatives, myTasks });
     }
 
     // --- LEADER: KR (read-only, konteks) + Initiative dari semua Tim yang dipimpin ---
@@ -64,7 +64,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         include: {
           keyResult: { select: { id: true, title: true, bscPerspective: true, status: true } },
           team: { select: { id: true, name: true } },
-          kpis: true,
+          tasks: true,
         },
       });
 
@@ -102,18 +102,18 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         });
       }
 
-      // Approval queue: KpiUpdate PENDING dari team di dept ini
-      const pendingApprovals = await prisma.kpiUpdate.findMany({
+      // Approval queue: TaskUpdate PENDING dari team di dept ini
+      const pendingApprovals = await prisma.taskUpdate.findMany({
         where: {
           status: 'PENDING_APPROVAL',
-          kpi: {
+          task: {
             initiative: {
               team: { department: managerDept || undefined },
             },
           },
         },
         include: {
-          kpi: {
+          task: {
             include: {
               initiative: {
                 include: { team: { select: { id: true, name: true } } },

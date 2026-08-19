@@ -5,7 +5,7 @@
         <div class="header-title">
           <h2>Inisiatif Tim Saya</h2>
           <p class="section-desc">
-            Kelola Inisiatif yang dikerjakan oleh Tim Anda beserta KPI-nya.
+            Kelola Inisiatif yang dikerjakan oleh Tim Anda beserta Task-nya.
           </p>
         </div>
         <div class="header-actions">
@@ -40,38 +40,38 @@
           </div>
         </div>
 
-        <div class="kpi-list">
-          <div v-if="initiative.kpis?.length === 0" class="empty-kpi">
-            Belum ada KPI di Initiative ini.
+        <div class="task-list">
+          <div v-if="initiative.tasks?.length === 0" class="empty-task">
+            Belum ada Task di Initiative ini.
           </div>
-          <div v-for="kpi in initiative.kpis" :key="kpi.id" class="kpi-row">
-            <div class="kpi-info">
-              <span class="kpi-name">{{ kpi.title }}</span>
-              <div class="kpi-details">
-                <span class="kpi-target">Target: {{ kpi.targetValue }} {{ kpi.unit || '' }}</span>
-                <span class="kpi-current">Saat ini: {{ kpi.currentValue }}</span>
-                <span class="kpi-pct-tag">{{ getKpiProgressPct(kpi) }}%</span>
+          <div v-for="task in initiative.tasks" :key="task.id" class="task-row">
+            <div class="task-info">
+              <span class="task-name">{{ task.title }}</span>
+              <div class="task-details">
+                <span class="task-target">Target: {{ task.targetValue }} {{ task.unit || '' }}</span>
+                <span class="task-current">Saat ini: {{ task.currentValue }}</span>
+                <span class="task-pct-tag">{{ getTaskProgressPct(task) }}%</span>
               </div>
-              <div class="kpi-mini-track">
-                <div class="kpi-mini-bar" :style="{ width: getKpiProgressPct(kpi) + '%' }"></div>
+              <div class="task-mini-track">
+                <div class="task-mini-bar" :style="{ width: getTaskProgressPct(task) + '%' }"></div>
               </div>
             </div>
             
-            <div class="kpi-assignees">
-              <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-chip">{{ a.user?.name }}</span>
-              <span v-if="!kpi.assignments || kpi.assignments.length === 0" class="text-sm text-gray">Belum ada assignee</span>
+            <div class="task-assignees">
+              <span v-for="a in task.assignments" :key="a.userId" class="assignee-chip">{{ a.user?.name }}</span>
+              <span v-if="!task.assignments || task.assignments.length === 0" class="text-sm text-gray">Belum ada assignee</span>
             </div>
             
-            <div class="kpi-actions">
+            <div class="task-actions">
               <button 
                 class="secondary-btn small"
-                @click="openAssignModal(kpi, initiative)"
+                @click="openAssignModal(task, initiative)"
               >
                 Assign
               </button>
               <button 
                 class="primary-btn small" 
-                @click="openReviewModal(kpi)"
+                @click="openReviewModal(task)"
               >
                 Review Update
               </button>
@@ -83,8 +83,8 @@
       <!-- Modal Review Progress -->
       <div v-if="showReviewModal" class="modal-overlay" @click.self="showReviewModal = false">
         <div class="modal-box">
-          <h3>Review Progress KPI</h3>
-          <p class="mb-4">KPI: <strong>{{ selectedKpi?.title }}</strong></p>
+          <h3>Review Progress Task</h3>
+          <p class="mb-4">Task: <strong>{{ selectedTask?.title }}</strong></p>
           
           <div v-if="pendingUpdates.length === 0" class="text-gray">Tidak ada update pending.</div>
           
@@ -114,12 +114,12 @@
         </div>
       </div>
 
-      <!-- Modal Assign Member ke KPI -->
+      <!-- Modal Assign Member ke Task -->
       <div v-if="showAssignModal" class="modal-overlay" @click.self="showAssignModal = false">
         <div class="modal-box">
-          <h3>Assign Member ke KPI</h3>
-          <p class="mb-4">KPI: <strong>{{ selectedKpi?.title }}</strong></p>
-          <p class="text-sm text-gray mb-2">Pilih anggota tim Anda yang bertanggung jawab atas KPI ini:</p>
+          <h3>Assign Member ke Task</h3>
+          <p class="mb-4">Task: <strong>{{ selectedTask?.title }}</strong></p>
+          <p class="text-sm text-gray mb-2">Pilih anggota tim Anda yang bertanggung jawab atas Task ini:</p>
 
           <div v-if="teamMembers.length === 0" class="text-gray">Belum ada anggota tim terdaftar.</div>
           <div class="member-checkbox-list">
@@ -135,7 +135,7 @@
 
           <div class="modal-actions">
             <button class="secondary-btn" @click="showAssignModal = false">Batal</button>
-            <button class="primary-btn" @click="saveKpiAssignment">Simpan Assignment</button>
+            <button class="primary-btn" @click="saveTaskAssignment">Simpan Assignment</button>
           </div>
         </div>
       </div>
@@ -200,7 +200,7 @@ const loading = ref(true);
 const errorMsg = ref('');
 
 const showReviewModal = ref(false);
-const selectedKpi = ref(null);
+const selectedTask = ref(null);
 const pendingUpdates = ref([]);
 const rejectingId = ref(null);
 const rejectNote = ref('');
@@ -289,32 +289,32 @@ async function fetchKrsDropdown() {
   } catch (err) {}
 }
 
-function getKpiProgressPct(kpi) {
-  if (!kpi || !kpi.targetValue || kpi.targetValue <= 0) return 0;
-  const pct = (kpi.currentValue / kpi.targetValue) * 100;
+function getTaskProgressPct(task) {
+  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
+  const pct = (task.currentValue / task.targetValue) * 100;
   return Math.min(100, Math.round(pct * 10) / 10);
 }
 
 function getInitiativeProgressPct(init) {
-  if (!init || !init.kpis || init.kpis.length === 0) {
+  if (!init || !init.tasks || init.tasks.length === 0) {
     if (init.targetValue > 0) {
       return Math.min(100, Math.round((init.currentValue / init.targetValue) * 100));
     }
     return 0;
   }
-  const sum = init.kpis.reduce((acc, k) => acc + getKpiProgressPct(k), 0);
-  return Math.round((sum / init.kpis.length) * 10) / 10;
+  const sum = init.tasks.reduce((acc, k) => acc + getTaskProgressPct(k), 0);
+  return Math.round((sum / init.tasks.length) * 10) / 10;
 }
 
-async function openReviewModal(kpi) {
-  selectedKpi.value = kpi;
+async function openReviewModal(task) {
+  selectedTask.value = task;
   showReviewModal.value = true;
   pendingUpdates.value = [];
   rejectingId.value = null;
   rejectNote.value = '';
   
   try {
-    const res = await fetch(`${API}/kpis/${kpi.id}/updates`, { headers: getHeaders() });
+    const res = await fetch(`${API}/tasks/${task.id}/updates`, { headers: getHeaders() });
     const allUpdates = await res.json();
     pendingUpdates.value = allUpdates.filter(u => u.status === 'PENDING_APPROVAL');
   } catch (err) {
@@ -322,10 +322,10 @@ async function openReviewModal(kpi) {
   }
 }
 
-async function openAssignModal(kpi, initiative) {
-  selectedKpi.value = kpi;
+async function openAssignModal(task, initiative) {
+  selectedTask.value = task;
   activeInitiative.value = initiative;
-  selectedAssigneeIds.value = kpi.assignments ? kpi.assignments.map(a => a.userId) : [];
+  selectedAssigneeIds.value = task.assignments ? task.assignments.map(a => a.userId) : [];
   showAssignModal.value = true;
   
   try {
@@ -338,10 +338,10 @@ async function openAssignModal(kpi, initiative) {
   }
 }
 
-async function saveKpiAssignment() {
-  if (!selectedKpi.value) return;
+async function saveTaskAssignment() {
+  if (!selectedTask.value) return;
   try {
-    const res = await fetch(`${API}/initiatives/kpis/${selectedKpi.value.id}/assign`, {
+    const res = await fetch(`${API}/initiatives/tasks/${selectedTask.value.id}/assign`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ userIds: selectedAssigneeIds.value })
@@ -404,7 +404,7 @@ async function saveInitiative() {
 
 async function approveUpdate(updateId) {
   try {
-    const res = await fetch(`${API}/kpi-updates/${updateId}/approve`, {
+    const res = await fetch(`${API}/task-updates/${updateId}/approve`, {
       method: 'PATCH',
       headers: getHeaders(),
     });
@@ -423,7 +423,7 @@ async function confirmReject(updateId) {
     return;
   }
   try {
-    const res = await fetch(`${API}/kpi-updates/${updateId}/reject`, {
+    const res = await fetch(`${API}/task-updates/${updateId}/reject`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify({ reviewNote: rejectNote.value })
@@ -461,20 +461,20 @@ async function confirmReject(updateId) {
 .init-progress-track { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
 .init-progress-bar { height: 100%; background: linear-gradient(90deg, #0ea5e9, #10b981); border-radius: 4px; transition: width 0.3s ease; }
 
-.kpi-list { display: flex; flex-direction: column; gap: 12px; }
-.empty-kpi { color: #94a3b8; font-size: 14px; font-style: italic; }
-.kpi-row { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 14px 16px; border-radius: 10px; border: 1px solid #e2e8f0; gap: 12px; }
-.kpi-info { flex: 2; }
-.kpi-name { font-weight: 600; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; }
-.kpi-details { display: flex; gap: 12px; font-size: 12px; color: #64748b; margin-bottom: 6px; align-items: center; }
-.kpi-pct-tag { background: #e0f2fe; color: #0284c7; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+.task-list { display: flex; flex-direction: column; gap: 12px; }
+.empty-task { color: #94a3b8; font-size: 14px; font-style: italic; }
+.task-row { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 14px 16px; border-radius: 10px; border: 1px solid #e2e8f0; gap: 12px; }
+.task-info { flex: 2; }
+.task-name { font-weight: 600; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; }
+.task-details { display: flex; gap: 12px; font-size: 12px; color: #64748b; margin-bottom: 6px; align-items: center; }
+.task-pct-tag { background: #e0f2fe; color: #0284c7; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
 
-.kpi-mini-track { width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
-.kpi-mini-bar { height: 100%; background: #0ea5e9; border-radius: 3px; transition: width 0.3s ease; }
+.task-mini-track { width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.task-mini-bar { height: 100%; background: #0ea5e9; border-radius: 3px; transition: width 0.3s ease; }
 
-.kpi-assignees { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.task-assignees { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
 .assignee-chip { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 12px; font-size: 12px; color: #475569; }
-.kpi-actions { flex: 0 0 auto; display: flex; gap: 8px; }
+.task-actions { flex: 0 0 auto; display: flex; gap: 8px; }
 
 .primary-btn { background: #0ea5e9; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
 .primary-btn:hover { background: #0284c7; }

@@ -257,7 +257,7 @@
                 </td>
                 <td class="obj-cell">
                   <span class="obj-title">{{ kr.objectiveTitle }}</span>
-                  <span class="quarter-chip">{{ kr.quarter }}</span>
+                  <span class="year-chip">{{ kr.year }}</span>
                 </td>
                 <td>
                   <span v-if="kr.responsible" class="pic-name">{{ kr.responsible.name }}</span>
@@ -402,7 +402,7 @@ function exportCsv() {
   if (!data.value) return;
 
   const rows = [
-    ['Key Result', 'Perspektif', 'Objective', 'Quarter', 'PIC Responsible', 'Target', 'Current', 'Unit', 'Progress (%)', 'Status'],
+    ['Key Result', 'Perspektif', 'Objective', 'Year', 'PIC Responsible', 'Target', 'Current', 'Unit', 'Progress (%)', 'Status'],
   ];
 
   // All KRs from criticalKrs + we need all. Re-build from bscByPerspective is complex,
@@ -413,7 +413,7 @@ function exportCsv() {
       `"${kr.title}"`,
       perspectiveLabel(kr.bscPerspective),
       `"${kr.objectiveTitle}"`,
-      kr.quarter,
+      kr.year,
       kr.responsible ? kr.responsible.name : '',
       kr.targetValue,
       kr.currentValue,
@@ -1015,7 +1015,7 @@ onMounted(fetchData);
   line-height: 1.4;
 }
 
-.quarter-chip {
+.year-chip {
   font-size: 11px;
   color: #8897ae;
   font-weight: 600;

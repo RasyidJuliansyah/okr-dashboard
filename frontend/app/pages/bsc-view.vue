@@ -188,7 +188,7 @@
               <div class="kr-dd-info">
                 <span class="kr-parent-obj"
                   >Objective: {{ kr.objective?.title }} ({{
-                    kr.objective?.quarter
+                    kr.objective?.year
                   }})</span
                 >
                 <h3>{{ kr.title }}</h3>

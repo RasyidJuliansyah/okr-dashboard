@@ -85,13 +85,13 @@
         </div>
       </section>
 
-      <!-- KPI Summary Cards -->
-      <section class="kpi-grid">
+      <!-- Task Summary Cards -->
+      <section class="task-grid">
         <!-- Average Progress -->
-        <div class="kpi-card card">
-          <span class="kpi-label">Rata-Rata Progres</span>
-          <div class="kpi-value-row">
-            <span class="kpi-value"
+        <div class="task-card card">
+          <span class="task-label">Rata-Rata Progres</span>
+          <div class="task-value-row">
+            <span class="task-value"
               >{{ summaryData.metrics?.averageProgress || 0 }}%</span
             >
             <span
@@ -112,22 +112,22 @@
           </div>
           <p
             v-if="compareFrom && !summaryData.previousMetrics"
-            class="kpi-no-data"
+            class="task-no-data"
           >
             Tidak ada data pada periode ini
           </p>
-          <p v-else-if="summaryData.previousMetrics" class="kpi-desc">
+          <p v-else-if="summaryData.previousMetrics" class="task-desc">
             vs. {{ summaryData.previousMetrics.rangeLabel }}:
             {{ summaryData.previousMetrics.averageProgress }}%
           </p>
-          <p v-else class="kpi-desc">
+          <p v-else class="task-desc">
             Agregat progres seluruh Key Results dalam scope terpilih.
           </p>
         </div>
 
         <!-- OKR Status Counts -->
-        <div class="kpi-card card">
-          <span class="kpi-label">Status Key Results</span>
+        <div class="task-card card">
+          <span class="task-label">Status Key Results</span>
           <div class="status-summary-row">
             <div class="status-count-item">
               <div class="status-val-row">
@@ -177,14 +177,14 @@
           </div>
           <p
             v-if="compareFrom && !summaryData.previousMetrics"
-            class="kpi-no-data"
+            class="task-no-data"
           >
             Tidak ada data pada periode ini
           </p>
-          <p v-else-if="summaryData.previousMetrics" class="kpi-desc">
+          <p v-else-if="summaryData.previousMetrics" class="task-desc">
             vs. {{ summaryData.previousMetrics.rangeLabel }}
           </p>
-          <p v-else class="kpi-desc">
+          <p v-else class="task-desc">
             Status otomatis berdasarkan capaian vs target harian.
           </p>
         </div>
@@ -192,23 +192,23 @@
 
       <!-- ─── SECTION: TEAM VIEW ─── -->
       <section v-if="userRole === 'TEAM'" class="role-section">
-        <h3 class="section-title">KPI Saya</h3>
-        <div v-if="myKpis.length === 0" class="empty-state">
-          Belum ada KPI yang di-assign ke kamu.
+        <h3 class="section-title">Task Saya</h3>
+        <div v-if="myTasks.length === 0" class="empty-state">
+          Belum ada Task yang di-assign ke kamu.
         </div>
-        <div v-for="kpi in myKpis" :key="kpi.id" class="kpi-card card">
-          <div class="kpi-header">
-            <span class="kpi-title">{{ kpi.title }}</span>
-            <span :class="['status-badge', kpi.status.toLowerCase().replace('_','-')]">{{ kpi.status }}</span>
+        <div v-for="task in myTasks" :key="task.id" class="task-card card">
+          <div class="task-header">
+            <span class="task-title">{{ task.title }}</span>
+            <span :class="['status-badge', task.status.toLowerCase().replace('_','-')]">{{ task.status }}</span>
           </div>
-          <div class="kpi-progress">
-            <span>{{ kpi.currentValue }} / {{ kpi.targetValue }} {{ kpi.unit }}</span>
+          <div class="task-progress">
+            <span>{{ task.currentValue }} / {{ task.targetValue }} {{ task.unit }}</span>
             <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: Math.min(100, (kpi.currentValue / kpi.targetValue) * 100) + '%' }"></div>
+              <div class="progress-fill" :style="{ width: Math.min(100, (task.currentValue / task.targetValue) * 100) + '%' }"></div>
             </div>
           </div>
-          <div class="kpi-initiative">Initiative: {{ kpi.initiative?.title }}</div>
-          <button class="primary-btn" @click="openKpiSubmitModal(kpi)">Submit Update</button>
+          <div class="task-initiative">Initiative: {{ task.initiative?.title }}</div>
+          <button class="primary-btn" @click="openTaskSubmitModal(task)">Submit Update</button>
         </div>
       </section>
 
@@ -229,9 +229,9 @@
           </div>
           <div class="init-summary-card card">
             <span class="summary-val">
-              {{ initProgressData.summary?.completedKpis || 0 }}/{{ initProgressData.summary?.totalKpis || 0 }}
+              {{ initProgressData.summary?.completedTasks || 0 }}/{{ initProgressData.summary?.totalTasks || 0 }}
             </span>
-            <span class="summary-lbl">KPI Selesai</span>
+            <span class="summary-lbl">Task Selesai</span>
           </div>
           <div class="init-summary-card card">
             <span class="summary-val done-val">
@@ -257,7 +257,7 @@
               </span>
               <h4>{{ group.keyResult?.title }}</h4>
               <span class="kr-obj-context" v-if="group.keyResult?.objective">
-                {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.quarter }})
+                {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.year }})
               </span>
             </div>
             <div class="kr-group-progress-info">
@@ -278,8 +278,8 @@
               </div>
               <div class="init-row-right">
                 <span class="init-pct">{{ init.calculatedProgress }}%</span>
-                <span class="kpi-count-mini">
-                  {{ init.completedKpis }}/{{ init.totalKpis }} KPI
+                <span class="task-count-mini">
+                  {{ init.completedTasks }}/{{ init.totalTasks }} Task
                 </span>
               </div>
             </div>
@@ -290,19 +290,19 @@
               </div>
             </div>
 
-            <!-- KPI detail rows -->
-            <div v-if="init.kpis?.length" class="kpi-detail-grid">
-              <div v-for="kpi in init.kpis" :key="kpi.id" class="kpi-detail-row">
-                <span class="kpi-detail-name">{{ kpi.title }}</span>
-                <span class="kpi-detail-val">
-                  {{ kpi.currentValue }}/{{ kpi.targetValue }} {{ kpi.unit }}
+            <!-- Task detail rows -->
+            <div v-if="init.tasks?.length" class="task-detail-grid">
+              <div v-for="task in init.tasks" :key="task.id" class="task-detail-row">
+                <span class="task-detail-name">{{ task.title }}</span>
+                <span class="task-detail-val">
+                  {{ task.currentValue }}/{{ task.targetValue }} {{ task.unit }}
                 </span>
-                <div class="kpi-mini-track">
-                  <div class="kpi-mini-bar" :style="{ width: kpi.progressPercent + '%' }"></div>
+                <div class="task-mini-track">
+                  <div class="task-mini-bar" :style="{ width: task.progressPercent + '%' }"></div>
                 </div>
-                <span class="kpi-mini-pct">{{ kpi.progressPercent }}%</span>
-                <div class="kpi-assignees-mini">
-                  <span v-for="a in kpi.assignments" :key="a.userId" class="assignee-mini">
+                <span class="task-mini-pct">{{ task.progressPercent }}%</span>
+                <div class="task-assignees-mini">
+                  <span v-for="a in task.assignments" :key="a.userId" class="assignee-mini">
                     {{ a.user?.name }}
                   </span>
                 </div>
@@ -318,11 +318,11 @@
 
       <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
       <section v-if="userRole === 'MANAGER' && pendingApprovals.length > 0" class="role-section">
-        <h3 class="section-title">Approval KPI Pending ({{ pendingApprovals.length }})</h3>
+        <h3 class="section-title">Approval Task Pending ({{ pendingApprovals.length }})</h3>
         <div v-for="update in pendingApprovals" :key="update.id" class="approval-card card">
           <div class="approval-info">
-            <strong>{{ update.kpi?.title }}</strong>
-            <span class="team-badge">{{ update.kpi?.initiative?.team?.name }}</span>
+            <strong>{{ update.task?.title }}</strong>
+            <span class="team-badge">{{ update.task?.initiative?.team?.name }}</span>
           </div>
           <div class="approval-values">
             Nilai: <del>{{ update.oldValue }}</del> → <strong>{{ update.newValue }}</strong>
@@ -335,33 +335,33 @@
         </div>
       </section>
 
-      <!-- ─── MODAL: Submit KPI Update (TEAM) ─── -->
-      <div v-if="showKpiSubmitModal" class="modal-overlay" @click.self="showKpiSubmitModal = false">
+      <!-- ─── MODAL: Submit Task Update (TEAM) ─── -->
+      <div v-if="showTaskSubmitModal" class="modal-overlay" @click.self="showTaskSubmitModal = false">
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Submit Update KPI</h3>
-            <button class="modal-close-btn" @click="showKpiSubmitModal = false">&times;</button>
+            <h3>Submit Update Task</h3>
+            <button class="modal-close-btn" @click="showTaskSubmitModal = false">&times;</button>
           </div>
-          <p>{{ selectedKpi?.title }}</p>
+          <p>{{ selectedTask?.title }}</p>
           <label>Nilai Baru:</label>
           <input v-model.number="submitNewValue" type="number" class="form-input" />
           <label>Catatan (opsional):</label>
           <textarea v-model="submitNote" class="form-input" rows="3"></textarea>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showKpiSubmitModal = false">Batal</button>
-            <button class="primary-btn" @click="submitKpiUpdate">Kirim</button>
+            <button class="secondary-btn" @click="showTaskSubmitModal = false">Batal</button>
+            <button class="primary-btn" @click="submitTaskUpdate">Kirim</button>
           </div>
         </div>
       </div>
 
-      <!-- ─── MODAL: Reject KPI Update (MANAGER) ─── -->
+      <!-- ─── MODAL: Reject Task Update (MANAGER) ─── -->
       <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Tolak Update KPI</h3>
+            <h3>Tolak Update Task</h3>
             <button class="modal-close-btn" @click="showRejectModal = false">&times;</button>
           </div>
-          <p>Berikan alasan penolakan untuk <strong>{{ selectedApproval?.kpi?.title }}</strong>:</p>
+          <p>Berikan alasan penolakan untuk <strong>{{ selectedApproval?.task?.title }}</strong>:</p>
           <textarea v-model="rejectNote" class="form-input" rows="3" placeholder="Alasan penolakan (wajib diisi)..."></textarea>
           <div class="modal-actions">
             <button class="secondary-btn" @click="showRejectModal = false">Batal</button>
@@ -419,7 +419,7 @@
           >
             <div class="obj-card-header">
               <div>
-                <span class="obj-quarter">{{ obj.quarter }}</span>
+                <span class="obj-year">{{ obj.year }}</span>
                 <h3>{{ obj.title }}</h3>
                 <p v-if="obj.description" class="obj-desc">
                   {{ obj.description }}
@@ -544,7 +544,7 @@ const config = useRuntimeConfig();
 const userRole = computed(() => auth.user?.role || '');
 
 // State untuk data TEAM
-const myKpis = ref([]);
+const myTasks = ref([]);
 const myInitiatives = ref([]);
 
 // State untuk data MANAGER
@@ -748,7 +748,7 @@ async function fetchDashboardData() {
     });
     
     if (userRole.value === 'TEAM') {
-      myKpis.value = response.myKpis || [];
+      myTasks.value = response.myTasks || [];
       myInitiatives.value = response.initiatives || [];
     } else if (userRole.value === 'LEADER') {
       leadingTeams.value = response.leadingTeams || [];
@@ -781,29 +781,29 @@ onMounted(() => {
   }
 });
 
-// ─── KPI Submit Modal (TEAM) ───
-const showKpiSubmitModal = ref(false);
-const selectedKpi = ref(null);
+// ─── Task Submit Modal (TEAM) ───
+const showTaskSubmitModal = ref(false);
+const selectedTask = ref(null);
 const submitNewValue = ref(0);
 const submitNote = ref('');
 
-function openKpiSubmitModal(kpi) {
-  selectedKpi.value = kpi;
-  submitNewValue.value = kpi.currentValue;
+function openTaskSubmitModal(task) {
+  selectedTask.value = task;
+  submitNewValue.value = task.currentValue;
   submitNote.value = '';
-  showKpiSubmitModal.value = true;
+  showTaskSubmitModal.value = true;
 }
 
-async function submitKpiUpdate() {
-  if (!selectedKpi.value) return;
+async function submitTaskUpdate() {
+  if (!selectedTask.value) return;
   const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/kpis/${selectedKpi.value.id}/updates`, {
+  const res = await fetch(`${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ newValue: submitNewValue.value, note: submitNote.value }),
   });
   if (res.ok) {
-    showKpiSubmitModal.value = false;
+    showTaskSubmitModal.value = false;
     alert('Update berhasil dikirim, menunggu persetujuan Manager.');
     await fetchDashboardData();
   } else {
@@ -826,7 +826,7 @@ function openRejectModal(update) {
 async function handleApprove(updateId) {
   if (!confirm('Setujui update ini?')) return;
   const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/kpi-updates/${updateId}/approve`, {
+  const res = await fetch(`${config.public.apiBase}/initiatives/task-updates/${updateId}/approve`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -843,7 +843,7 @@ async function handleReject() {
     return;
   }
   const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/kpi-updates/${selectedApproval.value.id}/reject`, {
+  const res = await fetch(`${config.public.apiBase}/initiatives/task-updates/${selectedApproval.value.id}/reject`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ reviewNote: rejectNote.value }),
@@ -1077,26 +1077,26 @@ async function handleReject() {
   color: #0e97d6;
 }
 
-/* KPI Summary Cards Grid */
-.kpi-grid {
+/* Task Summary Cards Grid */
+.task-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
 @media (max-width: 768px) {
-  .kpi-grid {
+  .task-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.kpi-card {
+.task-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.kpi-label {
+.task-label {
   font-size: 15px;
   text-transform: uppercase;
   color: #0f1623;
@@ -1104,14 +1104,14 @@ async function handleReject() {
   letter-spacing: 0.5px;
 }
 
-.kpi-value-row {
+.task-value-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
 }
 
-.kpi-value {
+.task-value {
   font-size: 39px;
   font-weight: 700;
   color: #0e97d6;
@@ -1165,7 +1165,7 @@ async function handleReject() {
   margin-top: 2px;
 }
 
-.kpi-desc {
+.task-desc {
   font-size: 15px;
   color: #0f1623;
   margin: 0;
@@ -1232,7 +1232,7 @@ async function handleReject() {
   gap: 20px;
 }
 
-.obj-quarter {
+.obj-year {
   background: var(--color-primary-tint);
   color: var(--color-primary);
   font-size: 14px;
@@ -1724,7 +1724,7 @@ async function handleReject() {
   background: #f0f3f9;
 }
 
-.kpi-no-data {
+.task-no-data {
   font-size: 13px;
   color: #8897ae;
   font-style: italic;
@@ -2034,7 +2034,7 @@ async function handleReject() {
   color: #0E97D6;
 }
 
-.kpi-count-mini {
+.task-count-mini {
   font-size: 0.75rem;
   color: var(--text-secondary, #64748b);
   background: #ffffff;
@@ -2062,7 +2062,7 @@ async function handleReject() {
 .init-progress-bar.progress-mid { background: #0E97D6; }
 .init-progress-bar.progress-low { background: #f59e0b; }
 
-.kpi-detail-grid {
+.task-detail-grid {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2070,7 +2070,7 @@ async function handleReject() {
   border-top: 1px dashed #e2e8f0;
 }
 
-.kpi-detail-row {
+.task-detail-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1.5fr 40px 1.5fr;
   align-items: center;
@@ -2083,40 +2083,40 @@ async function handleReject() {
 }
 
 @media (max-width: 768px) {
-  .kpi-detail-row {
+  .task-detail-row {
     grid-template-columns: 1fr;
     gap: 4px;
   }
 }
 
-.kpi-detail-name {
+.task-detail-name {
   font-weight: 500;
   color: var(--text-primary, #334155);
 }
 
-.kpi-detail-val {
+.task-detail-val {
   color: var(--text-secondary, #64748b);
 }
 
-.kpi-mini-track {
+.task-mini-track {
   height: 5px;
   background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
 }
 
-.kpi-mini-bar {
+.task-mini-bar {
   height: 100%;
   background: #0E97D6;
   border-radius: 3px;
 }
 
-.kpi-mini-pct {
+.task-mini-pct {
   font-weight: 600;
   color: #0E97D6;
 }
 
-.kpi-assignees-mini {
+.task-assignees-mini {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

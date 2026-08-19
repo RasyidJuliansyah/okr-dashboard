@@ -5,7 +5,7 @@
         <div class="header-title">
           <h2>OKR Overview</h2>
           <p class="section-desc">
-            Pantau seluruh OKR perusahaan dan kelola persetujuan progress KPI.
+            Pantau seluruh OKR perusahaan dan kelola persetujuan progress Task.
           </p>
         </div>
       </div>
@@ -28,7 +28,7 @@
 
         <div v-for="obj in objectives" :key="obj.id" class="obj-block card mb-4">
           <div class="obj-header">
-            <h3>[{{ obj.quarter }}] {{ obj.title }}</h3>
+            <h3>[{{ obj.year }}] {{ obj.title }}</h3>
           </div>
           
           <div class="kr-list">
@@ -54,14 +54,14 @@
                     <span class="team-badge">Tim: {{ ini.team?.name }}</span>
                   </div>
                   
-                  <!-- KPIs under Initiative -->
-                  <div v-if="ini.kpis?.length > 0" class="kpis-list">
-                    <div v-for="kpi in ini.kpis" :key="kpi.id" class="kpi-item">
+                  <!-- Tasks under Initiative -->
+                  <div v-if="ini.tasks?.length > 0" class="tasks-list">
+                    <div v-for="task in ini.tasks" :key="task.id" class="task-item">
                       <span class="tree-line indent">└─</span>
-                      <span class="kpi-title">KPI: {{ kpi.title }}</span>
-                      <span class="text-sm">Target: {{ kpi.targetValue }} {{ kpi.unit }} | Saat ini: {{ kpi.currentValue }}</span>
+                      <span class="task-title">Task: {{ task.title }}</span>
+                      <span class="text-sm">Target: {{ task.targetValue }} {{ task.unit }} | Saat ini: {{ task.currentValue }}</span>
                       <span class="text-sm text-gray">
-                        (Assignee: {{ kpi.assignments?.map(a => a.user?.name).join(', ') || 'Belum ada' }})
+                        (Assignee: {{ task.assignments?.map(a => a.user?.name).join(', ') || 'Belum ada' }})
                       </span>
                     </div>
                   </div>
@@ -75,17 +75,17 @@
       <!-- TAB: PENDING APPROVAL -->
       <div v-if="activeTab === 'pending' && !loading">
         <div v-if="pendingUpdates.length === 0" class="empty-state card">
-          Tidak ada KPI update yang butuh persetujuan.
+          Tidak ada Task update yang butuh persetujuan.
         </div>
         <div v-else class="pending-list">
           <div v-for="upd in pendingUpdates" :key="upd.id" class="card mb-4">
             <div class="kr-main">
               <div class="kr-title-row mb-2">
-                <span class="kr-title">{{ upd.kpi.title }}</span>
+                <span class="kr-title">{{ upd.task.title }}</span>
                 <span class="badge bg-yellow">PENDING</span>
               </div>
               <div class="text-sm text-gray mb-4">
-                <strong>Inisiatif:</strong> {{ upd.kpi.initiative?.title }} (Tim: {{ upd.kpi.initiative?.team?.name }})
+                <strong>Inisiatif:</strong> {{ upd.task.initiative?.title }} (Tim: {{ upd.task.initiative?.team?.name }})
               </div>
               <div class="update-details">
                 <div class="detail-box">
@@ -174,7 +174,7 @@ async function fetchOverview() {
 
 async function fetchPendingUpdates() {
   try {
-    const res = await fetch(`${API}/initiatives/kpi-updates/pending`, { headers: getHeaders() });
+    const res = await fetch(`${API}/initiatives/task-updates/pending`, { headers: getHeaders() });
     if (res.ok) {
       pendingUpdates.value = await res.json();
       pendingCount.value = pendingUpdates.value.length;
@@ -186,7 +186,7 @@ async function fetchPendingUpdates() {
 
 async function approveUpdate(id) {
   try {
-    const res = await fetch(`${API}/initiatives/kpi-updates/${id}/approve`, {
+    const res = await fetch(`${API}/initiatives/task-updates/${id}/approve`, {
       method: 'PATCH',
       headers: getHeaders()
     });
@@ -205,7 +205,7 @@ async function confirmReject(id) {
     return;
   }
   try {
-    const res = await fetch(`${API}/initiatives/kpi-updates/${id}/reject`, {
+    const res = await fetch(`${API}/initiatives/task-updates/${id}/reject`, {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify({ reviewNote: rejectNote.value })
@@ -272,9 +272,9 @@ function getStatusClass(status) {
 .initiatives-list { margin-top: 12px; margin-left: 12px; display: flex; flex-direction: column; gap: 8px; }
 .ini-header { display: flex; align-items: center; }
 .ini-title { font-weight: 500; font-size: 14px; color: #334155; }
-.kpis-list { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
-.kpi-item { display: flex; align-items: center; gap: 8px; }
-.kpi-title { font-size: 13px; color: #475569; font-weight: 500; }
+.tasks-list { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+.task-item { display: flex; align-items: center; gap: 8px; }
+.task-title { font-size: 13px; color: #475569; font-weight: 500; }
 
 .text-sm { font-size: 12px; }
 .text-gray { color: #94a3b8; }

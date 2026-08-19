@@ -109,7 +109,7 @@
                 :key="obj.id"
                 :value="obj.id"
               >
-                [{{ obj.quarter }}] {{ obj.title }}
+                [{{ obj.year }}] {{ obj.title }}
               </option>
             </select>
           </div>
@@ -366,10 +366,10 @@
         <div class="list-header">
           <h2>Daftar OKR Aktif</h2>
           <div class="filter-group">
-            <label for="filter-quarter">Quarter:</label>
+            <label for="filter-year">Year:</label>
             <select
-              id="filter-quarter"
-              v-model="filterQuarter"
+              id="filter-year"
+              v-model="filterYear"
               @change="fetchObjectives"
             >
               <option value="">Semua</option>
@@ -391,7 +391,7 @@
           <div v-for="obj in objectives" :key="obj.id" class="objective-item">
             <div class="objective-item-header">
               <div>
-                <span class="quarter-badge">{{ obj.quarter }}</span>
+                <span class="year-badge">{{ obj.year }}</span>
                 <h3>{{ obj.title }}</h3>
                 <p v-if="obj.description" class="obj-desc">
                   {{ obj.description }}
@@ -506,25 +506,25 @@
                           {{ ini.description }}
                         </p>
 
-                        <div class="ini-kpi-container">
-                          <div v-if="ini.kpis?.length > 0" class="kpi-chips">
+                        <div class="ini-task-container">
+                          <div v-if="ini.tasks?.length > 0" class="task-chips">
                             <span
-                              v-for="kpi in ini.kpis"
-                              :key="kpi.id"
-                              class="kpi-chip"
+                              v-for="task in ini.tasks"
+                              :key="task.id"
+                              class="task-chip"
                             >
-                              {{ kpi.title }} ({{ kpi.currentValue }}/{{
-                                kpi.targetValue
+                              {{ task.title }} ({{ task.currentValue }}/{{
+                                task.targetValue
                               }}
-                              {{ kpi.unit }})
+                              {{ task.unit }})
                             </span>
                           </div>
-                          <div v-else class="kpi-empty">Belum ada KPI</div>
+                          <div v-else class="task-empty">Belum ada Task</div>
                           <button
-                            class="add-kpi-chip-btn"
-                            @click.stop="openAddKpiFor(ini)"
+                            class="add-task-chip-btn"
+                            @click.stop="openAddTaskFor(ini)"
                           >
-                            + KPI
+                            + Task
                           </button>
                         </div>
                       </div>
@@ -803,31 +803,31 @@
       </div>
     </div>
 
-    <!-- Add KPI Modal -->
+    <!-- Add Task Modal -->
     <div
-      v-if="showKpiModal"
+      v-if="showTaskModal"
       class="modal-overlay"
-      @click.self="showKpiModal = false"
+      @click.self="showTaskModal = false"
     >
       <div class="modal-card">
         <div class="modal-header">
-          <h3>Tambah KPI Baru</h3>
+          <h3>Tambah Task Baru</h3>
           <button
             class="modal-close-btn"
-            @click="showKpiModal = false"
+            @click="showTaskModal = false"
             title="Tutup Modal"
           >
             &times;
           </button>
         </div>
         <p class="modal-subtitle">
-          Untuk Inisiatif: <strong>{{ selectedIniForKpi?.title }}</strong>
+          Untuk Inisiatif: <strong>{{ selectedIniForTask?.title }}</strong>
         </p>
-        <form @submit.prevent="saveKpiForInitiative" class="okr-form">
+        <form @submit.prevent="saveTaskForInitiative" class="okr-form">
           <div class="form-group">
-            <label>Judul KPI / Metric *</label>
+            <label>Judul Task / Metric *</label>
             <input
-              v-model="kpiForm.title"
+              v-model="taskForm.title"
               type="text"
               placeholder="Contoh: Jumlah leads baru, Conversion rate"
               required
@@ -837,7 +837,7 @@
             <div class="form-group half">
               <label>Target Nilai *</label>
               <input
-                v-model.number="kpiForm.targetValue"
+                v-model.number="taskForm.targetValue"
                 type="number"
                 step="any"
                 min="0.000001"
@@ -847,7 +847,7 @@
             <div class="form-group half">
               <label>Satuan *</label>
               <input
-                v-model="kpiForm.unit"
+                v-model="taskForm.unit"
                 type="text"
                 placeholder="%, Unit, Rp, dll"
                 required
@@ -857,13 +857,13 @@
           <div class="modal-actions">
             <button
               type="button"
-              @click="showKpiModal = false"
+              @click="showTaskModal = false"
               class="cancel-btn"
             >
               Batal
             </button>
-            <button type="submit" class="save-kr-btn" :disabled="savingKpi">
-              {{ savingKpi ? "Menyimpan..." : "Simpan KPI" }}
+            <button type="submit" class="save-kr-btn" :disabled="savingTask">
+              {{ savingTask ? "Menyimpan..." : "Simpan Task" }}
             </button>
           </div>
         </form>
@@ -896,7 +896,7 @@ function openBulkUpload(type) {
   showBulkModal.value = true;
 }
 const objectives = ref([]);
-const filterQuarter = ref("");
+const filterYear = ref("");
 const loading = ref(false);
 const loadingList = ref(false);
 const errorMessage = ref("");
@@ -926,7 +926,7 @@ const availableDepartments = [
 const newObjective = ref({
   title: "",
   description: "",
-  quarter: "Q3-2026",
+  year: "Q3-2026",
   keyResults: [
     {
       title: "",
@@ -1043,8 +1043,8 @@ async function fetchObjectives() {
   loadingList.value = true;
   try {
     let url = `${config.public.apiBase}/objectives`;
-    if (filterQuarter.value) {
-      url += `?quarter=${filterQuarter.value}`;
+    if (filterYear.value) {
+      url += `?year=${filterYear.value}`;
     }
     const response = await $fetch(url, {
       headers: {
@@ -1191,7 +1191,7 @@ async function submitObjective() {
     newObjective.value = {
       title: "",
       description: "",
-      quarter: "Q3-2026",
+      year: "Q3-2026",
       keyResults: [
         {
           title: "",
@@ -1356,7 +1356,7 @@ onMounted(() => {
   fetchTeams();
 });
 
-// --- Inisiatif & KPI State & Logic ---
+// --- Inisiatif & Task State & Logic ---
 const expandedKrId = ref(null);
 const allTeams = ref([]);
 const showIniModal = ref(false);
@@ -1391,10 +1391,10 @@ const filteredTeamsForDropdown = computed(() => {
   );
 });
 
-const showKpiModal = ref(false);
-const selectedIniForKpi = ref(null);
-const kpiForm = ref({ title: "", targetValue: null, unit: "%" });
-const savingKpi = ref(false);
+const showTaskModal = ref(false);
+const selectedIniForTask = ref(null);
+const taskForm = ref({ title: "", targetValue: null, unit: "%" });
+const savingTask = ref(false);
 
 function toggleInitiatives(krId) {
   expandedKrId.value = expandedKrId.value === krId ? null : krId;
@@ -1435,7 +1435,7 @@ function startEditInitiative(ini, kr) {
 async function deleteInitiative(id) {
   if (
     !confirm(
-      "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh KPI di dalamnya?",
+      "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?",
     )
   ) {
     return;
@@ -1470,10 +1470,10 @@ function onIniOwnerChange() {
   }
 }
 
-function openAddKpiFor(ini) {
-  selectedIniForKpi.value = ini;
-  kpiForm.value = { title: "", targetValue: null, unit: "%" };
-  showKpiModal.value = true;
+function openAddTaskFor(ini) {
+  selectedIniForTask.value = ini;
+  taskForm.value = { title: "", targetValue: null, unit: "%" };
+  showTaskModal.value = true;
 }
 
 async function fetchTeams() {
@@ -1530,31 +1530,31 @@ async function saveInitiativeForKr() {
   }
 }
 
-async function saveKpiForInitiative() {
-  if (!kpiForm.value.title || kpiForm.value.targetValue === null) {
-    alert("Judul dan Target Nilai KPI wajib diisi!");
+async function saveTaskForInitiative() {
+  if (!taskForm.value.title || taskForm.value.targetValue === null) {
+    alert("Judul dan Target Nilai Task wajib diisi!");
     return;
   }
-  savingKpi.value = true;
+  savingTask.value = true;
   try {
     await $fetch(
-      `${config.public.apiBase}/initiatives/${selectedIniForKpi.value.id}/kpis`,
+      `${config.public.apiBase}/initiatives/${selectedIniForTask.value.id}/tasks`,
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${auth.token}`,
           "Content-Type": "application/json",
         },
-        body: kpiForm.value,
+        body: taskForm.value,
       },
     );
-    showKpiModal.value = false;
+    showTaskModal.value = false;
     fetchObjectives(); // Reload
   } catch (err) {
-    console.error("Save KPI error:", err);
-    alert(err.data?.message || "Gagal menyimpan KPI.");
+    console.error("Save Task error:", err);
+    alert(err.data?.message || "Gagal menyimpan Task.");
   } finally {
-    savingKpi.value = false;
+    savingTask.value = false;
   }
 }
 </script>
@@ -1945,7 +1945,7 @@ select:focus {
   margin-bottom: 16px;
 }
 
-.quarter-badge {
+.year-badge {
   background: rgba(0, 136, 255, 0.15);
   color: #8cc4ff;
   font-size: 14px;
@@ -2544,13 +2544,13 @@ select:focus {
   margin: 0 0 8px 0;
 }
 
-.kpi-chips {
+.task-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.kpi-chip {
+.task-chip {
   font-size: 11px;
   padding: 3px 8px;
   background: rgba(0, 210, 255, 0.1);
@@ -2559,13 +2559,13 @@ select:focus {
   border-radius: 4px;
 }
 
-.kpi-empty {
+.task-empty {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.3);
   font-style: italic;
 }
 
-.ini-kpi-container {
+.ini-task-container {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2573,7 +2573,7 @@ select:focus {
   margin-top: 4px;
 }
 
-.add-kpi-chip-btn {
+.add-task-chip-btn {
   background: rgba(0, 210, 255, 0.08);
   border: 1px dashed rgba(0, 210, 255, 0.4);
   color: var(--color-primary);
@@ -2584,7 +2584,7 @@ select:focus {
   transition: all 0.2s;
 }
 
-.add-kpi-chip-btn:hover {
+.add-task-chip-btn:hover {
   background: rgba(0, 210, 255, 0.2);
   border-style: solid;
 }

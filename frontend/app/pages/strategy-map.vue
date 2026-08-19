@@ -48,8 +48,8 @@
                   :class="data.perspective.toLowerCase()"
                 >
                   <div class="node-header">
-                    <span class="node-quarter">{{
-                      data.objectiveQuarter
+                    <span class="node-year">{{
+                      data.objectiveYear
                     }}</span>
                     <span class="node-perspective">{{
                       formatPerspective(data.perspective)

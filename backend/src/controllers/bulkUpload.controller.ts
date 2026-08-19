@@ -131,7 +131,7 @@ export async function bulkUploadKRs(req: AuthRequest, res: Response) {
             const newObj = await prisma.objective.create({
               data: {
                 title: 'Corporate Strategic Objectives 2026',
-                quarter: 'Q3-2026',
+                year: '2026',
               }
             });
             allObjectives.push(newObj);
@@ -423,7 +423,7 @@ export async function bulkUploadInitiatives(req: AuthRequest, res: Response) {
  *   objectives: Array<{
  *     title: string;
  *     description?: string;
- *     quarter: string;
+ *     year: string;
  *     ownerName?: string; // or ownerId
  *   }>
  * }
@@ -458,11 +458,11 @@ export async function bulkUploadObjectives(req: AuthRequest, res: Response) {
       const itemTitle = row.title ? String(row.title).trim() : `Baris #${rowNum}`;
 
       try {
-        if (!row.title || !row.quarter) {
+        if (!row.title || !row.year) {
           results.errors.push({
             row: rowNum,
             item: itemTitle,
-            reason: 'Judul objective (title) dan Quarter wajib diisi'
+            reason: 'Judul objective (title) dan Tahun (year) wajib diisi'
           });
           continue;
         }
@@ -479,13 +479,13 @@ export async function bulkUploadObjectives(req: AuthRequest, res: Response) {
         }
 
         const description = row.description ? String(row.description).trim() : null;
-        const quarter = String(row.quarter).trim();
+        const year = String(row.year).trim();
 
         await prisma.objective.create({
           data: {
             title: itemTitle,
             description,
-            quarter,
+            year,
             ownerId: resolvedOwnerId
           }
         });
