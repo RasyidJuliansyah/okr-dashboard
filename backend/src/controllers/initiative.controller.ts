@@ -99,7 +99,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         select: { value: true }
       });
       const deptList = managedDepts.map(d => d.value);
-      if (dbUser?.department && !deptList.includes(dbUser.department)) {
+      if (dbUser?.department && dbUser.department.toUpperCase() !== 'STRATEGIC' && !deptList.includes(dbUser.department)) {
         deptList.push(dbUser.department);
       }
 
@@ -417,7 +417,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { department: true, teamId: true } });
       
       const deptValues = new Set<string>(managedDepts.map(d => d.value));
-      if (dbUser?.department) deptValues.add(dbUser.department);
+      if (dbUser?.department && dbUser.department.toUpperCase() !== 'STRATEGIC') deptValues.add(dbUser.department);
 
       const deptTeams = await prisma.team.findMany({
         where: {

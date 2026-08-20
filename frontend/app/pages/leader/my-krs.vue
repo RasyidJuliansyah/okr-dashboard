@@ -86,7 +86,6 @@
                   </div>
                   <div
                     class="ini-actions"
-                    v-if="authStore.user?.role !== 'LEADER'"
                   >
                     <button
                       class="icon-btn"
@@ -111,6 +110,30 @@
                         />
                       </svg>
                     </button>
+                    <button
+                      v-if="authStore.user?.role === 'ADMIN'"
+                      class="icon-btn danger"
+                      @click="deleteInitiative(ini.id)"
+                      title="Hapus Inisiatif"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
 
@@ -129,8 +152,15 @@
                   >
                     <div class="task-nested-left">
                       <div class="task-nested-title">{{ task.title }}</div>
-                      <div class="task-nested-assignees" v-if="task.assignments && task.assignments.length > 0">
-                        <span v-for="a in task.assignments" :key="a.userId" class="task-assignee-tag">
+                      <div
+                        class="task-nested-assignees"
+                        v-if="task.assignments && task.assignments.length > 0"
+                      >
+                        <span
+                          v-for="a in task.assignments"
+                          :key="a.userId"
+                          class="task-assignee-tag"
+                        >
                           👤 {{ a.user?.name }}
                         </span>
                       </div>
@@ -152,11 +182,11 @@
                       >
                       <span class="badge bg-red" v-else>{{ task.status }}</span>
                       <button
-                        v-if="authStore.user?.role === 'LEADER'"
+                        v-if="authStore.user?.role === 'LEADER' || authStore.user?.role === 'ADMIN'"
                         class="icon-btn small"
                         @click="startEditTask(task, ini, assign.keyResult)"
                         title="Edit Task"
-                        style="padding: 2px 4px; margin-left: 4px;"
+                        style="padding: 2px 4px; margin-left: 4px"
                       >
                         <svg
                           width="12"
@@ -176,6 +206,31 @@
                           />
                         </svg>
                       </button>
+                      <button
+                        v-if="authStore.user?.role === 'ADMIN'"
+                        class="icon-btn small danger"
+                        @click="deleteTask(task.id)"
+                        title="Hapus Task"
+                        style="padding: 2px 4px; margin-left: 4px"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -188,7 +243,7 @@
             >
               {{
                 authStore.user?.role === "LEADER"
-                  ? "+ Buat Inisiatif (Task) Baru"
+                  ? "+ Buat Inisiatif Baru"
                   : "+ Buat Inisiatif dari KR ini"
               }}
             </button>
@@ -210,9 +265,7 @@
                   ? "Edit Inisiatif"
                   : editingTask
                     ? "Edit Task (Inisiatif)"
-                    : authStore.user?.role === "LEADER"
-                      ? "Buat Task (Inisiatif) Baru"
-                      : "Buat Inisiatif Baru"
+                    : "Buat Inisiatif Baru"
               }}
             </h3>
             <button class="modal-close-btn" @click="showModal = false">
@@ -223,8 +276,48 @@
             Untuk KR: <strong>{{ selectedKr?.title }}</strong>
           </p>
 
-          <!-- Non-Leader fields -->
-          <div v-if="authStore.user?.role !== 'LEADER'">
+          <!-- Form fields: show task fields if editing an existing task, otherwise show initiative fields -->
+          <div v-if="editingTask">
+            <label>Judul Task (Inisiatif) *</label>
+            <input
+              v-model="form.title"
+              class="form-input"
+              placeholder="Contoh: Membuat draft mockup"
+            />
+
+            <label>Assign Pegawai (PIC Task) *</label>
+            <div class="searchable-field">
+              <input
+                v-model="leaderUserSearch"
+                type="text"
+                class="form-input search-mini"
+                placeholder="Cari nama pegawai..."
+              />
+              <select v-model="form.ownerId" class="form-input">
+                <option value="">-- Pilih Pegawai --</option>
+                <option
+                  v-for="user in filteredLeaderUsers"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }} ({{ user.position || user.role }})
+                </option>
+              </select>
+            </div>
+          </div>
+          <div v-else>
+            <label>Pilih KR Utama *</label>
+            <select v-model="form.keyResultId" class="form-input">
+              <option value="">-- Pilih KR Utama --</option>
+              <option
+                v-for="assign in krs"
+                :key="assign.keyResult.id"
+                :value="assign.keyResult.id"
+              >
+                {{ assign.keyResult.objective?.title ? `[${assign.keyResult.objective.title}] ` : '' }}{{ assign.keyResult.title }}
+              </option>
+            </select>
+
             <label>Judul Inisiatif *</label>
             <input
               v-model="form.title"
@@ -276,57 +369,6 @@
                   :value="user.id"
                 >
                   {{ user.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Leader fields -->
-          <div v-else>
-            <label>Pilih Inisiatif Manajer *</label>
-            <select v-model="selectedInitiativeId" class="form-input">
-              <option value="">-- Pilih Inisiatif Manajer --</option>
-              <option
-                v-for="ini in selectedKr?.initiatives"
-                :key="ini.id"
-                :value="ini.id"
-              >
-                {{ ini.title }}
-              </option>
-            </select>
-            <p
-              v-if="
-                !selectedKr?.initiatives || selectedKr.initiatives.length === 0
-              "
-              class="text-red text-sm mb-4"
-            >
-              * Manajer Anda belum membuat Inisiatif untuk KR ini. Harap minta
-              Manajer Anda membuat Inisiatif terlebih dahulu.
-            </p>
-
-            <label>Judul Task (Inisiatif) *</label>
-            <input
-              v-model="form.title"
-              class="form-input"
-              placeholder="Contoh: Membuat draft mockup"
-            />
-
-            <label>Assign Pegawai (PIC Task) *</label>
-            <div class="searchable-field">
-              <input
-                v-model="leaderUserSearch"
-                type="text"
-                class="form-input search-mini"
-                placeholder="Cari nama pegawai..."
-              />
-              <select v-model="form.ownerId" class="form-input">
-                <option value="">-- Pilih Pegawai --</option>
-                <option
-                  v-for="user in filteredLeaderUsers"
-                  :key="user.id"
-                  :value="user.id"
-                >
-                  {{ user.name }} ({{ user.position || user.role }})
                 </option>
               </select>
             </div>
@@ -566,6 +608,7 @@ function openInitiativeModal(kr) {
     ownerId: "",
     targetValue: 0,
     unit: "%",
+    keyResultId: kr?.id || "",
   };
   modalError.value = "";
   showModal.value = true;
@@ -584,6 +627,7 @@ function startEditInitiative(ini, kr) {
     ownerId: ini.ownerId || "",
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "%",
+    keyResultId: ini.keyResultId || kr?.id || "",
   };
   modalError.value = "";
   showModal.value = true;
@@ -632,12 +676,28 @@ async function deleteInitiative(id) {
   }
 }
 
-async function saveInitiative() {
-  if (authStore.user?.role === "LEADER") {
-    if (!selectedInitiativeId.value) {
-      modalError.value = "Harap pilih Inisiatif Manajer terlebih dahulu";
-      return;
+async function deleteTask(id) {
+  if (!confirm("Apakah Anda yakin ingin menghapus Task ini?")) {
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/initiatives/tasks/${id}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message);
     }
+    await fetchData();
+  } catch (err) {
+    console.error("Delete task error:", err);
+    alert(err.message || "Gagal menghapus Task.");
+  }
+}
+
+async function saveInitiative() {
+  if (editingTask.value) {
     if (!form.value.title) {
       modalError.value = "Judul wajib diisi";
       return;
@@ -649,71 +709,37 @@ async function saveInitiative() {
     saving.value = true;
     modalError.value = "";
     try {
-      if (editingTask.value) {
-        // 1. Update task details
-        const res = await fetch(`${API}/initiatives/tasks/${editingTask.value.id}`, {
-          method: "PUT",
-          headers: getHeaders(),
-          body: JSON.stringify({
-            title: form.value.title,
-            targetValue: form.value.targetValue || 0,
-            unit: form.value.unit || "%"
-          }),
-        });
+      // 1. Update task details
+      const res = await fetch(`${API}/tasks/${editingTask.value.id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          title: form.value.title,
+          targetValue: form.value.targetValue || 0,
+          unit: form.value.unit || "%",
+        }),
+      });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message);
-        }
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message);
+      }
 
-        // 2. Update task assignment
-        const assignRes = await fetch(`${API}/initiatives/tasks/${editingTask.value.id}/assign`, {
+      // 2. Update task assignment
+      const assignRes = await fetch(
+        `${API}/initiatives/tasks/${editingTask.value.id}/assign`,
+        {
           method: "POST",
           headers: getHeaders(),
           body: JSON.stringify({
-            userIds: [form.value.ownerId]
+            userIds: [form.value.ownerId],
           }),
-        });
+        },
+      );
 
-        if (!assignRes.ok) {
-          const err = await assignRes.json();
-          throw new Error(err.message || "Gagal meng-assign task ke pegawai");
-        }
-      } else {
-        // Create new task
-        const res = await fetch(
-          `${API}/initiatives/${selectedInitiativeId.value}/tasks`,
-          {
-            method: "POST",
-            headers: getHeaders(),
-            body: JSON.stringify({
-              title: form.value.title,
-              targetValue: form.value.targetValue || 0,
-              unit: form.value.unit || "%",
-            }),
-          },
-        );
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message);
-        }
-
-        const task = await res.json();
-
-        // Assign the task to the selected user
-        const assignRes = await fetch(`${API}/initiatives/tasks/${task.id}/assign`, {
-          method: "POST",
-          headers: getHeaders(),
-          body: JSON.stringify({
-            userIds: [form.value.ownerId]
-          }),
-        });
-
-        if (!assignRes.ok) {
-          const err = await assignRes.json();
-          throw new Error(err.message || "Gagal meng-assign task ke pegawai");
-        }
+      if (!assignRes.ok) {
+        const err = await assignRes.json();
+        throw new Error(err.message || "Gagal meng-assign task ke pegawai");
       }
 
       showModal.value = false;
@@ -727,8 +753,8 @@ async function saveInitiative() {
     return;
   }
 
-  if (!form.value.title || !form.value.teamId) {
-    modalError.value = "Judul dan Tim wajib diisi";
+  if (!form.value.title || !form.value.teamId || !form.value.keyResultId) {
+    modalError.value = "Judul, Tim, dan KR Utama wajib diisi";
     return;
   }
 
@@ -746,10 +772,7 @@ async function saveInitiative() {
       res = await fetch(`${API}/initiatives`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({
-          ...form.value,
-          keyResultId: selectedKr.value.id,
-        }),
+        body: JSON.stringify(form.value),
       });
     }
 

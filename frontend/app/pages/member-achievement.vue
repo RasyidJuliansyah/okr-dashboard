@@ -57,8 +57,8 @@
             />
           </div>
 
-          <!-- Filter Departemen (Khusus Admin & C-Level) -->
-          <div v-if="isAdmin || isCLevel" class="filter-item">
+          <!-- Filter Departemen (Khusus Admin, C-Level, & Manager) -->
+          <div v-if="isAdmin || isCLevel || isManager" class="filter-item">
             <label>Filter Departemen:</label>
             <select v-model="selectedDepartment" class="filter-select">
               <option value="">

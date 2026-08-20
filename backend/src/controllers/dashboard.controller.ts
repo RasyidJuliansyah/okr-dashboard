@@ -78,7 +78,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         select: { value: true }
       });
       const deptValues = managedDepts.map(d => d.value);
-      if (dbUser?.department && !deptValues.includes(dbUser.department)) {
+      if (dbUser?.department && dbUser.department.toUpperCase() !== 'STRATEGIC' && !deptValues.includes(dbUser.department)) {
         deptValues.push(dbUser.department);
       }
       const managerDept = deptValues.join(', ') || dbUser?.department || '';
