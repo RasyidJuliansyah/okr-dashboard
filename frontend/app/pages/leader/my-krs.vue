@@ -71,42 +71,113 @@
                 :key="ini.id"
                 class="ini-item-row"
               >
-                <div class="ini-info-col">
-                  <span class="ini-title">{{ ini.title }}</span>
-                  <div class="ini-sub-meta">
-                    <span class="badge-team">→ {{ ini.team?.name }}</span>
-                    <span v-if="ini.owner" class="badge-owner">{{
-                      ini.owner.name
-                    }}</span>
-                    <span class="badge" :class="getStatusClass(ini.status)">{{
-                      ini.status
-                    }}</span>
+                <div class="ini-item-main">
+                  <div class="ini-info-col">
+                    <span class="ini-title">{{ ini.title }}</span>
+                    <div class="ini-sub-meta">
+                      <span class="badge-team">→ {{ ini.team?.name }}</span>
+                      <span v-if="ini.owner" class="badge-owner">{{
+                        ini.owner.name
+                      }}</span>
+                      <span class="badge" :class="getStatusClass(ini.status)">{{
+                        ini.status
+                      }}</span>
+                    </div>
+                  </div>
+                  <div
+                    class="ini-actions"
+                    v-if="authStore.user?.role !== 'LEADER'"
+                  >
+                    <button
+                      class="icon-btn"
+                      @click="startEditInitiative(ini, assign.keyResult)"
+                      title="Edit Inisiatif"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-                <div class="ini-actions">
-                  <button
-                    class="icon-btn"
-                    @click="startEditInitiative(ini, assign.keyResult)"
-                    title="Edit Inisiatif"
+
+                <!-- Show Tasks List under Manager's Initiative -->
+                <div
+                  v-if="ini.tasks && ini.tasks.length > 0"
+                  class="task-nested-list"
+                >
+                  <div class="task-nested-header">
+                    Tasks (Inisiatif Leader):
+                  </div>
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-nested-row"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      />
-                      <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                      />
-                    </svg>
-                  </button>
+                    <div class="task-nested-left">
+                      <div class="task-nested-title">{{ task.title }}</div>
+                      <div class="task-nested-assignees" v-if="task.assignments && task.assignments.length > 0">
+                        <span v-for="a in task.assignments" :key="a.userId" class="task-assignee-tag">
+                          👤 {{ a.user?.name }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="task-nested-meta">
+                      <span class="task-nested-progress">
+                        {{ task.currentValue }} / {{ task.targetValue }}
+                        {{ task.unit || "" }}
+                      </span>
+                      <span
+                        class="badge bg-green"
+                        v-if="task.status === 'ON_TRACK'"
+                        >{{ task.status }}</span
+                      >
+                      <span
+                        class="badge bg-yellow"
+                        v-else-if="task.status === 'AT_RISK'"
+                        >{{ task.status }}</span
+                      >
+                      <span class="badge bg-red" v-else>{{ task.status }}</span>
+                      <button
+                        v-if="authStore.user?.role === 'LEADER'"
+                        class="icon-btn small"
+                        @click="startEditTask(task, ini, assign.keyResult)"
+                        title="Edit Task"
+                        style="padding: 2px 4px; margin-left: 4px;"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          />
+                          <path
+                            d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </li>
             </ul>
@@ -115,7 +186,11 @@
               class="primary-btn mt-2"
               @click="openInitiativeModal(assign.keyResult)"
             >
-              + Buat Inisiatif dari KR ini
+              {{
+                authStore.user?.role === "LEADER"
+                  ? "+ Buat Inisiatif (Task) Baru"
+                  : "+ Buat Inisiatif dari KR ini"
+              }}
             </button>
           </div>
         </div>
@@ -129,7 +204,17 @@
       >
         <div class="modal-box">
           <div class="modal-header">
-            <h3>{{ editingIni ? "Edit Inisiatif" : "Buat Inisiatif Baru" }}</h3>
+            <h3>
+              {{
+                editingIni
+                  ? "Edit Inisiatif"
+                  : editingTask
+                    ? "Edit Task (Inisiatif)"
+                    : authStore.user?.role === "LEADER"
+                      ? "Buat Task (Inisiatif) Baru"
+                      : "Buat Inisiatif Baru"
+              }}
+            </h3>
             <button class="modal-close-btn" @click="showModal = false">
               &times;
             </button>
@@ -138,59 +223,113 @@
             Untuk KR: <strong>{{ selectedKr?.title }}</strong>
           </p>
 
-          <label>Judul Inisiatif *</label>
-          <input
-            v-model="form.title"
-            class="form-input"
-            placeholder="Contoh: Kampanye B2B"
-          />
-
-          <label>Deskripsi</label>
-          <textarea
-            v-model="form.description"
-            class="form-input"
-            rows="3"
-          ></textarea>
-
-          <label>Pilih Tim / Departemen Anda *</label>
-          <div class="searchable-field">
+          <!-- Non-Leader fields -->
+          <div v-if="authStore.user?.role !== 'LEADER'">
+            <label>Judul Inisiatif *</label>
             <input
-              v-model="leaderTeamSearch"
-              type="text"
-              class="form-input search-mini"
-              placeholder="Cari nama departemen / tim..."
+              v-model="form.title"
+              class="form-input"
+              placeholder="Contoh: Kampanye B2B"
             />
-            <select v-model="form.teamId" class="form-input">
-              <option value="">-- Pilih Tim / Departemen --</option>
-              <option
-                v-for="team in filteredLeaderTeams"
-                :key="team.id"
-                :value="team.id"
-              >
-                {{ team.name
-                }}{{ team.department ? ` - ${team.department}` : "" }}
-              </option>
-            </select>
+
+            <label>Deskripsi</label>
+            <textarea
+              v-model="form.description"
+              class="form-input"
+              rows="3"
+            ></textarea>
+
+            <label>Pilih Tim / Departemen Anda *</label>
+            <div class="searchable-field">
+              <input
+                v-model="leaderTeamSearch"
+                type="text"
+                class="form-input search-mini"
+                placeholder="Cari nama departemen / tim..."
+              />
+              <select v-model="form.teamId" class="form-input">
+                <option value="">-- Pilih Tim / Departemen --</option>
+                <option
+                  v-for="team in filteredLeaderTeams"
+                  :key="team.id"
+                  :value="team.id"
+                >
+                  {{ team.name
+                  }}{{ team.department ? ` - ${team.department}` : "" }}
+                </option>
+              </select>
+            </div>
+
+            <label>PIC Pegawai (Penanggung Jawab)</label>
+            <div class="searchable-field">
+              <input
+                v-model="leaderUserSearch"
+                type="text"
+                class="form-input search-mini"
+                placeholder="Cari nama pegawai..."
+              />
+              <select v-model="form.ownerId" class="form-input">
+                <option value="">-- Pilih Pegawai (Opsional) --</option>
+                <option
+                  v-for="user in filteredLeaderUsers"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <label>PIC Pegawai (Penanggung Jawab)</label>
-          <div class="searchable-field">
-            <input
-              v-model="leaderUserSearch"
-              type="text"
-              class="form-input search-mini"
-              placeholder="Cari nama pegawai..."
-            />
-            <select v-model="form.ownerId" class="form-input">
-              <option value="">-- Pilih Pegawai (Opsional) --</option>
+          <!-- Leader fields -->
+          <div v-else>
+            <label>Pilih Inisiatif Manajer *</label>
+            <select v-model="selectedInitiativeId" class="form-input">
+              <option value="">-- Pilih Inisiatif Manajer --</option>
               <option
-                v-for="user in filteredLeaderUsers"
-                :key="user.id"
-                :value="user.id"
+                v-for="ini in selectedKr?.initiatives"
+                :key="ini.id"
+                :value="ini.id"
               >
-                {{ user.name }}
+                {{ ini.title }}
               </option>
             </select>
+            <p
+              v-if="
+                !selectedKr?.initiatives || selectedKr.initiatives.length === 0
+              "
+              class="text-red text-sm mb-4"
+            >
+              * Manajer Anda belum membuat Inisiatif untuk KR ini. Harap minta
+              Manajer Anda membuat Inisiatif terlebih dahulu.
+            </p>
+
+            <label>Judul Task (Inisiatif) *</label>
+            <input
+              v-model="form.title"
+              class="form-input"
+              placeholder="Contoh: Membuat draft mockup"
+            />
+
+            <label>Assign Pegawai (PIC Task) *</label>
+            <div class="searchable-field">
+              <input
+                v-model="leaderUserSearch"
+                type="text"
+                class="form-input search-mini"
+                placeholder="Cari nama pegawai..."
+              />
+              <select v-model="form.ownerId" class="form-input">
+                <option value="">-- Pilih Pegawai --</option>
+                <option
+                  v-for="user in filteredLeaderUsers"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }} ({{ user.position || user.role }})
+                </option>
+              </select>
+            </div>
           </div>
 
           <label>Target Value</label>
@@ -245,7 +384,6 @@ const userList = ref([]);
 const loading = ref(true);
 const errorMsg = ref("");
 
-
 const leaderTeamSearch = ref("");
 const leaderUserSearch = ref("");
 
@@ -298,9 +436,11 @@ const filteredLeaderUsers = computed(() => {
 
 const showModal = ref(false);
 const editingIni = ref(null);
+const editingTask = ref(null);
 const saving = ref(false);
 const modalError = ref("");
 const selectedKr = ref(null);
+const selectedInitiativeId = ref("");
 const form = ref({
   title: "",
   description: "",
@@ -414,9 +554,11 @@ function getStatusClass(status) {
 
 function openInitiativeModal(kr) {
   editingIni.value = null;
+  editingTask.value = null;
   selectedKr.value = kr;
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
+  selectedInitiativeId.value = ""; // Reset selected initiative
   form.value = {
     title: "",
     description: "",
@@ -431,6 +573,7 @@ function openInitiativeModal(kr) {
 
 function startEditInitiative(ini, kr) {
   editingIni.value = ini;
+  editingTask.value = null;
   selectedKr.value = kr || ini.keyResult;
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
@@ -441,6 +584,25 @@ function startEditInitiative(ini, kr) {
     ownerId: ini.ownerId || "",
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "%",
+  };
+  modalError.value = "";
+  showModal.value = true;
+}
+
+function startEditTask(task, ini, kr) {
+  editingIni.value = null;
+  editingTask.value = task;
+  selectedKr.value = kr;
+  selectedInitiativeId.value = ini.id;
+  leaderTeamSearch.value = "";
+  leaderUserSearch.value = "";
+  form.value = {
+    title: task.title,
+    description: "",
+    teamId: "",
+    ownerId: task.assignments?.[0]?.userId || "",
+    targetValue: task.targetValue || 0,
+    unit: task.unit || "%",
   };
   modalError.value = "";
   showModal.value = true;
@@ -471,6 +633,100 @@ async function deleteInitiative(id) {
 }
 
 async function saveInitiative() {
+  if (authStore.user?.role === "LEADER") {
+    if (!selectedInitiativeId.value) {
+      modalError.value = "Harap pilih Inisiatif Manajer terlebih dahulu";
+      return;
+    }
+    if (!form.value.title) {
+      modalError.value = "Judul wajib diisi";
+      return;
+    }
+    if (!form.value.ownerId) {
+      modalError.value = "Harap pilih Pegawai untuk di-assign";
+      return;
+    }
+    saving.value = true;
+    modalError.value = "";
+    try {
+      if (editingTask.value) {
+        // 1. Update task details
+        const res = await fetch(`${API}/initiatives/tasks/${editingTask.value.id}`, {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            title: form.value.title,
+            targetValue: form.value.targetValue || 0,
+            unit: form.value.unit || "%"
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message);
+        }
+
+        // 2. Update task assignment
+        const assignRes = await fetch(`${API}/initiatives/tasks/${editingTask.value.id}/assign`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            userIds: [form.value.ownerId]
+          }),
+        });
+
+        if (!assignRes.ok) {
+          const err = await assignRes.json();
+          throw new Error(err.message || "Gagal meng-assign task ke pegawai");
+        }
+      } else {
+        // Create new task
+        const res = await fetch(
+          `${API}/initiatives/${selectedInitiativeId.value}/tasks`,
+          {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+              title: form.value.title,
+              targetValue: form.value.targetValue || 0,
+              unit: form.value.unit || "%",
+            }),
+          },
+        );
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message);
+        }
+
+        const task = await res.json();
+
+        // Assign the task to the selected user
+        const assignRes = await fetch(`${API}/initiatives/tasks/${task.id}/assign`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            userIds: [form.value.ownerId]
+          }),
+        });
+
+        if (!assignRes.ok) {
+          const err = await assignRes.json();
+          throw new Error(err.message || "Gagal meng-assign task ke pegawai");
+        }
+      }
+
+      showModal.value = false;
+      editingTask.value = null;
+      await fetchData();
+    } catch (e) {
+      modalError.value = e.message || "Gagal menyimpan task";
+    } finally {
+      saving.value = false;
+    }
+    return;
+  }
+
   if (!form.value.title || !form.value.teamId) {
     modalError.value = "Judul dan Tim wajib diisi";
     return;
@@ -511,8 +767,6 @@ async function saveInitiative() {
     saving.value = false;
   }
 }
-
-
 </script>
 
 <style scoped>
@@ -670,7 +924,7 @@ async function saveInitiative() {
 
 .initiatives-section li {
   display: flex;
-  align-items: center;
+  align-items: left;
   padding: 8px 12px;
   background: #f8fafc;
   border-radius: 8px;
@@ -807,12 +1061,76 @@ async function saveInitiative() {
 }
 .ini-item-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   background: #f8fafc;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+  gap: 10px;
+}
+.ini-item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.task-nested-list {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 10px;
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.task-nested-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+.task-nested-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
+}
+.task-nested-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+.task-nested-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-nested-progress {
+  font-size: 12px;
+  color: #64748b;
+}
+.text-red {
+  color: #ef4444;
+}
+.task-nested-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.task-nested-assignees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.task-assignee-tag {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: #475569;
 }
 .ini-info-col {
   display: flex;

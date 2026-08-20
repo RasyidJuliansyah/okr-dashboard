@@ -1043,35 +1043,51 @@ export async function assignUsersToTask(req: AuthRequest, res: Response) {
     const task = await prisma.task.findUnique({ where: { id } });
     if (!task) return res.status(404).json({ message: 'Task tidak ditemukan' });
 
-    // LEADER: validasi Task milik tim yang dipimpin & userIds adalah anggota tim
+    // LEADER: validasi Task milik tim yang dipimpin & userIds adalah anggota departemen/tim
     if (role === 'LEADER') {
       const initiative = await prisma.initiative.findUnique({
         where: { id: task.initiativeId }
       });
       if (!initiative) return res.status(404).json({ message: 'Initiative tidak ditemukan' });
 
-      const leaderTeamIds = await getLeaderTeamIds(userId);
+      // Get Leader's department and managed departments
+      const leader = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true, managedDepartments: { select: { value: true } } }
+      });
 
-      if (!leaderTeamIds.includes(initiative.teamId)) {
-        return res.status(403).json({
-          message: 'Anda hanya bisa assign member untuk Task di tim yang Anda pimpin'
-        });
-      }
+      const leaderDept = leader?.department;
+      const managedDeptValues = leader?.managedDepartments.map(d => d.value) || [];
 
-      // Validasi semua userIds adalah anggota tim Leader
+      // Validasi semua userIds adalah anggota tim / department Leader
       const validMembers = await prisma.user.findMany({
-        where: { id: { in: userIds }, teamId: { in: leaderTeamIds } },
+        where: {
+          id: { in: userIds },
+          OR: [
+            ...(leaderDept ? [{ department: leaderDept }] : []),
+            ...(managedDeptValues.length > 0 ? [{ department: { in: managedDeptValues } }] : [])
+          ]
+        },
         select: { id: true }
       });
+
       const invalidIds = userIds.filter((uid: string) =>
         !validMembers.map(m => m.id).includes(uid)
       );
       if (invalidIds.length > 0) {
         return res.status(403).json({
-          message: 'Beberapa user bukan anggota tim Anda dan tidak bisa di-assign'
+          message: 'Beberapa user bukan anggota departemen/tim Anda dan tidak bisa di-assign'
         });
       }
     }
+
+    // Clear old assignments not in userIds
+    await prisma.taskAssignment.deleteMany({
+      where: {
+        taskId: id,
+        userId: { notIn: userIds }
+      }
+    });
 
     // Upsert assignments
     const results = [];
