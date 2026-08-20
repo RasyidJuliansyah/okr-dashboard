@@ -600,7 +600,9 @@ export async function getKrsForInitiativeDropdown(req: AuthRequest, res: Respons
       });
 
       const deptValues: string[] = managedDepts.map(d => d.value);
-      if (dbUser?.department) deptValues.push(dbUser.department);
+      if (dbUser?.department && dbUser.department.toUpperCase() !== 'STRATEGIC' && !deptValues.includes(dbUser.department)) {
+        deptValues.push(dbUser.department);
+      }
 
       krWhere = {
         OR: [
