@@ -84,9 +84,7 @@
                       }}</span>
                     </div>
                   </div>
-                  <div
-                    class="ini-actions"
-                  >
+                  <div class="ini-actions">
                     <button
                       class="icon-btn"
                       @click="startEditInitiative(ini, assign.keyResult)"
@@ -182,7 +180,10 @@
                       >
                       <span class="badge bg-red" v-else>{{ task.status }}</span>
                       <button
-                        v-if="authStore.user?.role === 'LEADER' || authStore.user?.role === 'ADMIN'"
+                        v-if="
+                          authStore.user?.role === 'LEADER' ||
+                          authStore.user?.role === 'ADMIN'
+                        "
                         class="icon-btn small"
                         @click="startEditTask(task, ini, assign.keyResult)"
                         title="Edit Task"
@@ -314,7 +315,11 @@
                 :key="assign.keyResult.id"
                 :value="assign.keyResult.id"
               >
-                {{ assign.keyResult.objective?.title ? `[${assign.keyResult.objective.title}] ` : '' }}{{ assign.keyResult.title }}
+                {{
+                  assign.keyResult.objective?.title
+                    ? `[${assign.keyResult.objective.title}] `
+                    : ""
+                }}{{ assign.keyResult.title }}
               </option>
             </select>
 
