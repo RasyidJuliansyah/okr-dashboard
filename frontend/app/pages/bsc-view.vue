@@ -311,6 +311,7 @@ onMounted(() => {
   padding: 20px 40px;
   background: #ffff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -407,6 +408,7 @@ onMounted(() => {
   border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 24px;
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 

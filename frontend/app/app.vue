@@ -1,17 +1,25 @@
 <template>
   <div class="app-layout" :class="{ 'with-shell': showShell }">
     <NuxtRouteAnnouncer />
-    
+
     <!-- Sidebar backdrop overlay (mobile only) -->
-    <div 
-      v-if="showShell && isSidebarOpen" 
-      class="sidebar-overlay" 
+    <div
+      v-if="showShell && isSidebarOpen"
+      class="sidebar-overlay"
       @click="isSidebarOpen = false"
     ></div>
 
-    <AppSidebar v-if="showShell" :isOpen="isSidebarOpen" @close="isSidebarOpen = false" />
+    <AppSidebar
+      v-if="showShell"
+      :isOpen="isSidebarOpen"
+      @close="isSidebarOpen = false"
+    />
     <div :class="['main-wrapper', { 'with-sidebar': showShell }]">
-      <AppHeader v-if="showShell" :title="pageTitle" @toggle-sidebar="isSidebarOpen = !isSidebarOpen" />
+      <AppHeader
+        v-if="showShell"
+        :title="pageTitle"
+        @toggle-sidebar="isSidebarOpen = !isSidebarOpen"
+      />
       <main :class="['page-content', { 'padded-content': showShell }]">
         <NuxtPage />
       </main>
@@ -332,6 +340,7 @@ p {
   right: 0;
   bottom: 0;
   background-color: rgba(13, 21, 37, 0.5);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 99;
 }

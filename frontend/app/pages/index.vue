@@ -87,6 +87,7 @@ function handleLogout() {
 
 .dashboard-card {
   background: var(--card-bg);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
   padding: 40px;

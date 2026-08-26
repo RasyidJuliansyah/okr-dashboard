@@ -488,6 +488,7 @@ onMounted(async () => {
   padding: 20px 40px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -607,6 +608,7 @@ onMounted(async () => {
   border: 2px solid #f0f3f9;
   border-radius: 16px;
   padding: 24px;
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 

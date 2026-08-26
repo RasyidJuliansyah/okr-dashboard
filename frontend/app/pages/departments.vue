@@ -1129,6 +1129,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   z-index: 999;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 

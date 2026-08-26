@@ -199,16 +199,38 @@
         <div v-for="task in myTasks" :key="task.id" class="task-card card">
           <div class="task-header">
             <span class="task-title">{{ task.title }}</span>
-            <span :class="['status-badge', task.status.toLowerCase().replace('_','-')]">{{ task.status }}</span>
+            <span
+              :class="[
+                'status-badge',
+                task.status.toLowerCase().replace('_', '-'),
+              ]"
+              >{{ task.status }}</span
+            >
           </div>
           <div class="task-progress">
-            <span>{{ task.currentValue }} / {{ task.targetValue }} {{ task.unit }}</span>
+            <span
+              >{{ task.currentValue }} / {{ task.targetValue }}
+              {{ task.unit }}</span
+            >
             <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: Math.min(100, (task.currentValue / task.targetValue) * 100) + '%' }"></div>
+              <div
+                class="progress-fill"
+                :style="{
+                  width:
+                    Math.min(
+                      100,
+                      (task.currentValue / task.targetValue) * 100,
+                    ) + '%',
+                }"
+              ></div>
             </div>
           </div>
-          <div class="task-initiative">Initiative: {{ task.initiative?.title }}</div>
-          <button class="primary-btn" @click="openTaskSubmitModal(task)">Submit Update</button>
+          <div class="task-initiative">
+            Initiative: {{ task.initiative?.title }}
+          </div>
+          <button class="primary-btn" @click="openTaskSubmitModal(task)">
+            Submit Update
+          </button>
         </div>
       </section>
 
@@ -224,12 +246,16 @@
         <!-- Summary Cards Grid -->
         <div class="init-summary-grid">
           <div class="init-summary-card card">
-            <span class="summary-val">{{ initProgressData.summary?.avgProgress || 0 }}%</span>
+            <span class="summary-val"
+              >{{ initProgressData.summary?.avgProgress || 0 }}%</span
+            >
             <span class="summary-lbl">Rata-rata Progress</span>
           </div>
           <div class="init-summary-card card">
             <span class="summary-val">
-              {{ initProgressData.summary?.completedTasks || 0 }}/{{ initProgressData.summary?.totalTasks || 0 }}
+              {{ initProgressData.summary?.completedTasks || 0 }}/{{
+                initProgressData.summary?.totalTasks || 0
+              }}
             </span>
             <span class="summary-lbl">Task Selesai</span>
           </div>
@@ -248,31 +274,49 @@
         </div>
 
         <!-- Grouped by Key Result -->
-        <div v-for="group in initProgressData.byKeyResult" :key="group.keyResult?.id"
-             class="kr-group-card card">
+        <div
+          v-for="group in initProgressData.byKeyResult"
+          :key="group.keyResult?.id"
+          class="kr-group-card card"
+        >
           <div class="kr-group-header">
             <div class="kr-group-title-wrap">
-              <span class="perspective-badge" :class="group.keyResult?.bscPerspective?.toLowerCase()">
+              <span
+                class="perspective-badge"
+                :class="group.keyResult?.bscPerspective?.toLowerCase()"
+              >
                 {{ formatPerspective(group.keyResult?.bscPerspective) }}
               </span>
               <h4>{{ group.keyResult?.title }}</h4>
               <span class="kr-obj-context" v-if="group.keyResult?.objective">
-                {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.year }})
+                {{ group.keyResult.objective.title }} ({{
+                  group.keyResult.objective.year
+                }})
               </span>
             </div>
             <div class="kr-group-progress-info">
               <span class="kr-progress-pct">{{ group.krProgress }}%</span>
               <div class="kr-mini-progress-track">
-                <div class="kr-mini-progress-bar" :style="{ width: group.krProgress + '%' }"></div>
+                <div
+                  class="kr-mini-progress-bar"
+                  :style="{ width: group.krProgress + '%' }"
+                ></div>
               </div>
             </div>
           </div>
 
           <!-- Initiative rows under this KR -->
-          <div v-for="init in group.initiatives" :key="init.id" class="init-progress-row">
+          <div
+            v-for="init in group.initiatives"
+            :key="init.id"
+            class="init-progress-row"
+          >
             <div class="init-row-header">
               <div class="init-row-left">
-                <span class="kanban-dot" :class="init.kanbanStatus?.toLowerCase()"></span>
+                <span
+                  class="kanban-dot"
+                  :class="init.kanbanStatus?.toLowerCase()"
+                ></span>
                 <span class="init-row-title">{{ init.title }}</span>
                 <span class="team-mini-badge">{{ init.team?.name }}</span>
               </div>
@@ -284,25 +328,37 @@
               </div>
             </div>
             <div class="init-progress-track">
-              <div class="init-progress-bar"
+              <div
+                class="init-progress-bar"
                 :class="getProgressColorClass(init.calculatedProgress)"
-                :style="{ width: init.calculatedProgress + '%' }">
-              </div>
+                :style="{ width: init.calculatedProgress + '%' }"
+              ></div>
             </div>
 
             <!-- Task detail rows -->
             <div v-if="init.tasks?.length" class="task-detail-grid">
-              <div v-for="task in init.tasks" :key="task.id" class="task-detail-row">
+              <div
+                v-for="task in init.tasks"
+                :key="task.id"
+                class="task-detail-row"
+              >
                 <span class="task-detail-name">{{ task.title }}</span>
                 <span class="task-detail-val">
                   {{ task.currentValue }}/{{ task.targetValue }} {{ task.unit }}
                 </span>
                 <div class="task-mini-track">
-                  <div class="task-mini-bar" :style="{ width: task.progressPercent + '%' }"></div>
+                  <div
+                    class="task-mini-bar"
+                    :style="{ width: task.progressPercent + '%' }"
+                  ></div>
                 </div>
                 <span class="task-mini-pct">{{ task.progressPercent }}%</span>
                 <div class="task-assignees-mini">
-                  <span v-for="a in task.assignments" :key="a.userId" class="assignee-mini">
+                  <span
+                    v-for="a in task.assignments"
+                    :key="a.userId"
+                    class="assignee-mini"
+                  >
                     {{ a.user?.name }}
                   </span>
                 </div>
@@ -317,55 +373,217 @@
       </section>
 
       <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
-      <section v-if="userRole === 'MANAGER' && pendingApprovals.length > 0" class="role-section">
-        <h3 class="section-title">Approval Task Pending ({{ pendingApprovals.length }})</h3>
-        <div v-for="update in pendingApprovals" :key="update.id" class="approval-card card">
+      <section
+        v-if="userRole === 'MANAGER' && pendingApprovals.length > 0"
+        class="role-section"
+      >
+        <h3 class="section-title">
+          Approval Task Pending ({{ pendingApprovals.length }})
+        </h3>
+        <div
+          v-for="update in pendingApprovals"
+          :key="update.id"
+          class="approval-card card"
+        >
           <div class="approval-info">
             <strong>{{ update.task?.title }}</strong>
-            <span class="team-badge">{{ update.task?.initiative?.team?.name }}</span>
+            <span class="team-badge">{{
+              update.task?.initiative?.team?.name
+            }}</span>
           </div>
           <div class="approval-values">
-            Nilai: <del>{{ update.oldValue }}</del> → <strong>{{ update.newValue }}</strong>
+            Nilai: <del>{{ update.oldValue }}</del> →
+            <strong>{{ update.newValue }}</strong>
           </div>
-          <div v-if="update.note" class="approval-note">Catatan: {{ update.note }}</div>
-          <div class="approval-actions">
-            <button class="approve-btn" @click="handleApprove(update.id)">Approve</button>
-            <button class="reject-btn" @click="openRejectModal(update)">Reject</button>
+          <div v-if="update.note" class="approval-note">
+            Catatan: {{ update.note }}
+          </div>
+          <div class="approval-actions" style="display: flex; gap: 8px">
+            <button class="approve-btn" @click="handleApprove(update.id)">
+              Approve
+            </button>
+            <button class="reject-btn" @click="openRejectModal(update)">
+              Reject
+            </button>
+            <button
+              class="secondary-btn"
+              style="padding: 6px 12px; font-size: 13px"
+              @click="
+                openDetailModal(
+                  update.task?.title,
+                  'Task',
+                  update,
+                  update.task?.assignments?.map((a) => a.user?.name).join(', '),
+                )
+              "
+            >
+              Lihat Hasil
+            </button>
           </div>
         </div>
       </section>
 
       <!-- ─── MODAL: Submit Task Update (TEAM) ─── -->
-      <div v-if="showTaskSubmitModal" class="modal-overlay" @click.self="showTaskSubmitModal = false">
+      <div
+        v-if="showTaskSubmitModal"
+        class="modal-overlay"
+        @click.self="showTaskSubmitModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
             <h3>Submit Update Task</h3>
-            <button class="modal-close-btn" @click="showTaskSubmitModal = false">&times;</button>
+            <button
+              class="modal-close-btn"
+              @click="showTaskSubmitModal = false"
+            >
+              &times;
+            </button>
           </div>
           <p>{{ selectedTask?.title }}</p>
           <label>Nilai Baru:</label>
-          <input v-model.number="submitNewValue" type="number" class="form-input" />
+          <input
+            v-model.number="submitNewValue"
+            type="number"
+            class="form-input"
+          />
           <label>Catatan (opsional):</label>
           <textarea v-model="submitNote" class="form-input" rows="3"></textarea>
+          <label>Link Dokumentasi Hasil (opsional):</label>
+          <input
+            v-model="submitLink"
+            type="url"
+            class="form-input"
+            placeholder="https://example.com/..."
+          />
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showTaskSubmitModal = false">Batal</button>
+            <button class="secondary-btn" @click="showTaskSubmitModal = false">
+              Batal
+            </button>
             <button class="primary-btn" @click="submitTaskUpdate">Kirim</button>
           </div>
         </div>
       </div>
 
+      <!-- Modal Detail Hasil Kerja / Popup Hasil -->
+      <div
+        v-if="showDetailModal"
+        class="modal-overlay"
+        @click.self="showDetailModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Detail Progress & Hasil</h3>
+            <button class="modal-close-btn" @click="showDetailModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="info-box mb-4">
+            <p>
+              <strong>Item:</strong> {{ detailData.type }} -
+              {{ detailData.title }}
+            </p>
+            <p>
+              <strong>Dilaporkan Oleh:</strong> {{ detailData.submittedBy }}
+            </p>
+            <p><strong>Tanggal:</strong> {{ detailData.date }}</p>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Perubahan Progress:</span
+            >
+            <span class="val" style="font-size: 16px"
+              >Realisasi: <strong>{{ detailData.newValue }}</strong> (dari
+              {{ detailData.oldValue }})</span
+            >
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Catatan Progress:</span
+            >
+            <span
+              class="val"
+              style="
+                display: block;
+                background: #f8fafc;
+                padding: 10px;
+                border-radius: 8px;
+                font-style: italic;
+                border: 1px solid #e2e8f0;
+                white-space: pre-line;
+              "
+            >
+              {{ detailData.note }}
+            </span>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Link Dokumentasi:</span
+            >
+            <div v-if="detailData.link" style="margin-top: 8px">
+              <a
+                :href="detailData.link"
+                target="_blank"
+                class="primary-btn"
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 6px;
+                  text-decoration: none;
+                  font-size: 14px;
+                "
+              >
+                Buka Link Dokumentasi
+              </a>
+            </div>
+            <span v-else class="text-sm text-gray" style="font-style: italic"
+              >Tidak ada link dokumentasi yang dilampirkan.</span
+            >
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showDetailModal = false">
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- ─── MODAL: Reject Task Update (MANAGER) ─── -->
-      <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
+      <div
+        v-if="showRejectModal"
+        class="modal-overlay"
+        @click.self="showRejectModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
             <h3>Tolak Update Task</h3>
-            <button class="modal-close-btn" @click="showRejectModal = false">&times;</button>
+            <button class="modal-close-btn" @click="showRejectModal = false">
+              &times;
+            </button>
           </div>
-          <p>Berikan alasan penolakan untuk <strong>{{ selectedApproval?.task?.title }}</strong>:</p>
-          <textarea v-model="rejectNote" class="form-input" rows="3" placeholder="Alasan penolakan (wajib diisi)..."></textarea>
+          <p>
+            Berikan alasan penolakan untuk
+            <strong>{{ selectedApproval?.task?.title }}</strong
+            >:
+          </p>
+          <textarea
+            v-model="rejectNote"
+            class="form-input"
+            rows="3"
+            placeholder="Alasan penolakan (wajib diisi)..."
+          ></textarea>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showRejectModal = false">Batal</button>
-            <button class="danger-btn" @click="handleReject">Tolak Update</button>
+            <button class="secondary-btn" @click="showRejectModal = false">
+              Batal
+            </button>
+            <button class="danger-btn" @click="handleReject">
+              Tolak Update
+            </button>
           </div>
         </div>
       </div>
@@ -483,12 +701,26 @@
                   </div>
 
                   <!-- RACI Row -->
-                  <div v-if="(kr.assignments && kr.assignments.length > 0) || (kr.departments && kr.departments.length > 0)" class="kr-raci-row">
+                  <div
+                    v-if="
+                      (kr.assignments && kr.assignments.length > 0) ||
+                      (kr.departments && kr.departments.length > 0)
+                    "
+                    class="kr-raci-row"
+                  >
                     <!-- Accountable -->
-                    <div class="raci-mini-group" v-if="kr.assignments && kr.assignments.some(x => x.raciRole === 'ACCOUNTABLE')">
+                    <div
+                      class="raci-mini-group"
+                      v-if="
+                        kr.assignments &&
+                        kr.assignments.some((x) => x.raciRole === 'ACCOUNTABLE')
+                      "
+                    >
                       <span class="raci-mini-badge a-mini">A</span>
                       <span
-                        v-for="a in kr.assignments.filter(x => x.raciRole === 'ACCOUNTABLE')"
+                        v-for="a in kr.assignments.filter(
+                          (x) => x.raciRole === 'ACCOUNTABLE',
+                        )"
                         :key="a.id"
                         class="raci-chip accountable-chip"
                       >
@@ -496,21 +728,39 @@
                       </span>
                     </div>
                     <!-- Responsible -->
-                    <div class="raci-mini-group" v-if="kr.assignments && kr.assignments.some(x => x.raciRole === 'RESPONSIBLE')">
+                    <div
+                      class="raci-mini-group"
+                      v-if="
+                        kr.assignments &&
+                        kr.assignments.some((x) => x.raciRole === 'RESPONSIBLE')
+                      "
+                    >
                       <span class="raci-mini-badge r-mini">R</span>
                       <span
-                        v-for="a in kr.assignments.filter(x => x.raciRole === 'RESPONSIBLE')"
+                        v-for="a in kr.assignments.filter(
+                          (x) => x.raciRole === 'RESPONSIBLE',
+                        )"
                         :key="a.id"
                         class="raci-chip responsible-chip"
                       >
                         {{ a.user.name }}
-                        <span v-if="a.user.department" class="chip-dept">· {{ a.user.department }}</span>
+                        <span v-if="a.user.department" class="chip-dept"
+                          >· {{ a.user.department }}</span
+                        >
                       </span>
                     </div>
                     <!-- Departemen Terlibat -->
-                    <div class="kr-dept-row" v-if="kr.departments && kr.departments.length > 0">
+                    <div
+                      class="kr-dept-row"
+                      v-if="kr.departments && kr.departments.length > 0"
+                    >
                       <span class="dept-mini-label">Dept:</span>
-                      <span v-for="d in kr.departments" :key="d.id" class="dept-mini-tag">{{ d.department }}</span>
+                      <span
+                        v-for="d in kr.departments"
+                        :key="d.id"
+                        class="dept-mini-tag"
+                        >{{ d.department }}</span
+                      >
                     </div>
                   </div>
 
@@ -541,7 +791,7 @@ const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 // Ambil role dari auth store
-const userRole = computed(() => auth.user?.role || '');
+const userRole = computed(() => auth.user?.role || "");
 
 // State untuk data TEAM
 const myTasks = ref([]);
@@ -558,13 +808,13 @@ const leaderInitiatives = ref([]);
 const initProgressData = ref({ initiatives: [], byKeyResult: [], summary: {} });
 
 const showInitiativeProgress = computed(() => {
-  return ['LEADER', 'MANAGER', 'C_LEVEL', 'ADMIN'].includes(userRole.value);
+  return ["LEADER", "MANAGER", "C_LEVEL", "ADMIN"].includes(userRole.value);
 });
 
 function getProgressColorClass(pct) {
-  if (pct >= 80) return 'progress-high';
-  if (pct >= 50) return 'progress-mid';
-  return 'progress-low';
+  if (pct >= 80) return "progress-high";
+  if (pct >= 50) return "progress-mid";
+  return "progress-low";
 }
 
 async function fetchInitiativeProgress() {
@@ -572,7 +822,11 @@ async function fetchInitiativeProgress() {
     const res = await $fetch(`${config.public.apiBase}/initiatives/progress`, {
       headers: { Authorization: `Bearer ${auth.token}` },
     });
-    initProgressData.value = res || { initiatives: [], byKeyResult: [], summary: {} };
+    initProgressData.value = res || {
+      initiatives: [],
+      byKeyResult: [],
+      summary: {},
+    };
   } catch (err) {
     console.error("Error fetching initiative progress:", err);
   }
@@ -746,14 +1000,14 @@ async function fetchDashboardData() {
         Authorization: `Bearer ${auth.token}`,
       },
     });
-    
-    if (userRole.value === 'TEAM') {
+
+    if (userRole.value === "TEAM") {
       myTasks.value = response.myTasks || [];
       myInitiatives.value = response.initiatives || [];
-    } else if (userRole.value === 'LEADER') {
+    } else if (userRole.value === "LEADER") {
       leadingTeams.value = response.leadingTeams || [];
       leaderInitiatives.value = response.initiatives || [];
-    } else if (userRole.value === 'MANAGER') {
+    } else if (userRole.value === "MANAGER") {
       pendingApprovals.value = response.pendingApprovals || [];
     }
 
@@ -785,74 +1039,127 @@ onMounted(() => {
 const showTaskSubmitModal = ref(false);
 const selectedTask = ref(null);
 const submitNewValue = ref(0);
-const submitNote = ref('');
+const submitNote = ref("");
+const submitLink = ref("");
+
+const showDetailModal = ref(false);
+const detailData = ref({
+  title: "",
+  type: "Task",
+  oldValue: 0,
+  newValue: 0,
+  note: "",
+  link: "",
+  date: "",
+  submittedBy: "",
+});
+
+function openDetailModal(title, type, update, submitterName) {
+  detailData.value = {
+    title,
+    type,
+    oldValue: update.oldValue,
+    newValue: update.newValue,
+    note: update.note || "Tidak ada catatan.",
+    link: update.link || "",
+    date: new Date(update.createdAt).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    submittedBy: submitterName || "Anggota Tim",
+  };
+  showDetailModal.value = true;
+}
 
 function openTaskSubmitModal(task) {
   selectedTask.value = task;
   submitNewValue.value = task.currentValue;
-  submitNote.value = '';
+  submitNote.value = "";
+  submitLink.value = "";
   showTaskSubmitModal.value = true;
 }
 
 async function submitTaskUpdate() {
   if (!selectedTask.value) return;
-  const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ newValue: submitNewValue.value, note: submitNote.value }),
-  });
+  const token = auth.token || localStorage.getItem("token");
+  const res = await fetch(
+    `${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        newValue: submitNewValue.value,
+        note: submitNote.value,
+        link: submitLink.value,
+      }),
+    },
+  );
   if (res.ok) {
     showTaskSubmitModal.value = false;
-    alert('Update berhasil dikirim, menunggu persetujuan Manager.');
+    alert("Update berhasil dikirim, menunggu persetujuan Manager.");
     await fetchDashboardData();
   } else {
     const err = await res.json();
-    alert(err.message || 'Gagal mengirim update');
+    alert(err.message || "Gagal mengirim update");
   }
 }
 
 // ─── Approval Modal (MANAGER) ───
 const showRejectModal = ref(false);
 const selectedApproval = ref(null);
-const rejectNote = ref('');
+const rejectNote = ref("");
 
 function openRejectModal(update) {
   selectedApproval.value = update;
-  rejectNote.value = '';
+  rejectNote.value = "";
   showRejectModal.value = true;
 }
 
 async function handleApprove(updateId) {
-  if (!confirm('Setujui update ini?')) return;
-  const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/task-updates/${updateId}/approve`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  if (!confirm("Setujui update ini?")) return;
+  const token = auth.token || localStorage.getItem("token");
+  const res = await fetch(
+    `${config.public.apiBase}/initiatives/task-updates/${updateId}/approve`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   if (res.ok) {
     await fetchDashboardData();
   } else {
-    alert('Gagal approve');
+    alert("Gagal approve");
   }
 }
 
 async function handleReject() {
   if (!rejectNote.value.trim()) {
-    alert('Alasan penolakan wajib diisi');
+    alert("Alasan penolakan wajib diisi");
     return;
   }
-  const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/task-updates/${selectedApproval.value.id}/reject`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ reviewNote: rejectNote.value }),
-  });
+  const token = auth.token || localStorage.getItem("token");
+  const res = await fetch(
+    `${config.public.apiBase}/initiatives/task-updates/${selectedApproval.value.id}/reject`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reviewNote: rejectNote.value }),
+    },
+  );
   if (res.ok) {
     showRejectModal.value = false;
     await fetchDashboardData();
   } else {
-    alert('Gagal reject');
+    alert("Gagal reject");
   }
 }
 </script>
@@ -876,6 +1183,7 @@ async function handleReject() {
   padding: 20px 40px;
   background: var(--header-bg);
   border-bottom: 1px solid var(--header-border);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -1014,6 +1322,7 @@ async function handleReject() {
   border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 24px;
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   box-shadow: var(--card-shadow);
 }
@@ -1764,8 +2073,12 @@ async function handleReject() {
   flex-shrink: 0;
 }
 
-.a-mini { background: #7c3aed; }
-.r-mini { background: #0e97d6; }
+.a-mini {
+  background: #7c3aed;
+}
+.r-mini {
+  background: #0e97d6;
+}
 
 .raci-chip {
   display: inline-flex;
@@ -1839,8 +2152,12 @@ async function handleReject() {
 
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -1854,8 +2171,8 @@ async function handleReject() {
   padding: 24px;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .modal-header {
   display: flex;
@@ -1863,22 +2180,26 @@ async function handleReject() {
   align-items: center;
   margin-bottom: 12px;
 }
-.modal-header h3 { margin: 0; }
+.modal-header h3 {
+  margin: 0;
+}
 .modal-close-btn {
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
-.modal-close-btn:hover { color: #fff; }
+.modal-close-btn:hover {
+  color: #fff;
+}
 
 /* ─── INITIATIVE PROGRESS STYLES ─── */
 .count-badge-sub {
   font-size: 0.78rem;
   font-weight: 600;
   background: rgba(14, 151, 214, 0.12);
-  color: #0E97D6;
+  color: #0e97d6;
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -1908,11 +2229,15 @@ async function handleReject() {
 .summary-val {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
-.summary-val.done-val { color: #10B981; }
-.summary-val.progress-val { color: #3B82F6; }
+.summary-val.done-val {
+  color: #10b981;
+}
+.summary-val.progress-val {
+  color: #3b82f6;
+}
 
 .summary-lbl {
   font-size: 0.78rem;
@@ -1957,7 +2282,7 @@ async function handleReject() {
 .kr-progress-pct {
   font-size: 1.2rem;
   font-weight: 800;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
 .kr-mini-progress-track {
@@ -1971,7 +2296,7 @@ async function handleReject() {
 
 .kr-mini-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0E97D6, #10B981);
+  background: linear-gradient(90deg, #0e97d6, #10b981);
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -2002,10 +2327,18 @@ async function handleReject() {
   height: 8px;
   border-radius: 50%;
 }
-.kanban-dot.todo { background: #94a3b8; }
-.kanban-dot.in_progress { background: #0E97D6; }
-.kanban-dot.done { background: #10B981; }
-.kanban-dot.drop { background: #ef4444; }
+.kanban-dot.todo {
+  background: #94a3b8;
+}
+.kanban-dot.in_progress {
+  background: #0e97d6;
+}
+.kanban-dot.done {
+  background: #10b981;
+}
+.kanban-dot.drop {
+  background: #ef4444;
+}
 
 .init-row-title {
   font-weight: 600;
@@ -2031,7 +2364,7 @@ async function handleReject() {
 .init-pct {
   font-weight: 700;
   font-size: 0.9rem;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
 .task-count-mini {
@@ -2058,9 +2391,15 @@ async function handleReject() {
   transition: width 0.3s ease;
 }
 
-.init-progress-bar.progress-high { background: #10B981; }
-.init-progress-bar.progress-mid { background: #0E97D6; }
-.init-progress-bar.progress-low { background: #f59e0b; }
+.init-progress-bar.progress-high {
+  background: #10b981;
+}
+.init-progress-bar.progress-mid {
+  background: #0e97d6;
+}
+.init-progress-bar.progress-low {
+  background: #f59e0b;
+}
 
 .task-detail-grid {
   display: flex;
@@ -2107,13 +2446,13 @@ async function handleReject() {
 
 .task-mini-bar {
   height: 100%;
-  background: #0E97D6;
+  background: #0e97d6;
   border-radius: 3px;
 }
 
 .task-mini-pct {
   font-weight: 600;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
 .task-assignees-mini {

@@ -159,7 +159,7 @@
                           :key="a.userId"
                           class="task-assignee-tag"
                         >
-                          👤 {{ a.user?.name }}
+                          {{ a.user?.name }}
                         </span>
                       </div>
                     </div>

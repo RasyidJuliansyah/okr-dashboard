@@ -448,7 +448,7 @@ onMounted(async () => {
 .task-assignees { display: flex; gap: 4px; flex-wrap: wrap; margin-right: 16px; }
 .assignee-chip { background: #3b82f6; color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.75rem; }
 .task-actions { display: flex; gap: 8px; }
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 999; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 999; }
 .modal-box { background: var(--card-bg, #1e1e1e); padding: 24px; border-radius: 12px; width: 400px; max-width: 90%; border: 1px solid #333; display: flex; flex-direction: column; gap: 12px; }
 .modal-box h3 { margin: 0; }
 .modal-header {
