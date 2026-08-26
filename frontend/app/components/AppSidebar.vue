@@ -1,15 +1,55 @@
 <template>
-  <aside class="sidebar" :class="{ 'is-open': isOpen }">
+  <div
+    style="
+      width: 240px;
+      min-width: 240px;
+      height: 100vh;
+      position: sticky;
+      left: 0;
+      top: 0;
+      background: #ffffff;
+      border-right: 1px solid #f0f3f9;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      overflow-y: auto;
+      transition:
+        transform 0.3s ease,
+        left 0.3s ease;
+    "
+  >
     <!-- Logo Section -->
-    <div class="logo-section">
-      <img src="/logo.png" alt="Skolla Logo" class="logo-icon" />
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 24px;
+        flex-shrink: 0;
+      "
+    >
+      <img
+        src="/logo.png"
+        alt="Skolla Logo"
+        style="
+          width: 100%;
+          max-width: 100%;
+          height: auto;
+          object-fit: contain;
+          display: block;
+        "
+      />
     </div>
 
     <!-- Navigation -->
-    <nav class="nav-container">
-      <div class="nav-group">
-        <p class="nav-group-label">MENU UTAMA</p>
-        <NuxtLink to="/dashboard" class="nav-item" active-class="nav-active" @click="emit('close')">
+    <nav :style="navContainerStyle">
+      <div :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">MENU UTAMA</p>
+        <NuxtLink
+          to="/dashboard"
+          :style="navItemStyle('/dashboard')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -27,7 +67,11 @@
           </svg>
           <span>Dashboard</span>
         </NuxtLink>
-        <NuxtLink to="/bsc-view" class="nav-item" active-class="nav-active" @click="emit('close')">
+        <NuxtLink
+          to="/bsc-view"
+          :style="navItemStyle('/bsc-view')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -45,7 +89,11 @@
           </svg>
           <span>Strategic Mapping</span>
         </NuxtLink>
-        <NuxtLink to="/strategy-map" class="nav-item" active-class="nav-active" @click="emit('close')">
+        <NuxtLink
+          to="/strategy-map"
+          :style="navItemStyle('/strategy-map')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -65,7 +113,11 @@
           </svg>
           <span>Causal Map</span>
         </NuxtLink>
-        <NuxtLink to="/initiatives" class="nav-item" active-class="nav-active" @click="emit('close')">
+        <NuxtLink
+          to="/initiatives"
+          :style="navItemStyle('/initiatives')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -82,7 +134,11 @@
           </svg>
           <span>Inisiatif (Kanban)</span>
         </NuxtLink>
-        <NuxtLink to="/member-achievement" class="nav-item" active-class="nav-active" @click="emit('close')">
+        <NuxtLink
+          to="/member-achievement"
+          :style="navItemStyle('/member-achievement')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -93,13 +149,17 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <polyline points="16 11 18 13 22 9"/>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <polyline points="16 11 18 13 22 9" />
           </svg>
           <span>Capaian Task Member</span>
         </NuxtLink>
-        <NuxtLink to="/departments" class="nav-item" active-class="nav-active" @click="emit('close')">
+        <NuxtLink
+          to="/departments"
+          :style="navItemStyle('/departments')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -119,9 +179,13 @@
       </div>
 
       <!-- C-Level menu -->
-      <div v-if="isCLevel || isAdmin" class="nav-group">
-        <p class="nav-group-label">C-LEVEL</p>
-        <NuxtLink to="/c-level" class="nav-item" active-class="nav-active" @click="emit('close')">
+      <div v-if="isCLevel || isAdmin" :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">C-LEVEL</p>
+        <NuxtLink
+          to="/c-level"
+          :style="navItemStyle('/c-level')"
+          @click="emit('close')"
+        >
           <svg
             width="20"
             height="20"
@@ -141,12 +205,11 @@
       </div>
 
       <!-- Admin menu - hanya muncul setelah login sebagai admin -->
-      <div v-if="isAdmin" class="nav-group">
-        <p class="nav-group-label">ADMIN</p>
+      <div v-if="isAdmin" :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">ADMIN</p>
         <NuxtLink
           to="/admin/objectives"
-          class="nav-item"
-          active-class="nav-active"
+          :style="navItemStyle('/admin/objectives')"
           @click="emit('close')"
         >
           <svg
@@ -170,8 +233,7 @@
 
         <NuxtLink
           to="/initiatives"
-          class="nav-item"
-          active-class="nav-active"
+          :style="navItemStyle('/initiatives')"
           @click="emit('close')"
         >
           <svg
@@ -192,8 +254,7 @@
         </NuxtLink>
         <NuxtLink
           to="/admin/update-progress"
-          class="nav-item"
-          active-class="nav-active"
+          :style="navItemStyle('/admin/update-progress')"
           @click="emit('close')"
         >
           <svg
@@ -213,8 +274,7 @@
         </NuxtLink>
         <NuxtLink
           to="/admin/employees"
-          class="nav-item"
-          active-class="nav-active"
+          :style="navItemStyle('/admin/employees')"
           @click="emit('close')"
         >
           <svg
@@ -236,8 +296,7 @@
         </NuxtLink>
         <NuxtLink
           to="/departments"
-          class="nav-item"
-          active-class="nav-active"
+          :style="navItemStyle('/departments')"
           @click="emit('close')"
         >
           <svg
@@ -259,58 +318,112 @@
       </div>
 
       <!-- Manager menu -->
-      <div v-if="isManager || isAdmin" class="nav-group">
-        <p class="nav-group-label">MANAGER</p>
-        <NuxtLink to="/manager/overview" class="nav-item" active-class="nav-active" @click="emit('close')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
+      <div v-if="isManager || isAdmin" :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">MANAGER</p>
+        <NuxtLink
+          to="/manager/overview"
+          :style="navItemStyle('/manager/overview')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
           <span>OKR Overview</span>
         </NuxtLink>
-        <NuxtLink to="/leader/my-krs" class="nav-item" active-class="nav-active" @click="emit('close')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="6"/>
-            <circle cx="12" cy="12" r="2"/>
+        <NuxtLink
+          to="/leader/my-krs"
+          :style="navItemStyle('/leader/my-krs')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="2" />
           </svg>
           <span>KR Saya</span>
         </NuxtLink>
       </div>
 
       <!-- Leader menu -->
-      <div v-if="isLeader || isAdmin" class="nav-group">
-        <p class="nav-group-label">LEADER</p>
-        <NuxtLink to="/leader/my-krs" class="nav-item" active-class="nav-active" @click="emit('close')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <circle cx="12" cy="12" r="6"/>
-            <circle cx="12" cy="12" r="2"/>
+      <div v-if="isLeader || isAdmin" :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">LEADER</p>
+        <NuxtLink
+          to="/leader/my-krs"
+          :style="navItemStyle('/leader/my-krs')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="2" />
           </svg>
           <span>KR Saya</span>
         </NuxtLink>
       </div>
 
       <!-- Team menu -->
-      <div v-if="isTeam || isLeader || isManager || isAdmin" class="nav-group">
-        <p class="nav-group-label">PEKERJAAN</p>
-        <NuxtLink to="/team/my-work" class="nav-item" active-class="nav-active" @click="emit('close')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.667" stroke-linecap="round" stroke-linejoin="round">
+      <div
+        v-if="isTeam || isLeader || isManager || isAdmin"
+        :style="navGroupStyle"
+      >
+        <p :style="navGroupLabelStyle">PEKERJAAN</p>
+        <NuxtLink
+          to="/team/my-work"
+          :style="navItemStyle('/team/my-work')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
           <span>Pekerjaan Saya</span>
         </NuxtLink>
       </div>
-
     </nav>
 
     <!-- Footer -->
-    <div class="sidebar-footer">
+    <div :style="sidebarFooterStyle">
       <ThemeToggle />
       <button
         v-if="isAuthenticated"
         @click="handleLogout"
-        class="footer-action"
+        :style="footerActionStyle"
       >
         <svg
           width="18"
@@ -328,7 +441,12 @@
         </svg>
         <span>Logout</span>
       </button>
-      <NuxtLink v-else to="/login" class="footer-action" @click="emit('close')">
+      <NuxtLink
+        v-else
+        to="/login"
+        :style="footerActionStyle"
+        @click="emit('close')"
+      >
         <svg
           width="18"
           height="18"
@@ -346,11 +464,12 @@
         <span>Login</span>
       </NuxtLink>
     </div>
-  </aside>
+  </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
+import { useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 
 const props = defineProps({
@@ -362,166 +481,100 @@ const props = defineProps({
 const emit = defineEmits(["close"]);
 
 const auth = useAuthStore();
+const route = useRoute();
 const isAuthenticated = computed(() => auth.isAuthenticated);
-const isAdmin = computed(() => auth.isAuthenticated && auth.user?.role === 'ADMIN');
-const isCLevel = computed(() => auth.isAuthenticated && auth.user?.role === 'C_LEVEL');
-const isManager = computed(() => auth.isAuthenticated && auth.user?.role === 'MANAGER');
-const isLeader = computed(() => auth.isAuthenticated && auth.user?.role === 'LEADER');
-const isTeam = computed(() => auth.isAuthenticated && auth.user?.role === 'TEAM');
+const isAdmin = computed(
+  () => auth.isAuthenticated && auth.user?.role === "ADMIN",
+);
+const isCLevel = computed(
+  () => auth.isAuthenticated && auth.user?.role === "C_LEVEL",
+);
+const isManager = computed(
+  () => auth.isAuthenticated && auth.user?.role === "MANAGER",
+);
+const isLeader = computed(
+  () => auth.isAuthenticated && auth.user?.role === "LEADER",
+);
+const isTeam = computed(
+  () => auth.isAuthenticated && auth.user?.role === "TEAM",
+);
+
+// Semua style di bawah ini di-inline (bukan class CSS) supaya sidebar tetap
+// tampil benar walau stylesheet eksternal gagal ter-load di production.
+const navContainerStyle = {
+  flex: "1",
+  padding: "8px 16px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "24px",
+};
+
+const navGroupStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "2px",
+};
+
+const navGroupLabelStyle = {
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: "11px",
+  fontWeight: "600",
+  color: "#8897ae",
+  letterSpacing: "0.8px",
+  margin: "0 0 6px 4px",
+};
+
+const sidebarFooterStyle = {
+  flexShrink: "0",
+  padding: "16px",
+  borderTop: "1px solid #f0f3f9",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+};
+
+const footerActionStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "8px 10px",
+  borderRadius: "8px",
+  border: "none",
+  background: "none",
+  color: "#5e718d",
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: "14px",
+  fontWeight: "500",
+  cursor: "pointer",
+  textDecoration: "none",
+  transition: "background-color 150ms ease-out, color 150ms ease-out",
+};
+
+function isActive(path) {
+  return route.path === path || route.path.startsWith(path + "/");
+}
+
+function navItemStyle(path) {
+  const active = isActive(path);
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 16px",
+    borderRadius: "14px",
+    textDecoration: "none",
+    fontFamily: "'Rubik', sans-serif",
+    fontSize: "16px",
+    fontWeight: "500",
+    color: active ? "#ffffff" : "#5e718d",
+    backgroundColor: active ? "#0e97d6" : "transparent",
+    transition: "background-color 150ms ease-out, color 150ms ease-out",
+    cursor: "pointer",
+  };
+}
 
 function handleLogout() {
   auth.logout();
   emit("close");
 }
 </script>
-
-<style scoped>
-.sidebar {
-  width: 240px;
-  min-width: 240px;
-  height: 100vh;
-  position: sticky;
-  left: 0;
-  top: 0;
-  background: #ffffff;
-  border-right: 1px solid #f0f3f9;
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  overflow-y: auto;
-  transition: transform 0.3s ease, left 0.3s ease;
-}
-
-@media (max-width: 1024px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: -240px;
-    height: 100vh;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
-  }
-
-  .sidebar.is-open {
-    left: 0;
-  }
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 24px 20px 16px;
-  flex-shrink: 0;
-}
-
-.logo-icon {
-  height: 28px;
-  width: auto;
-  max-width: 140px;
-  object-fit: contain;
-  display: block;
-}
-
-.logo-wordmark {
-  font-family: "Rubik", sans-serif;
-  font-weight: 600;
-  font-size: 21px;
-  color: #010571;
-  letter-spacing: -0.3px;
-  line-height: 1;
-}
-
-.nav-container {
-  flex: 1;
-  padding: 8px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.nav-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.nav-group-label {
-  font-family: "Rubik", sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  color: #8897ae;
-  letter-spacing: 0.8px;
-  margin: 0 0 6px 4px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 14px;
-  text-decoration: none;
-  font-family: "Rubik", sans-serif;
-  font-size: 16px;
-  font-weight: 500;
-  color: #5e718d;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
-  cursor: pointer;
-}
-
-.nav-item svg {
-  flex-shrink: 0;
-  color: #5e718d;
-  transition: color 150ms ease-out;
-}
-
-.nav-item:hover {
-  background-color: #f8fafc;
-}
-
-.nav-active {
-  background-color: #0e97d6 !important;
-  color: #ffffff !important;
-  font-weight: 500;
-}
-
-.nav-active svg {
-  color: #ffffff !important;
-}
-
-.sidebar-footer {
-  flex-shrink: 0;
-  padding: 16px;
-  border-top: 1px solid #f0f3f9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.footer-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: none;
-  background: none;
-  color: #5e718d;
-  font-family: "Rubik", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out;
-}
-
-.footer-action:hover {
-  background-color: #f8fafc;
-  color: #2d3643;
-}
-</style>
