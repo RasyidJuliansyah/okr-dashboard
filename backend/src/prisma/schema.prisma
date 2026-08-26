@@ -166,6 +166,7 @@ model Initiative {
   startDate     DateTime?
   dueDate       DateTime?
   sprintMonth   String?   // e.g., "2026-08"
+  documentationLink String?
   tasks         Task[]    // kpis Kpi[] -> tasks Task[]
   progressUpdates InitiativeUpdate[]
   createdAt     DateTime  @default(now())
@@ -184,6 +185,7 @@ model Task {
   weight       Float            @default(1.0) // BARU
   unit         String?
   status       String           @default("ON_TRACK")
+  documentationLink String?
   assignments  TaskAssignment[]
   updates      TaskUpdate[]
   createdAt    DateTime         @default(now())
@@ -210,6 +212,7 @@ model TaskUpdate {
   oldValue    Float
   newValue    Float
   note        String?
+  link        String?
   submittedBy String
   status      String    @default("PENDING_APPROVAL")
   reviewedBy  String?
@@ -237,6 +240,7 @@ model InitiativeUpdate {
   newValue     Float
   note         String?
   kanbanStatus String?
+  link         String?
   submittedBy  String
   createdAt    DateTime   @default(now())
 
