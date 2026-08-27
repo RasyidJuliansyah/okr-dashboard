@@ -1,31 +1,44 @@
 <template>
   <div class="dept-root">
     <div class="dept-content">
-
       <!-- Header -->
       <div class="page-header card">
         <div class="header-title">
           <h2>Struktur Departemen</h2>
           <p class="section-desc">
-            Hierarki organisasi per departemen. Lihat Manager, Leader, dan anggota Team serta keterhubungannya ke Key Result dan Initiative.
+            Hierarki organisasi per departemen. Lihat Manager, Leader, dan
+            anggota Team serta keterhubungannya ke Key Result dan Initiative.
           </p>
 
           <!-- Scope Notice Badge -->
           <div class="scope-banner" :class="userRoleClass">
             <span class="scope-icon">{{ roleIcon }}</span>
             <span class="scope-text">
-              <strong>Scope Akses ({{ auth.user?.role }}):</strong> {{ scopeDescription }}
+              <strong>Scope Akses ({{ auth.user?.role }}):</strong>
+              {{ scopeDescription }}
             </span>
           </div>
         </div>
-        <div class="header-actions" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <div
+          class="header-actions"
+          style="
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+          "
+        >
           <select v-model="selectedDept" class="dept-filter-select">
-            <option value="">Semua Departemen ({{ DEPARTMENTS.length }})</option>
+            <option value="">
+              Semua Departemen ({{ DEPARTMENTS.length }})
+            </option>
             <option v-for="d in DEPARTMENTS" :key="d.value" :value="d.value">
               {{ d.label }}
             </option>
           </select>
-          <button v-if="isAdmin" class="primary-btn" @click="openAddDeptModal">+ Tambah Dept</button>
+          <button v-if="isAdmin" class="primary-btn" @click="openAddDeptModal">
+            + Tambah Dept
+          </button>
         </div>
       </div>
 
@@ -34,11 +47,17 @@
       <div v-if="successMsg" class="alert alert-success">{{ successMsg }}</div>
 
       <!-- Loading -->
-      <div v-if="loading" class="loading-state card">Memuat data struktur departemen...</div>
+      <div v-if="loading" class="loading-state card">
+        Memuat data struktur departemen...
+      </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredDepts.length === 0" class="empty-state card" style="text-align: center; padding: 2.5rem 1rem;">
-        <p style="color: var(--text-muted, #94a3b8); margin: 0;">
+      <div
+        v-else-if="filteredDepts.length === 0"
+        class="empty-state card"
+        style="text-align: center; padding: 2.5rem 1rem"
+      >
+        <p style="color: var(--text-muted, #94a3b8); margin: 0">
           Tidak ada data departemen yang sesuai dengan scope Anda.
         </p>
       </div>
@@ -55,7 +74,9 @@
             <div class="dept-icon">{{ dept.icon }}</div>
             <div>
               <h3 class="dept-name">{{ dept.label }}</h3>
-              <p class="dept-member-count">{{ getMemberCount(dept.value) }} anggota terdaftar</p>
+              <p class="dept-member-count">
+                {{ getMemberCount(dept.value) }} anggota terdaftar
+              </p>
             </div>
           </div>
 
@@ -66,9 +87,16 @@
               Manager Departemen
             </div>
             <div class="role-member-list">
-              <div v-if="getManagers(dept.value).length === 0" class="empty-role">
+              <div
+                v-if="getManagers(dept.value).length === 0"
+                class="empty-role"
+              >
                 <span class="empty-hint">Belum ada Manager</span>
-                <button v-if="isAdmin" class="assign-btn" @click="openAssignRoleModal(dept.value, 'MANAGER')">
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn"
+                  @click="openAssignRoleModal(dept.value, 'MANAGER')"
+                >
                   + Assign Manager
                 </button>
               </div>
@@ -78,18 +106,30 @@
                   :key="m.id"
                   class="member-chip manager-chip"
                 >
-                  <div class="chip-avatar" :style="{ background: getAvatarColor(m.name) }">
+                  <div
+                    class="chip-avatar"
+                    :style="{ background: getAvatarColor(m.name) }"
+                  >
                     {{ getInitials(m.name) }}
                   </div>
                   <div class="chip-info">
                     <span class="chip-name">{{ m.name }}</span>
-                    <span class="chip-pos">{{ m.position || 'Manager' }}</span>
+                    <span class="chip-pos">{{ m.position || "Manager" }}</span>
                   </div>
-                  <button v-if="isAdmin" class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
+                  <button
+                    v-if="isAdmin"
+                    class="remove-member-btn"
+                    title="Keluarkan dari Departemen"
+                    @click="removeUserFromDept(m.id)"
+                  >
                     &times;
                   </button>
                 </div>
-                <button v-if="isAdmin" class="assign-btn small" @click="openAssignRoleModal(dept.value, 'MANAGER')">
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn small"
+                  @click="openAssignRoleModal(dept.value, 'MANAGER')"
+                >
                   + Edit
                 </button>
               </div>
@@ -103,9 +143,16 @@
               Team Leader
             </div>
             <div class="role-member-list">
-              <div v-if="getLeaders(dept.value).length === 0" class="empty-role">
+              <div
+                v-if="getLeaders(dept.value).length === 0"
+                class="empty-role"
+              >
                 <span class="empty-hint">Belum ada Leader</span>
-                <button v-if="isAdmin" class="assign-btn" @click="openAssignRoleModal(dept.value, 'LEADER')">
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn"
+                  @click="openAssignRoleModal(dept.value, 'LEADER')"
+                >
                   + Assign Leader
                 </button>
               </div>
@@ -115,18 +162,30 @@
                   :key="m.id"
                   class="member-chip leader-chip"
                 >
-                  <div class="chip-avatar" :style="{ background: getAvatarColor(m.name) }">
+                  <div
+                    class="chip-avatar"
+                    :style="{ background: getAvatarColor(m.name) }"
+                  >
                     {{ getInitials(m.name) }}
                   </div>
                   <div class="chip-info">
                     <span class="chip-name">{{ m.name }}</span>
-                    <span class="chip-pos">{{ m.position || 'Leader' }}</span>
+                    <span class="chip-pos">{{ m.position || "Leader" }}</span>
                   </div>
-                  <button v-if="isAdmin" class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
+                  <button
+                    v-if="isAdmin"
+                    class="remove-member-btn"
+                    title="Keluarkan dari Departemen"
+                    @click="removeUserFromDept(m.id)"
+                  >
                     &times;
                   </button>
                 </div>
-                <button v-if="isAdmin" class="assign-btn small" @click="openAssignRoleModal(dept.value, 'LEADER')">
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn small"
+                  @click="openAssignRoleModal(dept.value, 'LEADER')"
+                >
                   + Edit
                 </button>
               </div>
@@ -140,9 +199,16 @@
               Anggota Tim (Staff / Specialist)
             </div>
             <div class="role-member-list">
-              <div v-if="getTeamMembers(dept.value).length === 0" class="empty-role">
+              <div
+                v-if="getTeamMembers(dept.value).length === 0"
+                class="empty-role"
+              >
                 <span class="empty-hint">Belum ada anggota Tim</span>
-                <button v-if="isAdmin" class="assign-btn" @click="openAssignRoleModal(dept.value, 'TEAM')">
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn"
+                  @click="openAssignRoleModal(dept.value, 'TEAM')"
+                >
                   + Assign Anggota
                 </button>
               </div>
@@ -152,18 +218,32 @@
                   :key="m.id"
                   class="member-chip team-chip"
                 >
-                  <div class="chip-avatar" :style="{ background: getAvatarColor(m.name) }">
+                  <div
+                    class="chip-avatar"
+                    :style="{ background: getAvatarColor(m.name) }"
+                  >
                     {{ getInitials(m.name) }}
                   </div>
                   <div class="chip-info">
                     <span class="chip-name">{{ m.name }}</span>
-                    <span class="chip-pos">{{ m.position || 'Team Member' }}</span>
+                    <span class="chip-pos">{{
+                      m.position || "Team Member"
+                    }}</span>
                   </div>
-                  <button v-if="isAdmin" class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
+                  <button
+                    v-if="isAdmin"
+                    class="remove-member-btn"
+                    title="Keluarkan dari Departemen"
+                    @click="removeUserFromDept(m.id)"
+                  >
                     &times;
                   </button>
                 </div>
-                <button v-if="isAdmin" class="assign-btn small" @click="openAssignRoleModal(dept.value, 'TEAM')">
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn small"
+                  @click="openAssignRoleModal(dept.value, 'TEAM')"
+                >
                   + Edit
                 </button>
               </div>
@@ -172,12 +252,41 @@
 
           <!-- Assign KR / Initiative Buttons (Admin & Manager) -->
           <div v-if="isAdmin || isManager" class="dept-card-actions">
-            <button class="action-btn kr-btn" @click="openAssignKrModal(dept.value)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <button
+              class="action-btn kr-btn"
+              @click="openAssignKrModal(dept.value)"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
               Assign RACI KR
             </button>
-            <button class="action-btn init-btn" @click="openAssignInitiativeModal(dept.value)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <button
+              class="action-btn init-btn"
+              @click="openAssignInitiativeModal(dept.value)"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
               Assign Initiative
             </button>
           </div>
@@ -186,13 +295,19 @@
     </div>
 
     <!-- ─── MODAL: Tambah Departemen (Admin) ─── -->
-    <div v-if="showAddDeptModal" class="modal-backdrop" @click.self="showAddDeptModal = false">
+    <div
+      v-if="showAddDeptModal"
+      class="modal-backdrop"
+      @click.self="showAddDeptModal = false"
+    >
       <div class="modal-card card">
         <div class="modal-header">
           <h3>Tambah Departemen Baru</h3>
-          <button class="close-btn" @click="showAddDeptModal = false">&times;</button>
+          <button class="close-btn" @click="showAddDeptModal = false">
+            &times;
+          </button>
         </div>
-        
+
         <div class="form-group">
           <label>Nama Departemen *</label>
           <input
@@ -203,36 +318,52 @@
             placeholder="Contoh: Digital Marketing"
           />
         </div>
-        <div class="form-group" style="margin-top: 1rem;">
+        <div class="form-group" style="margin-top: 1rem">
           <label>ID/Value Departemen *</label>
           <input
             v-model="newDeptForm.value"
             type="text"
             class="form-input"
             placeholder="Contoh: DIGITAL_MARKETING"
-            style="text-transform: uppercase;"
+            style="text-transform: uppercase"
           />
-          <p class="pick-meta" style="margin-top: 0.25rem;">Digunakan sebagai identifier unik dalam sistem.</p>
+          <p class="pick-meta" style="margin-top: 0.25rem">
+            Digunakan sebagai identifier unik dalam sistem.
+          </p>
         </div>
 
-        <div class="modal-footer" style="margin-top: 1rem;">
-          <button class="secondary-btn" @click="showAddDeptModal = false">Batal</button>
-          <button class="primary-btn" :disabled="saving || !newDeptForm.name || !newDeptForm.value" @click="saveNewDepartment">
-            {{ saving ? 'Menyimpan...' : 'Simpan' }}
+        <div class="modal-footer" style="margin-top: 1rem">
+          <button class="secondary-btn" @click="showAddDeptModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            :disabled="saving || !newDeptForm.name || !newDeptForm.value"
+            @click="saveNewDepartment"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan" }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- ─── MODAL: Assign Role ke Departemen ─── -->
-    <div v-if="showRoleModal" class="modal-backdrop" @click.self="showRoleModal = false">
+    <div
+      v-if="showRoleModal"
+      class="modal-backdrop"
+      @click.self="showRoleModal = false"
+    >
       <div class="modal-card card">
         <div class="modal-header">
-          <h3>Assign {{ targetRole }} &mdash; {{ getDeptLabel(targetDept) }}</h3>
-          <button class="close-btn" @click="showRoleModal = false">&times;</button>
+          <h3>
+            Assign {{ targetRole }} &mdash; {{ getDeptLabel(targetDept) }}
+          </h3>
+          <button class="close-btn" @click="showRoleModal = false">
+            &times;
+          </button>
         </div>
 
-        <div class="form-group" style="margin-bottom: 0.75rem;">
+        <div class="form-group" style="margin-bottom: 0.75rem">
           <input
             v-model="roleSearch"
             type="text"
@@ -264,36 +395,57 @@
               :value="user.id"
               v-model="selectedRoleUserIds"
             />
-            <div class="chip-avatar small" :style="{ background: getAvatarColor(user.name) }">
+            <div
+              class="chip-avatar small"
+              :style="{ background: getAvatarColor(user.name) }"
+            >
               {{ getInitials(user.name) }}
             </div>
             <div class="pick-info">
               <span class="pick-name">{{ user.name }}</span>
-              <span class="pick-meta">{{ user.position || user.role }} &bull; {{ user.email }}</span>
+              <span class="pick-meta"
+                >{{ user.position || user.role }} &bull; {{ user.email }}</span
+              >
             </div>
           </label>
         </div>
 
         <div class="modal-footer">
-          <button class="secondary-btn" @click="showRoleModal = false">Batal</button>
-          <button class="primary-btn" :disabled="saving" @click="saveRoleAssignment">
-            {{ saving ? 'Menyimpan...' : 'Simpan Assignment' }}
+          <button class="secondary-btn" @click="showRoleModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            :disabled="saving"
+            @click="saveRoleAssignment"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Assignment" }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- ─── MODAL: Assign RACI KR ─── -->
-    <div v-if="showKrModal" class="modal-backdrop" @click.self="showKrModal = false">
+    <div
+      v-if="showKrModal"
+      class="modal-backdrop"
+      @click.self="showKrModal = false"
+    >
       <div class="modal-card card">
         <div class="modal-header">
           <h3>Assign RACI Key Result &mdash; {{ getDeptLabel(targetDept) }}</h3>
-          <button class="close-btn" @click="showKrModal = false">&times;</button>
+          <button class="close-btn" @click="showKrModal = false">
+            &times;
+          </button>
         </div>
 
         <div class="form-group">
           <label>Pilih Key Result *</label>
-          <select v-model="selectedKrId" class="form-input" @change="loadKrAssignments">
+          <select
+            v-model="selectedKrId"
+            class="form-input"
+            @change="loadKrAssignments"
+          >
             <option value="">-- Pilih Key Result --</option>
             <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
               [{{ kr.bscPerspective }}] {{ kr.title }}
@@ -310,7 +462,11 @@
             </div>
             <select v-model="krAssign.responsibleId" class="form-input">
               <option value="">-- Pilih Pegawai --</option>
-              <option v-for="u in getDeptAllMembers(targetDept)" :key="u.id" :value="u.id">
+              <option
+                v-for="u in getDeptAllMembers(targetDept)"
+                :key="u.id"
+                :value="u.id"
+              >
                 {{ u.name }} ({{ u.role }})
               </option>
             </select>
@@ -323,8 +479,16 @@
               <strong>Accountable (Min 1)</strong>
             </div>
             <div class="checkbox-user-list">
-              <label v-for="u in getDeptAllMembers(targetDept)" :key="u.id" class="check-user-item">
-                <input type="checkbox" :value="u.id" v-model="krAssign.accountableIds" />
+              <label
+                v-for="u in getDeptAllMembers(targetDept)"
+                :key="u.id"
+                class="check-user-item"
+              >
+                <input
+                  type="checkbox"
+                  :value="u.id"
+                  v-model="krAssign.accountableIds"
+                />
                 <span>{{ u.name }}</span>
               </label>
             </div>
@@ -332,25 +496,41 @@
         </div>
 
         <div class="modal-footer">
-          <button class="secondary-btn" @click="showKrModal = false">Batal</button>
-          <button class="primary-btn" :disabled="saving || !selectedKrId" @click="saveKrRaci">
-            {{ saving ? 'Menyimpan...' : 'Simpan RACI' }}
+          <button class="secondary-btn" @click="showKrModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            :disabled="saving || !selectedKrId"
+            @click="saveKrRaci"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan RACI" }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- ─── MODAL: Assign Initiative ─── -->
-    <div v-if="showInitModal" class="modal-backdrop" @click.self="showInitModal = false">
+    <div
+      v-if="showInitModal"
+      class="modal-backdrop"
+      @click.self="showInitModal = false"
+    >
       <div class="modal-card card">
         <div class="modal-header">
           <h3>Assign Initiative &mdash; {{ getDeptLabel(targetDept) }}</h3>
-          <button class="close-btn" @click="showInitModal = false">&times;</button>
+          <button class="close-btn" @click="showInitModal = false">
+            &times;
+          </button>
         </div>
 
         <div class="form-group">
           <label>Pilih Initiative *</label>
-          <select v-model="selectedInitiativeId" class="form-input" @change="loadInitiativeTasks">
+          <select
+            v-model="selectedInitiativeId"
+            class="form-input"
+            @change="loadInitiativeTasks"
+          >
             <option value="">-- Pilih Initiative --</option>
             <option v-for="ini in allInitiatives" :key="ini.id" :value="ini.id">
               {{ ini.title }} (Tim: {{ ini.team?.name }})
@@ -358,11 +538,22 @@
           </select>
         </div>
 
-        <div v-if="selectedInitiativeId && selectedInitiativeTasks.length > 0" class="init-task-assign-list">
-          <div v-for="task in selectedInitiativeTasks" :key="task.id" class="task-assign-card">
+        <div
+          v-if="selectedInitiativeId && selectedInitiativeTasks.length > 0"
+          class="init-task-assign-list"
+        >
+          <div
+            v-for="task in selectedInitiativeTasks"
+            :key="task.id"
+            class="task-assign-card"
+          >
             <h4>Task: {{ task.title }}</h4>
             <div class="checkbox-user-list">
-              <label v-for="u in getDeptAllMembers(targetDept)" :key="u.id" class="check-user-item">
+              <label
+                v-for="u in getDeptAllMembers(targetDept)"
+                :key="u.id"
+                class="check-user-item"
+              >
                 <input
                   type="checkbox"
                   :value="u.id"
@@ -376,9 +567,15 @@
         </div>
 
         <div class="modal-footer">
-          <button class="secondary-btn" @click="showInitModal = false">Batal</button>
-          <button class="primary-btn" :disabled="saving || !selectedInitiativeId" @click="saveTaskAssignments">
-            {{ saving ? 'Menyimpan...' : 'Simpan Assignment' }}
+          <button class="secondary-btn" @click="showInitModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            :disabled="saving || !selectedInitiativeId"
+            @click="saveTaskAssignments"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Assignment" }}
           </button>
         </div>
       </div>
@@ -387,57 +584,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
 
 const config = useRuntimeConfig();
 const auth = useAuthStore();
 const API = config.public.apiBase;
 
 const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${auth.token || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '')}`,
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${auth.token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : "")}`,
 });
 
 // ─── Roles & Permissions ───
-const isAdmin = computed(() => auth.user?.role === 'ADMIN');
-const isCLevel = computed(() => auth.user?.role === 'C_LEVEL');
-const isManager = computed(() => auth.user?.role === 'MANAGER');
-const isLeader = computed(() => auth.user?.role === 'LEADER');
-const isTeam = computed(() => auth.user?.role === 'TEAM');
+const isAdmin = computed(() => auth.user?.role === "ADMIN");
+const isCLevel = computed(() => auth.user?.role === "C_LEVEL");
+const isManager = computed(() => auth.user?.role === "MANAGER");
+const isLeader = computed(() => auth.user?.role === "LEADER");
+const isTeam = computed(() => auth.user?.role === "TEAM");
 
 const userRoleClass = computed(() => {
-  const r = (auth.user?.role || '').toLowerCase();
+  const r = (auth.user?.role || "").toLowerCase();
   return `scope-${r}`;
 });
 
 const roleIcon = computed(() => {
-  if (isAdmin.value) return '';
-  if (isCLevel.value) return '';
-  if (isManager.value) return '';
-  if (isLeader.value) return '';
-  return '';
+  if (isAdmin.value) return "";
+  if (isCLevel.value) return "";
+  if (isManager.value) return "";
+  if (isLeader.value) return "";
+  return "";
 });
 
 const scopeDescription = computed(() => {
   if (isAdmin.value || isCLevel.value) {
-    return 'Menampilkan seluruh struktur hierarki departemen (Company-wide).';
+    return "Menampilkan seluruh struktur hierarki departemen (Company-wide).";
   }
   if (isManager.value) {
-    return 'Menampilkan departemen yang Anda kelola / pimpin.';
+    return "Menampilkan departemen yang Anda kelola / pimpin.";
   }
   if (isLeader.value) {
-    return 'Menampilkan departemen dan tim yang Anda pimpin.';
+    return "Menampilkan departemen dan tim yang Anda pimpin.";
   }
-  return 'Menampilkan hierarki departemen dan anggota tim Anda.';
+  return "Menampilkan hierarki departemen dan anggota tim Anda.";
 });
 
 // ─── State ───
 const loading = ref(false);
 const saving = ref(false);
-const errorMsg = ref('');
-const successMsg = ref('');
-const selectedDept = ref('');
+const errorMsg = ref("");
+const successMsg = ref("");
+const selectedDept = ref("");
 
 const allUsers = ref<any[]>([]);
 const allKrs = ref<any[]>([]);
@@ -445,27 +642,32 @@ const allInitiatives = ref<any[]>([]);
 
 // ─── Modal state ───
 const showRoleModal = ref(false);
-const targetDept = ref('');
-const targetRole = ref('');
-const roleSearch = ref('');
+const targetDept = ref("");
+const targetRole = ref("");
+const roleSearch = ref("");
 const selectedRoleUserIds = ref<string[]>([]);
 
 const showKrModal = ref(false);
-const selectedKrId = ref('');
-const krAssign = ref<{ responsibleId: string; accountableIds: string[]; consultedIds: string[]; informedIds: string[] }>({
-  responsibleId: '',
+const selectedKrId = ref("");
+const krAssign = ref<{
+  responsibleId: string;
+  accountableIds: string[];
+  consultedIds: string[];
+  informedIds: string[];
+}>({
+  responsibleId: "",
   accountableIds: [],
   consultedIds: [],
-  informedIds: []
+  informedIds: [],
 });
 
 const showInitModal = ref(false);
-const selectedInitiativeId = ref('');
+const selectedInitiativeId = ref("");
 const selectedInitiativeTasks = ref<any[]>([]);
 const taskAssignMap = ref<Record<string, string[]>>({});
 
 const showAddDeptModal = ref(false);
-const newDeptForm = ref({ name: '', value: '' });
+const newDeptForm = ref({ name: "", value: "" });
 
 // ─── Departments Config ───
 const DEPARTMENTS = ref<any[]>([]);
@@ -473,14 +675,15 @@ const DEPARTMENTS = ref<any[]>([]);
 // ─── Computed ───
 const filteredDepts = computed(() => {
   if (!selectedDept.value) return DEPARTMENTS.value;
-  return DEPARTMENTS.value.filter(d => d.value === selectedDept.value);
+  return DEPARTMENTS.value.filter((d) => d.value === selectedDept.value);
 });
 
 const filteredUsersForRole = computed(() => {
-  return allUsers.value.filter(u => {
-    const matchSearch = !roleSearch.value ||
+  return allUsers.value.filter((u) => {
+    const matchSearch =
+      !roleSearch.value ||
       u.name.toLowerCase().includes(roleSearch.value.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(roleSearch.value.toLowerCase());
+      (u.email || "").toLowerCase().includes(roleSearch.value.toLowerCase());
     return matchSearch;
   });
 });
@@ -491,47 +694,66 @@ function isUserSelectedForRole(userId: string) {
 
 // ─── Helpers ───
 function getManagers(deptVal: string) {
-  const deptObj = DEPARTMENTS.value.find(d => d.value === deptVal);
+  const deptObj = DEPARTMENTS.value.find((d) => d.value === deptVal);
   if (deptObj && deptObj.manager) {
     return [deptObj.manager];
   }
-  return allUsers.value.filter(u => u.department === deptVal && u.role === 'MANAGER');
+  return allUsers.value.filter(
+    (u) => u.department === deptVal && u.role === "MANAGER",
+  );
 }
 
 function getLeaders(dept: string) {
-  return allUsers.value.filter(u => u.department === dept && u.role === 'LEADER');
+  return allUsers.value.filter(
+    (u) => u.department === dept && u.role === "LEADER",
+  );
 }
 
 function getTeamMembers(dept: string) {
-  return allUsers.value.filter(u => u.department === dept && u.role === 'TEAM');
+  return allUsers.value.filter(
+    (u) => u.department === dept && u.role === "TEAM",
+  );
 }
 
 function getDeptAllMembers(dept: string) {
-  return allUsers.value.filter(u => u.department === dept);
+  return allUsers.value.filter((u) => u.department === dept);
 }
 
 function getMemberCount(dept: string) {
-  return allUsers.value.filter(u => u.department === dept).length;
+  return allUsers.value.filter((u) => u.department === dept).length;
 }
 
 function getDeptLabel(val: string) {
-  return DEPARTMENTS.value.find(d => d.value === val)?.label || val;
+  return DEPARTMENTS.value.find((d) => d.value === val)?.label || val;
 }
 
 function getInitials(name: string) {
-  if (!name) return '?';
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
 }
 
 function getAvatarColor(name: string) {
-  const colors = ['#0E97D6', '#0583C3', '#7C3AED', '#DB2777', '#EA580C', '#00A925'];
+  const colors = [
+    "#0E97D6",
+    "#0583C3",
+    "#7C3AED",
+    "#DB2777",
+    "#EA580C",
+    "#00A925",
+  ];
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++)
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
 }
 
 // ─── Fetch ───
-const FALLBACK_ICONS = ['', '', '', '', '', '', '', ''];
+const FALLBACK_ICONS = ["", "", "", "", "", "", "", ""];
 
 async function fetchDepartments() {
   try {
@@ -548,7 +770,7 @@ async function fetchDepartments() {
       }));
     }
   } catch (e) {
-    console.error('Gagal memuat departemen');
+    console.error("Gagal memuat departemen");
   }
 }
 
@@ -560,7 +782,7 @@ async function fetchUsers() {
       allUsers.value = await res.json();
     }
   } catch (e) {
-    errorMsg.value = 'Gagal memuat data pegawai';
+    errorMsg.value = "Gagal memuat data pegawai";
   } finally {
     loading.value = false;
   }
@@ -572,7 +794,10 @@ async function fetchKrs() {
     if (res.ok) {
       const objs = await res.json();
       allKrs.value = objs.flatMap((o: any) =>
-        (o.keyResults || []).map((kr: any) => ({ ...kr, objectiveTitle: o.title }))
+        (o.keyResults || []).map((kr: any) => ({
+          ...kr,
+          objectiveTitle: o.title,
+        })),
       );
     }
   } catch (e) {}
@@ -589,38 +814,38 @@ async function fetchInitiatives() {
 
 // ─── Modal Actions ───
 function openAddDeptModal() {
-  newDeptForm.value = { name: '', value: '' };
+  newDeptForm.value = { name: "", value: "" };
   showAddDeptModal.value = true;
 }
 
 function generateDeptValue() {
   if (!newDeptForm.value.name) {
-    newDeptForm.value.value = '';
+    newDeptForm.value.value = "";
     return;
   }
   newDeptForm.value.value = newDeptForm.value.name
     .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '_')
-    .replace(/_+/g, '_');
+    .replace(/[^A-Z0-9]/g, "_")
+    .replace(/_+/g, "_");
 }
 
 async function saveNewDepartment() {
   saving.value = true;
-  errorMsg.value = '';
+  errorMsg.value = "";
   try {
     const res = await fetch(`${API}/departments`, {
-      method: 'POST',
+      method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(newDeptForm.value),
     });
     if (res.ok) {
       showAddDeptModal.value = false;
-      successMsg.value = 'Departemen baru berhasil ditambahkan!';
-      setTimeout(() => successMsg.value = '', 3000);
+      successMsg.value = "Departemen baru berhasil ditambahkan!";
+      setTimeout(() => (successMsg.value = ""), 3000);
       await fetchDepartments();
     } else {
       const err = await res.json();
-      errorMsg.value = err.message || 'Gagal menambahkan departemen';
+      errorMsg.value = err.message || "Gagal menambahkan departemen";
     }
   } catch (e: any) {
     errorMsg.value = e.message;
@@ -632,41 +857,41 @@ async function saveNewDepartment() {
 function openAssignRoleModal(deptVal: string, role: string) {
   targetDept.value = deptVal;
   targetRole.value = role;
-  roleSearch.value = '';
-  if (role === 'MANAGER') {
+  roleSearch.value = "";
+  if (role === "MANAGER") {
     const mgrs = getManagers(deptVal);
     selectedRoleUserIds.value = mgrs.length ? [mgrs[0].id] : [];
-  } else if (role === 'LEADER') {
-    selectedRoleUserIds.value = getLeaders(deptVal).map(u => u.id);
-  } else if (role === 'TEAM') {
-    selectedRoleUserIds.value = getTeamMembers(deptVal).map(u => u.id);
+  } else if (role === "LEADER") {
+    selectedRoleUserIds.value = getLeaders(deptVal).map((u) => u.id);
+  } else if (role === "TEAM") {
+    selectedRoleUserIds.value = getTeamMembers(deptVal).map((u) => u.id);
   }
   showRoleModal.value = true;
 }
 
 async function saveRoleAssignment() {
   saving.value = true;
-  errorMsg.value = '';
+  errorMsg.value = "";
   try {
-    const deptObj = DEPARTMENTS.value.find(d => d.value === targetDept.value);
+    const deptObj = DEPARTMENTS.value.find((d) => d.value === targetDept.value);
     if (!deptObj) return;
 
-    if (targetRole.value === 'MANAGER') {
+    if (targetRole.value === "MANAGER") {
       const mgrId = selectedRoleUserIds.value[0] || null;
       await fetch(`${API}/departments/${deptObj.id}/manager`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: getHeaders(),
         body: JSON.stringify({ userId: mgrId }),
       });
     } else {
       const prevMembers = allUsers.value.filter(
-        u => u.department === targetDept.value && u.role === targetRole.value
+        (u) => u.department === targetDept.value && u.role === targetRole.value,
       );
-  
+
       // Users to assign to this dept and role
       for (const uid of selectedRoleUserIds.value) {
         await fetch(`${API}/users/${uid}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: getHeaders(),
           body: JSON.stringify({
             role: targetRole.value,
@@ -674,22 +899,22 @@ async function saveRoleAssignment() {
           }),
         });
       }
-  
+
       // Users who were deselected (removed from this role & department)
       for (const prev of prevMembers) {
         if (!selectedRoleUserIds.value.includes(prev.id)) {
           await fetch(`${API}/users/${prev.id}`, {
-            method: 'PATCH',
+            method: "PATCH",
             headers: getHeaders(),
-            body: JSON.stringify({ department: null, role: 'TEAM' }),
+            body: JSON.stringify({ department: null, role: "TEAM" }),
           });
         }
       }
     }
 
     showRoleModal.value = false;
-    successMsg.value = 'Penugasan role berhasil disimpan!';
-    setTimeout(() => successMsg.value = '', 3000);
+    successMsg.value = "Penugasan role berhasil disimpan!";
+    setTimeout(() => (successMsg.value = ""), 3000);
     await Promise.all([fetchDepartments(), fetchUsers()]);
   } catch (e: any) {
     errorMsg.value = e.message;
@@ -699,20 +924,25 @@ async function saveRoleAssignment() {
 }
 
 async function removeUserFromDept(userId: string) {
-  if (!confirm('Apakah Anda yakin ingin mengeluarkan pegawai ini dari struktur departemen? (Data master tidak akan terhapus)')) return;
+  if (
+    !confirm(
+      "Apakah Anda yakin ingin mengeluarkan pegawai ini dari struktur departemen? (Data master tidak akan terhapus)",
+    )
+  )
+    return;
   try {
     const res = await fetch(`${API}/users/${userId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify({ department: null }),
     });
     if (res.ok) {
-      successMsg.value = 'Pegawai berhasil dikeluarkan dari departemen.';
+      successMsg.value = "Pegawai berhasil dikeluarkan dari departemen.";
       await Promise.all([fetchDepartments(), fetchUsers()]);
-      setTimeout(() => successMsg.value = '', 3000);
+      setTimeout(() => (successMsg.value = ""), 3000);
     } else {
       const err = await res.json();
-      errorMsg.value = err.message || 'Gagal mengeluarkan pegawai';
+      errorMsg.value = err.message || "Gagal mengeluarkan pegawai";
     }
   } catch (e: any) {
     errorMsg.value = e.message;
@@ -721,20 +951,30 @@ async function removeUserFromDept(userId: string) {
 
 function openAssignKrModal(deptVal: string) {
   targetDept.value = deptVal;
-  selectedKrId.value = '';
-  krAssign.value = { responsibleId: '', accountableIds: [], consultedIds: [], informedIds: [] };
+  selectedKrId.value = "";
+  krAssign.value = {
+    responsibleId: "",
+    accountableIds: [],
+    consultedIds: [],
+    informedIds: [],
+  };
   showKrModal.value = true;
 }
 
 async function loadKrAssignments() {
   if (!selectedKrId.value) return;
   try {
-    const res = await fetch(`${API}/key-results/${selectedKrId.value}/assignments`, { headers: getHeaders() });
+    const res = await fetch(
+      `${API}/key-results/${selectedKrId.value}/assignments`,
+      { headers: getHeaders() },
+    );
     if (res.ok) {
       const assigns = await res.json();
-      const r = assigns.find((a: any) => a.raciRole === 'RESPONSIBLE');
-      const a = assigns.filter((a: any) => a.raciRole === 'ACCOUNTABLE').map((a: any) => a.userId);
-      krAssign.value.responsibleId = r ? r.userId : '';
+      const r = assigns.find((a: any) => a.raciRole === "RESPONSIBLE");
+      const a = assigns
+        .filter((a: any) => a.raciRole === "ACCOUNTABLE")
+        .map((a: any) => a.userId);
+      krAssign.value.responsibleId = r ? r.userId : "";
       krAssign.value.accountableIds = a;
     }
   } catch (e) {}
@@ -746,28 +986,31 @@ async function saveKrRaci() {
   try {
     const assignments: any[] = [];
     if (krAssign.value.responsibleId) {
-      assignments.push({ userId: krAssign.value.responsibleId, raciRole: 'RESPONSIBLE' });
+      assignments.push({
+        userId: krAssign.value.responsibleId,
+        raciRole: "RESPONSIBLE",
+      });
     }
-    krAssign.value.accountableIds.forEach(uid => {
-      assignments.push({ userId: uid, raciRole: 'ACCOUNTABLE' });
+    krAssign.value.accountableIds.forEach((uid) => {
+      assignments.push({ userId: uid, raciRole: "ACCOUNTABLE" });
     });
 
     const res = await fetch(`${API}/key-results/${selectedKrId.value}/assign`, {
-      method: 'POST',
+      method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({
         assignments,
-        departments: [targetDept.value]
-      })
+        departments: [targetDept.value],
+      }),
     });
 
     if (res.ok) {
       showKrModal.value = false;
-      successMsg.value = 'RACI Key Result berhasil disimpan!';
-      setTimeout(() => successMsg.value = '', 3000);
+      successMsg.value = "RACI Key Result berhasil disimpan!";
+      setTimeout(() => (successMsg.value = ""), 3000);
     } else {
       const err = await res.json();
-      alert(err.message || 'Gagal menyimpan RACI');
+      alert(err.message || "Gagal menyimpan RACI");
     }
   } catch (e: any) {
     alert(e.message);
@@ -778,7 +1021,7 @@ async function saveKrRaci() {
 
 function openAssignInitiativeModal(deptVal: string) {
   targetDept.value = deptVal;
-  selectedInitiativeId.value = '';
+  selectedInitiativeId.value = "";
   selectedInitiativeTasks.value = [];
   taskAssignMap.value = {};
   showInitModal.value = true;
@@ -787,7 +1030,10 @@ function openAssignInitiativeModal(deptVal: string) {
 async function loadInitiativeTasks() {
   if (!selectedInitiativeId.value) return;
   try {
-    const res = await fetch(`${API}/initiatives/${selectedInitiativeId.value}/tasks`, { headers: getHeaders() });
+    const res = await fetch(
+      `${API}/initiatives/${selectedInitiativeId.value}/tasks`,
+      { headers: getHeaders() },
+    );
     if (res.ok) {
       const tasks = await res.json();
       selectedInitiativeTasks.value = tasks;
@@ -808,7 +1054,9 @@ function toggleTaskUser(taskId: string, userId: string, event: Event) {
       taskAssignMap.value[taskId].push(userId);
     }
   } else {
-    taskAssignMap.value[taskId] = taskAssignMap.value[taskId].filter(id => id !== userId);
+    taskAssignMap.value[taskId] = taskAssignMap.value[taskId].filter(
+      (id) => id !== userId,
+    );
   }
 }
 
@@ -818,14 +1066,14 @@ async function saveTaskAssignments() {
     for (const task of selectedInitiativeTasks.value) {
       const userIds = taskAssignMap.value[task.id] || [];
       await fetch(`${API}/initiatives/tasks/${task.id}/assign`, {
-        method: 'POST',
+        method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ userIds })
+        body: JSON.stringify({ userIds }),
       });
     }
     showInitModal.value = false;
-    successMsg.value = 'Penugasan Task berhasil disimpan!';
-    setTimeout(() => successMsg.value = '', 3000);
+    successMsg.value = "Penugasan Task berhasil disimpan!";
+    setTimeout(() => (successMsg.value = ""), 3000);
   } catch (e: any) {
     alert(e.message);
   } finally {
@@ -845,9 +1093,13 @@ onMounted(async () => {
 
 <style scoped>
 .dept-root {
-  padding: 1.5rem;
-  background: var(--bg-primary, #f8fafc);
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 .card {
@@ -889,11 +1141,31 @@ onMounted(async () => {
   font-size: 0.82rem;
 }
 
-.scope-banner.scope-admin { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
-.scope-banner.scope-c_level { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-.scope-banner.scope-manager { background: #fefce8; border: 1px solid #fef08a; color: #854d0e; }
-.scope-banner.scope-leader { background: #faf5ff; border: 1px solid #e9d5ff; color: #6b21a8; }
-.scope-banner.scope-team { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; }
+.scope-banner.scope-admin {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+.scope-banner.scope-c_level {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+.scope-banner.scope-manager {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  color: #854d0e;
+}
+.scope-banner.scope-leader {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #6b21a8;
+}
+.scope-banner.scope-team {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
 
 .dept-filter-select {
   padding: 8px 12px;
@@ -905,7 +1177,7 @@ onMounted(async () => {
 }
 
 .primary-btn {
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
   border: none;
   padding: 8px 16px;
@@ -995,9 +1267,15 @@ onMounted(async () => {
   gap: 6px;
 }
 
-.manager-label { color: #0284c7; }
-.leader-label { color: #9333ea; }
-.team-label { color: #475569; }
+.manager-label {
+  color: #0284c7;
+}
+.leader-label {
+  color: #9333ea;
+}
+.team-label {
+  color: #475569;
+}
 
 .role-dot {
   width: 7px;
@@ -1005,9 +1283,15 @@ onMounted(async () => {
   border-radius: 50%;
 }
 
-.manager-dot { background: #0284c7; }
-.leader-dot { background: #9333ea; }
-.team-dot { background: #64748b; }
+.manager-dot {
+  background: #0284c7;
+}
+.leader-dot {
+  background: #9333ea;
+}
+.team-dot {
+  background: #64748b;
+}
 
 .empty-role {
   display: flex;
@@ -1027,7 +1311,7 @@ onMounted(async () => {
 .assign-btn {
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #0E97D6;
+  color: #0e97d6;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;
@@ -1037,7 +1321,7 @@ onMounted(async () => {
 
 .assign-btn:hover {
   background: rgba(14, 151, 214, 0.06);
-  border-color: #0E97D6;
+  border-color: #0e97d6;
 }
 
 .member-chips {
@@ -1057,9 +1341,18 @@ onMounted(async () => {
   border: 1px solid transparent;
 }
 
-.manager-chip { background: #eff6ff; border-color: #bfdbfe; }
-.leader-chip { background: #faf5ff; border-color: #e9d5ff; }
-.team-chip { background: #f8fafc; border-color: #e2e8f0; }
+.manager-chip {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.leader-chip {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+.team-chip {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
 
 .chip-avatar {
   width: 24px;
@@ -1117,8 +1410,16 @@ onMounted(async () => {
   gap: 5px;
 }
 
-.kr-btn { background: #eff6ff; border: 1px solid #bfdbfe; color: #0284c7; }
-.init-btn { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.kr-btn {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #0284c7;
+}
+.init-btn {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
 
 /* Modals */
 .modal-backdrop {
@@ -1202,16 +1503,27 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.user-pick-item:hover { background: #f1f5f9; }
-.user-pick-item.selected { background: #e0f2fe; }
+.user-pick-item:hover {
+  background: #f1f5f9;
+}
+.user-pick-item.selected {
+  background: #e0f2fe;
+}
 
 .pick-info {
   display: flex;
   flex-direction: column;
 }
 
-.pick-name { font-size: 0.82rem; font-weight: 600; color: #0f172a; }
-.pick-meta { font-size: 0.72rem; color: #64748b; }
+.pick-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+.pick-meta {
+  font-size: 0.72rem;
+  color: #64748b;
+}
 
 .raci-assign-grid {
   display: flex;
@@ -1242,8 +1554,14 @@ onMounted(async () => {
   border-radius: 4px;
 }
 
-.r-badge { background: #e0f2fe; color: #0284c7; }
-.a-badge { background: #fef3c7; color: #b45309; }
+.r-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.a-badge {
+  background: #fef3c7;
+  color: #b45309;
+}
 
 .checkbox-user-list {
   display: flex;
@@ -1275,8 +1593,16 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
-.alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-.alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.alert-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
 
 .remove-member-btn {
   background: transparent;

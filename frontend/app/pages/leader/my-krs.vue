@@ -835,7 +835,7 @@ async function saveInitiative() {
 }
 
 .section-desc {
-  font-family: "Inter", sans-serif;
+  font-family: "Rubik", sans-serif;
   font-size: 14px;
   color: #64748b;
   margin: 0;

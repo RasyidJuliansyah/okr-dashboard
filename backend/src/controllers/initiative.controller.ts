@@ -1345,6 +1345,70 @@ export async function assignUsersToTask(req: AuthRequest, res: Response) {
   }
 }
 
+// BARU: Cascade dari Initiative ke Monthly Key Result
+// Dibuat dari scratch untuk menangani case isManualOverride
+export async function cascadeInitiativeToMonthlyKr(
+  keyResultId: string,
+): Promise<void> {
+  const kr = await prisma.keyResult.findUnique({
+    where: { id: keyResultId },
+  });
+  if (!kr) return;
+
+  // Jika di-override secara manual oleh Leader, skip sinkronisasi otomatis dari Initiative
+  if (kr.isManualOverride) {
+    return;
+  }
+
+  const allInitiatives = await prisma.initiative.findMany({
+    where: { keyResultId },
+    include: { tasks: true },
+  });
+
+  if (allInitiatives.length === 0 || kr.targetValue <= 0) return;
+
+  const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
+  const weightedAvgPercent =
+    allInitiatives.reduce((sum, init) => {
+      let initProgress = 0;
+      if (init.tasks.length > 0) {
+        const initTasksWeight = init.tasks.reduce(
+          (s, t) => s + (t.weight || 1),
+          0,
+        );
+        initProgress =
+          init.tasks.reduce((s, k) => {
+            return (
+              s +
+              (k.targetValue > 0 ? k.currentValue / k.targetValue : 0) *
+                (k.weight || 1)
+            );
+          }, 0) / (initTasksWeight || 1);
+      } else if (init.targetValue > 0) {
+        initProgress = init.currentValue / init.targetValue;
+      }
+      return sum + initProgress * (init.weight || 1);
+    }, 0) / (totalWeight || 1);
+
+  const newKrValue =
+    Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
+
+  const krProgress = newKrValue / kr.targetValue;
+  let newStatus = "ON_TRACK";
+  if (krProgress < 0.5) newStatus = "OFF_TRACK";
+  else if (krProgress < 0.8) newStatus = "AT_RISK";
+
+  const updatedKr = await prisma.keyResult.update({
+    where: { id: keyResultId },
+    data: { currentValue: newKrValue, status: newStatus },
+  });
+
+  // Cascade to AnnualKeyResult
+  if (updatedKr.annualKeyResultId) {
+    await cascadeMonthlyKrToAnnual(updatedKr.annualKeyResultId);
+  }
+}
+
 // ─── HELPER: Cascade Task value update ke Initiative → KR ──────────────────
 export async function cascadeTaskValueUpdate(
   taskId: string,
@@ -1372,59 +1436,7 @@ export async function cascadeTaskValueUpdate(
     });
 
     // 2. Recalculate KR.currentValue dari weighted average Initiative progress
-    const allInitiatives = await prisma.initiative.findMany({
-      where: { keyResultId: initiative.keyResultId },
-      include: { tasks: true },
-    });
-    const kr = await prisma.keyResult.findUnique({
-      where: { id: initiative.keyResultId },
-    });
-
-    if (kr && allInitiatives.length > 0 && kr.targetValue > 0) {
-      const totalWeight = allInitiatives.reduce(
-        (s, i) => s + (i.weight || 1),
-        0,
-      );
-      const weightedAvgPercent =
-        allInitiatives.reduce((sum, init) => {
-          let initProgress = 0;
-          if (init.tasks.length > 0) {
-            const initTasksWeight = init.tasks.reduce(
-              (s, t) => s + (t.weight || 1),
-              0,
-            );
-            initProgress =
-              init.tasks.reduce((s, k) => {
-                return (
-                  s +
-                  (k.targetValue > 0 ? k.currentValue / k.targetValue : 0) *
-                    (k.weight || 1)
-                );
-              }, 0) / (initTasksWeight || 1);
-          } else if (init.targetValue > 0) {
-            initProgress = init.currentValue / init.targetValue;
-          }
-          return sum + initProgress * (init.weight || 1);
-        }, 0) / (totalWeight || 1);
-
-      const newKrValue =
-        Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
-
-      const krProgress = newKrValue / kr.targetValue;
-      let newStatus = "ON_TRACK";
-      if (krProgress < 0.5) newStatus = "OFF_TRACK";
-      else if (krProgress < 0.8) newStatus = "AT_RISK";
-
-      const updatedKr = await prisma.keyResult.update({
-        where: { id: kr.id },
-        data: { currentValue: newKrValue, status: newStatus },
-      });
-
-      // 3. Cascade to AnnualKeyResult
-      if (updatedKr.annualKeyResultId) {
-        await cascadeMonthlyKrToAnnual(updatedKr.annualKeyResultId);
-      }
-    }
+    await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
   }
 }
 
@@ -1441,11 +1453,11 @@ export async function submitTaskUpdate(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: "newValue wajib diisi" });
     }
 
-    // Pastikan user ini memang di-assign ke Task ini
+    // Pastikan user ini memang di-assign ke Task ini, atau memiliki role LEADER/MANAGER/ADMIN (bisa update tugas timnya)
     const assignment = await prisma.taskAssignment.findUnique({
       where: { taskId_userId: { taskId, userId } },
     });
-    if (!assignment) {
+    if (!assignment && !["LEADER", "MANAGER", "ADMIN"].includes(role)) {
       return res
         .status(403)
         .json({ message: "Kamu tidak di-assign ke Task ini" });
@@ -1457,9 +1469,9 @@ export async function submitTaskUpdate(req: AuthRequest, res: Response) {
     });
     if (!task) return res.status(404).json({ message: "Task tidak ditemukan" });
 
-    // LEADER, MANAGER, ADMIN → auto-approve (tidak perlu menunggu persetujuan)
-    const isAutoApprove = ["LEADER", "MANAGER", "ADMIN"].includes(role);
-    const updateStatus = isAutoApprove ? "APPROVED" : "PENDING_APPROVAL";
+    // Semua update kini wajib melalui antrean PENDING_APPROVAL agar masuk ke page persetujuan level di atasnya
+    const isAutoApprove = false;
+    const updateStatus = "PENDING_APPROVAL";
 
     const update = await prisma.taskUpdate.create({
       data: {
@@ -1470,28 +1482,12 @@ export async function submitTaskUpdate(req: AuthRequest, res: Response) {
         link: link || null,
         submittedBy: userId,
         status: updateStatus,
-        ...(isAutoApprove
-          ? { reviewedBy: userId, reviewedAt: new Date() }
-          : {}),
       },
     });
 
-    if (isAutoApprove) {
-      // Langsung update currentValue Task dan cascade ke Initiative & KR
-      await prisma.task.update({
-        where: { id: taskId },
-        data: {
-          currentValue: parseFloat(newValue),
-          documentationLink: link || null,
-        },
-      });
-      await cascadeTaskValueUpdate(taskId, task.initiativeId);
-    }
-
     return res.status(201).json({
-      message: isAutoApprove
-        ? "Update berhasil disimpan dan langsung diterapkan"
-        : "Update berhasil dikirim, menunggu persetujuan",
+      message:
+        "Update berhasil dikirim, menunggu persetujuan tingkat di atasnya",
       update,
     });
   } catch (error) {
@@ -1665,7 +1661,7 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
   try {
     const { id: initiativeId } = req.params;
     const { newValue, note, kanbanStatus, link } = req.body;
-    const { id: userId } = req.user!;
+    const { id: userId, role } = req.user!;
 
     if (newValue === undefined) {
       return res.status(400).json({ message: "newValue wajib diisi" });
@@ -1677,42 +1673,38 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
     if (!initiative)
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
 
-    // Validasi apakah user tergolong dalam tim inisiatif tersebut
+    // Validasi apakah user tergolong dalam tim inisiatif tersebut atau memiliki role atasan (Leader/Manager/Admin)
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { teamId: true },
     });
-    if (dbUser?.teamId !== initiative.teamId) {
+    if (
+      dbUser?.teamId !== initiative.teamId &&
+      !["LEADER", "MANAGER", "ADMIN"].includes(role)
+    ) {
       return res
         .status(403)
         .json({ message: "Anda bukan anggota tim inisiatif ini" });
     }
 
-    const [update] = await prisma.$transaction([
-      prisma.initiativeUpdate.create({
-        data: {
-          initiativeId,
-          oldValue: initiative.currentValue,
-          newValue: parseFloat(newValue),
-          note: note || null,
-          kanbanStatus: kanbanStatus || null,
-          link: link || null,
-          submittedBy: userId,
-        },
-      }),
-      prisma.initiative.update({
-        where: { id: initiativeId },
-        data: {
-          currentValue: parseFloat(newValue),
-          ...(kanbanStatus ? { kanbanStatus } : {}),
-          documentationLink: link || null,
-        },
-      }),
-    ]);
+    const update = await prisma.initiativeUpdate.create({
+      data: {
+        initiativeId,
+        oldValue: initiative.currentValue,
+        newValue: parseFloat(newValue),
+        note: note || null,
+        kanbanStatus: kanbanStatus || null,
+        link: link || null,
+        submittedBy: userId,
+        status: "PENDING_APPROVAL",
+      },
+    });
 
-    return res
-      .status(201)
-      .json({ message: "Progress berhasil dicatat", update });
+    return res.status(201).json({
+      message:
+        "Progres inisiatif berhasil dikirim, menunggu persetujuan tingkat di atasnya",
+      update,
+    });
   } catch (error) {
     console.error("Submit initiative update error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -1733,6 +1725,261 @@ export async function getInitiativeProgressUpdates(
     return res.status(200).json(updates);
   } catch (error) {
     console.error("Get initiative progress updates error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// GET /api/initiatives/initiative-updates/pending
+export async function getPendingInitiativeUpdates(
+  req: AuthRequest,
+  res: Response,
+) {
+  try {
+    const { id: userId, role } = req.user!;
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { department: true },
+    });
+
+    let whereClause: any = { status: "PENDING_APPROVAL" };
+
+    if (role === "MANAGER") {
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true },
+      });
+      const deptValues = managedDepts.map((d) => d.value);
+      if (
+        dbUser?.department &&
+        dbUser.department.toUpperCase() !== "STRATEGIC" &&
+        !deptValues.includes(dbUser.department)
+      ) {
+        deptValues.push(dbUser.department);
+      }
+
+      whereClause.initiative = {
+        team: { department: { in: deptValues } },
+      };
+    } else if (role === "LEADER") {
+      const leadingTeams = await prisma.team.findMany({
+        where: { leaderId: userId },
+        select: { id: true },
+      });
+      const leadingTeamIds = leadingTeams.map((t) => t.id);
+
+      whereClause.initiative = {
+        teamId: { in: leadingTeamIds },
+      };
+    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+      return res.status(200).json([]);
+    }
+
+    const updates = await prisma.initiativeUpdate.findMany({
+      where: whereClause,
+      include: {
+        initiative: {
+          include: { team: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return res.status(200).json(updates);
+  } catch (error) {
+    console.error("Get pending Initiative updates error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// PATCH /api/initiatives/initiative-updates/:updateId/approve
+export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
+  try {
+    const { updateId } = req.params;
+    const { id: managerId, role } = req.user!;
+
+    const initiativeUpdate = await prisma.initiativeUpdate.findUnique({
+      where: { id: updateId },
+      include: { initiative: { include: { team: true } } },
+    });
+    if (!initiativeUpdate)
+      return res
+        .status(404)
+        .json({ message: "Update inisiatif tidak ditemukan" });
+    if (initiativeUpdate.status !== "PENDING_APPROVAL") {
+      return res
+        .status(400)
+        .json({ message: "Update ini sudah diproses sebelumnya" });
+    }
+
+    // Filter akses berdasarkan role
+    if (role === "MANAGER") {
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId },
+        select: { value: true },
+      });
+      const deptValues = managedDepts.map((d) => d.value);
+      const dbUser = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: { department: true },
+      });
+      if (
+        dbUser?.department &&
+        dbUser.department.toUpperCase() !== "STRATEGIC" &&
+        !deptValues.includes(dbUser.department)
+      ) {
+        deptValues.push(dbUser.department);
+      }
+      if (
+        !initiativeUpdate.initiative.team?.department ||
+        !deptValues.includes(initiativeUpdate.initiative.team.department)
+      ) {
+        return res
+          .status(403)
+          .json({
+            message:
+              "Forbidden: Anda tidak memiliki akses untuk menyetujui update di departemen ini",
+          });
+      }
+    } else if (role === "LEADER") {
+      const leadingTeams = await prisma.team.findMany({
+        where: { leaderId: managerId },
+        select: { id: true },
+      });
+      const leadingTeamIds = leadingTeams.map((t) => t.id);
+      if (!leadingTeamIds.includes(initiativeUpdate.initiative.teamId)) {
+        return res
+          .status(403)
+          .json({
+            message:
+              "Forbidden: Anda hanya bisa menyetujui update untuk tim Anda sendiri",
+          });
+      }
+    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+      return res
+        .status(403)
+        .json({
+          message: "Forbidden: Peran Anda tidak diizinkan menyetujui update",
+        });
+    }
+
+    const [approved] = await prisma.$transaction([
+      prisma.initiativeUpdate.update({
+        where: { id: updateId },
+        data: {
+          status: "APPROVED",
+          reviewedBy: managerId,
+          reviewedAt: new Date(),
+        },
+      }),
+      prisma.initiative.update({
+        where: { id: initiativeUpdate.initiativeId },
+        data: {
+          currentValue: initiativeUpdate.newValue,
+          ...(initiativeUpdate.kanbanStatus
+            ? { kanbanStatus: initiativeUpdate.kanbanStatus }
+            : {}),
+          documentationLink: initiativeUpdate.link || null,
+        },
+      }),
+    ]);
+
+    // AUTO-CASCADE: recalculate KR.currentValue dari weighted average Initiative progress
+    await cascadeInitiativeToMonthlyKr(initiativeUpdate.initiative.keyResultId);
+
+    return res
+      .status(200)
+      .json({ message: "Update inisiatif disetujui", update: approved });
+  } catch (error) {
+    console.error("Approve Initiative update error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// PATCH /api/initiatives/initiative-updates/:updateId/reject
+export async function rejectInitiativeUpdate(req: AuthRequest, res: Response) {
+  try {
+    const { updateId } = req.params;
+    const { id: managerId, role } = req.user!;
+
+    const initiativeUpdate = await prisma.initiativeUpdate.findUnique({
+      where: { id: updateId },
+      include: { initiative: { include: { team: true } } },
+    });
+    if (!initiativeUpdate)
+      return res
+        .status(404)
+        .json({ message: "Update inisiatif tidak ditemukan" });
+    if (initiativeUpdate.status !== "PENDING_APPROVAL") {
+      return res
+        .status(400)
+        .json({ message: "Update ini sudah diproses sebelumnya" });
+    }
+
+    // Filter akses berdasarkan role
+    if (role === "MANAGER") {
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId },
+        select: { value: true },
+      });
+      const deptValues = managedDepts.map((d) => d.value);
+      const dbUser = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: { department: true },
+      });
+      if (
+        dbUser?.department &&
+        dbUser.department.toUpperCase() !== "STRATEGIC" &&
+        !deptValues.includes(dbUser.department)
+      ) {
+        deptValues.push(dbUser.department);
+      }
+      if (
+        !initiativeUpdate.initiative.team?.department ||
+        !deptValues.includes(initiativeUpdate.initiative.team.department)
+      ) {
+        return res
+          .status(403)
+          .json({
+            message:
+              "Forbidden: Anda tidak memiliki akses untuk menolak update di departemen ini",
+          });
+      }
+    } else if (role === "LEADER") {
+      const leadingTeams = await prisma.team.findMany({
+        where: { leaderId: managerId },
+        select: { id: true },
+      });
+      const leadingTeamIds = leadingTeams.map((t) => t.id);
+      if (!leadingTeamIds.includes(initiativeUpdate.initiative.teamId)) {
+        return res
+          .status(403)
+          .json({
+            message:
+              "Forbidden: Anda hanya bisa menolak update untuk tim Anda sendiri",
+          });
+      }
+    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+      return res
+        .status(403)
+        .json({
+          message: "Forbidden: Peran Anda tidak diizinkan menolak update",
+        });
+    }
+
+    const rejected = await prisma.initiativeUpdate.update({
+      where: { id: updateId },
+      data: {
+        status: "REJECTED",
+        reviewedBy: managerId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Update inisiatif ditolak", update: rejected });
+  } catch (error) {
+    console.error("Reject Initiative update error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

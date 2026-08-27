@@ -6,15 +6,38 @@
         <p class="header-eyebrow">Executive Dashboard</p>
         <h1 class="header-title">Balanced Scorecard Overview</h1>
         <p class="header-subtitle">
-          Monitoring kesehatan strategis perusahaan secara menyeluruh berdasarkan 4 perspektif BSC.
+          Monitoring kesehatan strategis perusahaan secara menyeluruh
+          berdasarkan 4 perspektif BSC.
         </p>
       </div>
-      <div class="header-actions">
+      <div
+        class="header-actions"
+        style="display: flex; gap: 12px; align-items: center"
+      >
+        <select
+          v-model="selectedMonth"
+          @change="fetchData"
+          class="month-select"
+        >
+          <option value="">Semua Bulan (YTD)</option>
+          <option v-for="m in availableMonths" :key="m.value" :value="m.value">
+            {{ m.label }}
+          </option>
+        </select>
         <button class="export-btn" @click="exportCsv">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
           Export CSV
         </button>
@@ -36,7 +59,13 @@
           <div class="gauge-container">
             <svg viewBox="0 0 120 80" class="gauge-svg">
               <!-- Track arc -->
-              <path d="M 10 70 A 50 50 0 0 1 110 70" fill="none" stroke="#eef2f8" stroke-width="12" stroke-linecap="round"/>
+              <path
+                d="M 10 70 A 50 50 0 0 1 110 70"
+                fill="none"
+                stroke="#eef2f8"
+                stroke-width="12"
+                stroke-linecap="round"
+              />
               <!-- Fill arc -->
               <path
                 d="M 10 70 A 50 50 0 0 1 110 70"
@@ -47,7 +76,13 @@
                 :stroke-dasharray="`${gaugeLength * (data.overallHealthScore / 100)} ${gaugeLength}`"
               />
               <!-- Center text -->
-              <text x="60" y="62" text-anchor="middle" class="gauge-number" :fill="healthColor">
+              <text
+                x="60"
+                y="62"
+                text-anchor="middle"
+                class="gauge-number"
+                :fill="healthColor"
+              >
                 {{ data.overallHealthScore }}%
               </text>
             </svg>
@@ -67,7 +102,11 @@
           <p class="card-label">On Track</p>
           <p class="summary-big-num green">{{ data.totalOnTrack }}</p>
           <p class="summary-sub">
-            {{ data.totalKRs > 0 ? Math.round((data.totalOnTrack / data.totalKRs) * 100) : 0 }}% dari total KR
+            {{
+              data.totalKRs > 0
+                ? Math.round((data.totalOnTrack / data.totalKRs) * 100)
+                : 0
+            }}% dari total KR
           </p>
         </div>
 
@@ -76,7 +115,11 @@
           <p class="card-label">At Risk</p>
           <p class="summary-big-num yellow">{{ data.totalAtRisk }}</p>
           <p class="summary-sub">
-            {{ data.totalKRs > 0 ? Math.round((data.totalAtRisk / data.totalKRs) * 100) : 0 }}% dari total KR
+            {{
+              data.totalKRs > 0
+                ? Math.round((data.totalAtRisk / data.totalKRs) * 100)
+                : 0
+            }}% dari total KR
           </p>
         </div>
 
@@ -85,7 +128,11 @@
           <p class="card-label">Off Track</p>
           <p class="summary-big-num red">{{ data.totalOffTrack }}</p>
           <p class="summary-sub">
-            {{ data.totalKRs > 0 ? Math.round((data.totalOffTrack / data.totalKRs) * 100) : 0 }}% dari total KR
+            {{
+              data.totalKRs > 0
+                ? Math.round((data.totalOffTrack / data.totalKRs) * 100)
+                : 0
+            }}% dari total KR
           </p>
         </div>
       </section>
@@ -94,7 +141,9 @@
       <section class="bsc-scorecard card">
         <div class="scorecard-header">
           <h2>BSC Scorecard — 4 Perspektif</h2>
-          <p class="section-sub">Progress agregat per perspektif Balanced Scorecard</p>
+          <p class="section-sub">
+            Progress agregat per perspektif Balanced Scorecard
+          </p>
         </div>
         <div class="scorecard-list">
           <div
@@ -107,7 +156,9 @@
               <span class="perspective-icon">{{ perspectiveIcon(pkey) }}</span>
               <div>
                 <p class="perspective-name">{{ perspectiveLabel(pkey) }}</p>
-                <p class="perspective-sub">{{ pdata.totalCount }} Key Results</p>
+                <p class="perspective-sub">
+                  {{ pdata.totalCount }} Key Results
+                </p>
               </div>
             </div>
             <div class="scorecard-bar-area">
@@ -121,9 +172,13 @@
               <span class="bar-pct">{{ pdata.averageProgress }}%</span>
             </div>
             <div class="scorecard-pills">
-              <span class="pill ontrack">{{ pdata.onTrackCount }} On Track</span>
+              <span class="pill ontrack"
+                >{{ pdata.onTrackCount }} On Track</span
+              >
               <span class="pill atrisk">{{ pdata.atRiskCount }} At Risk</span>
-              <span class="pill offtrack">{{ pdata.offTrackCount }} Off Track</span>
+              <span class="pill offtrack"
+                >{{ pdata.offTrackCount }} Off Track</span
+              >
             </div>
           </div>
         </div>
@@ -134,7 +189,9 @@
         <!-- Trend Chart (pure CSS sparklines per perspective) -->
         <section class="trend-card card">
           <h2>Tren Progres — 8 Minggu Terakhir</h2>
-          <p class="section-sub">Perkembangan rata-rata progress tiap perspektif BSC per minggu</p>
+          <p class="section-sub">
+            Perkembangan rata-rata progress tiap perspektif BSC per minggu
+          </p>
           <div class="trend-chart">
             <!-- Y axis labels -->
             <div class="y-axis">
@@ -155,7 +212,10 @@
                 class="trend-svg"
                 preserveAspectRatio="none"
               >
-                <g v-for="(pkey, pi) in Object.keys(data.trendData)" :key="pkey">
+                <g
+                  v-for="(pkey, pi) in Object.keys(data.trendData)"
+                  :key="pkey"
+                >
                   <polyline
                     :points="trendPoints(data.trendData[pkey])"
                     fill="none"
@@ -163,7 +223,9 @@
                     stroke-width="2.5"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    :stroke-dasharray="hasTrendData(data.trendData[pkey]) ? 'none' : '4 4'"
+                    :stroke-dasharray="
+                      hasTrendData(data.trendData[pkey]) ? 'none' : '4 4'
+                    "
                     opacity="0.85"
                   />
                   <!-- Dots -->
@@ -182,12 +244,21 @@
           </div>
           <!-- X axis labels -->
           <div class="x-axis">
-            <span v-for="label in data.trendLabels" :key="label">{{ label }}</span>
+            <span v-for="label in data.trendLabels" :key="label">{{
+              label
+            }}</span>
           </div>
           <!-- Legend -->
           <div class="trend-legend">
-            <div v-for="pkey in Object.keys(data.trendData)" :key="pkey" class="legend-item">
-              <span class="legend-dot" :style="{ background: perspectiveStroke(pkey) }"></span>
+            <div
+              v-for="pkey in Object.keys(data.trendData)"
+              :key="pkey"
+              class="legend-item"
+            >
+              <span
+                class="legend-dot"
+                :style="{ background: perspectiveStroke(pkey) }"
+              ></span>
               <span>{{ perspectiveLabel(pkey) }}</span>
             </div>
           </div>
@@ -196,12 +267,18 @@
         <!-- Department Progress -->
         <section class="dept-card card">
           <h2>Progress per Departemen</h2>
-          <p class="section-sub">Rata-rata progres KR berdasarkan departemen yang terlibat</p>
+          <p class="section-sub">
+            Rata-rata progres KR berdasarkan departemen yang terlibat
+          </p>
           <div v-if="data.byDepartment.length === 0" class="empty-state">
             Belum ada data departemen yang terdaftar pada KR.
           </div>
           <div class="dept-list" v-else>
-            <div v-for="dept in data.byDepartment" :key="dept.department" class="dept-row">
+            <div
+              v-for="dept in data.byDepartment"
+              :key="dept.department"
+              class="dept-row"
+            >
               <div class="dept-info">
                 <span class="dept-name">{{ dept.department }}</span>
                 <span class="dept-kr-count">{{ dept.krCount }} KR</span>
@@ -214,7 +291,10 @@
                     :style="{ width: dept.averageProgress + '%' }"
                   ></div>
                 </div>
-                <span class="dept-pct" :class="progressClass(dept.averageProgress)">
+                <span
+                  class="dept-pct"
+                  :class="progressClass(dept.averageProgress)"
+                >
                   {{ dept.averageProgress }}%
                 </span>
               </div>
@@ -223,14 +303,47 @@
         </section>
       </div>
 
+      <!-- Row 3.5: Matrix Table Overview (NEW) -->
+      <section
+        class="card mb-6"
+        style="margin-top: 24px; margin-bottom: 24px; padding: 20px"
+      >
+        <h2
+          style="
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a2335;
+            margin: 0 0 4px;
+          "
+        >
+          Matriks Capaian Bulanan
+        </h2>
+        <p
+          class="section-sub"
+          style="font-size: 12px; color: #8897ae; margin: 0 0 16px"
+        >
+          Visualisasi capaian Balanced Scorecard per bulan untuk seluruh Key
+          Result tahunan
+        </p>
+        <MonthlyMatrixTable
+          :annualKrs="annualKeyResults"
+          :highlightMonth="selectedMonth"
+        />
+      </section>
+
       <!-- Row 4: Critical KRs Table -->
       <section class="critical-card card" v-if="data.criticalKrs.length > 0">
         <div class="critical-header">
           <div>
             <h2>Key Results Kritis</h2>
-            <p class="section-sub">KR dengan status At Risk atau Off Track yang memerlukan perhatian segera</p>
+            <p class="section-sub">
+              KR dengan status At Risk atau Off Track yang memerlukan perhatian
+              segera
+            </p>
           </div>
-          <span class="critical-count-badge">{{ data.criticalKrs.length }} KR</span>
+          <span class="critical-count-badge"
+            >{{ data.criticalKrs.length }} KR</span
+          >
         </div>
         <div class="critical-table-wrap">
           <table class="critical-table">
@@ -245,13 +358,24 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="kr in data.criticalKrs" :key="kr.id" class="critical-row" :class="kr.status.toLowerCase().replace('_', '')">
+              <tr
+                v-for="kr in data.criticalKrs"
+                :key="kr.id"
+                class="critical-row"
+                :class="kr.status.toLowerCase().replace('_', '')"
+              >
                 <td class="kr-title-cell">
                   <span class="kr-title-text">{{ kr.title }}</span>
-                  <span class="kr-value-text">{{ kr.currentValue }} / {{ kr.targetValue }} {{ kr.unit }}</span>
+                  <span class="kr-value-text"
+                    >{{ kr.currentValue }} / {{ kr.targetValue }}
+                    {{ kr.unit }}</span
+                  >
                 </td>
                 <td>
-                  <span class="persp-badge" :class="perspectiveClass(kr.bscPerspective)">
+                  <span
+                    class="persp-badge"
+                    :class="perspectiveClass(kr.bscPerspective)"
+                  >
                     {{ perspectiveLabel(kr.bscPerspective) }}
                   </span>
                 </td>
@@ -260,18 +384,27 @@
                   <span class="year-chip">{{ kr.year }}</span>
                 </td>
                 <td>
-                  <span v-if="kr.responsible" class="pic-name">{{ kr.responsible.name }}</span>
+                  <span v-if="kr.responsible" class="pic-name">{{
+                    kr.responsible.name
+                  }}</span>
                   <span v-else class="pic-empty">—</span>
                 </td>
                 <td class="progress-cell">
                   <div class="inline-bar">
-                    <div class="inline-bar-fill" :class="kr.status === 'AT_RISK' ? 'atrisk' : 'offtrack'" :style="{ width: kr.progress + '%' }"></div>
+                    <div
+                      class="inline-bar-fill"
+                      :class="kr.status === 'AT_RISK' ? 'atrisk' : 'offtrack'"
+                      :style="{ width: kr.progress + '%' }"
+                    ></div>
                   </div>
                   <span class="inline-pct">{{ kr.progress }}%</span>
                 </td>
                 <td>
-                  <span class="status-badge" :class="kr.status === 'AT_RISK' ? 'atrisk' : 'offtrack'">
-                    {{ kr.status === 'AT_RISK' ? 'At Risk' : 'Off Track' }}
+                  <span
+                    class="status-badge"
+                    :class="kr.status === 'AT_RISK' ? 'atrisk' : 'offtrack'"
+                  >
+                    {{ kr.status === "AT_RISK" ? "At Risk" : "Off Track" }}
                   </span>
                 </td>
               </tr>
@@ -281,7 +414,9 @@
       </section>
 
       <div v-else class="no-critical card">
-        <p>Tidak ada KR kritis saat ini. Semua indikator dalam kondisi On Track!</p>
+        <p>
+          Tidak ada KR kritis saat ini. Semua indikator dalam kondisi On Track!
+        </p>
       </div>
     </template>
 
@@ -292,81 +427,142 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../stores/auth';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "../stores/auth";
 
-useHead({ title: 'Executive BSC Dashboard — C-Level' });
+useHead({ title: "Executive BSC Dashboard — C-Level" });
 
 const auth = useAuthStore();
 const loading = ref(true);
 const data = ref(null);
 
+const selectedMonth = ref("");
+const availableMonths = [
+  { value: "2026-01", label: "Januari 2026" },
+  { value: "2026-02", label: "Februari 2026" },
+  { value: "2026-03", label: "Maret 2026" },
+  { value: "2026-04", label: "April 2026" },
+  { value: "2026-05", label: "Mei 2026" },
+  { value: "2026-06", label: "Juni 2026" },
+  { value: "2026-07", label: "Juli 2026" },
+  { value: "2026-08", label: "Agustus 2026" },
+  { value: "2026-09", label: "September 2026" },
+  { value: "2026-10", label: "Oktober 2026" },
+  { value: "2026-11", label: "November 2026" },
+  { value: "2026-12", label: "Desember 2026" },
+];
+const annualKeyResults = ref([]);
+
+async function fetchAnnualKeyResults() {
+  try {
+    const token = auth.token || localStorage.getItem("auth_token");
+    const res = await fetch(
+      `http://localhost:3001/api/annual-key-results?year=2026`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    if (res.ok) {
+      const krs = await res.json();
+      annualKeyResults.value = await Promise.all(
+        krs.map(async (akr) => {
+          try {
+            const detailRes = await fetch(
+              `http://localhost:3001/api/annual-key-results/${akr.id}/monthly-breakdown`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              },
+            );
+            if (detailRes.ok) {
+              return await detailRes.json();
+            }
+          } catch (e) {
+            console.error(e);
+          }
+          return {
+            ...akr,
+            aggregatedProgress: 0,
+            months: [],
+          };
+        }),
+      );
+    }
+  } catch (err) {
+    console.error("Gagal memuat data matriks tahunan", err);
+  }
+}
+
 const gaugeLength = 157; // approximate arc length for semicircle r=50
 
 const healthColor = computed(() => {
   const s = data.value?.overallHealthScore ?? 0;
-  if (s >= 70) return '#22c55e';
-  if (s >= 40) return '#f2af17';
-  return '#f97066';
+  if (s >= 70) return "#22c55e";
+  if (s >= 40) return "#f2af17";
+  return "#f97066";
 });
 
 const healthClass = computed(() => {
   const s = data.value?.overallHealthScore ?? 0;
-  if (s >= 70) return 'green';
-  if (s >= 40) return 'yellow';
-  return 'red';
+  if (s >= 70) return "green";
+  if (s >= 40) return "yellow";
+  return "red";
 });
 
 const healthLabel = computed(() => {
   const s = data.value?.overallHealthScore ?? 0;
-  if (s >= 70) return 'Sehat (Healthy)';
-  if (s >= 40) return 'Perlu Perhatian';
-  return 'Kritis';
+  if (s >= 70) return "Sehat (Healthy)";
+  if (s >= 40) return "Perlu Perhatian";
+  return "Kritis";
 });
 
 function perspectiveLabel(key) {
   const map = {
-    FINANCIAL: 'Financial',
-    CUSTOMER: 'Customer',
-    INTERNAL_PROCESS: 'Internal Process',
-    LEARNING_GROWTH: 'Learning & Growth',
+    FINANCIAL: "Financial",
+    CUSTOMER: "Customer",
+    INTERNAL_PROCESS: "Internal Process",
+    LEARNING_GROWTH: "Learning & Growth",
   };
   return map[key] || key;
 }
 
 function perspectiveIcon(key) {
-  const map = { FINANCIAL: '', CUSTOMER: '', INTERNAL_PROCESS: '', LEARNING_GROWTH: '' };
-  return map[key] || '';
+  const map = {
+    FINANCIAL: "",
+    CUSTOMER: "",
+    INTERNAL_PROCESS: "",
+    LEARNING_GROWTH: "",
+  };
+  return map[key] || "";
 }
 
 function perspectiveClass(key) {
   const map = {
-    FINANCIAL: 'financial',
-    CUSTOMER: 'customer',
-    INTERNAL_PROCESS: 'internal',
-    LEARNING_GROWTH: 'learning',
+    FINANCIAL: "financial",
+    CUSTOMER: "customer",
+    INTERNAL_PROCESS: "internal",
+    LEARNING_GROWTH: "learning",
   };
-  return map[key] || '';
+  return map[key] || "";
 }
 
 function perspectiveStroke(key) {
   const map = {
-    FINANCIAL: '#0e97d6',
-    CUSTOMER: '#6366f1',
-    INTERNAL_PROCESS: '#a855f7',
-    LEARNING_GROWTH: '#22c55e',
+    FINANCIAL: "#0e97d6",
+    CUSTOMER: "#6366f1",
+    INTERNAL_PROCESS: "#a855f7",
+    LEARNING_GROWTH: "#22c55e",
   };
-  return map[key] || '#888';
+  return map[key] || "#888";
 }
 
 function progressClass(pct) {
-  if (pct >= 70) return 'ontrack';
-  if (pct >= 40) return 'atrisk';
-  return 'offtrack';
+  if (pct >= 70) return "ontrack";
+  if (pct >= 40) return "atrisk";
+  return "offtrack";
 }
 
 function hasTrendData(arr) {
-  return arr.some(v => v !== null);
+  return arr.some((v) => v !== null);
 }
 
 function trendPoints(arr) {
@@ -378,20 +574,25 @@ function trendPoints(arr) {
       pts.push(`${x},${y}`);
     }
   });
-  return pts.join(' ');
+  return pts.join(" ");
 }
 
 async function fetchData() {
   loading.value = true;
   try {
-    const token = auth.token || localStorage.getItem('auth_token');
-    const res = await fetch('http://localhost:3001/api/bsc/c-level-dashboard', {
+    const token = auth.token || localStorage.getItem("auth_token");
+    let url = "http://localhost:3001/api/bsc/c-level-dashboard";
+    if (selectedMonth.value) {
+      url += `?month=${selectedMonth.value}`;
+    }
+    const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error('Unauthorized or server error');
+    if (!res.ok) throw new Error("Unauthorized or server error");
     data.value = await res.json();
+    await fetchAnnualKeyResults();
   } catch (e) {
-    console.error('C-Level dashboard fetch error:', e);
+    console.error("C-Level dashboard fetch error:", e);
     data.value = null;
   } finally {
     loading.value = false;
@@ -402,19 +603,34 @@ function exportCsv() {
   if (!data.value) return;
 
   const rows = [
-    ['Key Result', 'Perspektif', 'Objective', 'Year', 'PIC Responsible', 'Target', 'Current', 'Unit', 'Progress (%)', 'Status'],
+    [
+      `Balanced Scorecard Executive Dashboard - Periode: ${selectedMonth.value ? "Bulan " + selectedMonth.value : "YTD 2026"}`,
+    ],
+    [],
+    [
+      "Key Result",
+      "Perspektif",
+      "Objective",
+      "Year",
+      "PIC Responsible",
+      "Target",
+      "Current",
+      "Unit",
+      "Progress (%)",
+      "Status",
+    ],
   ];
 
   // All KRs from criticalKrs + we need all. Re-build from bscByPerspective is complex,
   // so export critical KRs + summary sheet.
   // Export criticalKrs
-  data.value.criticalKrs.forEach(kr => {
+  data.value.criticalKrs.forEach((kr) => {
     rows.push([
       `"${kr.title}"`,
       perspectiveLabel(kr.bscPerspective),
       `"${kr.objectiveTitle}"`,
       kr.year,
-      kr.responsible ? kr.responsible.name : '',
+      kr.responsible ? kr.responsible.name : "",
       kr.targetValue,
       kr.currentValue,
       kr.unit,
@@ -425,8 +641,15 @@ function exportCsv() {
 
   // Summary rows
   rows.push([]);
-  rows.push(['--- SUMMARY PER PERSPEKTIF ---']);
-  rows.push(['Perspektif', 'Total KR', 'On Track', 'At Risk', 'Off Track', 'Avg Progress (%)']);
+  rows.push(["--- SUMMARY PER PERSPEKTIF ---"]);
+  rows.push([
+    "Perspektif",
+    "Total KR",
+    "On Track",
+    "At Risk",
+    "Off Track",
+    "Avg Progress (%)",
+  ]);
   Object.entries(data.value.bscByPerspective).forEach(([key, p]) => {
     rows.push([
       perspectiveLabel(key),
@@ -438,19 +661,20 @@ function exportCsv() {
     ]);
   });
 
+  // Department progress
   rows.push([]);
-  rows.push(['--- PROGRESS PER DEPARTEMEN ---']);
-  rows.push(['Departemen', 'Jumlah KR', 'Avg Progress (%)']);
-  data.value.byDepartment.forEach(d => {
+  rows.push(["--- PROGRESS PER DEPARTEMEN ---"]);
+  rows.push(["Departemen", "Jumlah KR", "Avg Progress (%)"]);
+  data.value.byDepartment.forEach((d) => {
     rows.push([d.department, d.krCount, d.averageProgress]);
   });
 
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const csv = rows.map((r) => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = `bsc-executive-dashboard-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `bsc-executive-dashboard-${selectedMonth.value ? selectedMonth.value + "-" : ""}${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -467,7 +691,7 @@ onMounted(fetchData);
   display: flex;
   flex-direction: column;
   gap: 24px;
-  font-family: 'Rubik', sans-serif;
+  font-family: "Rubik", sans-serif;
 }
 
 /* ─── Card Base ─────────────────────────────────────────────────────────── */
@@ -518,12 +742,14 @@ onMounted(fetchData);
   background: #f8fafc;
   border: 1px solid #d7dfe9;
   border-radius: 10px;
-  font-family: 'Rubik', sans-serif;
+  font-family: "Rubik", sans-serif;
   font-size: 14px;
   font-weight: 500;
   color: #3d536e;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   white-space: nowrap;
 }
 
@@ -570,7 +796,7 @@ onMounted(fetchData);
 }
 
 .gauge-number {
-  font-family: 'Rubik', sans-serif;
+  font-family: "Rubik", sans-serif;
   font-size: 20px;
   font-weight: 700;
 }
@@ -583,9 +809,18 @@ onMounted(fetchData);
   border-radius: 20px;
 }
 
-.health-label.green { background: #dcfce7; color: #16a34a; }
-.health-label.yellow { background: #fef3c7; color: #b45309; }
-.health-label.red { background: #fee2e2; color: #dc2626; }
+.health-label.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.health-label.yellow {
+  background: #fef3c7;
+  color: #b45309;
+}
+.health-label.red {
+  background: #fee2e2;
+  color: #dc2626;
+}
 
 /* Summary Cards */
 .summary-card {
@@ -597,16 +832,24 @@ onMounted(fetchData);
 }
 
 .status-card::before {
-  content: '';
+  content: "";
   position: absolute;
-  left: 0; top: 0; bottom: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 4px;
   border-radius: 2px 0 0 2px;
 }
 
-.status-card.ontrack::before { background: #22c55e; }
-.status-card.atrisk::before { background: #f2af17; }
-.status-card.offtrack::before { background: #f97066; }
+.status-card.ontrack::before {
+  background: #22c55e;
+}
+.status-card.atrisk::before {
+  background: #f2af17;
+}
+.status-card.offtrack::before {
+  background: #f97066;
+}
 
 .card-label {
   font-size: 12px;
@@ -625,9 +868,15 @@ onMounted(fetchData);
   line-height: 1;
 }
 
-.summary-big-num.green { color: #16a34a; }
-.summary-big-num.yellow { color: #b45309; }
-.summary-big-num.red { color: #dc2626; }
+.summary-big-num.green {
+  color: #16a34a;
+}
+.summary-big-num.yellow {
+  color: #b45309;
+}
+.summary-big-num.red {
+  color: #dc2626;
+}
 
 .summary-sub {
   font-size: 13px;
@@ -671,11 +920,21 @@ onMounted(fetchData);
   transition: background 0.15s;
 }
 
-.scorecard-row:hover { background: #f0f4f8; }
-.scorecard-row.financial { border-left-color: #0e97d6; }
-.scorecard-row.customer { border-left-color: #6366f1; }
-.scorecard-row.internal { border-left-color: #a855f7; }
-.scorecard-row.learning { border-left-color: #22c55e; }
+.scorecard-row:hover {
+  background: #f0f4f8;
+}
+.scorecard-row.financial {
+  border-left-color: #0e97d6;
+}
+.scorecard-row.customer {
+  border-left-color: #6366f1;
+}
+.scorecard-row.internal {
+  border-left-color: #a855f7;
+}
+.scorecard-row.learning {
+  border-left-color: #22c55e;
+}
 
 @media (max-width: 900px) {
   .scorecard-row {
@@ -690,7 +949,9 @@ onMounted(fetchData);
   gap: 12px;
 }
 
-.perspective-icon { font-size: 26px; }
+.perspective-icon {
+  font-size: 26px;
+}
 
 .perspective-name {
   font-size: 15px;
@@ -725,10 +986,18 @@ onMounted(fetchData);
   transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bar-fill.financial { background: #0e97d6; }
-.bar-fill.customer { background: #6366f1; }
-.bar-fill.internal { background: #a855f7; }
-.bar-fill.learning { background: #22c55e; }
+.bar-fill.financial {
+  background: #0e97d6;
+}
+.bar-fill.customer {
+  background: #6366f1;
+}
+.bar-fill.internal {
+  background: #a855f7;
+}
+.bar-fill.learning {
+  background: #22c55e;
+}
 
 .bar-pct {
   font-size: 15px;
@@ -752,9 +1021,18 @@ onMounted(fetchData);
   border-radius: 20px;
 }
 
-.pill.ontrack { background: #dcfce7; color: #16a34a; }
-.pill.atrisk { background: #fef3c7; color: #b45309; }
-.pill.offtrack { background: #fee2e2; color: #dc2626; }
+.pill.ontrack {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.pill.atrisk {
+  background: #fef3c7;
+  color: #b45309;
+}
+.pill.offtrack {
+  background: #fee2e2;
+  color: #dc2626;
+}
 
 /* ─── Two Column Row ────────────────────────────────────────────────────── */
 .two-col-row {
@@ -770,7 +1048,9 @@ onMounted(fetchData);
 }
 
 /* ─── Trend Chart ───────────────────────────────────────────────────────── */
-.trend-card h2, .dept-card h2, .critical-card h2 {
+.trend-card h2,
+.dept-card h2,
+.critical-card h2 {
   font-size: 18px;
   font-weight: 700;
   color: var(--color-gamma-150, #1a2335);
@@ -904,9 +1184,15 @@ onMounted(fetchData);
   transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dept-bar-fill.ontrack { background: #22c55e; }
-.dept-bar-fill.atrisk { background: #f2af17; }
-.dept-bar-fill.offtrack { background: #f97066; }
+.dept-bar-fill.ontrack {
+  background: #22c55e;
+}
+.dept-bar-fill.atrisk {
+  background: #f2af17;
+}
+.dept-bar-fill.offtrack {
+  background: #f97066;
+}
 
 .dept-pct {
   font-size: 13px;
@@ -915,9 +1201,15 @@ onMounted(fetchData);
   text-align: right;
 }
 
-.dept-pct.ontrack { color: #16a34a; }
-.dept-pct.atrisk { color: #b45309; }
-.dept-pct.offtrack { color: #dc2626; }
+.dept-pct.ontrack {
+  color: #16a34a;
+}
+.dept-pct.atrisk {
+  color: #b45309;
+}
+.dept-pct.offtrack {
+  color: #dc2626;
+}
 
 /* ─── Critical KRs Table ────────────────────────────────────────────────── */
 .critical-header {
@@ -997,10 +1289,22 @@ onMounted(fetchData);
   white-space: nowrap;
 }
 
-.persp-badge.financial { background: #e0f2fe; color: #0369a1; }
-.persp-badge.customer { background: #ede9fe; color: #6d28d9; }
-.persp-badge.internal { background: #f3e8ff; color: #7e22ce; }
-.persp-badge.learning { background: #dcfce7; color: #15803d; }
+.persp-badge.financial {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.persp-badge.customer {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.persp-badge.internal {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+.persp-badge.learning {
+  background: #dcfce7;
+  color: #15803d;
+}
 
 .obj-cell {
   display: flex;
@@ -1051,8 +1355,12 @@ onMounted(fetchData);
   border-radius: 3px;
 }
 
-.inline-bar-fill.atrisk { background: #f2af17; }
-.inline-bar-fill.offtrack { background: #f97066; }
+.inline-bar-fill.atrisk {
+  background: #f2af17;
+}
+.inline-bar-fill.offtrack {
+  background: #f97066;
+}
 
 .inline-pct {
   font-size: 13px;
@@ -1070,8 +1378,14 @@ onMounted(fetchData);
   text-transform: uppercase;
 }
 
-.status-badge.atrisk { background: #fef3c7; color: #b45309; }
-.status-badge.offtrack { background: #fee2e2; color: #dc2626; }
+.status-badge.atrisk {
+  background: #fef3c7;
+  color: #b45309;
+}
+.status-badge.offtrack {
+  background: #fee2e2;
+  color: #dc2626;
+}
 
 /* ─── No Critical / Empty / Error / Loading ─────────────────────────────── */
 .no-critical {
@@ -1082,7 +1396,8 @@ onMounted(fetchData);
   padding: 32px;
 }
 
-.empty-state, .error-state {
+.empty-state,
+.error-state {
   text-align: center;
   color: #8897ae;
   padding: 40px;
@@ -1109,6 +1424,23 @@ onMounted(fetchData);
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.month-select {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: white;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+}
+.month-select:focus {
+  border-color: #3b82f6;
 }
 </style>

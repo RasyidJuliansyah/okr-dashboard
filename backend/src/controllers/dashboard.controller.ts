@@ -138,26 +138,17 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         });
       }
 
-      // Approval queue: TaskUpdate PENDING dari team di dept ini
-      const pendingApprovals = await prisma.taskUpdate.findMany({
+      // Approval queue: InitiativeUpdate PENDING dari team di dept ini
+      const pendingApprovals = await prisma.initiativeUpdate.findMany({
         where: {
           status: "PENDING_APPROVAL",
-          task: {
-            initiative: {
-              team: { department: { in: deptValues } },
-            },
+          initiative: {
+            team: { department: { in: deptValues } },
           },
         },
         include: {
-          task: {
-            include: {
-              initiative: {
-                include: { team: { select: { id: true, name: true } } },
-              },
-              assignments: {
-                include: { user: { select: { name: true } } },
-              },
-            },
+          initiative: {
+            include: { team: { select: { id: true, name: true } } },
           },
         },
         orderBy: { createdAt: "desc" },

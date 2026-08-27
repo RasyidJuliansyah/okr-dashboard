@@ -138,677 +138,683 @@
       </div>
 
       <!-- Kanban Board Container -->
-      <div class="kanban-board">
-        <!-- COLUMN 1: TO DO -->
-        <div
-          class="kanban-column"
-          :class="{ 'drop-active': dragOverColumn === 'TODO' }"
-          @dragover.prevent="canMoveCards ? (dragOverColumn = 'TODO') : null"
-          @dragleave="dragOverColumn = null"
-          @drop="canMoveCards ? handleDrop('TODO') : null"
-        >
-          <div class="column-header todo-head">
-            <div class="col-title-wrap">
-              <span class="col-dot todo"></span>
-              <h4>TO DO</h4>
-            </div>
-            <span class="col-count-badge">{{ todoList.length }}</span>
-          </div>
-
-          <div class="column-cards-list">
-            <div v-if="todoList.length === 0" class="kanban-empty-col">
-              Belum ada inisiatif di kolom ini
+      <div class="kanban-board-wrapper">
+        <div class="kanban-board">
+          <!-- COLUMN 1: TO DO -->
+          <div
+            class="kanban-column"
+            :class="{ 'drop-active': dragOverColumn === 'TODO' }"
+            @dragover.prevent="canMoveCards ? (dragOverColumn = 'TODO') : null"
+            @dragleave="dragOverColumn = null"
+            @drop="canMoveCards ? handleDrop('TODO') : null"
+          >
+            <div class="column-header todo-head">
+              <div class="col-title-wrap">
+                <span class="col-dot todo"></span>
+                <h4>TO DO</h4>
+              </div>
+              <span class="col-count-badge">{{ todoList.length }}</span>
             </div>
 
-            <div
-              v-for="ini in todoList"
-              :key="ini.id"
-              class="kanban-card"
-              :draggable="canMoveCards"
-              @dragstart="canMoveCards ? handleDragStart(ini) : null"
-            >
-              <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
-                </span>
-                <span
-                  v-if="ini.keyResult?.bscPerspective"
-                  class="perspective-pill"
-                  :class="ini.keyResult.bscPerspective.toLowerCase()"
-                >
-                  {{ ini.keyResult.bscPerspective }}
-                </span>
+            <div class="column-cards-list">
+              <div v-if="todoList.length === 0" class="kanban-empty-col">
+                Belum ada inisiatif di kolom ini
               </div>
 
-              <h4 class="card-title">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">
-                {{ ini.description }}
-              </p>
-
-              <div class="card-target-row">
-                <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                </span>
-              </div>
-
-              <!-- Date Range & Sprint Meta Row -->
               <div
-                class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                v-for="ini in todoList"
+                :key="ini.id"
+                class="kanban-card"
+                :draggable="canMoveCards"
+                @dragstart="canMoveCards ? handleDragStart(ini) : null"
               >
-                <span v-if="ini.sprintMonth" class="sprint-pill">
-                  {{ formatSprintLabel(ini.sprintMonth) }}
-                </span>
-                <span
-                  v-if="ini.startDate || ini.dueDate"
-                  class="date-range-pill"
-                  :class="{ overdue: isOverdue(ini) }"
-                >
-                  {{ formatDateShort(ini.startDate) }} –
-                  {{ formatDateShort(ini.dueDate) }}
-                </span>
-              </div>
+                <div class="card-top-meta">
+                  <span class="card-kr-badge" :title="ini.keyResult?.title">
+                    {{ ini.keyResult?.title || "Key Result" }}
+                  </span>
+                  <span
+                    v-if="ini.keyResult?.bscPerspective"
+                    class="perspective-pill"
+                    :class="ini.keyResult.bscPerspective.toLowerCase()"
+                  >
+                    {{ ini.keyResult.bscPerspective }}
+                  </span>
+                </div>
 
-              <!-- Tasks summary chips -->
-              <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                <span class="task-count-tag">
-                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}
-                  selesai)
-                </span>
-              </div>
+                <h4 class="card-title">{{ ini.title }}</h4>
+                <p v-if="ini.description" class="card-desc">
+                  {{ ini.description }}
+                </p>
 
-              <div class="card-footer-meta">
-                <div class="card-team-owner">
-                  <span class="team-tag">{{ ini.team?.name }}</span>
-                  <span v-if="ini.owner?.name" class="owner-tag">
-                    {{ ini.owner.name }}
-                    <span
-                      v-if="getMemberAchievement(ini.ownerId)"
-                      class="owner-ach-pill"
-                      :class="
-                        getAchColorClass(
-                          getMemberAchievement(ini.ownerId).achievementPct,
-                        )
-                      "
+                <div class="card-target-row">
+                  <span v-if="ini.targetValue">
+                    <span class="target-label">Target:</span>
+                    <strong class="target-val"
+                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
-                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                  </span>
+                  <span
+                    class="weight-badge-mini"
+                    title="Bobot Inisiatif terhadap KR"
+                  >
+                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
+                  </span>
+                </div>
+
+                <!-- Date Range & Sprint Meta Row -->
+                <div
+                  class="card-dates-sprint-row"
+                  v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                >
+                  <span v-if="ini.sprintMonth" class="sprint-pill">
+                    {{ formatSprintLabel(ini.sprintMonth) }}
+                  </span>
+                  <span
+                    v-if="ini.startDate || ini.dueDate"
+                    class="date-range-pill"
+                    :class="{ overdue: isOverdue(ini) }"
+                  >
+                    {{ formatDateShort(ini.startDate) }} –
+                    {{ formatDateShort(ini.dueDate) }}
+                  </span>
+                </div>
+
+                <!-- Tasks summary chips -->
+                <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                  <span class="task-count-tag">
+                    {{ ini.tasks.length }} Task ({{
+                      getCompletedTasksCount(ini)
+                    }}
+                    selesai)
+                  </span>
+                </div>
+
+                <div class="card-footer-meta">
+                  <div class="card-team-owner">
+                    <span class="team-tag">{{ ini.team?.name }}</span>
+                    <span v-if="ini.owner?.name" class="owner-tag">
+                      {{ ini.owner.name }}
+                      <span
+                        v-if="getMemberAchievement(ini.ownerId)"
+                        class="owner-ach-pill"
+                        :class="
+                          getAchColorClass(
+                            getMemberAchievement(ini.ownerId).achievementPct,
+                          )
+                        "
+                      >
+                        {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                      </span>
                     </span>
+                  </div>
+                </div>
+
+                <!-- Card Action Buttons -->
+                <div v-if="canMoveCards" class="card-hover-actions">
+                  <div class="left-actions">
+                    <button
+                      v-if="canManageInitiative(ini)"
+                      class="action-btn"
+                      title="Tambah Task"
+                      @click="openAddTaskModal(ini)"
+                    >
+                      + Task
+                    </button>
+                    <button
+                      v-if="canManageInitiative(ini)"
+                      class="action-btn"
+                      title="Edit Inisiatif"
+                      @click="openEditInitiativeModal(ini)"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="isAdmin"
+                      class="action-btn danger"
+                      title="Hapus"
+                      @click="deleteInitiative(ini.id)"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="move-actions">
+                    <button
+                      class="move-btn"
+                      title="Pindah ke In Progress"
+                      @click="moveCard(ini.id, 'IN_PROGRESS')"
+                    >
+                      Maju &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 2: IN PROGRESS -->
+          <div
+            class="kanban-column"
+            :class="{ 'drop-active': dragOverColumn === 'IN_PROGRESS' }"
+            @dragover.prevent="
+              canMoveCards ? (dragOverColumn = 'IN_PROGRESS') : null
+            "
+            @dragleave="dragOverColumn = null"
+            @drop="canMoveCards ? handleDrop('IN_PROGRESS') : null"
+          >
+            <div class="column-header progress-head">
+              <div class="col-title-wrap">
+                <span class="col-dot progress"></span>
+                <h4>IN PROGRESS</h4>
+              </div>
+              <span class="col-count-badge">{{ inProgressList.length }}</span>
+            </div>
+
+            <div class="column-cards-list">
+              <div v-if="inProgressList.length === 0" class="kanban-empty-col">
+                Tidak ada inisiatif yang sedang berjalan
+              </div>
+
+              <div
+                v-for="ini in inProgressList"
+                :key="ini.id"
+                class="kanban-card card-in-progress"
+                :draggable="canMoveCards"
+                @dragstart="canMoveCards ? handleDragStart(ini) : null"
+              >
+                <div class="card-top-meta">
+                  <span class="card-kr-badge" :title="ini.keyResult?.title">
+                    {{ ini.keyResult?.title || "Key Result" }}
+                  </span>
+                  <span
+                    v-if="ini.keyResult?.bscPerspective"
+                    class="perspective-pill"
+                    :class="ini.keyResult.bscPerspective.toLowerCase()"
+                  >
+                    {{ ini.keyResult.bscPerspective }}
                   </span>
                 </div>
-              </div>
 
-              <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
-                <div class="left-actions">
-                  <button
-                    v-if="canManageInitiative(ini)"
-                    class="action-btn"
-                    title="Tambah Task"
-                    @click="openAddTaskModal(ini)"
-                  >
-                    + Task
-                  </button>
-                  <button
-                    v-if="canManageInitiative(ini)"
-                    class="action-btn"
-                    title="Edit Inisiatif"
-                    @click="openEditInitiativeModal(ini)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                <h4 class="card-title">{{ ini.title }}</h4>
+                <p v-if="ini.description" class="card-desc">
+                  {{ ini.description }}
+                </p>
+
+                <div class="card-target-row">
+                  <span v-if="ini.targetValue">
+                    <span class="target-label">Target:</span>
+                    <strong class="target-val"
+                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
-                      <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      />
-                      <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    v-if="isAdmin"
-                    class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                  </span>
+                  <span
+                    class="weight-badge-mini"
+                    title="Bobot Inisiatif terhadap KR"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                      />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </button>
+                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
+                  </span>
                 </div>
-                <div class="move-actions">
-                  <button
-                    class="move-btn"
-                    title="Pindah ke In Progress"
-                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+
+                <!-- Date Range & Sprint Meta Row -->
+                <div
+                  class="card-dates-sprint-row"
+                  v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                >
+                  <span v-if="ini.sprintMonth" class="sprint-pill">
+                    {{ formatSprintLabel(ini.sprintMonth) }}
+                  </span>
+                  <span
+                    v-if="ini.startDate || ini.dueDate"
+                    class="date-range-pill"
+                    :class="{ overdue: isOverdue(ini) }"
                   >
-                    Maju &rarr;
-                  </button>
+                    {{ formatDateShort(ini.startDate) }} –
+                    {{ formatDateShort(ini.dueDate) }}
+                  </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- COLUMN 2: IN PROGRESS -->
-        <div
-          class="kanban-column"
-          :class="{ 'drop-active': dragOverColumn === 'IN_PROGRESS' }"
-          @dragover.prevent="
-            canMoveCards ? (dragOverColumn = 'IN_PROGRESS') : null
-          "
-          @dragleave="dragOverColumn = null"
-          @drop="canMoveCards ? handleDrop('IN_PROGRESS') : null"
-        >
-          <div class="column-header progress-head">
-            <div class="col-title-wrap">
-              <span class="col-dot progress"></span>
-              <h4>IN PROGRESS</h4>
-            </div>
-            <span class="col-count-badge">{{ inProgressList.length }}</span>
-          </div>
+                <!-- Tasks summary chips -->
+                <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                  <span class="task-count-tag in-progress">
+                    {{ ini.tasks.length }} Task ({{
+                      getCompletedTasksCount(ini)
+                    }}/{{ ini.tasks.length }}
+                    selesai)
+                  </span>
+                </div>
 
-          <div class="column-cards-list">
-            <div v-if="inProgressList.length === 0" class="kanban-empty-col">
-              Tidak ada inisiatif yang sedang berjalan
-            </div>
-
-            <div
-              v-for="ini in inProgressList"
-              :key="ini.id"
-              class="kanban-card card-in-progress"
-              :draggable="canMoveCards"
-              @dragstart="canMoveCards ? handleDragStart(ini) : null"
-            >
-              <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
-                </span>
-                <span
-                  v-if="ini.keyResult?.bscPerspective"
-                  class="perspective-pill"
-                  :class="ini.keyResult.bscPerspective.toLowerCase()"
-                >
-                  {{ ini.keyResult.bscPerspective }}
-                </span>
-              </div>
-
-              <h4 class="card-title">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">
-                {{ ini.description }}
-              </p>
-
-              <div class="card-target-row">
-                <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                </span>
-              </div>
-
-              <!-- Date Range & Sprint Meta Row -->
-              <div
-                class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
-              >
-                <span v-if="ini.sprintMonth" class="sprint-pill">
-                  {{ formatSprintLabel(ini.sprintMonth) }}
-                </span>
-                <span
-                  v-if="ini.startDate || ini.dueDate"
-                  class="date-range-pill"
-                  :class="{ overdue: isOverdue(ini) }"
-                >
-                  {{ formatDateShort(ini.startDate) }} –
-                  {{ formatDateShort(ini.dueDate) }}
-                </span>
-              </div>
-
-              <!-- Tasks summary chips -->
-              <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                <span class="task-count-tag in-progress">
-                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}/{{
-                    ini.tasks.length
-                  }}
-                  selesai)
-                </span>
-              </div>
-
-              <div class="card-footer-meta">
-                <div class="card-team-owner">
-                  <span class="team-tag">{{ ini.team?.name }}</span>
-                  <span v-if="ini.owner?.name" class="owner-tag">
-                    {{ ini.owner.name }}
-                    <span
-                      v-if="getMemberAchievement(ini.ownerId)"
-                      class="owner-ach-pill"
-                      :class="
-                        getAchColorClass(
-                          getMemberAchievement(ini.ownerId).achievementPct,
-                        )
-                      "
-                    >
-                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                <div class="card-footer-meta">
+                  <div class="card-team-owner">
+                    <span class="team-tag">{{ ini.team?.name }}</span>
+                    <span v-if="ini.owner?.name" class="owner-tag">
+                      {{ ini.owner.name }}
+                      <span
+                        v-if="getMemberAchievement(ini.ownerId)"
+                        class="owner-ach-pill"
+                        :class="
+                          getAchColorClass(
+                            getMemberAchievement(ini.ownerId).achievementPct,
+                          )
+                        "
+                      >
+                        {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                      </span>
                     </span>
+                  </div>
+                </div>
+
+                <!-- Card Action Buttons -->
+                <div v-if="canMoveCards" class="card-hover-actions">
+                  <div class="left-actions">
+                    <button
+                      v-if="canManageInitiative(ini)"
+                      class="action-btn"
+                      title="Tambah Task"
+                      @click="openAddTaskModal(ini)"
+                    >
+                      + Task
+                    </button>
+                    <button
+                      v-if="canManageInitiative(ini)"
+                      class="action-btn"
+                      title="Edit Inisiatif"
+                      @click="openEditInitiativeModal(ini)"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="isAdmin"
+                      class="action-btn danger"
+                      title="Hapus"
+                      @click="deleteInitiative(ini.id)"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="move-actions">
+                    <button
+                      class="move-btn"
+                      title="Kembalikan ke To Do"
+                      @click="moveCard(ini.id, 'TODO')"
+                    >
+                      &larr; Mundur
+                    </button>
+                    <button
+                      class="move-btn primary"
+                      title="Selesaikan ke Done"
+                      @click="moveCard(ini.id, 'DONE')"
+                    >
+                      Selesai &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMN 3: DONE -->
+          <div
+            class="kanban-column"
+            :class="{ 'drop-active': dragOverColumn === 'DONE' }"
+            @dragover.prevent="canMoveCards ? (dragOverColumn = 'DONE') : null"
+            @dragleave="dragOverColumn = null"
+            @drop="canMoveCards ? handleDrop('DONE') : null"
+          >
+            <div class="column-header done-head">
+              <div class="col-title-wrap">
+                <span class="col-dot done"></span>
+                <h4>DONE</h4>
+              </div>
+              <span class="col-count-badge">{{ doneList.length }}</span>
+            </div>
+
+            <div class="column-cards-list">
+              <div v-if="doneList.length === 0" class="kanban-empty-col">
+                Belum ada inisiatif yang selesai
+              </div>
+
+              <div
+                v-for="ini in doneList"
+                :key="ini.id"
+                class="kanban-card card-done"
+                :draggable="canMoveCards"
+                @dragstart="canMoveCards ? handleDragStart(ini) : null"
+              >
+                <div class="card-top-meta">
+                  <span class="card-kr-badge" :title="ini.keyResult?.title">
+                    {{ ini.keyResult?.title || "Key Result" }}
+                  </span>
+                  <span class="completed-checkmark-badge">Selesai</span>
+                </div>
+
+                <h4 class="card-title text-done">{{ ini.title }}</h4>
+                <p v-if="ini.description" class="card-desc">
+                  {{ ini.description }}
+                </p>
+
+                <div class="card-target-row">
+                  <span v-if="ini.targetValue">
+                    <span class="target-label">Target:</span>
+                    <strong class="target-val"
+                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                    >
+                  </span>
+                  <span
+                    class="weight-badge-mini"
+                    title="Bobot Inisiatif terhadap KR"
+                  >
+                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                   </span>
                 </div>
-              </div>
 
-              <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
-                <div class="left-actions">
-                  <button
-                    v-if="canManageInitiative(ini)"
-                    class="action-btn"
-                    title="Tambah Task"
-                    @click="openAddTaskModal(ini)"
-                  >
-                    + Task
-                  </button>
-                  <button
-                    v-if="canManageInitiative(ini)"
-                    class="action-btn"
-                    title="Edit Inisiatif"
-                    @click="openEditInitiativeModal(ini)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      />
-                      <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    v-if="isAdmin"
-                    class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                      />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </button>
-                </div>
-                <div class="move-actions">
-                  <button
-                    class="move-btn"
-                    title="Kembalikan ke To Do"
-                    @click="moveCard(ini.id, 'TODO')"
-                  >
-                    &larr; Mundur
-                  </button>
-                  <button
-                    class="move-btn primary"
-                    title="Selesaikan ke Done"
-                    @click="moveCard(ini.id, 'DONE')"
-                  >
-                    Selesai &rarr;
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- COLUMN 3: DONE -->
-        <div
-          class="kanban-column"
-          :class="{ 'drop-active': dragOverColumn === 'DONE' }"
-          @dragover.prevent="canMoveCards ? (dragOverColumn = 'DONE') : null"
-          @dragleave="dragOverColumn = null"
-          @drop="canMoveCards ? handleDrop('DONE') : null"
-        >
-          <div class="column-header done-head">
-            <div class="col-title-wrap">
-              <span class="col-dot done"></span>
-              <h4>DONE</h4>
-            </div>
-            <span class="col-count-badge">{{ doneList.length }}</span>
-          </div>
-
-          <div class="column-cards-list">
-            <div v-if="doneList.length === 0" class="kanban-empty-col">
-              Belum ada inisiatif yang selesai
-            </div>
-
-            <div
-              v-for="ini in doneList"
-              :key="ini.id"
-              class="kanban-card card-done"
-              :draggable="canMoveCards"
-              @dragstart="canMoveCards ? handleDragStart(ini) : null"
-            >
-              <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
-                </span>
-                <span class="completed-checkmark-badge">Selesai</span>
-              </div>
-
-              <h4 class="card-title text-done">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">
-                {{ ini.description }}
-              </p>
-
-              <div class="card-target-row">
-                <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
+                <!-- Date Range & Sprint Meta Row -->
+                <div
+                  class="card-dates-sprint-row"
+                  v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
                 >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                </span>
-              </div>
+                  <span v-if="ini.sprintMonth" class="sprint-pill">
+                    {{ formatSprintLabel(ini.sprintMonth) }}
+                  </span>
+                  <span
+                    v-if="ini.startDate || ini.dueDate"
+                    class="date-range-pill"
+                    :class="{ overdue: isOverdue(ini) }"
+                  >
+                    {{ formatDateShort(ini.startDate) }} –
+                    {{ formatDateShort(ini.dueDate) }}
+                  </span>
+                </div>
 
-              <!-- Date Range & Sprint Meta Row -->
-              <div
-                class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
-              >
-                <span v-if="ini.sprintMonth" class="sprint-pill">
-                  {{ formatSprintLabel(ini.sprintMonth) }}
-                </span>
-                <span
-                  v-if="ini.startDate || ini.dueDate"
-                  class="date-range-pill"
-                  :class="{ overdue: isOverdue(ini) }"
+                <!-- Achieved Value Row for DONE cards -->
+                <div
+                  class="card-achieved-row"
+                  v-if="
+                    ini.kanbanStatus === 'DONE' || ini.achievedValue !== null
+                  "
                 >
-                  {{ formatDateShort(ini.startDate) }} –
-                  {{ formatDateShort(ini.dueDate) }}
-                </span>
-              </div>
+                  <span class="achieved-label">Capaian Akhir:</span>
+                  <strong class="achieved-val">
+                    {{ ini.achievedValue ?? ini.currentValue }} /
+                    {{ ini.targetValue }} {{ ini.unit || "" }} ({{
+                      calculateAchievedPercent(ini)
+                    }}%)
+                  </strong>
+                </div>
 
-              <!-- Achieved Value Row for DONE cards -->
-              <div
-                class="card-achieved-row"
-                v-if="ini.kanbanStatus === 'DONE' || ini.achievedValue !== null"
-              >
-                <span class="achieved-label">Capaian Akhir:</span>
-                <strong class="achieved-val">
-                  {{ ini.achievedValue ?? ini.currentValue }} /
-                  {{ ini.targetValue }} {{ ini.unit || "" }} ({{
-                    calculateAchievedPercent(ini)
-                  }}%)
-                </strong>
-              </div>
-
-              <div class="card-footer-meta">
-                <div class="card-team-owner">
-                  <span class="team-tag">{{ ini.team?.name }}</span>
-                  <span v-if="ini.owner?.name" class="owner-tag">
-                    {{ ini.owner.name }}
-                    <span
-                      v-if="getMemberAchievement(ini.ownerId)"
-                      class="owner-ach-pill"
-                      :class="
-                        getAchColorClass(
-                          getMemberAchievement(ini.ownerId).achievementPct,
-                        )
-                      "
-                    >
-                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                <div class="card-footer-meta">
+                  <div class="card-team-owner">
+                    <span class="team-tag">{{ ini.team?.name }}</span>
+                    <span v-if="ini.owner?.name" class="owner-tag">
+                      {{ ini.owner.name }}
+                      <span
+                        v-if="getMemberAchievement(ini.ownerId)"
+                        class="owner-ach-pill"
+                        :class="
+                          getAchColorClass(
+                            getMemberAchievement(ini.ownerId).achievementPct,
+                          )
+                        "
+                      >
+                        {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
-                <div class="left-actions">
-                  <button
-                    v-if="canManageInitiative(ini)"
-                    class="action-btn"
-                    title="Edit"
-                    @click="openEditInitiativeModal(ini)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                <!-- Card Action Buttons -->
+                <div v-if="canMoveCards" class="card-hover-actions">
+                  <div class="left-actions">
+                    <button
+                      v-if="canManageInitiative(ini)"
+                      class="action-btn"
+                      title="Edit"
+                      @click="openEditInitiativeModal(ini)"
                     >
-                      <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      />
-                      <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    v-if="isAdmin"
-                    class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="isAdmin"
+                      class="action-btn danger"
+                      title="Hapus"
+                      @click="deleteInitiative(ini.id)"
                     >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                      />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </button>
-                </div>
-                <div class="move-actions">
-                  <button
-                    class="move-btn"
-                    title="Pindah ke In Progress"
-                    @click="moveCard(ini.id, 'IN_PROGRESS')"
-                  >
-                    &larr; Buka Kembali
-                  </button>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="move-actions">
+                    <button
+                      class="move-btn"
+                      title="Pindah ke In Progress"
+                      @click="moveCard(ini.id, 'IN_PROGRESS')"
+                    >
+                      &larr; Buka Kembali
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- COLUMN 4: DROP -->
-        <div
-          class="kanban-column"
-          :class="{ 'drop-active': dragOverColumn === 'DROP' }"
-          @dragover.prevent="canMoveCards ? (dragOverColumn = 'DROP') : null"
-          @dragleave="dragOverColumn = null"
-          @drop="canMoveCards ? handleDrop('DROP') : null"
-        >
-          <div class="column-header drop-head">
-            <div class="col-title-wrap">
-              <span class="col-dot drop"></span>
-              <h4>DROP</h4>
-            </div>
-            <span class="col-count-badge">{{ dropList.length }}</span>
-          </div>
-
-          <div class="column-cards-list">
-            <div v-if="dropList.length === 0" class="kanban-empty-col">
-              Belum ada inisiatif yang dibatalkan
+          <!-- COLUMN 4: DROP -->
+          <div
+            class="kanban-column"
+            :class="{ 'drop-active': dragOverColumn === 'DROP' }"
+            @dragover.prevent="canMoveCards ? (dragOverColumn = 'DROP') : null"
+            @dragleave="dragOverColumn = null"
+            @drop="canMoveCards ? handleDrop('DROP') : null"
+          >
+            <div class="column-header drop-head">
+              <div class="col-title-wrap">
+                <span class="col-dot drop"></span>
+                <h4>DROP</h4>
+              </div>
+              <span class="col-count-badge">{{ dropList.length }}</span>
             </div>
 
-            <div
-              v-for="ini in dropList"
-              :key="ini.id"
-              class="kanban-card card-drop"
-              :draggable="canMoveCards"
-              @dragstart="canMoveCards ? handleDragStart(ini) : null"
-            >
-              <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
-                </span>
-                <span class="dropped-badge">Drop</span>
+            <div class="column-cards-list">
+              <div v-if="dropList.length === 0" class="kanban-empty-col">
+                Belum ada inisiatif yang dibatalkan
               </div>
 
-              <h4 class="card-title text-drop">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">
-                {{ ini.description }}
-              </p>
+              <div
+                v-for="ini in dropList"
+                :key="ini.id"
+                class="kanban-card card-drop"
+                :draggable="canMoveCards"
+                @dragstart="canMoveCards ? handleDragStart(ini) : null"
+              >
+                <div class="card-top-meta">
+                  <span class="card-kr-badge" :title="ini.keyResult?.title">
+                    {{ ini.keyResult?.title || "Key Result" }}
+                  </span>
+                  <span class="dropped-badge">Drop</span>
+                </div>
 
-              <div class="card-target-row">
-                <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                <h4 class="card-title text-drop">{{ ini.title }}</h4>
+                <p v-if="ini.description" class="card-desc">
+                  {{ ini.description }}
+                </p>
+
+                <div class="card-target-row">
+                  <span v-if="ini.targetValue">
+                    <span class="target-label">Target:</span>
+                    <strong class="target-val"
+                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                    >
+                  </span>
+                  <span
+                    class="weight-badge-mini"
+                    title="Bobot Inisiatif terhadap KR"
                   >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                </span>
-              </div>
-
-              <div class="card-footer-meta">
-                <div class="card-team-owner">
-                  <span class="team-tag">{{ ini.team?.name }}</span>
-                  <span v-if="ini.owner?.name" class="owner-tag">
-                    {{ ini.owner.name }}
+                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                   </span>
                 </div>
-              </div>
 
-              <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
-                <div class="left-actions">
-                  <button
-                    v-if="canManageInitiative(ini)"
-                    class="action-btn"
-                    title="Edit"
-                    @click="openEditInitiativeModal(ini)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      />
-                      <path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    v-if="isAdmin"
-                    class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                      />
-                      <line x1="10" y1="11" x2="10" y2="17" />
-                      <line x1="14" y1="11" x2="14" y2="17" />
-                    </svg>
-                  </button>
+                <div class="card-footer-meta">
+                  <div class="card-team-owner">
+                    <span class="team-tag">{{ ini.team?.name }}</span>
+                    <span v-if="ini.owner?.name" class="owner-tag">
+                      {{ ini.owner.name }}
+                    </span>
+                  </div>
                 </div>
-                <div class="move-actions">
-                  <button
-                    class="move-btn"
-                    title="Pindah ke To Do"
-                    @click="moveCard(ini.id, 'TODO')"
-                  >
-                    &larr; Aktifkan Kembali
-                  </button>
+
+                <!-- Card Action Buttons -->
+                <div v-if="canMoveCards" class="card-hover-actions">
+                  <div class="left-actions">
+                    <button
+                      v-if="canManageInitiative(ini)"
+                      class="action-btn"
+                      title="Edit"
+                      @click="openEditInitiativeModal(ini)"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="isAdmin"
+                      class="action-btn danger"
+                      title="Hapus"
+                      @click="deleteInitiative(ini.id)"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="move-actions">
+                    <button
+                      class="move-btn"
+                      title="Pindah ke To Do"
+                      @click="moveCard(ini.id, 'TODO')"
+                    >
+                      &larr; Aktifkan Kembali
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1784,9 +1790,13 @@ onMounted(async () => {
 
 <style scoped>
 .admin-root {
-  padding: 1.5rem;
-  background: var(--bg-primary, #f8fafc);
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 .card {
@@ -1989,17 +1999,18 @@ onMounted(async () => {
 }
 
 /* Kanban Board Layout */
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  align-items: start;
+.kanban-board-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 12px;
 }
 
-@media (max-width: 1024px) {
-  .kanban-board {
-    grid-template-columns: 1fr;
-  }
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(270px, 1fr));
+  gap: 16px;
+  align-items: start;
+  min-width: 1100px;
 }
 
 .kanban-column {

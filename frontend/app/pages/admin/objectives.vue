@@ -19,7 +19,7 @@
               keberhasilannya.
             </p>
           </div>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px">
             <button
               type="button"
               class="secondary-btn"
@@ -389,20 +389,40 @@
 
         <div v-else>
           <!-- Bulk Select All / Delete Action Bar -->
-          <div v-if="allDisplayedKrs.length > 0" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input 
-                type="checkbox" 
-                :checked="isAllKrsSelected" 
-                @change="toggleSelectAllKrs" 
-                style="transform: scale(1.2); cursor: pointer;"
+          <div
+            v-if="allDisplayedKrs.length > 0"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 12px 16px;
+              background: #f8fafc;
+              border: 1px solid #cbd5e1;
+              border-radius: 8px;
+              margin-bottom: 16px;
+            "
+          >
+            <div style="display: flex; align-items: center; gap: 8px">
+              <input
+                type="checkbox"
+                :checked="isAllKrsSelected"
+                @change="toggleSelectAllKrs"
+                style="transform: scale(1.2); cursor: pointer"
               />
-              <span style="font-size: 14px; font-weight: 500; color: #334155;">Pilih Semua KR ({{ allDisplayedKrs.length }})</span>
+              <span style="font-size: 14px; font-weight: 500; color: #334155"
+                >Pilih Semua KR ({{ allDisplayedKrs.length }})</span
+              >
             </div>
-            <button 
-              v-if="selectedKrIds.length > 0" 
-              class="save-kr-btn" 
-              style="background: #ff4b4b; padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 6px;" 
+            <button
+              v-if="selectedKrIds.length > 0"
+              class="save-kr-btn"
+              style="
+                background: #ff4b4b;
+                padding: 6px 12px;
+                font-size: 13px;
+                font-weight: bold;
+                border-radius: 6px;
+              "
               @click="triggerBulkDelete"
             >
               Hapus Terpilih ({{ selectedKrIds.length }})
@@ -411,78 +431,90 @@
 
           <div class="objectives-list">
             <div v-for="obj in objectives" :key="obj.id" class="objective-item">
-            <div class="objective-item-header">
-              <div>
-                <span class="year-badge">{{ obj.year }}</span>
-                <h3>{{ obj.title }}</h3>
-                <p v-if="obj.description" class="obj-desc">
-                  {{ obj.description }}
-                </p>
-              </div>
-              <button
-                @click.stop="deleteObjective(obj.id)"
-                class="delete-obj-btn"
-                title="Hapus Objective ini beserta seluruh Key Results nya"
-              >
-                Hapus
-              </button>
-            </div>
-
-            <div class="key-results-container">
-              <div
-                v-for="kr in obj.keyResults"
-                :key="kr.id"
-                class="kr-list-row"
-              >
-                <div class="kr-list-row-header" style="display: flex; align-items: center; gap: 12px; width: 100%;">
-                  <input 
-                    type="checkbox" 
-                    :value="kr.id" 
-                    v-model="selectedKrIds"
-                    style="transform: scale(1.2); cursor: pointer; flex-shrink: 0;"
-                  />
-                  <div class="kr-info" style="flex: 1;">
-                    <span class="kr-title">{{ kr.title }}</span>
-                    <div class="kr-stats">
-                      Target:
-                      <strong>{{ kr.targetValue }} {{ kr.unit }}</strong>
-                      <span
-                        class="status-badge"
-                        :class="kr.status.toLowerCase().replace('_', '')"
-                        >{{ kr.status }}</span
-                      >
-                    </div>
-                  </div>
-                  <div class="kr-actions-wrapper">
-                    <div class="kr-perspective">
-                      <span
-                        class="perspective-badge"
-                        :class="kr.bscPerspective.toLowerCase()"
-                      >
-                        {{ formatPerspective(kr.bscPerspective) }}
-                      </span>
-                    </div>
-                    <div class="kr-action-buttons">
-                      <button
-                        @click="startEditKr(kr)"
-                        class="edit-kr-btn"
-                        title="Edit Metric (Key Result)"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        @click.stop="deleteKr(kr.id)"
-                        class="delete-kr-btn"
-                        title="Hapus Metric (Key Result)"
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
+              <div class="objective-item-header">
+                <div>
+                  <span class="year-badge">{{ obj.year }}</span>
+                  <h3>{{ obj.title }}</h3>
+                  <p v-if="obj.description" class="obj-desc">
+                    {{ obj.description }}
+                  </p>
                 </div>
+                <button
+                  @click.stop="deleteObjective(obj.id)"
+                  class="delete-obj-btn"
+                  title="Hapus Objective ini beserta seluruh Key Results nya"
+                >
+                  Hapus
+                </button>
+              </div>
 
-                <!-- Initiatives Section (Expandable) -->
-                <!-- <div class="kr-initiatives-section">
+              <div class="key-results-container">
+                <div
+                  v-for="kr in obj.keyResults"
+                  :key="kr.id"
+                  class="kr-list-row"
+                >
+                  <div
+                    class="kr-list-row-header"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 12px;
+                      width: 100%;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      :value="kr.id"
+                      v-model="selectedKrIds"
+                      style="
+                        transform: scale(1.2);
+                        cursor: pointer;
+                        flex-shrink: 0;
+                      "
+                    />
+                    <div class="kr-info" style="flex: 1">
+                      <span class="kr-title">{{ kr.title }}</span>
+                      <div class="kr-stats">
+                        Target:
+                        <strong>{{ kr.targetValue }} {{ kr.unit }}</strong>
+                        <span
+                          class="status-badge"
+                          :class="kr.status.toLowerCase().replace('_', '')"
+                          >{{ kr.status }}</span
+                        >
+                      </div>
+                    </div>
+                    <div class="kr-actions-wrapper">
+                      <div class="kr-perspective">
+                        <span
+                          class="perspective-badge"
+                          :class="kr.bscPerspective.toLowerCase()"
+                        >
+                          {{ formatPerspective(kr.bscPerspective) }}
+                        </span>
+                      </div>
+                      <div class="kr-action-buttons">
+                        <button
+                          @click="startEditKr(kr)"
+                          class="edit-kr-btn"
+                          title="Edit Metric (Key Result)"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          @click.stop="deleteKr(kr.id)"
+                          class="delete-kr-btn"
+                          title="Hapus Metric (Key Result)"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Initiatives Section (Expandable) -->
+                  <!-- <div class="kr-initiatives-section">
                   <div
                     class="initiatives-header"
                     @click="toggleInitiatives(kr.id)"
@@ -566,10 +598,10 @@
                     </button>
                   </div>
                 </div> -->
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </section>
     </div>
@@ -900,42 +932,83 @@
     </div>
 
     <!-- Delete Key Result Confirmation Modal -->
-    <div v-if="krToDelete" class="modal-overlay" @click.self="krToDelete = null">
-      <div class="modal-box" style="max-width: 400px; text-align: center;">
-        <h3 style="margin-top: 0; color: #ff4b4b;">Konfirmasi Hapus</h3>
-        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569;">
-          Apakah Anda yakin ingin menghapus Key Result ini? Tindakan ini tidak dapat dibatalkan.
+    <div
+      v-if="krToDelete"
+      class="modal-overlay"
+      @click.self="krToDelete = null"
+    >
+      <div class="modal-box" style="max-width: 400px; text-align: center">
+        <h3 style="margin-top: 0; color: #ff4b4b">Konfirmasi Hapus</h3>
+        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569">
+          Apakah Anda yakin ingin menghapus Key Result ini? Tindakan ini tidak
+          dapat dibatalkan.
         </p>
-        <div class="modal-actions" style="justify-content: center; gap: 12px;">
+        <div class="modal-actions" style="justify-content: center; gap: 12px">
           <button class="cancel-btn" @click="krToDelete = null">Batal</button>
-          <button class="save-kr-btn" style="background: #ff4b4b; color: white;" @click="confirmDeleteKr">Hapus</button>
+          <button
+            class="save-kr-btn"
+            style="background: #ff4b4b; color: white"
+            @click="confirmDeleteKr"
+          >
+            Hapus
+          </button>
         </div>
       </div>
     </div>
     <!-- Delete Objective Confirmation Modal -->
-    <div v-if="objectiveToDelete" class="modal-overlay" @click.self="objectiveToDelete = null">
-      <div class="modal-box" style="max-width: 400px; text-align: center;">
-        <h3 style="margin-top: 0; color: #ff4b4b;">Konfirmasi Hapus Objective</h3>
-        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569;">
-          Apakah Anda yakin ingin menghapus Objective ini beserta seluruh Key Results di dalamnya? Tindakan ini tidak dapat dibatalkan.
+    <div
+      v-if="objectiveToDelete"
+      class="modal-overlay"
+      @click.self="objectiveToDelete = null"
+    >
+      <div class="modal-box" style="max-width: 400px; text-align: center">
+        <h3 style="margin-top: 0; color: #ff4b4b">
+          Konfirmasi Hapus Objective
+        </h3>
+        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569">
+          Apakah Anda yakin ingin menghapus Objective ini beserta seluruh Key
+          Results di dalamnya? Tindakan ini tidak dapat dibatalkan.
         </p>
-        <div class="modal-actions" style="justify-content: center; gap: 12px;">
-          <button class="cancel-btn" @click="objectiveToDelete = null">Batal</button>
-          <button class="save-kr-btn" style="background: #ff4b4b; color: white;" @click="confirmDeleteObjective">Hapus</button>
+        <div class="modal-actions" style="justify-content: center; gap: 12px">
+          <button class="cancel-btn" @click="objectiveToDelete = null">
+            Batal
+          </button>
+          <button
+            class="save-kr-btn"
+            style="background: #ff4b4b; color: white"
+            @click="confirmDeleteObjective"
+          >
+            Hapus
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Bulk Delete Key Results Confirmation Modal -->
-    <div v-if="showBulkDeleteModal" class="modal-overlay" @click.self="showBulkDeleteModal = false">
-      <div class="modal-box" style="max-width: 400px; text-align: center;">
-        <h3 style="margin-top: 0; color: #ff4b4b;">Konfirmasi Hapus Massal</h3>
-        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569;">
-          Apakah Anda yakin ingin menghapus <strong>{{ selectedKrIds.length }} Key Results</strong> yang terpilih? Tindakan ini akan menghapus semua Inisiatif dan Task terkait dan tidak dapat dibatalkan.
+    <div
+      v-if="showBulkDeleteModal"
+      class="modal-overlay"
+      @click.self="showBulkDeleteModal = false"
+    >
+      <div class="modal-box" style="max-width: 400px; text-align: center">
+        <h3 style="margin-top: 0; color: #ff4b4b">Konfirmasi Hapus Massal</h3>
+        <p style="font-size: 14px; margin: 12px 0 20px 0; color: #475569">
+          Apakah Anda yakin ingin menghapus
+          <strong>{{ selectedKrIds.length }} Key Results</strong> yang terpilih?
+          Tindakan ini akan menghapus semua Inisiatif dan Task terkait dan tidak
+          dapat dibatalkan.
         </p>
-        <div class="modal-actions" style="justify-content: center; gap: 12px;">
-          <button class="cancel-btn" @click="showBulkDeleteModal = false">Batal</button>
-          <button class="save-kr-btn" style="background: #ff4b4b; color: white;" @click="confirmBulkDeleteKrs">Hapus Semua</button>
+        <div class="modal-actions" style="justify-content: center; gap: 12px">
+          <button class="cancel-btn" @click="showBulkDeleteModal = false">
+            Batal
+          </button>
+          <button
+            class="save-kr-btn"
+            style="background: #ff4b4b; color: white"
+            @click="confirmBulkDeleteKrs"
+          >
+            Hapus Semua
+          </button>
         </div>
       </div>
     </div>
@@ -1443,7 +1516,9 @@ const allDisplayedKrs = computed(() => {
 
 const isAllKrsSelected = computed(() => {
   if (allDisplayedKrs.value.length === 0) return false;
-  return allDisplayedKrs.value.every((kr) => selectedKrIds.value.includes(kr.id));
+  return allDisplayedKrs.value.every((kr) =>
+    selectedKrIds.value.includes(kr.id),
+  );
 });
 
 function toggleSelectAllKrs() {
@@ -1772,6 +1847,10 @@ async function saveTaskForInitiative() {
   max-width: 1400px;
   margin: 30px auto 0 auto;
   padding: 0 30px;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 @media (max-width: 1024px) {

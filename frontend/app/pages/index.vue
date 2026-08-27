@@ -76,7 +76,7 @@ function handleLogout() {
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 .dashboard-root {
-  font-family: "Inter", sans-serif;
+  font-family: "Rubik", sans-serif;
   min-height: 100vh;
   display: flex;
   align-items: center;
