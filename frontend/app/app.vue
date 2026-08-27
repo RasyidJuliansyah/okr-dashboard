@@ -294,8 +294,15 @@ const pageTitle = computed(() => {
   box-sizing: border-box;
 }
 
-body {
+body,
+button,
+input,
+select,
+textarea {
   font-family: "Rubik", sans-serif;
+}
+
+body {
   background: var(--surface-page);
   color: var(--text-heading);
   margin: 0;

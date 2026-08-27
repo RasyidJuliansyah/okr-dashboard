@@ -242,6 +242,9 @@ model InitiativeUpdate {
   kanbanStatus String?
   link         String?
   submittedBy  String
+  status       String     @default("PENDING_APPROVAL")
+  reviewedBy   String?
+  reviewedAt   DateTime?
   createdAt    DateTime   @default(now())
 
   @@index([initiativeId, createdAt])

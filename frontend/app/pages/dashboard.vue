@@ -234,6 +234,115 @@
         </div>
       </section>
 
+      <!-- ─── SECTION: LEADER KEY RESULTS (LEADER ONLY) ─── -->
+      <section
+        v-if="userRole === 'LEADER'"
+        class="role-section leader-krs-section"
+      >
+        <div class="section-title-row">
+          <h3 class="section-title">🎯 KR Saya — Konteks Strategis</h3>
+          <span class="count-badge-sub"
+            >{{ leaderAssignedKrs.length }} Key Result</span
+          >
+        </div>
+
+        <div v-if="leaderAssignedKrs.length === 0" class="empty-state">
+          Belum ada Monthly Key Result yang di-assign ke Anda.
+        </div>
+
+        <div v-else class="leader-krs-grid">
+          <div
+            v-for="assign in leaderAssignedKrs"
+            :key="assign.id"
+            class="kr-card card"
+          >
+            <!-- Monthly KR Header -->
+            <div class="kr-header">
+              <div class="kr-title-area">
+                <span class="month-badge">{{
+                  formatMonthLabel(assign.keyResult?.month)
+                }}</span>
+                <h4 class="kr-title">{{ assign.keyResult?.title }}</h4>
+              </div>
+              <div class="kr-badge-area">
+                <span
+                  class="badge"
+                  :class="getStatusClass(assign.keyResult?.status)"
+                >
+                  {{ assign.keyResult?.status }}
+                </span>
+                <span
+                  v-if="assign.keyResult?.isManualOverride"
+                  class="override-badge badge-warn"
+                >
+                  Manual Override
+                </span>
+                <span v-else class="override-badge badge-info">
+                  Auto dari Inisiatif
+                </span>
+              </div>
+            </div>
+
+            <!-- Parent Annual KR Context -->
+            <div
+              v-if="assign.keyResult?.annualKeyResult"
+              class="parent-annual-context"
+            >
+              <div class="context-label">Annual KR Atap (Manajer):</div>
+              <div class="parent-info-row">
+                <span class="parent-title"
+                  >📌 {{ assign.keyResult.annualKeyResult.title }}</span
+                >
+                <span class="parent-status badge bg-green">{{
+                  assign.keyResult.annualKeyResult.status
+                }}</span>
+              </div>
+              <div class="parent-progress-row">
+                <span class="lbl-prog"
+                  >Target Tahunan:
+                  {{ assign.keyResult.annualKeyResult.currentValue }} /
+                  {{ assign.keyResult.annualKeyResult.targetValue }}</span
+                >
+                <span class="lbl-contrib"
+                  >Bobot Bulan ini:
+                  {{ Math.round(assign.keyResult.monthWeight * 100) }}%</span
+                >
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="kr-progress-section">
+              <div class="progress-info">
+                <span class="progress-val">
+                  Capaian: {{ assign.keyResult?.currentValue }} /
+                  {{ assign.keyResult?.targetValue }}
+                  {{ assign.keyResult?.unit || "%" }}
+                </span>
+                <span class="progress-pct font-bold">
+                  {{ getProgressPercent(assign.keyResult).toFixed(1) }}%
+                </span>
+              </div>
+              <div class="progress-bar-container">
+                <div
+                  class="progress-bar-fill"
+                  :style="{ width: getProgressPercent(assign.keyResult) + '%' }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Manual Update Button -->
+            <div class="kr-actions" v-if="assign.raciRole === 'RESPONSIBLE'">
+              <button
+                class="primary-btn small"
+                @click="openLeaderKrUpdateModal(assign.keyResult)"
+              >
+                Update Manual
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ─── SECTION: INITIATIVE PROGRESS (Leader, Manager, C-Level, Admin) ─── -->
       <section v-if="showInitiativeProgress" class="role-section">
         <div class="section-title-row">
@@ -378,7 +487,7 @@
         class="role-section"
       >
         <h3 class="section-title">
-          Approval Task Pending ({{ pendingApprovals.length }})
+          Approval Inisiatif Pending ({{ pendingApprovals.length }})
         </h3>
         <div
           v-for="update in pendingApprovals"
@@ -386,10 +495,8 @@
           class="approval-card card"
         >
           <div class="approval-info">
-            <strong>{{ update.task?.title }}</strong>
-            <span class="team-badge">{{
-              update.task?.initiative?.team?.name
-            }}</span>
+            <strong>{{ update.initiative?.title }}</strong>
+            <span class="team-badge">{{ update.initiative?.team?.name }}</span>
           </div>
           <div class="approval-values">
             Nilai: <del>{{ update.oldValue }}</del> →
@@ -410,10 +517,10 @@
               style="padding: 6px 12px; font-size: 13px"
               @click="
                 openDetailModal(
-                  update.task?.title,
-                  'Task',
+                  update.initiative?.title,
+                  'Inisiatif',
                   update,
-                  update.task?.assignments?.map((a) => a.user?.name).join(', '),
+                  '—',
                 )
               "
             >
@@ -583,6 +690,69 @@
             </button>
             <button class="danger-btn" @click="handleReject">
               Tolak Update
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MODAL: Update Monthly KR (LEADER) ─── -->
+      <div
+        v-if="showLeaderKrModal"
+        class="modal-overlay"
+        @click.self="showLeaderKrModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Update Manual Monthly Key Result</h3>
+            <button class="modal-close-btn" @click="showLeaderKrModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Key Result:</span
+            >
+            <span class="val" style="display: block; font-size: 14px">{{
+              selectedLeaderKr?.title
+            }}</span>
+          </div>
+          <div class="mb-4">
+            <label
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Nilai Baru:</label
+            >
+            <input
+              v-model.number="leaderSubmitValue"
+              type="number"
+              class="form-input"
+            />
+          </div>
+          <div class="mb-4">
+            <label
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Catatan Update (Wajib):</label
+            >
+            <textarea
+              v-model="leaderSubmitNote"
+              class="form-input"
+              rows="3"
+              placeholder="Masukkan alasan update manual..."
+            ></textarea>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showLeaderKrModal = false">
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="submitLeaderKrUpdate"
+              :disabled="!leaderSubmitNote"
+            >
+              Simpan
             </button>
           </div>
         </div>
@@ -803,6 +973,97 @@ const pendingApprovals = ref([]);
 // State untuk data LEADER
 const leadingTeams = ref([]);
 const leaderInitiatives = ref([]);
+const leaderAssignedKrs = ref([]);
+const leaderLoadingKrs = ref(false);
+
+const showLeaderKrModal = ref(false);
+const selectedLeaderKr = ref(null);
+const leaderSubmitValue = ref(0);
+const leaderSubmitNote = ref("");
+
+async function fetchLeaderAssignedKrs() {
+  if (userRole.value !== "LEADER") return;
+  leaderLoadingKrs.value = true;
+  try {
+    const res = await $fetch(
+      `${config.public.apiBase}/key-results/my/assigned`,
+      {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      },
+    );
+    leaderAssignedKrs.value = res || [];
+  } catch (err) {
+    console.error("Error fetching leader assigned KRs:", err);
+  } finally {
+    leaderLoadingKrs.value = false;
+  }
+}
+
+function openLeaderKrUpdateModal(kr) {
+  selectedLeaderKr.value = kr;
+  leaderSubmitValue.value = kr.currentValue;
+  leaderSubmitNote.value = "";
+  showLeaderKrModal.value = true;
+}
+
+async function submitLeaderKrUpdate() {
+  if (!selectedLeaderKr.value) return;
+  if (!leaderSubmitNote.value) {
+    alert("Catatan update wajib diisi!");
+    return;
+  }
+  try {
+    const response = await $fetch(
+      `${config.public.apiBase}/key-results/${selectedLeaderKr.value.id}/progress`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: {
+          newValue: leaderSubmitValue.value,
+          note: leaderSubmitNote.value,
+        },
+      },
+    );
+
+    if (response) {
+      showLeaderKrModal.value = false;
+      await fetchLeaderAssignedKrs();
+      if (showInitiativeProgress.value) {
+        await fetchInitiativeProgress();
+      }
+      await fetchDashboardData();
+    }
+  } catch (err) {
+    console.error("Error updating leader KR progress:", err);
+    alert(err.data?.message || "Gagal mengupdate progress Key Result");
+  }
+}
+
+function formatMonthLabel(monthStr) {
+  if (!monthStr) return "";
+  const parts = monthStr.split("-");
+  if (parts.length !== 2) return monthStr;
+  const year = parts[0];
+  const monthNum = parseInt(parts[1], 10);
+  const monthNames = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+  return `${monthNames[monthNum - 1]} ${year}`;
+}
 
 // State & Computed untuk Initiative Progress (Leader, Manager, C-Level, Admin)
 const initProgressData = ref({ initiatives: [], byKeyResult: [], summary: {} });
@@ -1033,6 +1294,9 @@ onMounted(() => {
   if (showInitiativeProgress.value) {
     fetchInitiativeProgress();
   }
+  if (auth.user?.role === "LEADER") {
+    fetchLeaderAssignedKrs();
+  }
 });
 
 // ─── Task Submit Modal (TEAM) ───
@@ -1125,7 +1389,7 @@ async function handleApprove(updateId) {
   if (!confirm("Setujui update ini?")) return;
   const token = auth.token || localStorage.getItem("token");
   const res = await fetch(
-    `${config.public.apiBase}/initiatives/task-updates/${updateId}/approve`,
+    `${config.public.apiBase}/initiatives/initiative-updates/${updateId}/approve`,
     {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
@@ -1145,7 +1409,7 @@ async function handleReject() {
   }
   const token = auth.token || localStorage.getItem("token");
   const res = await fetch(
-    `${config.public.apiBase}/initiatives/task-updates/${selectedApproval.value.id}/reject`,
+    `${config.public.apiBase}/initiatives/initiative-updates/${selectedApproval.value.id}/reject`,
     {
       method: "PATCH",
       headers: {
@@ -1168,7 +1432,7 @@ async function handleReject() {
 @import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .dashboard-root {
-  font-family: "Inter", sans-serif;
+  font-family: "Rubik", sans-serif;
   min-height: 100vh;
   background: var(--content-bg);
   color: var(--text-color);
@@ -1310,8 +1574,8 @@ async function handleReject() {
 /* Layout Container */
 .dashboard-container {
   max-width: 1200px;
-  margin: auto 0 auto;
-  padding: 30px 20px;
+  margin: 0 auto;
+  padding: 30px;
   display: flex;
   flex-direction: column;
   gap: 30px;
@@ -2455,17 +2719,113 @@ async function handleReject() {
   color: #0e97d6;
 }
 
-.task-assignees-mini {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
 .assignee-mini {
   font-size: 0.7rem;
   background: #f1f5f9;
   color: #475569;
   padding: 1px 6px;
   border-radius: 4px;
+}
+
+/* LEADER KEY RESULTS SECTION STYLES */
+.leader-krs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+.kr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+.kr-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.month-badge {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+.kr-badge-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.override-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.badge-warn {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fef3c7;
+}
+.badge-info {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+.parent-annual-context {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+.context-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.parent-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.parent-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #0f172a;
+}
+.parent-status {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.parent-progress-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #64748b;
+}
+.kr-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #334155;
+}
+.kr-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

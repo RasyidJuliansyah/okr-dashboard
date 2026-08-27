@@ -204,8 +204,8 @@
               <button class="detail-toggle-btn" @click="toggleExpand(m.userId)">
                 {{
                   expandedUserIds.includes(m.userId)
-                    ? "Sembunyikan Rincian ▲"
-                    : "Lihat Rincian Card ▼"
+                    ? "Sembunyikan Rincian"
+                    : "Lihat Rincian Card"
                 }}
               </button>
             </div>
@@ -413,9 +413,22 @@ onMounted(async () => {
 
 <style scoped>
 .admin-root {
-  padding: 1.5rem;
-  background: var(--bg-primary, #f8fafc);
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow: hidden;
+}
+
+.admin-content {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .card {
@@ -426,7 +439,6 @@ onMounted(async () => {
 
 .header-section {
   padding: 1.5rem;
-  margin-bottom: 1.25rem;
 }
 
 .title-with-badge {
@@ -490,7 +502,6 @@ onMounted(async () => {
 
 .filter-card {
   padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
 }
 
 .filter-controls-row {
@@ -562,13 +573,13 @@ onMounted(async () => {
   gap: 20px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
   .member-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .member-grid {
     grid-template-columns: 1fr;
   }
@@ -581,6 +592,8 @@ onMounted(async () => {
   gap: 16px;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  min-width: 0;
+  overflow: hidden;
   transition:
     transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -644,7 +657,7 @@ onMounted(async () => {
 }
 
 .role-pill {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 6px;
@@ -761,7 +774,7 @@ onMounted(async () => {
   border: none;
   color: #0e97d6;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   cursor: pointer;
   padding: 4px 10px;
   border-radius: 6px;
