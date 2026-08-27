@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `InitiativeUpdate` ADD COLUMN `reviewedAt` DATETIME(3) NULL,
+    ADD COLUMN `reviewedBy` VARCHAR(191) NULL,
+    ADD COLUMN `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING_APPROVAL';
