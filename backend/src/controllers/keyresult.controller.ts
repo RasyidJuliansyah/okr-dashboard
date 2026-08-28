@@ -595,64 +595,11 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
     let whereClause: any = { userId };
 
     if (role === "LEADER") {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { department: true, teamId: true },
-      });
-
-      const managerIds: string[] = [];
-
-      if (dbUser) {
-        // 1. Get managers from User table with role = 'MANAGER' in the same department
-        if (dbUser.department) {
-          const deptManagers = await prisma.user.findMany({
-            where: {
-              role: "MANAGER",
-              department: dbUser.department,
-            },
-            select: { id: true },
-          });
-          deptManagers.forEach((m) => {
-            if (!managerIds.includes(m.id)) {
-              managerIds.push(m.id);
-            }
-          });
-
-          // 2. Also check if the department has a manager via Department table
-          const dept = await prisma.department.findUnique({
-            where: { value: dbUser.department },
-            select: { managerId: true },
-          });
-          if (dept?.managerId && !managerIds.includes(dept.managerId)) {
-            managerIds.push(dept.managerId);
-          }
-        }
-
-        // 3. Get manager(s) from Team table where the leader is this leader or user's teamId
-        const teams = await prisma.team.findMany({
-          where: {
-            OR: [
-              { leaderId: userId },
-              ...(dbUser.teamId ? [{ id: dbUser.teamId }] : []),
-            ],
-          },
-          select: { managerId: true },
-        });
-        teams.forEach((t) => {
-          if (t.managerId && !managerIds.includes(t.managerId)) {
-            managerIds.push(t.managerId);
-          }
-        });
-      }
-
       whereClause = {
         userId,
         keyResult: {
           month: { not: null },
           targetValue: { gt: 0 },
-          objective: {
-            ownerId: { in: managerIds },
-          },
         },
       };
     }
