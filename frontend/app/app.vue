@@ -52,6 +52,7 @@ const pageTitle = computed(() => {
   if (path.startsWith("/admin/objectives")) return "OKR Builder";
   if (path.startsWith("/admin/update-progress")) return "Update Capaian";
   if (path.startsWith("/admin/employees")) return "Data Pegawai";
+  if (path.startsWith("/approvals")) return "Persetujuan (Approvals)";
   return "Profil Pengguna";
 });
 </script>

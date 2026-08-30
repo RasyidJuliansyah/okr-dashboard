@@ -460,7 +460,7 @@ async function openReviewModal(task) {
   rejectNote.value = "";
 
   try {
-    const res = await fetch(`${API}/tasks/${task.id}/updates`, {
+    const res = await fetch(`${API}/initiatives/tasks/${task.id}/updates`, {
       headers: getHeaders(),
     });
     const allUpdates = await res.json();

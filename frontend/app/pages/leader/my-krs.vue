@@ -18,236 +18,299 @@
       </div>
 
       <div v-else class="kr-list">
-        <div v-for="assign in krs" :key="assign.id" class="kr-card card">
-          <div class="kr-header">
-            <div>
-              <h3>{{ assign.keyResult.title }}</h3>
-              <div class="kr-meta">
-                <span class="badge"
-                  >Objective: {{ assign.keyResult.objective.title }}</span
-                >
-                <span class="badge"
-                  >BSC: {{ assign.keyResult.bscPerspective }}</span
-                >
-                <span
-                  class="badge"
-                  :class="getStatusClass(assign.keyResult.status)"
-                  >Status: {{ assign.keyResult.status }}</span
-                >
-                <span class="badge bg-blue">RACI: {{ assign.raciRole }}</span>
-              </div>
-            </div>
-            <div class="kr-progress">
-              <div class="progress-bar-container">
-                <div
-                  class="progress-bar"
-                  :style="{
-                    width: getProgressPercent(assign.keyResult) + '%',
-                  }"
-                ></div>
-              </div>
-              <span class="progress-text"
-                >{{ assign.keyResult.currentValue }} /
-                {{ assign.keyResult.targetValue }}
-                {{ assign.keyResult.unit }} ({{
-                  getProgressPercent(assign.keyResult).toFixed(1)
-                }}%)</span
-              >
-            </div>
+        <div
+          v-for="(assigns, deptKey) in getGroupedAssignedKrs(krs)"
+          :key="deptKey"
+          class="dept-group mb-6"
+        >
+          <div class="dept-group-header">
+            <span class="dept-title-badge">{{ getDeptLabel(deptKey) }}</span>
           </div>
 
-          <div class="initiatives-section">
-            <h4>
-              Inisiatif yang sudah dibuat ({{
-                assign.keyResult.initiatives?.length || 0
-              }}):
-            </h4>
-            <ul
-              v-if="assign.keyResult.initiatives?.length > 0"
-              class="ini-list-items"
+          <div style="display: flex; flex-direction: column; gap: 16px">
+            <div
+              v-for="assign in assigns"
+              :key="assign.id"
+              class="kr-card card"
             >
-              <li
-                v-for="ini in assign.keyResult.initiatives"
-                :key="ini.id"
-                class="ini-item-row"
-              >
-                <div class="ini-item-main">
-                  <div class="ini-info-col">
-                    <span class="ini-title">{{ ini.title }}</span>
-                    <div class="ini-sub-meta">
-                      <span class="badge-team">→ {{ ini.team?.name }}</span>
-                      <span v-if="ini.owner" class="badge-owner">{{
-                        ini.owner.name
-                      }}</span>
-                      <span class="badge" :class="getStatusClass(ini.status)">{{
-                        ini.status
-                      }}</span>
-                    </div>
-                  </div>
-                  <div class="ini-actions">
-                    <button
-                      class="icon-btn"
-                      @click="startEditInitiative(ini, assign.keyResult)"
-                      title="Edit Inisiatif"
+              <div class="kr-header">
+                <div>
+                  <h3>{{ assign.keyResult.title }}</h3>
+                  <div class="kr-meta">
+                    <span class="badge"
+                      >Objective: {{ assign.keyResult.objective.title }}</span
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="authStore.user?.role === 'ADMIN'"
-                      class="icon-btn danger"
-                      @click="deleteInitiative(ini.id)"
-                      title="Hapus Inisiatif"
+                    <span class="badge"
+                      >BSC: {{ assign.keyResult.bscPerspective }}</span
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
+                    <span
+                      class="badge"
+                      :class="getStatusClass(assign.keyResult.status)"
+                      >Status: {{ assign.keyResult.status }}</span
+                    >
+                    <span class="badge bg-blue"
+                      >RACI: {{ assign.raciRole }}</span
+                    >
+                    <button
+                      v-if="assign.raciRole === 'RESPONSIBLE'"
+                      class="secondary-btn small"
+                      @click="openReassignModal(assign.keyResult)"
+                      style="
+                        margin-left: 8px;
+                        padding: 2px 6px;
+                        font-size: 11px;
+                        background-color: #f1f5f9;
+                        border: 1px solid #cbd5e1;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        color: #475569;
+                      "
+                    >
+                      Re-assign
                     </button>
                   </div>
                 </div>
-
-                <!-- Show Tasks List under Manager's Initiative -->
-                <div
-                  v-if="ini.tasks && ini.tasks.length > 0"
-                  class="task-nested-list"
-                >
-                  <div class="task-nested-header">
-                    Tasks (Inisiatif Leader):
+                <div class="kr-progress">
+                  <div class="progress-bar-container">
+                    <div
+                      class="progress-bar"
+                      :style="{
+                        width: getProgressPercent(assign.keyResult) + '%',
+                      }"
+                    ></div>
                   </div>
-                  <div
-                    v-for="task in ini.tasks"
-                    :key="task.id"
-                    class="task-nested-row"
+                  <span class="progress-text"
+                    >{{ assign.keyResult.currentValue }} /
+                    {{ assign.keyResult.targetValue }}
+                    {{ assign.keyResult.unit }} ({{
+                      getProgressPercent(assign.keyResult).toFixed(1)
+                    }}%)</span
                   >
-                    <div class="task-nested-left">
-                      <div class="task-nested-title">{{ task.title }}</div>
-                      <div
-                        class="task-nested-assignees"
-                        v-if="task.assignments && task.assignments.length > 0"
-                      >
-                        <span
-                          v-for="a in task.assignments"
-                          :key="a.userId"
-                          class="task-assignee-tag"
+                </div>
+              </div>
+
+              <div class="initiatives-section">
+                <h4>
+                  Inisiatif yang sudah dibuat ({{
+                    assign.keyResult.initiatives?.length || 0
+                  }}):
+                </h4>
+                <ul
+                  v-if="assign.keyResult.initiatives?.length > 0"
+                  class="ini-list-items"
+                >
+                  <li
+                    v-for="ini in assign.keyResult.initiatives"
+                    :key="ini.id"
+                    class="ini-item-row"
+                  >
+                    <div class="ini-item-main">
+                      <div class="ini-info-col">
+                        <span class="ini-title">{{ ini.title }}</span>
+                        <div class="ini-sub-meta">
+                          <span class="badge-team">→ {{ ini.team?.name }}</span>
+                          <span v-if="ini.owner" class="badge-owner">{{
+                            ini.owner.name
+                          }}</span>
+                          <span
+                            class="badge"
+                            :class="getStatusClass(ini.status)"
+                            >{{ ini.status }}</span
+                          >
+                        </div>
+                      </div>
+                      <div class="ini-actions">
+                        <button
+                          class="icon-btn"
+                          @click="openReportProgressModal(ini)"
+                          title="Laporkan Progress Inisiatif"
+                          style="color: #0ea5e9; margin-right: 4px"
                         >
-                          {{ a.user?.name }}
-                        </span>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path d="M12 20h9" />
+                            <path
+                              d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          class="icon-btn"
+                          @click="startEditInitiative(ini, assign.keyResult)"
+                          title="Edit Inisiatif"
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                            />
+                            <path
+                              d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          v-if="authStore.user?.role === 'ADMIN'"
+                          class="icon-btn danger"
+                          @click="deleteInitiative(ini.id)"
+                          title="Hapus Inisiatif"
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <polyline points="3 6 5 6 21 6" />
+                            <path
+                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                            />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <div class="task-nested-meta">
-                      <span class="task-nested-progress">
-                        {{ task.currentValue }} / {{ task.targetValue }}
-                        {{ task.unit || "" }}
-                      </span>
-                      <span
-                        class="badge bg-green"
-                        v-if="task.status === 'ON_TRACK'"
-                        >{{ task.status }}</span
+
+                    <!-- Show Tasks List under Manager's Initiative -->
+                    <div
+                      v-if="ini.tasks && ini.tasks.length > 0"
+                      class="task-nested-list"
+                    >
+                      <div class="task-nested-header">
+                        Tasks (Inisiatif Leader):
+                      </div>
+                      <div
+                        v-for="task in ini.tasks"
+                        :key="task.id"
+                        class="task-nested-row"
                       >
-                      <span
-                        class="badge bg-yellow"
-                        v-else-if="task.status === 'AT_RISK'"
-                        >{{ task.status }}</span
-                      >
-                      <span class="badge bg-red" v-else>{{ task.status }}</span>
-                      <button
-                        v-if="
-                          authStore.user?.role === 'LEADER' ||
-                          authStore.user?.role === 'ADMIN'
-                        "
-                        class="icon-btn small"
-                        @click="startEditTask(task, ini, assign.keyResult)"
-                        title="Edit Task"
-                        style="padding: 2px 4px; margin-left: 4px"
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path
-                            d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                          />
-                          <path
-                            d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        v-if="authStore.user?.role === 'ADMIN'"
-                        class="icon-btn small danger"
-                        @click="deleteTask(task.id)"
-                        title="Hapus Task"
-                        style="padding: 2px 4px; margin-left: 4px"
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <polyline points="3 6 5 6 21 6" />
-                          <path
-                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                          />
-                          <line x1="10" y1="11" x2="10" y2="17" />
-                          <line x1="14" y1="11" x2="14" y2="17" />
-                        </svg>
-                      </button>
+                        <div class="task-nested-left">
+                          <div class="task-nested-title">{{ task.title }}</div>
+                          <div
+                            class="task-nested-assignees"
+                            v-if="
+                              task.assignments && task.assignments.length > 0
+                            "
+                          >
+                            <span
+                              v-for="a in task.assignments"
+                              :key="a.userId"
+                              class="task-assignee-tag"
+                            >
+                              {{ a.user?.name }}
+                            </span>
+                          </div>
+                        </div>
+                        <div class="task-nested-meta">
+                          <span class="task-nested-progress">
+                            {{ task.currentValue }} / {{ task.targetValue }}
+                            {{ task.unit || "" }}
+                          </span>
+                          <span
+                            class="badge bg-green"
+                            v-if="task.status === 'ON_TRACK'"
+                            >{{ task.status }}</span
+                          >
+                          <span
+                            class="badge bg-yellow"
+                            v-else-if="task.status === 'AT_RISK'"
+                            >{{ task.status }}</span
+                          >
+                          <span class="badge bg-red" v-else>{{
+                            task.status
+                          }}</span>
+                          <button
+                            v-if="
+                              authStore.user?.role === 'LEADER' ||
+                              authStore.user?.role === 'ADMIN'
+                            "
+                            class="icon-btn small"
+                            @click="startEditTask(task, ini, assign.keyResult)"
+                            title="Edit Task"
+                            style="padding: 2px 4px; margin-left: 4px"
+                          >
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path
+                                d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                              />
+                              <path
+                                d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            v-if="authStore.user?.role === 'ADMIN'"
+                            class="icon-btn small danger"
+                            @click="deleteTask(task.id)"
+                            title="Hapus Task"
+                            style="padding: 2px 4px; margin-left: 4px"
+                          >
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path
+                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                              />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
-            <p v-else class="text-gray text-sm">Belum ada Inisiatif</p>
-            <button
-              class="primary-btn mt-2"
-              @click="openInitiativeModal(assign.keyResult)"
-            >
-              {{
-                authStore.user?.role === "LEADER"
-                  ? "+ Buat Inisiatif Baru"
-                  : "+ Buat Inisiatif dari KR ini"
-              }}
-            </button>
+                  </li>
+                </ul>
+                <p v-else class="text-gray text-sm">Belum ada Inisiatif</p>
+                <button
+                  class="primary-btn mt-2"
+                  @click="openInitiativeModal(assign.keyResult)"
+                >
+                  {{
+                    authStore.user?.role === "LEADER"
+                      ? "+ Buat Inisiatif Baru"
+                      : "+ Buat Inisiatif dari KR ini"
+                  }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -715,15 +778,18 @@ async function saveInitiative() {
     modalError.value = "";
     try {
       // 1. Update task details
-      const res = await fetch(`${API}/tasks/${editingTask.value.id}`, {
-        method: "PUT",
-        headers: getHeaders(),
-        body: JSON.stringify({
-          title: form.value.title,
-          targetValue: form.value.targetValue || 0,
-          unit: form.value.unit || "%",
-        }),
-      });
+      const res = await fetch(
+        `${API}/initiatives/tasks/${editingTask.value.id}`,
+        {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            title: form.value.title,
+            targetValue: form.value.targetValue || 0,
+            unit: form.value.unit || "%",
+          }),
+        },
+      );
 
       if (!res.ok) {
         const err = await res.json();
@@ -794,6 +860,86 @@ async function saveInitiative() {
   } finally {
     saving.value = false;
   }
+}
+
+const DEPT_LABELS = {
+  STRATEGIC: "Strategic",
+  FINANCE: "Finance",
+  BUSINESS: "Business",
+  B2S: "B2S",
+  B2B_EXPANSION: "B2B Expansion",
+  B2B_CORPORATION: "B2B Corporate",
+  B2C: "B2C",
+  PRODUCT_SERVICE: "Product Service",
+  SERVICE_ACCOUNT: "Service Account",
+  TECHDEV: "Techdev",
+  TECHOPS: "TechOps",
+  EDUCATION: "Education",
+  SSC: "Shared Service Center",
+  DESIGN: "Design",
+  DATA: "Data",
+  HR: "HR",
+  UNASSIGNED: "General / Lainnya",
+};
+
+function getDeptLabel(deptKey) {
+  return DEPT_LABELS[deptKey] || deptKey;
+}
+
+function getGroupedAssignedKrs(assignments) {
+  const list =
+    assignments && assignments.value !== undefined
+      ? assignments.value
+      : assignments;
+  if (!list || !Array.isArray(list)) return {};
+  const groups = {};
+
+  list.forEach((assign) => {
+    if (!assign || !assign.keyResult) return;
+    const kr = assign.keyResult;
+
+    let depts = [];
+    if (kr.departments && kr.departments.length > 0) {
+      depts = kr.departments.map((d) => d.department).filter(Boolean);
+    }
+
+    if (depts.length === 0) {
+      // Fallback 1: Parse from bracket prefix in title, e.g. "[B2C] title"
+      const titleMatch =
+        kr.title && typeof kr.title === "string"
+          ? kr.title.match(/^\[(.*?)\]/)
+          : null;
+      if (titleMatch) {
+        const titleDept = titleMatch[1].trim();
+        let key = titleDept.toUpperCase().replace(/\s+/g, "_");
+        if (key === "B2B_CORPORATE") key = "B2B_CORPORATION";
+        depts = [key];
+      } else {
+        // Fallback 2: Check initiatives' team departments
+        const iniDepts = kr.initiatives
+          ?.map((ini) => ini.team?.department)
+          .filter(Boolean);
+        if (iniDepts && iniDepts.length > 0) {
+          depts = [...new Set(iniDepts)];
+        }
+      }
+    }
+
+    if (depts.length === 0) {
+      depts = ["UNASSIGNED"];
+    }
+
+    depts.forEach((dept) => {
+      if (!groups[dept]) {
+        groups[dept] = [];
+      }
+      if (!groups[dept].some((item) => item.id === assign.id)) {
+        groups[dept].push(assign);
+      }
+    });
+  });
+
+  return groups;
 }
 </script>
 
@@ -1201,5 +1347,21 @@ async function saveInitiative() {
 .icon-btn.danger:hover {
   background: #fee2e2;
   border-color: #fca5a5;
+}
+.dept-group-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 16px;
+}
+.dept-title-badge {
+  font-size: 16px;
+  font-weight: 700;
+  color: #475569;
+  background: var(--color-cyan-100, #cffafe);
+  padding: 10px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 </style>

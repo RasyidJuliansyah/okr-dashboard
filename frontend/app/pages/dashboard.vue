@@ -240,7 +240,7 @@
         class="role-section leader-krs-section"
       >
         <div class="section-title-row">
-          <h3 class="section-title">🎯 KR Saya — Konteks Strategis</h3>
+          <h3 class="section-title">KR Saya — Konteks Strategis</h3>
           <span class="count-badge-sub"
             >{{ leaderAssignedKrs.length }} Key Result</span
           >
@@ -1221,7 +1221,7 @@ function onDragEnd() {
 }
 
 const showScopeSelector = computed(() => {
-  return auth.user?.role && auth.user.role !== "EMPLOYEE";
+  return false;
 });
 
 function formatPerspective(p) {
@@ -1282,10 +1282,10 @@ async function fetchDashboardData() {
 }
 
 onMounted(() => {
-  // Default scope for C_LEVEL / ADMIN is company, for MANAGER is team, for EMPLOYEE is self
+  // Default scope based on role: ADMIN/C_LEVEL -> company, MANAGER/LEADER -> team, others -> self
   if (auth.user?.role === "ADMIN" || auth.user?.role === "C_LEVEL") {
     currentScope.value = "company";
-  } else if (auth.user?.role === "MANAGER") {
+  } else if (auth.user?.role === "MANAGER" || auth.user?.role === "LEADER") {
     currentScope.value = "team";
   } else {
     currentScope.value = "self";

@@ -200,6 +200,7 @@ export async function getManagerOverview(req: AuthRequest, res: Response) {
           where: krWhereClause,
           include: {
             assignments: { include: { user: true } },
+            departments: true,
             initiatives: {
               include: {
                 team: true,

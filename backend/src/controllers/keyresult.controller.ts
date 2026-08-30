@@ -806,3 +806,94 @@ export async function normalizeMonthlyKrWeights(
   // Rekalkulasi progress Annual Key Result setelah normalisasi
   await cascadeMonthlyKrToAnnual(annualKeyResultId);
 }
+
+// POST /api/key-results/:id/delegate
+// Body: { leaderId: string }
+export async function delegateKeyResult(req: AuthRequest, res: Response) {
+  try {
+    const { id: keyResultId } = req.params;
+    const { leaderId } = req.body;
+    const { id: userId, role } = req.user!;
+
+    if (!leaderId) {
+      return res.status(400).json({ message: "leaderId wajib diisi" });
+    }
+
+    const kr = await prisma.keyResult.findUnique({
+      where: { id: keyResultId },
+      include: { assignments: true },
+    });
+    if (!kr) {
+      return res.status(404).json({ message: "Key Result tidak ditemukan" });
+    }
+
+    const isAssigned = kr.assignments.some((a) => a.userId === userId);
+    if (role !== "ADMIN" && !isAssigned) {
+      return res.status(403).json({
+        message: "Anda tidak memiliki wewenang untuk mendelegasikan KR ini",
+      });
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: leaderId },
+    });
+    if (!targetUser) {
+      return res.status(404).json({ message: "Target Leader tidak ditemukan" });
+    }
+
+    let updatedAssignments = kr.assignments.map((a) => ({
+      userId: a.userId,
+      raciRole: a.raciRole,
+    }));
+
+    const myAssignment = updatedAssignments.find((a) => a.userId === userId);
+    if (myAssignment && myAssignment.raciRole === "RESPONSIBLE") {
+      myAssignment.raciRole = "ACCOUNTABLE";
+    }
+
+    const targetAssignment = updatedAssignments.find(
+      (a) => a.userId === leaderId,
+    );
+    if (targetAssignment) {
+      targetAssignment.raciRole = "RESPONSIBLE";
+    } else {
+      updatedAssignments.push({
+        userId: leaderId,
+        raciRole: "RESPONSIBLE",
+      });
+    }
+
+    updatedAssignments = updatedAssignments.map((a) => {
+      if (a.userId === leaderId) {
+        return { userId: a.userId, raciRole: "RESPONSIBLE" };
+      } else {
+        return { userId: a.userId, raciRole: "ACCOUNTABLE" };
+      }
+    });
+
+    await prisma.$transaction([
+      prisma.krAssignment.deleteMany({ where: { keyResultId } }),
+      prisma.krAssignment.createMany({
+        data: updatedAssignments.map((a) => ({
+          keyResultId,
+          userId: a.userId,
+          raciRole: a.raciRole,
+          assignedBy: userId,
+        })),
+      }),
+    ]);
+
+    const updated = await prisma.keyResult.findUnique({
+      where: { id: keyResultId },
+      include: { assignments: { include: { user: true } } },
+    });
+
+    return res.status(200).json({
+      message: "Berhasil mendelegasikan Key Result",
+      keyResult: updated,
+    });
+  } catch (error) {
+    console.error("Delegate Key Result error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

@@ -138,21 +138,85 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         });
       }
 
+      const leadersInDept = await prisma.user.findMany({
+        where: {
+          department: { in: deptValues },
+          role: "LEADER",
+        },
+        select: { id: true },
+      });
+      const leaderUserIds = leadersInDept.map((u) => u.id);
+
       // Approval queue: InitiativeUpdate PENDING dari team di dept ini
-      const pendingApprovals = await prisma.initiativeUpdate.findMany({
+      const pendingInitiativeApprovals = await prisma.initiativeUpdate.findMany(
+        {
+          where: {
+            status: "PENDING_APPROVAL",
+            submittedBy: { in: leaderUserIds },
+            initiative: {
+              team: { department: { in: deptValues } },
+            },
+          },
+          include: {
+            initiative: {
+              include: { team: { select: { id: true, name: true } } },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      );
+
+      // TaskUpdate PENDING dari team di dept ini
+      const pendingTaskApprovals = await prisma.taskUpdate.findMany({
         where: {
           status: "PENDING_APPROVAL",
-          initiative: {
-            team: { department: { in: deptValues } },
+          submittedBy: { in: leaderUserIds },
+          task: {
+            initiative: {
+              team: { department: { in: deptValues } },
+            },
           },
         },
         include: {
-          initiative: {
-            include: { team: { select: { id: true, name: true } } },
+          task: {
+            include: {
+              initiative: {
+                include: { team: { select: { id: true, name: true } } },
+              },
+            },
           },
         },
         orderBy: { createdAt: "desc" },
       });
+
+      const mappedPendingInitiativeApprovals = pendingInitiativeApprovals.map(
+        (u: any) => ({
+          ...u,
+          type: "INITIATIVE",
+        }),
+      );
+
+      const mappedPendingTaskApprovals = pendingTaskApprovals.map((t: any) => ({
+        id: t.id,
+        initiativeId: t.task.initiativeId,
+        initiative: {
+          id: t.task.initiativeId,
+          title: `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`,
+          team: t.task.initiative.team,
+        },
+        oldValue: t.oldValue,
+        newValue: t.newValue,
+        note: t.note,
+        link: t.link,
+        status: t.status,
+        createdAt: t.createdAt,
+        type: "TASK",
+      }));
+
+      const pendingApprovals = [
+        ...mappedPendingInitiativeApprovals,
+        ...mappedPendingTaskApprovals,
+      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
       // Hitung metrics
       let totalKRs = 0,
