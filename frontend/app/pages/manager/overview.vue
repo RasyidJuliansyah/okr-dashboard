@@ -56,64 +56,125 @@
           </div>
 
           <div class="kr-list">
-            <div v-if="obj.keyResults?.length === 0" class="empty-text">
+            <div
+              v-if="obj.keyResults?.length === 0"
+              class="empty-text"
+              style="padding: 16px 24px"
+            >
               Tidak ada Key Result.
             </div>
-            <div v-for="kr in obj.keyResults" :key="kr.id" class="kr-item">
-              <div class="kr-main">
-                <div class="kr-title-row">
-                  <span class="kr-title">{{ kr.title }}</span>
-                  <span class="badge" :class="getStatusClass(kr.status)">{{
-                    kr.status
+            <div v-else>
+              <div
+                v-for="(krs, deptKey) in getGroupedKrs(obj.keyResults)"
+                :key="deptKey"
+                class="dept-group"
+              >
+                <div class="dept-group-header">
+                  <span class="dept-title-badge">{{
+                    getDeptLabel(deptKey)
                   }}</span>
-                  <span class="text-sm"
-                    >Progress: {{ kr.currentValue }}/{{ kr.targetValue }} ({{
-                      getProgressPercent(kr).toFixed(1)
-                    }}%)</span
-                  >
                 </div>
-                <div class="progress-bar-container mt-2">
-                  <div
-                    class="progress-bar"
-                    :style="{ width: getProgressPercent(kr) + '%' }"
-                  ></div>
-                </div>
-              </div>
-
-              <!-- Initiatives under KR -->
-              <div v-if="kr.initiatives?.length > 0" class="initiatives-list">
-                <div
-                  v-for="ini in kr.initiatives"
-                  :key="ini.id"
-                  class="initiative-item"
-                >
-                  <div class="ini-header">
-                    <span class="tree-line">└─</span>
-                    <span class="ini-title">Inisiatif: {{ ini.title }}</span>
-                    <span class="team-badge">Tim: {{ ini.team?.name }}</span>
+                <div v-for="kr in krs" :key="kr.id" class="kr-item">
+                  <div class="kr-main">
+                    <div
+                      class="kr-title-row"
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                      "
+                    >
+                      <div>
+                        <span class="kr-title">{{ kr.title }}</span>
+                        <span
+                          class="badge"
+                          :class="getStatusClass(kr.status)"
+                          style="margin-left: 8px; margin-right: 8px"
+                          >{{ kr.status }}</span
+                        >
+                        <span class="text-sm"
+                          >Progress: {{ kr.currentValue }}/{{
+                            kr.targetValue
+                          }}
+                          ({{ getProgressPercent(kr).toFixed(1) }}%)</span
+                        >
+                      </div>
+                      <button
+                        class="secondary-btn small"
+                        @click="openDelegateModal(kr)"
+                        style="
+                          padding: 4px 8px;
+                          font-size: 12px;
+                          background-color: #f1f5f9;
+                          border: 1px solid #cbd5e1;
+                          border-radius: 4px;
+                          cursor: pointer;
+                        "
+                      >
+                        Delegasikan
+                      </button>
+                    </div>
                   </div>
 
-                  <!-- Tasks under Initiative -->
-                  <div v-if="ini.tasks?.length > 0" class="tasks-list">
+                  <!-- Initiatives under KR -->
+                  <div
+                    v-if="kr.initiatives?.length > 0"
+                    class="initiatives-list"
+                  >
                     <div
-                      v-for="task in ini.tasks"
-                      :key="task.id"
-                      class="task-item"
+                      v-for="ini in kr.initiatives"
+                      :key="ini.id"
+                      class="initiative-item"
                     >
-                      <span class="tree-line indent">└─</span>
-                      <span class="task-title">Task: {{ task.title }}</span>
-                      <span class="text-sm"
-                        >Target: {{ task.targetValue }} {{ task.unit }} | Saat
-                        ini: {{ task.currentValue }}</span
+                      <div class="ini-header" style="flex-wrap: wrap; gap: 4px">
+                        <span class="tree-line">└─</span>
+                        <span class="ini-title"
+                          >Inisiatif: {{ ini.title }}</span
+                        >
+                        <span class="team-badge"
+                          >Tim: {{ ini.team?.name }}</span
+                        >
+                        <span
+                          class="text-sm"
+                          style="color: #64748b; margin-left: 8px"
+                          >({{ ini.currentValue }}/{{ ini.targetValue }}
+                          {{ ini.unit || "%" }} -
+                          {{ getProgressPercent(ini).toFixed(1) }}%)</span
+                        >
+                      </div>
+                      <div
+                        class="progress-bar-container mt-1"
+                        style="margin-left: 24px; margin-bottom: 8px"
                       >
-                      <span class="text-sm text-gray">
-                        (Assignee:
-                        {{
-                          task.assignments
-                            ?.map((a) => a.user?.name)
-                            .join(", ") || "Belum ada"
-                        }})
-                      </span>
+                        <div
+                          class="progress-bar"
+                          :style="{ width: getProgressPercent(ini) + '%' }"
+                        ></div>
+                      </div>
+
+                      <!-- Tasks under Initiative -->
+                      <div v-if="ini.tasks?.length > 0" class="tasks-list">
+                        <div
+                          v-for="task in ini.tasks"
+                          :key="task.id"
+                          class="task-item"
+                        >
+                          <span class="tree-line indent">└─</span>
+                          <span class="task-title">Task: {{ task.title }}</span>
+                          <span class="text-sm"
+                            >Target: {{ task.targetValue }} {{ task.unit }} |
+                            Saat ini: {{ task.currentValue }}</span
+                          >
+                          <span class="text-sm text-gray">
+                            (Assignee:
+                            {{
+                              task.assignments
+                                ?.map((a) => a.user?.name)
+                                .join(", ") || "Belum ada"
+                            }})
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -310,6 +371,81 @@
           </div>
         </div>
       </div>
+
+      <!-- MODAL: Delegasikan KR ke Leader -->
+      <div
+        v-if="showDelegateModal"
+        class="modal-overlay"
+        @click.self="showDelegateModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Delegasikan Key Result ke Leader</h3>
+            <button class="modal-close-btn" @click="showDelegateModal = false">
+              &times;
+            </button>
+          </div>
+          <p class="mb-4">
+            Key Result: <strong>{{ selectedKrDelegate?.title }}</strong>
+          </p>
+
+          <label>Pilih Leader *</label>
+          <select
+            v-model="selectedLeaderId"
+            class="form-input"
+            style="
+              width: 100%;
+              padding: 8px;
+              margin-bottom: 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 6px;
+            "
+          >
+            <option value="">-- Pilih Leader --</option>
+            <option
+              v-for="leader in leaderList"
+              :key="leader.id"
+              :value="leader.id"
+            >
+              {{ leader.name }} ({{ leader.position || "Leader" }})
+            </option>
+          </select>
+
+          <div
+            v-if="delegateError"
+            class="alert alert-error"
+            style="color: red; margin-bottom: 12px"
+          >
+            {{ delegateError }}
+          </div>
+
+          <div
+            class="modal-actions"
+            style="display: flex; justify-content: flex-end; gap: 8px"
+          >
+            <button
+              class="secondary-btn"
+              @click="showDelegateModal = false"
+              style="padding: 8px 16px; border-radius: 6px"
+            >
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="submitDelegate"
+              :disabled="delegateSaving"
+              style="
+                padding: 8px 16px;
+                border-radius: 6px;
+                background-color: #0ea5e9;
+                color: white;
+              "
+            >
+              {{ delegateSaving ? "Mengirim..." : "Delegasikan" }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -330,6 +466,13 @@ const activeTab = ref("overview");
 const pendingCount = ref(0);
 const rejectingId = ref(null);
 const rejectNote = ref("");
+
+const showDelegateModal = ref(false);
+const selectedKrDelegate = ref(null);
+const leaderList = ref([]);
+const selectedLeaderId = ref("");
+const delegateSaving = ref(false);
+const delegateError = ref("");
 
 const annualKeyResults = ref([]);
 const annualLoading = ref(false);
@@ -500,6 +643,58 @@ async function approveUpdate(id) {
   }
 }
 
+async function fetchLeaders() {
+  try {
+    const res = await fetch(`${API}/users`, { headers: getHeaders() });
+    if (res.ok) {
+      const allUsers = await res.json();
+      leaderList.value = allUsers.filter((u) => u.role === "LEADER");
+    }
+  } catch (err) {
+    console.error("Error fetching leaders:", err);
+  }
+}
+
+function openDelegateModal(kr) {
+  selectedKrDelegate.value = kr;
+  selectedLeaderId.value = "";
+  delegateError.value = "";
+  showDelegateModal.value = true;
+  if (leaderList.value.length === 0) {
+    fetchLeaders();
+  }
+}
+
+async function submitDelegate() {
+  if (!selectedLeaderId.value) {
+    delegateError.value = "Silakan pilih Leader";
+    return;
+  }
+  delegateSaving.value = true;
+  delegateError.value = "";
+  try {
+    const res = await fetch(
+      `${API}/key-results/${selectedKrDelegate.value.id}/delegate`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ leaderId: selectedLeaderId.value }),
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message);
+    }
+    showDelegateModal.value = false;
+    await fetchOverview();
+    alert("Key Result berhasil didelegasikan!");
+  } catch (err) {
+    delegateError.value = err.message;
+  } finally {
+    delegateSaving.value = false;
+  }
+}
+
 async function confirmReject(id) {
   if (!rejectNote.value) {
     alert("Catatan wajib diisi");
@@ -536,6 +731,74 @@ function getStatusClass(status) {
   if (status === "AT_RISK") return "bg-yellow";
   if (status === "OFF_TRACK") return "bg-red";
   return "bg-gray";
+}
+
+const DEPT_LABELS = {
+  STRATEGIC: "Strategic",
+  FINANCE: "Finance",
+  BUSINESS: "Business",
+  B2S: "B2S",
+  B2B_EXPANSION: "B2B Expansion",
+  B2B_CORPORATION: "B2B Corporate",
+  B2C: "B2C",
+  PRODUCT_SERVICE: "Product Service",
+  SERVICE_ACCOUNT: "Service Account",
+  TECHDEV: "Techdev",
+  TECHOPS: "TechOps",
+  EDUCATION: "Education",
+  SSC: "Shared Service Center",
+  DESIGN: "Design",
+  DATA: "Data",
+  HR: "HR",
+  UNASSIGNED: "General / Lainnya",
+};
+
+function getDeptLabel(deptKey) {
+  return DEPT_LABELS[deptKey] || deptKey;
+}
+
+function getGroupedKrs(keyResults) {
+  if (!keyResults) return {};
+  const groups = {};
+
+  keyResults.forEach((kr) => {
+    let depts = [];
+    if (kr.departments && kr.departments.length > 0) {
+      depts = kr.departments.map((d) => d.department);
+    } else {
+      // Fallback 1: Parse from bracket prefix in title, e.g. "[B2C] title"
+      const titleMatch = kr.title.match(/^\[(.*?)\]/);
+      if (titleMatch) {
+        const titleDept = titleMatch[1].trim();
+        let key = titleDept.toUpperCase().replace(/\s+/g, "_");
+        if (key === "B2B_CORPORATE") key = "B2B_CORPORATION";
+        depts = [key];
+      } else {
+        // Fallback 2: Check initiatives' team departments
+        const iniDepts = kr.initiatives
+          ?.map((ini) => ini.team?.department)
+          .filter(Boolean);
+        if (iniDepts && iniDepts.length > 0) {
+          depts = [...new Set(iniDepts)];
+        }
+      }
+    }
+
+    if (depts.length === 0) {
+      depts = ["UNASSIGNED"];
+    }
+
+    depts.forEach((dept) => {
+      if (!groups[dept]) {
+        groups[dept] = [];
+      }
+      if (!groups[dept].some((item) => item.id === kr.id)) {
+        groups[dept].push(kr);
+      }
+    });
+  });
+
+  return groups;
 }
 </script>
 
@@ -1034,5 +1297,26 @@ function getStatusClass(status) {
 }
 .animate-width {
   transition: width 0.6s ease-in-out;
+}
+.dept-group-header {
+  background: #f8fafc;
+  padding: 12px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+}
+.dept-group:first-child .dept-group-header {
+  border-top: none;
+}
+.dept-title-badge {
+  font-size: 16px;
+  font-weight: 700;
+  color: #475569;
+  background: var(--color-cyan-100, #cffafe);
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 </style>

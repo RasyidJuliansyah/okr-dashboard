@@ -1,7 +1,11 @@
 <template>
   <header class="app-header">
     <div class="header-left">
-      <button class="hamburger-btn" @click="emit('toggle-sidebar')" aria-label="Toggle Sidebar">
+      <button
+        class="hamburger-btn"
+        @click="emit('toggle-sidebar')"
+        aria-label="Toggle Sidebar"
+      >
         <svg
           width="24"
           height="24"
@@ -21,11 +25,37 @@
     </div>
     <div class="header-right">
       <slot name="actions" />
-      <div v-if="auth.user" class="user-info">
-        <span class="user-badge" :class="roleBadgeClass">{{
-          auth.user.role?.replace("_", " ")
-        }}</span>
-        <!-- <span class="user-name">{{ auth.user.name }}</span> -->
+      <div
+        v-if="auth.user"
+        class="user-info"
+        style="
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+        "
+      >
+        <span
+          class="user-name"
+          style="
+            font-family: &quot;Rubik&quot;, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 4px;
+            color: #475569;
+            line-height: 1.2;
+            font-weight: 600;
+          "
+        >
+          Semangat Pagi! {{ auth.user.name }}
+        </span>
+        <span
+          class="user-badge"
+          :class="roleBadgeClass"
+          style="font-size: 11px; padding: 2px 8px; margin: 0; line-height: 1"
+        >
+          {{ auth.user.role?.replace("_", " ") }}
+        </span>
       </div>
     </div>
   </header>

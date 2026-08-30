@@ -10,8 +10,7 @@
           </div>
           <p class="section-desc">
             Pantau dan evaluasi capaian target 100% setiap member, dihitung dari
-            bobot (%) tiap card inisiatif yang dimiliki dikali progress card
-            tersebut.
+            rata-rata progress card inisiatif yang dimiliki.
           </p>
 
           <!-- Scope Notice Badge -->
@@ -189,15 +188,7 @@
             <div class="member-card-footer">
               <div class="task-count-label">
                 <strong>{{ m.totalAssignedTasks }}</strong> Card Inisiatif
-                <span
-                  class="total-weight-tag"
-                  :class="{ 'weight-incomplete': m.totalWeight < 99.9 }"
-                  :title="
-                    m.totalWeight < 99.9
-                      ? 'Total bobot belum mencapai 100%'
-                      : 'Total bobot lengkap 100%'
-                  "
-                >
+                <span class="total-weight-tag" style="display: none">
                   Total Bobot: {{ m.totalWeight }}%
                 </span>
               </div>
@@ -232,7 +223,6 @@
                     >
                   </div>
                   <div class="task-progress-info">
-                    <span class="task-vals">Bobot {{ ini.weight }}%</span>
                     <span
                       class="task-pct-tag"
                       :class="getAchColorClass(ini.progressPct)"

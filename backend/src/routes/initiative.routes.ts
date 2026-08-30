@@ -103,7 +103,7 @@ router.get(
 router.post(
   "/:initiativeId/tasks",
   authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER"]),
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   createTask,
 );
 
@@ -111,14 +111,14 @@ router.post(
 router.put(
   "/tasks/:id",
   authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER"]),
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   updateTask,
 );
 router.delete("/tasks/:id", authMiddleware, roleGuard(["ADMIN"]), deleteTask);
 router.post(
   "/tasks/:id/assign",
   authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER"]),
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   assignUsersToTask,
 );
 router.post(
@@ -160,7 +160,7 @@ router.patch(
 router.get(
   "/initiative-updates/pending",
   authMiddleware,
-  roleGuard(["MANAGER", "ADMIN", "C_LEVEL"]),
+  roleGuard(["MANAGER", "LEADER", "TEAM", "ADMIN", "C_LEVEL"]),
   getPendingInitiativeUpdates,
 );
 router.patch(

@@ -20,197 +20,142 @@
         class="team-initiatives-section"
       >
         <h3 class="section-title">Inisiatif Saya</h3>
-        <div class="initiative-list">
-          <div
-            v-for="ini in teamInitiatives"
-            :key="ini.id"
-            class="ini-card card"
-          >
-            <div class="ini-header">
-              <h4>{{ ini.title }}</h4>
-              <div
-                class="badge-group"
-                style="display: flex; gap: 8px; align-items: center"
-              >
-                <span
-                  class="status-badge"
-                  :class="getStatusClass(ini.status)"
-                  >{{ ini.status }}</span
-                >
-                <span
-                  class="status-badge"
-                  style="background: #cbd5e1; color: #334155"
-                  >{{ ini.kanbanStatus }}</span
-                >
-              </div>
-            </div>
-            <div class="ini-context">
-              <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
-              <p>
-                <strong>Tim:</strong> {{ ini.team?.name }}
-                <span
-                  v-if="ini.owner"
-                  class="text-sm text-gray"
-                  style="margin-left: 8px"
-                  >(PIC: <strong>{{ ini.owner.name }}</strong
-                  >)</span
-                >
-              </p>
-            </div>
 
-            <!-- Realisasi vs Target Inisiatif -->
-            <div
-              class="ini-progress-section"
-              style="margin-top: 12px; margin-bottom: 12px"
-            >
-              <div
-                class="progress-labels"
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-size: 13px;
-                  color: #475569;
-                "
-              >
-                <span
-                  >Target Inisiatif:
-                  <strong
-                    >{{ ini.targetValue }} {{ ini.unit || "%" }}</strong
-                  ></span
+        <div
+          v-for="(inis, deptKey) in getGroupedInitiatives(teamInitiatives)"
+          :key="deptKey"
+          class="dept-group mb-6"
+        >
+          <div class="dept-group-header mb-4">
+            <span class="dept-title-badge">{{ getDeptLabel(deptKey) }}</span>
+          </div>
+
+          <div class="initiative-list">
+            <div v-for="ini in inis" :key="ini.id" class="ini-card card">
+              <div class="ini-header">
+                <h4>{{ ini.title }}</h4>
+                <div
+                  class="badge-group"
+                  style="display: flex; gap: 8px; align-items: center"
                 >
-                <span
-                  >Realisasi:
-                  <strong
-                    >{{ ini.currentValue }} {{ ini.unit || "%" }}</strong
-                  ></span
-                >
+                  <span
+                    class="status-badge"
+                    :class="getStatusClass(ini.status)"
+                    >{{ ini.status }}</span
+                  >
+                  <span
+                    class="status-badge"
+                    style="background: #cbd5e1; color: #334155"
+                    >{{ ini.kanbanStatus }}</span
+                  >
+                </div>
               </div>
+              <div class="ini-context">
+                <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
+                <p>
+                  <strong>Tim:</strong> {{ ini.team?.name }}
+                  <span
+                    v-if="ini.owner"
+                    class="text-sm text-gray"
+                    style="margin-left: 8px"
+                    >(PIC: <strong>{{ ini.owner.name }}</strong
+                    >)</span
+                  >
+                </p>
+              </div>
+
+              <!-- Realisasi vs Target Inisiatif -->
               <div
-                class="progress-bar-container"
-                style="
-                  height: 8px;
-                  background: #e2e8f0;
-                  border-radius: 4px;
-                  overflow: hidden;
-                  margin-top: 4px;
-                "
+                class="ini-progress-section"
+                style="margin-top: 12px; margin-bottom: 12px"
               >
                 <div
-                  class="progress-bar"
-                  :style="{
-                    width: getProgressPercent(ini) + '%',
-                    height: '100%',
-                    background: '#0ea5e9',
-                  }"
-                ></div>
-              </div>
-            </div>
-
-            <!-- Riwayat Laporan Inisiatif -->
-            <div
-              v-if="ini.progressUpdates?.length > 0"
-              class="ini-updates"
-              style="
-                background: #f8fafc;
-                padding: 10px;
-                border-radius: 8px;
-                font-size: 12px;
-                margin-bottom: 12px;
-              "
-            >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  margin-bottom: 8px;
-                "
-              >
-                <div style="font-weight: 500; color: #475569">
-                  Riwayat Laporan ({{ ini.progressUpdates.length }})
-                </div>
-                <button
-                  v-if="
-                    ini.progressUpdates.length > 1 &&
-                    ['TEAM', 'LEADER', 'MANAGER', 'ADMIN'].includes(userRole)
+                  class="progress-labels"
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 13px;
+                    color: #475569;
                   "
-                  class="toggle-history-btn"
-                  style="margin: 0"
-                  @click="toggleIniHistory(ini.id)"
                 >
-                  {{
-                    expandedIniIds.includes(ini.id)
-                      ? "▲ Sembunyikan"
-                      : `▼ Lihat ${ini.progressUpdates.length - 1} riwayat sebelumnya`
-                  }}
-                </button>
+                  <span
+                    >Target Inisiatif:
+                    <strong
+                      >{{ ini.targetValue }} {{ ini.unit || "%" }}</strong
+                    ></span
+                  >
+                  <span
+                    >Realisasi:
+                    <strong
+                      >{{ ini.currentValue }} {{ ini.unit || "%" }}</strong
+                    ></span
+                  >
+                </div>
+                <div
+                  class="progress-bar-container"
+                  style="
+                    height: 8px;
+                    background: #e2e8f0;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    margin-top: 4px;
+                  "
+                >
+                  <div
+                    class="progress-bar"
+                    :style="{
+                      width: getProgressPercent(ini) + '%',
+                      height: '100%',
+                      background: '#0ea5e9',
+                    }"
+                  ></div>
+                </div>
               </div>
 
-              <!-- Update terbaru selalu tampil -->
+              <!-- Riwayat Laporan Inisiatif -->
               <div
-                class="history-item"
-                style="padding: 0; background: transparent"
+                v-if="ini.progressUpdates?.length > 0"
+                class="ini-updates"
+                style="
+                  background: #f8fafc;
+                  padding: 10px;
+                  border-radius: 8px;
+                  font-size: 12px;
+                  margin-bottom: 12px;
+                "
               >
                 <div
                   style="
                     display: flex;
                     justify-content: space-between;
-                    align-items: flex-start;
+                    align-items: center;
+                    margin-bottom: 8px;
                   "
                 >
-                  <div>
-                    <div class="history-timestamp">
-                      {{ formatDateTime(ini.progressUpdates[0].createdAt) }}
-                    </div>
-                    <div class="history-value">
-                      Realisasi:
-                      <strong
-                        >{{ ini.progressUpdates[0].newValue }}
-                        {{ ini.unit || "%" }}</strong
-                      >
-                      <span class="prev-value"
-                        >(dari {{ ini.progressUpdates[0].oldValue }})</span
-                      >
-                    </div>
-                    <div
-                      v-if="ini.progressUpdates[0].kanbanStatus"
-                      class="history-kanban"
-                    >
-                      Status:
-                      <span class="kanban-tag">{{
-                        ini.progressUpdates[0].kanbanStatus
-                      }}</span>
-                    </div>
+                  <div style="font-weight: 500; color: #475569">
+                    Riwayat Laporan ({{ ini.progressUpdates.length }})
                   </div>
                   <button
-                    class="toggle-history-btn"
-                    style="margin: 0; padding: 2px 6px; font-size: 11px"
-                    @click="
-                      openDetailModal(
-                        ini.title,
-                        'Inisiatif',
-                        ini.progressUpdates[0],
-                        ini.owner?.name || authStore.user?.name,
-                      )
+                    v-if="
+                      ini.progressUpdates.length > 1 &&
+                      ['TEAM', 'LEADER', 'MANAGER', 'ADMIN'].includes(userRole)
                     "
+                    class="toggle-history-btn"
+                    style="margin: 0"
+                    @click="toggleIniHistory(ini.id)"
                   >
-                    Lihat Hasil
+                    {{
+                      expandedIniIds.includes(ini.id)
+                        ? "▲ Sembunyikan"
+                        : `▼ Lihat ${ini.progressUpdates.length - 1} riwayat sebelumnya`
+                    }}
                   </button>
                 </div>
-                <div v-if="ini.progressUpdates[0].note" class="history-note">
-                  "{{ ini.progressUpdates[0].note }}"
-                </div>
-              </div>
 
-              <!-- History lainnya disembunyikan pakai toggle -->
-              <div
-                v-if="expandedIniIds.includes(ini.id)"
-                class="history-timeline"
-              >
+                <!-- Update terbaru selalu tampil -->
                 <div
-                  v-for="upd in ini.progressUpdates.slice(1)"
-                  :key="upd.id"
                   class="history-item"
+                  style="padding: 0; background: transparent"
                 >
                   <div
                     style="
@@ -221,20 +166,26 @@
                   >
                     <div>
                       <div class="history-timestamp">
-                        {{ formatDateTime(upd.createdAt) }}
+                        {{ formatDateTime(ini.progressUpdates[0].createdAt) }}
                       </div>
                       <div class="history-value">
                         Realisasi:
                         <strong
-                          >{{ upd.newValue }} {{ ini.unit || "%" }}</strong
+                          >{{ ini.progressUpdates[0].newValue }}
+                          {{ ini.unit || "%" }}</strong
                         >
                         <span class="prev-value"
-                          >(dari {{ upd.oldValue }})</span
+                          >(dari {{ ini.progressUpdates[0].oldValue }})</span
                         >
                       </div>
-                      <div v-if="upd.kanbanStatus" class="history-kanban">
+                      <div
+                        v-if="ini.progressUpdates[0].kanbanStatus"
+                        class="history-kanban"
+                      >
                         Status:
-                        <span class="kanban-tag">{{ upd.kanbanStatus }}</span>
+                        <span class="kanban-tag">{{
+                          ini.progressUpdates[0].kanbanStatus
+                        }}</span>
                       </div>
                     </div>
                     <button
@@ -244,7 +195,7 @@
                         openDetailModal(
                           ini.title,
                           'Inisiatif',
-                          upd,
+                          ini.progressUpdates[0],
                           ini.owner?.name || authStore.user?.name,
                         )
                       "
@@ -252,49 +203,109 @@
                       Lihat Hasil
                     </button>
                   </div>
-                  <div v-if="upd.note" class="history-note">
-                    "{{ upd.note }}"
+                  <div v-if="ini.progressUpdates[0].note" class="history-note">
+                    "{{ ini.progressUpdates[0].note }}"
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div v-if="ini.tasks?.length > 0" class="ini-tasks">
-              <h5>Task Terkait:</h5>
-              <div class="task-progress-list">
+                <!-- History lainnya disembunyikan pakai toggle -->
                 <div
-                  v-for="task in ini.tasks"
-                  :key="task.id"
-                  class="task-progress-item"
+                  v-if="expandedIniIds.includes(ini.id)"
+                  class="history-timeline"
                 >
-                  <div class="task-progress-header">
-                    <span class="task-title">{{ task.title }}</span>
-                    <span class="task-numbers"
-                      >{{ task.currentValue }}/{{ task.targetValue }}
-                      {{ task.unit }}</span
-                    >
-                  </div>
-                  <div class="progress-bar-container small">
+                  <div
+                    v-for="upd in ini.progressUpdates.slice(1)"
+                    :key="upd.id"
+                    class="history-item"
+                  >
                     <div
-                      class="progress-bar"
-                      :style="{ width: getProgressPercent(task) + '%' }"
-                    ></div>
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                      "
+                    >
+                      <div>
+                        <div class="history-timestamp">
+                          {{ formatDateTime(upd.createdAt) }}
+                        </div>
+                        <div class="history-value">
+                          Realisasi:
+                          <strong
+                            >{{ upd.newValue }} {{ ini.unit || "%" }}</strong
+                          >
+                          <span class="prev-value"
+                            >(dari {{ upd.oldValue }})</span
+                          >
+                        </div>
+                        <div v-if="upd.kanbanStatus" class="history-kanban">
+                          Status:
+                          <span class="kanban-tag">{{ upd.kanbanStatus }}</span>
+                        </div>
+                      </div>
+                      <button
+                        class="toggle-history-btn"
+                        style="margin: 0; padding: 2px 6px; font-size: 11px"
+                        @click="
+                          openDetailModal(
+                            ini.title,
+                            'Inisiatif',
+                            upd,
+                            ini.owner?.name || authStore.user?.name,
+                          )
+                        "
+                      >
+                        Lihat Hasil
+                      </button>
+                    </div>
+                    <div v-if="upd.note" class="history-note">
+                      "{{ upd.note }}"
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div v-else class="text-sm text-gray mt-2">
-              Belum ada Task untuk inisiatif ini.
-            </div>
 
-            <div class="card-actions" style="margin-top: 16px">
-              <button
-                class="secondary-btn full-width"
-                style="width: 100%; border: 1px dashed #0ea5e9; color: #0ea5e9"
-                @click="openIniModal(ini)"
-              >
-                Laporkan Progress Inisiatif
-              </button>
+              <div v-if="ini.tasks?.length > 0" class="ini-tasks">
+                <h5>Task Terkait:</h5>
+                <div class="task-progress-list">
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-progress-item"
+                  >
+                    <div class="task-progress-header">
+                      <span class="task-title">{{ task.title }}</span>
+                      <span class="task-numbers"
+                        >{{ task.currentValue }}/{{ task.targetValue }}
+                        {{ task.unit }}</span
+                      >
+                    </div>
+                    <div class="progress-bar-container small">
+                      <div
+                        class="progress-bar"
+                        :style="{ width: getProgressPercent(task) + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-sm text-gray mt-2">
+                Belum ada Task untuk inisiatif ini.
+              </div>
+
+              <div class="card-actions" style="margin-top: 16px">
+                <button
+                  class="secondary-btn full-width"
+                  style="
+                    width: 100%;
+                    border: 1px dashed #0ea5e9;
+                    color: #0ea5e9;
+                  "
+                  @click="openIniModal(ini)"
+                >
+                  Laporkan Progress Inisiatif
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -511,217 +522,230 @@
           <!-- Team Initiatives -->
           <div v-if="teamMembersWork.initiatives?.length > 0" class="mb-6">
             <h4 class="text-gray mb-4">Inisiatif Tim</h4>
-            <div class="initiative-list">
-              <div
-                v-for="ini in teamMembersWork.initiatives"
-                :key="'team_ini_' + ini.id"
-                class="ini-card card"
-              >
-                <div class="ini-header">
-                  <h4>{{ ini.title }}</h4>
-                  <div
-                    class="badge-group"
-                    style="display: flex; gap: 8px; align-items: center"
-                  >
-                    <span
-                      class="status-badge"
-                      :class="getStatusClass(ini.status)"
-                      >{{ ini.status }}</span
-                    >
-                    <span
-                      class="status-badge"
-                      style="background: #cbd5e1; color: #334155"
-                      >{{ ini.kanbanStatus }}</span
-                    >
-                  </div>
-                </div>
-                <div class="ini-context">
-                  <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
-                  <p><strong>PIC:</strong> {{ ini.owner?.name || "-" }}</p>
-                </div>
-
+            <div
+              v-for="(inis, deptKey) in getGroupedInitiatives(
+                teamMembersWork.initiatives,
+              )"
+              :key="deptKey"
+              class="dept-group mb-6"
+            >
+              <div class="dept-group-header mb-4">
+                <span class="dept-title-badge">{{
+                  getDeptLabel(deptKey)
+                }}</span>
+              </div>
+              <div class="initiative-list">
                 <div
-                  class="ini-progress-section"
-                  style="margin-top: 12px; margin-bottom: 12px"
+                  v-for="ini in inis"
+                  :key="'team_ini_' + ini.id"
+                  class="ini-card card"
                 >
-                  <div
-                    class="progress-labels"
-                    style="
-                      display: flex;
-                      justify-content: space-between;
-                      font-size: 13px;
-                      color: #475569;
-                    "
-                  >
-                    <span
-                      >Target:
-                      <strong
-                        >{{ ini.targetValue }} {{ ini.unit || "%" }}</strong
-                      ></span
-                    >
-                    <span
-                      >Realisasi:
-                      <strong
-                        >{{ ini.currentValue }} {{ ini.unit || "%" }}</strong
-                      ></span
-                    >
-                  </div>
-                  <div
-                    class="progress-bar-container"
-                    style="
-                      height: 8px;
-                      background: #e2e8f0;
-                      border-radius: 4px;
-                      overflow: hidden;
-                      margin-top: 4px;
-                    "
-                  >
+                  <div class="ini-header">
+                    <h4>{{ ini.title }}</h4>
                     <div
-                      class="progress-bar"
-                      :style="{
-                        width: getProgressPercent(ini) + '%',
-                        height: '100%',
-                        background: '#0ea5e9',
-                      }"
-                    ></div>
-                  </div>
-                </div>
-
-                <!-- History Inisiatif -->
-                <div
-                  class="ini-updates"
-                  style="
-                    background: #f8fafc;
-                    padding: 10px;
-                    border-radius: 8px;
-                    font-size: 12px;
-                  "
-                >
-                  <div v-if="ini.progressUpdates?.length > 0">
-                    <div
-                      class="history-item"
-                      style="padding: 0; background: transparent"
+                      class="badge-group"
+                      style="display: flex; gap: 8px; align-items: center"
                     >
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: flex-start;
-                        "
+                      <span
+                        class="status-badge"
+                        :class="getStatusClass(ini.status)"
+                        >{{ ini.status }}</span
                       >
-                        <div>
-                          <div class="history-timestamp">
-                            {{
-                              formatDateTime(ini.progressUpdates[0].createdAt)
-                            }}
-                          </div>
-                          <div class="history-value">
-                            Realisasi:
-                            <strong
-                              >{{ ini.progressUpdates[0].newValue }}
-                              {{ ini.unit || "%" }}</strong
-                            >
-                          </div>
-                          <div
-                            v-if="ini.progressUpdates[0].kanbanStatus"
-                            class="history-kanban"
-                          >
-                            Status:
-                            <span class="kanban-tag">{{
-                              ini.progressUpdates[0].kanbanStatus
-                            }}</span>
-                          </div>
-                        </div>
-                        <button
-                          class="toggle-history-btn"
-                          style="margin: 0; padding: 2px 6px; font-size: 11px"
-                          @click="
-                            openDetailModal(
-                              ini.title,
-                              'Inisiatif',
-                              ini.progressUpdates[0],
-                              ini.owner?.name,
-                            )
-                          "
-                        >
-                          Lihat Hasil
-                        </button>
-                      </div>
-                      <div
-                        v-if="ini.progressUpdates[0].note"
-                        class="history-note"
+                      <span
+                        class="status-badge"
+                        style="background: #cbd5e1; color: #334155"
+                        >{{ ini.kanbanStatus }}</span
                       >
-                        "{{ ini.progressUpdates[0].note }}"
-                      </div>
                     </div>
+                  </div>
+                  <div class="ini-context">
+                    <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
+                    <p><strong>PIC:</strong> {{ ini.owner?.name || "-" }}</p>
+                  </div>
 
-                    <div v-if="ini.progressUpdates.length > 1">
-                      <button
-                        class="toggle-history-btn"
-                        @click="toggleIniHistory('team_' + ini.id)"
+                  <div
+                    class="ini-progress-section"
+                    style="margin-top: 12px; margin-bottom: 12px"
+                  >
+                    <div
+                      class="progress-labels"
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        font-size: 13px;
+                        color: #475569;
+                      "
+                    >
+                      <span
+                        >Target:
+                        <strong
+                          >{{ ini.targetValue }} {{ ini.unit || "%" }}</strong
+                        ></span
                       >
-                        {{
-                          expandedIniIds.includes("team_" + ini.id)
-                            ? "▲ Sembunyikan"
-                            : `▼ Lihat ${ini.progressUpdates.length - 1} riwayat sebelumnya`
-                        }}
-                      </button>
+                      <span
+                        >Realisasi:
+                        <strong
+                          >{{ ini.currentValue }} {{ ini.unit || "%" }}</strong
+                        ></span
+                      >
+                    </div>
+                    <div
+                      class="progress-bar-container"
+                      style="
+                        height: 8px;
+                        background: #e2e8f0;
+                        border-radius: 4px;
+                        overflow: hidden;
+                        margin-top: 4px;
+                      "
+                    >
                       <div
-                        v-if="expandedIniIds.includes('team_' + ini.id)"
-                        class="history-timeline"
+                        class="progress-bar"
+                        :style="{
+                          width: getProgressPercent(ini) + '%',
+                          height: '100%',
+                          background: '#0ea5e9',
+                        }"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <!-- History Inisiatif -->
+                  <div
+                    class="ini-updates"
+                    style="
+                      background: #f8fafc;
+                      padding: 10px;
+                      border-radius: 8px;
+                      font-size: 12px;
+                    "
+                  >
+                    <div v-if="ini.progressUpdates?.length > 0">
+                      <div
+                        class="history-item"
+                        style="padding: 0; background: transparent"
                       >
                         <div
-                          v-for="upd in ini.progressUpdates.slice(1)"
-                          :key="upd.id"
-                          class="history-item"
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                          "
                         >
-                          <div
-                            style="
-                              display: flex;
-                              justify-content: space-between;
-                              align-items: flex-start;
+                          <div>
+                            <div class="history-timestamp">
+                              {{
+                                formatDateTime(ini.progressUpdates[0].createdAt)
+                              }}
+                            </div>
+                            <div class="history-value">
+                              Realisasi:
+                              <strong
+                                >{{ ini.progressUpdates[0].newValue }}
+                                {{ ini.unit || "%" }}</strong
+                              >
+                            </div>
+                            <div
+                              v-if="ini.progressUpdates[0].kanbanStatus"
+                              class="history-kanban"
+                            >
+                              Status:
+                              <span class="kanban-tag">{{
+                                ini.progressUpdates[0].kanbanStatus
+                              }}</span>
+                            </div>
+                          </div>
+                          <button
+                            class="toggle-history-btn"
+                            style="margin: 0; padding: 2px 6px; font-size: 11px"
+                            @click="
+                              openDetailModal(
+                                ini.title,
+                                'Inisiatif',
+                                ini.progressUpdates[0],
+                                ini.owner?.name,
+                              )
                             "
                           >
-                            <div>
-                              <div class="history-timestamp">
-                                {{ formatDateTime(upd.createdAt) }}
-                              </div>
-                              <div class="history-value">
-                                Realisasi:
-                                <strong
-                                  >{{ upd.newValue }}
-                                  {{ ini.unit || "%" }}</strong
-                                >
-                              </div>
-                            </div>
-                            <button
-                              class="toggle-history-btn"
+                            Lihat Hasil
+                          </button>
+                        </div>
+                        <div
+                          v-if="ini.progressUpdates[0].note"
+                          class="history-note"
+                        >
+                          "{{ ini.progressUpdates[0].note }}"
+                        </div>
+                      </div>
+
+                      <div v-if="ini.progressUpdates.length > 1">
+                        <button
+                          class="toggle-history-btn"
+                          @click="toggleIniHistory('team_' + ini.id)"
+                        >
+                          {{
+                            expandedIniIds.includes("team_" + ini.id)
+                              ? "▲ Sembunyikan"
+                              : `▼ Lihat ${ini.progressUpdates.length - 1} riwayat sebelumnya`
+                          }}
+                        </button>
+                        <div
+                          v-if="expandedIniIds.includes('team_' + ini.id)"
+                          class="history-timeline"
+                        >
+                          <div
+                            v-for="upd in ini.progressUpdates.slice(1)"
+                            :key="upd.id"
+                            class="history-item"
+                          >
+                            <div
                               style="
-                                margin: 0;
-                                padding: 2px 6px;
-                                font-size: 11px;
-                              "
-                              @click="
-                                openDetailModal(
-                                  ini.title,
-                                  'Inisiatif',
-                                  upd,
-                                  ini.owner?.name,
-                                )
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: flex-start;
                               "
                             >
-                              Lihat Hasil
-                            </button>
-                          </div>
-                          <div v-if="upd.note" class="history-note">
-                            "{{ upd.note }}"
+                              <div>
+                                <div class="history-timestamp">
+                                  {{ formatDateTime(upd.createdAt) }}
+                                </div>
+                                <div class="history-value">
+                                  Realisasi:
+                                  <strong
+                                    >{{ upd.newValue }}
+                                    {{ ini.unit || "%" }}</strong
+                                  >
+                                </div>
+                              </div>
+                              <button
+                                class="toggle-history-btn"
+                                style="
+                                  margin: 0;
+                                  padding: 2px 6px;
+                                  font-size: 11px;
+                                "
+                                @click="
+                                  openDetailModal(
+                                    ini.title,
+                                    'Inisiatif',
+                                    upd,
+                                    ini.owner?.name,
+                                  )
+                                "
+                              >
+                                Lihat Hasil
+                              </button>
+                            </div>
+                            <div v-if="upd.note" class="history-note">
+                              "{{ upd.note }}"
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div v-else class="text-sm text-gray">
-                    Belum ada laporan progress.
+                    <div v-else class="text-sm text-gray">
+                      Belum ada laporan progress.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1490,6 +1514,74 @@ function getUpdateStatusLabel(status) {
   };
   return labels[status] || status;
 }
+
+const DEPT_LABELS = {
+  STRATEGIC: "Strategic",
+  FINANCE: "Finance",
+  BUSINESS: "Business",
+  B2S: "B2S",
+  B2B_EXPANSION: "B2B Expansion",
+  B2B_CORPORATION: "B2B Corporate",
+  B2C: "B2C",
+  PRODUCT_SERVICE: "Product Service",
+  SERVICE_ACCOUNT: "Service Account",
+  TECHDEV: "Techdev",
+  TECHOPS: "TechOps",
+  EDUCATION: "Education",
+  SSC: "Shared Service Center",
+  DESIGN: "Design",
+  DATA: "Data",
+  HR: "HR",
+  UNASSIGNED: "General / Lainnya",
+};
+
+function getDeptLabel(deptKey) {
+  return DEPT_LABELS[deptKey] || deptKey;
+}
+
+function getGroupedInitiatives(initiatives) {
+  if (!initiatives) return {};
+  const groups = {};
+
+  initiatives.forEach((ini) => {
+    let depts = [];
+    const kr = ini.keyResult;
+    if (kr) {
+      if (kr.departments && kr.departments.length > 0) {
+        depts = kr.departments.map((d) => d.department);
+      } else {
+        // Fallback 1: Parse from bracket prefix in KR title, e.g. "[B2C] title"
+        const titleMatch = kr.title.match(/^\[(.*?)\]/);
+        if (titleMatch) {
+          const titleDept = titleMatch[1].trim();
+          let key = titleDept.toUpperCase().replace(/\s+/g, "_");
+          if (key === "B2B_CORPORATE") key = "B2B_CORPORATION";
+          depts = [key];
+        } else {
+          // Fallback 2: Check team department of the initiative itself
+          if (ini.team?.department) {
+            depts = [ini.team.department];
+          }
+        }
+      }
+    }
+
+    if (depts.length === 0) {
+      depts = ["UNASSIGNED"];
+    }
+
+    depts.forEach((dept) => {
+      if (!groups[dept]) {
+        groups[dept] = [];
+      }
+      if (!groups[dept].some((item) => item.id === ini.id)) {
+        groups[dept].push(ini);
+      }
+    });
+  });
+
+  return groups;
+}
 </script>
 
 <style scoped>
@@ -1612,6 +1704,8 @@ function getUpdateStatusLabel(status) {
   color: #94a3b8;
 }
 .update-val {
+  display: flex;
+  margin: 4px;
   font-weight: 500;
   color: #1e293b;
 }
@@ -1963,5 +2057,24 @@ function getUpdateStatusLabel(status) {
 }
 .mb-4 {
   margin-bottom: 16px;
+}
+.dept-group-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 16px;
+}
+.dept-group:first-child .dept-group-header {
+  margin-top: 0;
+}
+.dept-title-badge {
+  font-size: 16px;
+  font-weight: 700;
+  color: #475569;
+  background: var(--color-cyan-100, #cffafe);
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 </style>

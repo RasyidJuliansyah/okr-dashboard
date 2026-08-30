@@ -10,6 +10,7 @@ import {
   getMyAssignedKrs,
   getKrsForInitiativeDropdown,
   bulkDeleteKeyResults,
+  delegateKeyResult,
 } from "../controllers/keyresult.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
@@ -53,6 +54,12 @@ router.post(
   authMiddleware,
   roleGuard(["ADMIN", "MANAGER"]),
   assignUsersToKeyResult,
+);
+router.post(
+  "/:id/delegate",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER"]),
+  delegateKeyResult,
 );
 router.get("/:id/assignments", authMiddleware, getKeyResultAssignments);
 
