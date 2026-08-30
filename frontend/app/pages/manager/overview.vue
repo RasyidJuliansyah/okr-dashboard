@@ -25,7 +25,7 @@
         >
           Annual KR Progress
         </button> -->
-        <button
+        <!-- <button
           class="tab-btn"
           :class="{ active: activeTab === 'pending' }"
           @click="activeTab = 'pending'"
@@ -34,7 +34,7 @@
           <span v-if="pendingCount > 0" class="badge-count">{{
             pendingCount
           }}</span>
-        </button>
+        </button> -->
       </div>
 
       <div v-if="loading" class="alert alert-info">Memuat data...</div>
