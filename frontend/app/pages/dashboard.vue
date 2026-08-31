@@ -484,48 +484,80 @@
       <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
       <section
         v-if="userRole === 'MANAGER' && pendingApprovals.length > 0"
-        class="role-section"
+        class="role-section manager-approvals"
       >
-        <h3 class="section-title">
-          Approval Inisiatif Pending ({{ pendingApprovals.length }})
-        </h3>
-        <div
-          v-for="update in pendingApprovals"
-          :key="update.id"
-          class="approval-card card"
-        >
-          <div class="approval-info">
-            <strong>{{ update.initiative?.title }}</strong>
-            <span class="team-badge">{{ update.initiative?.team?.name }}</span>
-          </div>
-          <div class="approval-values">
-            Nilai: <del>{{ update.oldValue }}</del> →
-            <strong>{{ update.newValue }}</strong>
-          </div>
-          <div v-if="update.note" class="approval-note">
-            Catatan: {{ update.note }}
-          </div>
-          <div class="approval-actions" style="display: flex; gap: 8px">
-            <button class="approve-btn" @click="handleApprove(update.id)">
-              Approve
-            </button>
-            <button class="reject-btn" @click="openRejectModal(update)">
-              Reject
-            </button>
-            <button
-              class="secondary-btn"
-              style="padding: 6px 12px; font-size: 13px"
-              @click="
-                openDetailModal(
-                  update.initiative?.title,
-                  'Inisiatif',
-                  update,
-                  '—',
-                )
-              "
-            >
-              Lihat Hasil
-            </button>
+        <h3 class="section-title">Antrean Persetujuan (Pending Approvals)</h3>
+        <div class="pending-list">
+          <div v-for="upd in pendingApprovals" :key="upd.id" class="card mb-4">
+            <div class="kr-main">
+              <div class="kr-title-row mb-2">
+                <span class="kr-title">{{ upd.initiative?.title }}</span>
+                <span
+                  class="badge"
+                  :class="upd.type === 'TASK' ? 'bg-task' : 'bg-initiative'"
+                >
+                  {{ upd.type }}
+                </span>
+                <span class="badge bg-yellow ml-2">PENDING</span>
+              </div>
+
+              <div class="text-sm text-gray mb-4">
+                <strong>Tim Pelaksana:</strong>
+                {{ upd.initiative?.team?.name || "-" }}
+              </div>
+
+              <div class="update-details">
+                <div class="detail-box">
+                  <span class="lbl">Nilai Sebelumnya:</span>
+                  <span class="val">{{ upd.oldValue }}</span>
+                </div>
+                <div class="detail-box">
+                  <span class="lbl">Nilai Diajukan:</span>
+                  <span class="val text-blue">{{ upd.newValue }}</span>
+                </div>
+                <div v-if="upd.note" class="detail-box flex-2">
+                  <span class="lbl">Catatan:</span>
+                  <span class="val italic">"{{ upd.note }}"</span>
+                </div>
+                <div v-if="upd.link" class="detail-box">
+                  <span class="lbl">Dokumentasi:</span>
+                  <span class="val">
+                    <a
+                      :href="upd.link"
+                      target="_blank"
+                      class="text-blue hover:underline font-semibold"
+                    >
+                      Link Hasil
+                    </a>
+                  </span>
+                </div>
+              </div>
+
+              <div class="actions-row mt-4">
+                <button
+                  class="primary-btn small"
+                  @click="handleApprove(upd.id)"
+                >
+                  Approve
+                </button>
+                <button class="danger-btn small" @click="openRejectModal(upd)">
+                  Reject
+                </button>
+                <button
+                  class="secondary-btn small"
+                  @click="
+                    openDetailModal(
+                      upd.initiative?.title,
+                      upd.type === 'TASK' ? 'Task' : 'Inisiatif',
+                      upd,
+                      '—',
+                    )
+                  "
+                >
+                  Lihat Detail
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -2827,5 +2859,163 @@ async function handleReject() {
 .kr-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+/* --- Manager Approvals (matching approvals.vue) --- */
+.manager-approvals {
+  margin-top: 20px;
+}
+
+.manager-approvals .pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manager-approvals .card.mb-4 {
+  margin-bottom: 16px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e4e4e4);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.manager-approvals .kr-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.manager-approvals .kr-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-color, #1e293b);
+}
+
+.manager-approvals .badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.manager-approvals .bg-task {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.manager-approvals .bg-initiative {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.manager-approvals .bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+
+.manager-approvals .text-gray {
+  color: #64748b;
+}
+
+.manager-approvals .mb-4 {
+  margin-bottom: 16px;
+}
+
+.manager-approvals .update-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--color-field, #f8fafc) !important;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border, #e2e8f0);
+}
+
+.manager-approvals .detail-box {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.manager-approvals .detail-box.flex-2 {
+  flex: 2;
+  min-width: 250px;
+}
+
+.manager-approvals .detail-box .lbl {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.manager-approvals .detail-box .val {
+  font-size: 14px;
+  color: var(--text-color, #334155);
+  font-weight: 600;
+}
+
+.manager-approvals .text-blue {
+  color: #0e97d6 !important;
+}
+
+.manager-approvals .actions-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.manager-approvals .primary-btn.small {
+  background-color: #0e97d6;
+  color: white;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.manager-approvals .primary-btn.small:hover {
+  background-color: #0a84be;
+}
+
+.manager-approvals .danger-btn.small {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.manager-approvals .danger-btn.small:hover {
+  background-color: #dc2626;
+}
+
+.manager-approvals .secondary-btn.small {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.manager-approvals .secondary-btn.small:hover {
+  background-color: #e2e8f0;
 }
 </style>
