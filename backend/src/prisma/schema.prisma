@@ -22,6 +22,9 @@ model User {
   taskAssignments TaskAssignment[]
   managedDepartments Department[]  @relation("DepartmentManager")
   ownedInitiatives Initiative[]    @relation("InitiativeOwner")
+  assignedInitiatives Initiative[] @relation("InitiativeLeader")
+  assignedTasks       Task[]       @relation("TaskAssignedMember")
+  notifications       Notification[]
   createdAt       DateTime         @default(now())
 }
 
@@ -154,6 +157,9 @@ model Initiative {
   team          Team      @relation(fields: [teamId], references: [id])
   ownerId       String?
   owner         User?     @relation("InitiativeOwner", fields: [ownerId], references: [id])
+  assignedLeaderId String?
+  assignedLeader   User?     @relation("InitiativeLeader", fields: [assignedLeaderId], references: [id])
+  assignedBy       String?
   title         String
   description   String?
   targetValue   Float     @default(0)
@@ -165,6 +171,7 @@ model Initiative {
   weight        Float     @default(1.0)
   startDate     DateTime?
   dueDate       DateTime?
+  finishDate    DateTime?
   sprintMonth   String?   // e.g., "2026-08"
   documentationLink String?
   tasks         Task[]    // kpis Kpi[] -> tasks Task[]
@@ -173,23 +180,33 @@ model Initiative {
   updatedAt     DateTime  @updatedAt
 
   @@index([sprintMonth])
+  @@index([assignedLeaderId])
 }
 
 model Task {
-  id           String           @id @default(uuid())
-  initiativeId String
-  initiative   Initiative       @relation(fields: [initiativeId], references: [id])
-  title        String
-  targetValue  Float
-  currentValue Float            @default(0)
-  weight       Float            @default(1.0) // BARU
-  unit         String?
-  status       String           @default("ON_TRACK")
-  documentationLink String?
-  assignments  TaskAssignment[]
-  updates      TaskUpdate[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id                  String           @id @default(uuid())
+  initiativeId        String
+  initiative          Initiative       @relation(fields: [initiativeId], references: [id])
+  assignedTeamMemberId String?
+  assignedTeamMember   User?            @relation("TaskAssignedMember", fields: [assignedTeamMemberId], references: [id])
+  assignedBy           String?
+  sprintMonth          String?
+  startDate            DateTime?
+  finishDate           DateTime?
+  title               String
+  targetValue         Float
+  currentValue        Float            @default(0)
+  weight              Float            @default(1.0) // BARU
+  unit                String?
+  status              String           @default("ON_TRACK")
+  documentationLink   String?
+  assignments         TaskAssignment[]
+  updates             TaskUpdate[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([assignedTeamMemberId])
+  @@index([sprintMonth])
 }
 
 model TaskAssignment {
@@ -248,4 +265,19 @@ model InitiativeUpdate {
   createdAt    DateTime   @default(now())
 
   @@index([initiativeId, createdAt])
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  recipientId String
+  recipient   User     @relation(fields: [recipientId], references: [id])
+  type        String
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, isRead])
+  @@index([recipientId, createdAt])
 }

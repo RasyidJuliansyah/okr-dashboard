@@ -13,246 +13,179 @@
 
       <div v-if="loading" class="alert alert-info">Memuat data...</div>
       <div v-else-if="errorMsg" class="alert alert-error">{{ errorMsg }}</div>
-      <div v-else-if="krs.length === 0" class="empty-state card">
-        Tidak ada KR yang di-assign ke Anda.
-      </div>
 
-      <div v-else class="kr-list">
+      <div v-else-if="!loading && !errorMsg">
         <div
-          v-for="(assigns, deptKey) in getGroupedAssignedKrs(krs)"
-          :key="deptKey"
-          class="dept-group mb-6"
+          class="filters-container mb-4"
+          style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap"
         >
-          <div class="dept-group-header">
-            <span class="dept-title-badge">{{ getDeptLabel(deptKey) }}</span>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 16px">
-            <div
-              v-for="assign in assigns"
-              :key="assign.id"
-              class="kr-card card"
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari KR, Inisiatif, atau Task..."
+            class="form-input"
+            style="flex: 1; min-width: 200px; margin-bottom: 0"
+          />
+          <select
+            v-model="selectedGroup"
+            class="form-input"
+            style="width: auto; margin-bottom: 0"
+          >
+            <option value="">Semua Grup</option>
+            <option v-for="dept in availableGroups" :key="dept" :value="dept">
+              {{ getDeptLabel(dept) }}
+            </option>
+          </select>
+          <select
+            v-model="selectedEmployee"
+            class="form-input"
+            style="width: auto; margin-bottom: 0"
+          >
+            <option value="">Semua Pegawai</option>
+            <option
+              v-for="emp in availableEmployees"
+              :key="emp.id"
+              :value="emp.id"
             >
-              <div class="kr-header">
-                <div>
-                  <h3>{{ assign.keyResult.title }}</h3>
-                  <div class="kr-meta">
-                    <span class="badge"
-                      >Objective: {{ assign.keyResult.objective.title }}</span
-                    >
-                    <span class="badge"
-                      >BSC: {{ assign.keyResult.bscPerspective }}</span
-                    >
-                    <span
-                      class="badge"
-                      :class="getStatusClass(assign.keyResult.status)"
-                      >Status: {{ assign.keyResult.status }}</span
-                    >
-                    <span class="badge bg-blue"
-                      >RACI: {{ assign.raciRole }}</span
-                    >
-                    <button
-                      v-if="assign.raciRole === 'RESPONSIBLE'"
-                      class="secondary-btn small"
-                      @click="openReassignModal(assign.keyResult)"
-                      style="
-                        margin-left: 8px;
-                        padding: 2px 6px;
-                        font-size: 11px;
-                        background-color: #f1f5f9;
-                        border: 1px solid #cbd5e1;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        color: #475569;
-                      "
-                    >
-                      Re-assign
-                    </button>
-                  </div>
-                </div>
-                <div class="kr-progress">
-                  <div class="progress-bar-container">
-                    <div
-                      class="progress-bar"
-                      :style="{
-                        width: getProgressPercent(assign.keyResult) + '%',
-                      }"
-                    ></div>
-                  </div>
-                  <span class="progress-text"
-                    >{{ assign.keyResult.currentValue }} /
-                    {{ assign.keyResult.targetValue }}
-                    {{ assign.keyResult.unit }} ({{
-                      getProgressPercent(assign.keyResult).toFixed(1)
-                    }}%)</span
-                  >
-                </div>
-              </div>
+              {{ emp.name }}
+            </option>
+          </select>
+          <select
+            v-model="selectedSprint"
+            class="form-input"
+            style="width: auto; margin-bottom: 0"
+          >
+            <option value="">Semua Sprint</option>
+            <option
+              v-for="sprint in availableSprints"
+              :key="sprint"
+              :value="sprint"
+            >
+              {{ sprint }}
+            </option>
+          </select>
+        </div>
 
-              <div class="initiatives-section">
-                <h4>
-                  Inisiatif yang sudah dibuat ({{
-                    assign.keyResult.initiatives?.length || 0
-                  }}):
-                </h4>
-                <ul
-                  v-if="assign.keyResult.initiatives?.length > 0"
-                  class="ini-list-items"
-                >
-                  <li
-                    v-for="ini in assign.keyResult.initiatives"
-                    :key="ini.id"
-                    class="ini-item-row"
-                  >
-                    <div class="ini-item-main">
-                      <div class="ini-info-col">
-                        <span class="ini-title">{{ ini.title }}</span>
-                        <div class="ini-sub-meta">
-                          <span class="badge-team">→ {{ ini.team?.name }}</span>
-                          <span v-if="ini.owner" class="badge-owner">{{
-                            ini.owner.name
-                          }}</span>
-                          <span
-                            class="badge"
-                            :class="getStatusClass(ini.status)"
-                            >{{ ini.status }}</span
-                          >
-                        </div>
-                      </div>
-                      <div class="ini-actions">
-                        <button
-                          class="icon-btn"
-                          @click="openReportProgressModal(ini)"
-                          title="Laporkan Progress Inisiatif"
-                          style="color: #0ea5e9; margin-right: 4px"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <path d="M12 20h9" />
-                            <path
-                              d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          class="icon-btn"
-                          @click="startEditInitiative(ini, assign.keyResult)"
-                          title="Edit Inisiatif"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <path
-                              d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                            />
-                            <path
-                              d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          v-if="authStore.user?.role === 'ADMIN'"
-                          class="icon-btn danger"
-                          @click="deleteInitiative(ini.id)"
-                          title="Hapus Inisiatif"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path
-                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                            />
-                            <line x1="10" y1="11" x2="10" y2="17" />
-                            <line x1="14" y1="11" x2="14" y2="17" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
+        <div v-if="filteredKrs.length === 0" class="empty-state card">
+          Tidak ada KR yang sesuai dengan filter.
+        </div>
 
-                    <!-- Show Tasks List under Manager's Initiative -->
-                    <div
-                      v-if="ini.tasks && ini.tasks.length > 0"
-                      class="task-nested-list"
-                    >
-                      <div class="task-nested-header">
-                        Tasks (Inisiatif Leader):
-                      </div>
-                      <div
-                        v-for="task in ini.tasks"
-                        :key="task.id"
-                        class="task-nested-row"
+        <div v-else class="kr-list">
+          <div
+            v-for="(assigns, deptKey) in getGroupedAssignedKrs(filteredKrs)"
+            :key="deptKey"
+            class="dept-group mb-6"
+          >
+            <div class="dept-group-header">
+              <span class="dept-title-badge">{{ getDeptLabel(deptKey) }}</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px">
+              <div
+                v-for="assign in assigns"
+                :key="assign.id"
+                class="kr-card card"
+              >
+                <div class="kr-header">
+                  <div>
+                    <h3>{{ assign.keyResult.title }}</h3>
+                    <div class="kr-meta">
+                      <span class="badge"
+                        >Objective: {{ assign.keyResult.objective.title }}</span
                       >
-                        <div class="task-nested-left">
-                          <div class="task-nested-title">{{ task.title }}</div>
-                          <div
-                            class="task-nested-assignees"
-                            v-if="
-                              task.assignments && task.assignments.length > 0
-                            "
-                          >
-                            <span
-                              v-for="a in task.assignments"
-                              :key="a.userId"
-                              class="task-assignee-tag"
+                      <span class="badge"
+                        >BSC: {{ assign.keyResult.bscPerspective }}</span
+                      >
+                      <span
+                        class="badge"
+                        :class="getStatusClass(assign.keyResult.status)"
+                        >Status: {{ assign.keyResult.status }}</span
+                      >
+                      <span class="badge bg-blue"
+                        >RACI: {{ assign.raciRole }}</span
+                      >
+                      <button
+                        v-if="assign.raciRole === 'RESPONSIBLE'"
+                        class="secondary-btn small"
+                        @click="openReassignModal(assign.keyResult)"
+                        style="
+                          margin-left: 8px;
+                          padding: 2px 6px;
+                          font-size: 14px;
+                          background-color: #f1f5f9;
+                          border: 1px solid #cbd5e1;
+                          border-radius: 4px;
+                          cursor: pointer;
+                          color: #475569;
+                        "
+                      >
+                        Re-assign
+                      </button>
+                    </div>
+                  </div>
+                  <div class="kr-progress">
+                    <div class="progress-bar-container">
+                      <div
+                        class="progress-bar"
+                        :style="{
+                          width: getProgressPercent(assign.keyResult) + '%',
+                        }"
+                      ></div>
+                    </div>
+                    <span class="progress-text"
+                      >{{ assign.keyResult.currentValue }} /
+                      {{ assign.keyResult.targetValue }}
+                      {{ assign.keyResult.unit }} ({{
+                        getProgressPercent(assign.keyResult).toFixed(1)
+                      }}%)</span
+                    >
+                  </div>
+                </div>
+
+                <div class="initiatives-section">
+                  <h4>
+                    Inisiatif yang sudah dibuat ({{
+                      assign.keyResult.initiatives?.length || 0
+                    }}):
+                  </h4>
+                  <ul
+                    v-if="assign.keyResult.initiatives?.length > 0"
+                    class="ini-list-items"
+                  >
+                    <li
+                      v-for="ini in assign.keyResult.initiatives"
+                      :key="ini.id"
+                      class="ini-item-row"
+                    >
+                      <div class="ini-item-main">
+                        <div class="ini-info-col">
+                          <span class="ini-title">{{ ini.title }}</span>
+                          <div class="ini-sub-meta">
+                            <span class="badge-team"
+                              >→ {{ ini.team?.name }}</span
                             >
-                              {{ a.user?.name }}
+                            <span v-if="ini.owner" class="badge-owner">{{
+                              ini.owner.name
+                            }}</span>
+                            <span v-if="ini.sprintMonth" class="badge bg-blue">
+                              Sprint: {{ ini.sprintMonth }}
                             </span>
+                            <span
+                              class="badge"
+                              :class="getStatusClass(ini.status)"
+                              >{{ ini.status }}</span
+                            >
                           </div>
                         </div>
-                        <div class="task-nested-meta">
-                          <span class="task-nested-progress">
-                            {{ task.currentValue }} / {{ task.targetValue }}
-                            {{ task.unit || "" }}
-                          </span>
-                          <span
-                            class="badge bg-green"
-                            v-if="task.status === 'ON_TRACK'"
-                            >{{ task.status }}</span
-                          >
-                          <span
-                            class="badge bg-yellow"
-                            v-else-if="task.status === 'AT_RISK'"
-                            >{{ task.status }}</span
-                          >
-                          <span class="badge bg-red" v-else>{{
-                            task.status
-                          }}</span>
+                        <div class="ini-actions">
                           <button
-                            v-if="
-                              authStore.user?.role === 'LEADER' ||
-                              authStore.user?.role === 'ADMIN'
-                            "
-                            class="icon-btn small"
-                            @click="startEditTask(task, ini, assign.keyResult)"
-                            title="Edit Task"
-                            style="padding: 2px 4px; margin-left: 4px"
+                            class="icon-btn"
+                            @click="startEditInitiative(ini, assign.keyResult)"
+                            title="Edit Inisiatif"
                           >
                             <svg
-                              width="12"
-                              height="12"
+                              width="14"
+                              height="14"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -269,15 +202,22 @@
                             </svg>
                           </button>
                           <button
-                            v-if="authStore.user?.role === 'ADMIN'"
-                            class="icon-btn small danger"
-                            @click="deleteTask(task.id)"
-                            title="Hapus Task"
-                            style="padding: 2px 4px; margin-left: 4px"
+                            v-if="
+                              [
+                                'ADMIN',
+                                'C_LEVEL',
+                                'MANAGER',
+                                'LEADER',
+                                'TEAM',
+                              ].includes(authStore.user?.role)
+                            "
+                            class="icon-btn danger"
+                            @click="deleteInitiative(ini.id)"
+                            title="Hapus Inisiatif"
                           >
                             <svg
-                              width="12"
-                              height="12"
+                              width="14"
+                              height="14"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -295,20 +235,170 @@
                           </button>
                         </div>
                       </div>
-                    </div>
-                  </li>
-                </ul>
-                <p v-else class="text-gray text-sm">Belum ada Inisiatif</p>
-                <button
-                  class="primary-btn mt-2"
-                  @click="openInitiativeModal(assign.keyResult)"
-                >
-                  {{
-                    authStore.user?.role === "LEADER"
-                      ? "+ Buat Inisiatif Baru"
-                      : "+ Buat Inisiatif dari KR ini"
-                  }}
-                </button>
+
+                      <!-- Show Tasks List under Manager's Initiative -->
+                      <div
+                        v-if="ini.tasks && ini.tasks.length > 0"
+                        class="task-nested-list"
+                      >
+                        <div class="task-nested-header">
+                          <span>Tasks (Inisiatif Leader):</span>
+                          <button
+                            v-if="
+                              ['LEADER', 'MANAGER', 'ADMIN'].includes(
+                                authStore.user?.role,
+                              )
+                            "
+                            class="create-task-btn"
+                            @click="openCreateTaskModal(ini, assign.keyResult)"
+                          >
+                            + Buat Task ke Team
+                          </button>
+                        </div>
+                        <div
+                          v-for="task in ini.tasks"
+                          :key="task.id"
+                          class="task-nested-row"
+                        >
+                          <div class="task-nested-left">
+                            <div class="task-nested-title">
+                              {{ task.title }}
+                              <span
+                                v-if="task.sprintMonth"
+                                class="badge bg-blue"
+                                style="font-size: 10px; margin-left: 4px"
+                              >
+                                {{ task.sprintMonth }}
+                              </span>
+                            </div>
+                            <div
+                              class="task-nested-assignees"
+                              v-if="
+                                task.assignments && task.assignments.length > 0
+                              "
+                            >
+                              <span
+                                v-for="a in task.assignments"
+                                :key="a.userId"
+                                class="task-assignee-tag"
+                              >
+                                {{ a.user?.name }}
+                              </span>
+                            </div>
+                          </div>
+                          <div class="task-nested-meta">
+                            <span class="task-nested-progress">
+                              {{ task.currentValue }} / {{ task.targetValue }}
+                              {{ task.unit || "" }}
+                            </span>
+                            <span
+                              class="badge bg-green"
+                              v-if="task.status === 'ON_TRACK'"
+                              >{{ task.status }}</span
+                            >
+                            <span
+                              class="badge bg-yellow"
+                              v-else-if="task.status === 'AT_RISK'"
+                              >{{ task.status }}</span
+                            >
+                            <span class="badge bg-red" v-else>{{
+                              task.status
+                            }}</span>
+                            <button
+                              v-if="
+                                authStore.user?.role === 'LEADER' ||
+                                authStore.user?.role === 'ADMIN' ||
+                                authStore.user?.role === 'MANAGER'
+                              "
+                              class="icon-btn small"
+                              @click="
+                                startEditTask(task, ini, assign.keyResult)
+                              "
+                              title="Edit Task"
+                              style="padding: 2px 4px; margin-left: 4px"
+                            >
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <path
+                                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                                />
+                                <path
+                                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              v-if="
+                                [
+                                  'ADMIN',
+                                  'C_LEVEL',
+                                  'MANAGER',
+                                  'LEADER',
+                                  'TEAM',
+                                ].includes(authStore.user?.role)
+                              "
+                              class="icon-btn small danger"
+                              @click="deleteTask(task.id)"
+                              title="Hapus Task"
+                              style="padding: 2px 4px; margin-left: 4px"
+                            >
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="empty-task-row">
+                        <p class="empty-task-text">Belum ada Task turunan</p>
+                        <button
+                          v-if="
+                            ['LEADER', 'MANAGER', 'ADMIN'].includes(
+                              authStore.user?.role,
+                            )
+                          "
+                          class="create-task-btn"
+                          @click="openCreateTaskModal(ini, assign.keyResult)"
+                        >
+                          + Buat Task ke Team
+                        </button>
+                      </div>
+                    </li>
+                  </ul>
+                  <p v-else class="text-gray text-sm">Belum ada Inisiatif</p>
+                  <button
+                    class="primary-btn mt-2"
+                    @click="openInitiativeModal(assign.keyResult)"
+                  >
+                    {{
+                      authStore.user?.role === "LEADER"
+                        ? "+ Buat Inisiatif Baru"
+                        : "+ Buat Inisiatif dari KR ini"
+                    }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -325,28 +415,59 @@
           <div class="modal-header">
             <h3>
               {{
-                editingIni
-                  ? "Edit Inisiatif"
+                isCreatingTask
+                  ? "Buat Task Baru (Assign ke Team)"
                   : editingTask
                     ? "Edit Task (Inisiatif)"
-                    : "Buat Inisiatif Baru"
+                    : editingIni
+                      ? "Edit Inisiatif"
+                      : "Buat Inisiatif Baru"
               }}
             </h3>
             <button class="modal-close-btn" @click="showModal = false">
               &times;
             </button>
           </div>
-          <p class="mb-4">
-            Untuk KR: <strong>{{ selectedKr?.title }}</strong>
-          </p>
 
-          <!-- Form fields: show task fields if editing an existing task, otherwise show initiative fields -->
-          <div v-if="editingTask">
-            <label>Judul Task (Inisiatif) *</label>
+          <!-- Mode: Creating or Editing Task -->
+          <div v-if="isCreatingTask || editingTask">
+            <label>Pilih KR Utama *</label>
+            <select v-model="form.keyResultId" class="form-input">
+              <option value="">-- Pilih KR Utama --</option>
+              <option
+                v-for="assign in krs"
+                :key="assign.keyResult.id"
+                :value="assign.keyResult.id"
+              >
+                {{
+                  assign.keyResult.objective?.title
+                    ? `[${assign.keyResult.objective.title}] `
+                    : ""
+                }}{{ assign.keyResult.title }}
+              </option>
+            </select>
+
+            <label>Pilih Inisiatif Induk *</label>
+            <select v-model="form.initiativeId" class="form-input">
+              <option value="">-- Pilih Inisiatif Induk --</option>
+              <option
+                v-for="ini in availableInitiativesForTask"
+                :key="ini.id"
+                :value="ini.id"
+              >
+                {{ ini.title }}
+                {{ ini.sprintMonth ? `(Sprint: ${ini.sprintMonth})` : "" }}
+              </option>
+            </select>
+
+            <label>Bulan / Sprint Task *</label>
+            <input v-model="form.sprintMonth" type="month" class="form-input" />
+
+            <label>Judul Task *</label>
             <input
               v-model="form.title"
               class="form-input"
-              placeholder="Contoh: Membuat draft mockup"
+              placeholder="Contoh: Membuat draft mockup UI"
             />
 
             <label>Assign Pegawai (PIC Task) *</label>
@@ -369,6 +490,8 @@
               </select>
             </div>
           </div>
+
+          <!-- Mode: Creating or Editing Initiative -->
           <div v-else>
             <label>Pilih KR Utama *</label>
             <select v-model="form.keyResultId" class="form-input">
@@ -397,8 +520,11 @@
             <textarea
               v-model="form.description"
               class="form-input"
-              rows="3"
+              rows="2"
             ></textarea>
+
+            <label>Bulan / Sprint Inisiatif *</label>
+            <input v-model="form.sprintMonth" type="month" class="form-input" />
 
             <label>Pilih Tim / Departemen Anda *</label>
             <div class="searchable-field">
@@ -421,7 +547,7 @@
               </select>
             </div>
 
-            <label>PIC Pegawai (Penanggung Jawab)</label>
+            <label>PIC Pegawai / Leader (Penanggung Jawab)</label>
             <div class="searchable-field">
               <input
                 v-model="leaderUserSearch"
@@ -494,6 +620,109 @@ const userList = ref([]);
 const loading = ref(true);
 const errorMsg = ref("");
 
+const searchQuery = ref("");
+const selectedGroup = ref("");
+const selectedEmployee = ref("");
+const selectedSprint = ref("");
+
+const availableSprints = computed(() => {
+  const sprints = new Set();
+  krs.value.forEach((assign) => {
+    assign.keyResult.initiatives?.forEach((ini) => {
+      if (ini.sprintMonth) sprints.add(ini.sprintMonth);
+      ini.tasks?.forEach((t) => {
+        if (t.sprintMonth) sprints.add(t.sprintMonth);
+      });
+    });
+  });
+  return Array.from(sprints).sort().reverse();
+});
+
+const availableEmployees = computed(() => {
+  const emps = new Map();
+  krs.value.forEach((assign) => {
+    assign.keyResult.initiatives?.forEach((ini) => {
+      if (ini.owner) emps.set(ini.owner.id, ini.owner);
+      ini.tasks?.forEach((t) => {
+        t.assignments?.forEach((a) => {
+          if (a.user) emps.set(a.user.id, a.user);
+        });
+      });
+    });
+  });
+  return Array.from(emps.values()).sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const availableGroups = computed(() => {
+  const groups = new Set();
+  krs.value.forEach((assign) => {
+    const kr = assign.keyResult;
+    let depts = [];
+    if (kr.departments && kr.departments.length > 0) {
+      depts = kr.departments.map((d) => d.department).filter(Boolean);
+    }
+    if (depts.length === 0) {
+      const titleMatch = kr.title ? kr.title.match(/^\[(.*?)\]/) : null;
+      if (titleMatch) {
+        let key = titleMatch[1].trim().toUpperCase().replace(/\s+/g, "_");
+        if (key === "B2B_CORPORATE") key = "B2B_CORPORATION";
+        depts = [key];
+      } else {
+        const iniDepts = kr.initiatives
+          ?.map((ini) => ini.team?.department)
+          .filter(Boolean);
+        if (iniDepts && iniDepts.length > 0) depts = [...new Set(iniDepts)];
+      }
+    }
+    if (depts.length === 0) depts = ["UNASSIGNED"];
+    depts.forEach((d) => groups.add(d));
+  });
+  return Array.from(groups);
+});
+
+const filteredKrs = computed(() => {
+  let result = krs.value;
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter((assign) => {
+      const matchKr =
+        assign.keyResult.title?.toLowerCase().includes(q) ||
+        assign.keyResult.objective?.title?.toLowerCase().includes(q);
+      const matchIni = assign.keyResult.initiatives?.some(
+        (ini) =>
+          ini.title?.toLowerCase().includes(q) ||
+          ini.tasks?.some((t) => t.title?.toLowerCase().includes(q)),
+      );
+      return matchKr || matchIni;
+    });
+  }
+
+  if (selectedEmployee.value) {
+    result = result.filter((assign) => {
+      return assign.keyResult.initiatives?.some(
+        (ini) =>
+          ini.owner?.id === selectedEmployee.value ||
+          ini.tasks?.some((t) =>
+            t.assignments?.some((a) => a.user?.id === selectedEmployee.value),
+          ),
+      );
+    });
+  }
+
+  if (selectedSprint.value) {
+    result = result.filter((assign) => {
+      return assign.keyResult.initiatives?.some(
+        (ini) =>
+          ini.sprintMonth === selectedSprint.value ||
+          ini.tasks?.some((t) => t.sprintMonth === selectedSprint.value),
+      );
+    });
+  }
+
+  return result;
+});
+
 const leaderTeamSearch = ref("");
 const leaderUserSearch = ref("");
 
@@ -547,17 +776,58 @@ const filteredLeaderUsers = computed(() => {
 const showModal = ref(false);
 const editingIni = ref(null);
 const editingTask = ref(null);
+const isCreatingTask = ref(false);
 const saving = ref(false);
 const modalError = ref("");
 const selectedKr = ref(null);
 const selectedInitiativeId = ref("");
 const form = ref({
+  keyResultId: "",
+  initiativeId: "",
   title: "",
   description: "",
   teamId: "",
   ownerId: "",
+  sprintMonth: "",
   targetValue: 0,
+  unit: "%",
 });
+
+const availableInitiativesForTask = computed(() => {
+  const iniList = [];
+  krs.value.forEach((assign) => {
+    if (
+      !form.value.keyResultId ||
+      assign.keyResult.id === form.value.keyResultId
+    ) {
+      assign.keyResult.initiatives?.forEach((ini) => {
+        if (!iniList.some((item) => item.id === ini.id)) {
+          iniList.push(ini);
+        }
+      });
+    }
+  });
+  return iniList;
+});
+
+watch(
+  () => form.value.initiativeId,
+  (newIniId) => {
+    if (newIniId && (isCreatingTask.value || editingTask.value)) {
+      const found = availableInitiativesForTask.value.find(
+        (i) => i.id === newIniId,
+      );
+      if (found) {
+        if (found.keyResultId && form.value.keyResultId !== found.keyResultId) {
+          form.value.keyResultId = found.keyResultId;
+        }
+        if (found.sprintMonth && !form.value.sprintMonth) {
+          form.value.sprintMonth = found.sprintMonth;
+        }
+      }
+    }
+  },
+);
 
 watch(
   () => form.value.teamId,
@@ -648,8 +918,6 @@ async function fetchMyTeams() {
   }
 }
 
-// I will fix fetchMyTeams in a moment by adding /teams endpoint if missing.
-
 function getProgressPercent(kr) {
   if (!kr || !kr.targetValue) return 0;
   return Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100));
@@ -665,18 +933,43 @@ function getStatusClass(status) {
 function openInitiativeModal(kr) {
   editingIni.value = null;
   editingTask.value = null;
+  isCreatingTask.value = false;
   selectedKr.value = kr;
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
-  selectedInitiativeId.value = ""; // Reset selected initiative
+  selectedInitiativeId.value = "";
   form.value = {
     title: "",
     description: "",
     teamId: myTeams.value[0]?.id || "",
     ownerId: "",
-    targetValue: 0,
+    targetValue: 100,
     unit: "%",
     keyResultId: kr?.id || "",
+    sprintMonth: new Date().toISOString().slice(0, 7),
+  };
+  modalError.value = "";
+  showModal.value = true;
+}
+
+function openCreateTaskModal(ini, kr) {
+  editingIni.value = null;
+  editingTask.value = null;
+  isCreatingTask.value = true;
+  selectedKr.value = kr || ini.keyResult;
+  selectedInitiativeId.value = ini.id;
+  leaderTeamSearch.value = "";
+  leaderUserSearch.value = "";
+  form.value = {
+    keyResultId: kr?.id || ini.keyResultId || "",
+    initiativeId: ini.id,
+    title: "",
+    description: "",
+    teamId: ini.teamId || "",
+    ownerId: "",
+    sprintMonth: ini.sprintMonth || new Date().toISOString().slice(0, 7),
+    targetValue: 100,
+    unit: "%",
   };
   modalError.value = "";
   showModal.value = true;
@@ -685,6 +978,7 @@ function openInitiativeModal(kr) {
 function startEditInitiative(ini, kr) {
   editingIni.value = ini;
   editingTask.value = null;
+  isCreatingTask.value = false;
   selectedKr.value = kr || ini.keyResult;
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
@@ -696,6 +990,7 @@ function startEditInitiative(ini, kr) {
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "%",
     keyResultId: ini.keyResultId || kr?.id || "",
+    sprintMonth: ini.sprintMonth || "",
   };
   modalError.value = "";
   showModal.value = true;
@@ -704,15 +999,19 @@ function startEditInitiative(ini, kr) {
 function startEditTask(task, ini, kr) {
   editingIni.value = null;
   editingTask.value = task;
+  isCreatingTask.value = false;
   selectedKr.value = kr;
   selectedInitiativeId.value = ini.id;
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
   form.value = {
+    keyResultId: kr?.id || ini.keyResultId || "",
+    initiativeId: ini.id,
     title: task.title,
     description: "",
     teamId: "",
-    ownerId: task.assignments?.[0]?.userId || "",
+    ownerId: task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
+    sprintMonth: task.sprintMonth || ini.sprintMonth || "",
     targetValue: task.targetValue || 0,
     unit: task.unit || "%",
   };
@@ -765,6 +1064,51 @@ async function deleteTask(id) {
 }
 
 async function saveInitiative() {
+  if (isCreatingTask.value) {
+    if (!form.value.title || !form.value.initiativeId) {
+      modalError.value = "Judul Task dan Inisiatif Induk wajib diisi";
+      return;
+    }
+    if (!form.value.ownerId) {
+      modalError.value = "Harap pilih Pegawai untuk di-assign";
+      return;
+    }
+    saving.value = true;
+    modalError.value = "";
+    try {
+      const res = await fetch(
+        `${API}/initiatives/${form.value.initiativeId}/tasks`,
+        {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            title: form.value.title,
+            targetValue: form.value.targetValue || 0,
+            unit: form.value.unit || "%",
+            assigneeId: form.value.ownerId,
+            assignedTeamMemberId: form.value.ownerId,
+            sprintMonth: form.value.sprintMonth || undefined,
+            keyResultId: form.value.keyResultId || undefined,
+          }),
+        },
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message);
+      }
+
+      showModal.value = false;
+      isCreatingTask.value = false;
+      await fetchData();
+    } catch (e) {
+      modalError.value = e.message || "Gagal membuat task";
+    } finally {
+      saving.value = false;
+    }
+    return;
+  }
+
   if (editingTask.value) {
     if (!form.value.title) {
       modalError.value = "Judul wajib diisi";
@@ -787,6 +1131,7 @@ async function saveInitiative() {
             title: form.value.title,
             targetValue: form.value.targetValue || 0,
             unit: form.value.unit || "%",
+            sprintMonth: form.value.sprintMonth || null,
           }),
         },
       );
@@ -930,6 +1275,8 @@ function getGroupedAssignedKrs(assignments) {
     }
 
     depts.forEach((dept) => {
+      if (selectedGroup.value && dept !== selectedGroup.value) return;
+
       if (!groups[dept]) {
         groups[dept] = [];
       }
@@ -1257,6 +1604,9 @@ function getGroupedAssignedKrs(assignments) {
   gap: 6px;
 }
 .task-nested-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 12px;
   font-weight: 600;
   color: #64748b;
@@ -1267,8 +1617,8 @@ function getGroupedAssignedKrs(assignments) {
   justify-content: space-between;
   align-items: center;
   background: #ffffff;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 12px;
+  border-radius: 8px;
   border: 1px solid #f1f5f9;
 }
 .task-nested-title {
@@ -1291,7 +1641,7 @@ function getGroupedAssignedKrs(assignments) {
 .task-nested-left {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
 }
 .task-nested-assignees {
   display: flex;
@@ -1363,5 +1713,45 @@ function getGroupedAssignedKrs(assignments) {
   border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+.empty-task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+.empty-task-text {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+.create-task-btn {
+  padding: 12px 8px;
+  font-size: 12px;
+  color: #0284c7;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.create-task-btn:hover {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
+}
+.btn-task-badge {
+  padding: 3px 8px;
+  font-size: 11px;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-task-badge:hover {
+  background: #bae6fd;
 }
 </style>

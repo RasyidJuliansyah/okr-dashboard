@@ -165,13 +165,14 @@
                 v-for="ini in todoList"
                 :key="ini.id"
                 class="kanban-card"
+                :class="{
+                  'task-card-type': ini.isTaskCard,
+                  'ini-card-type': !ini.isTaskCard,
+                }"
                 :draggable="canMoveCards"
                 @dragstart="canMoveCards ? handleDragStart(ini) : null"
               >
                 <div class="card-top-meta">
-                  <span class="card-kr-badge" :title="ini.keyResult?.title">
-                    {{ ini.keyResult?.title || "Key Result" }}
-                  </span>
                   <span
                     v-if="ini.keyResult?.bscPerspective"
                     class="perspective-pill"
@@ -179,6 +180,18 @@
                   >
                     {{ ini.keyResult.bscPerspective }}
                   </span>
+                  <span class="card-kr-badge" :title="ini.keyResult?.title">
+                    {{ ini.keyResult?.title || "Key Result" }}
+                  </span>
+                </div>
+
+                <div style="margin-bottom: 12px">
+                  <span v-if="ini.isTaskCard" class="card-type-pill task"
+                    >Task Turunan</span
+                  >
+                  <span v-else class="card-type-pill initiative"
+                    >Inisiatif Leader</span
+                  >
                 </div>
 
                 <h4 class="card-title">{{ ini.title }}</h4>
@@ -188,16 +201,10 @@
 
                 <div class="card-target-row">
                   <span v-if="ini.targetValue">
-                    <span class="target-label">Target:</span>
+                    <span class="target-label">Target: </span>
                     <strong class="target-val"
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
-                  </span>
-                  <span
-                    class="weight-badge-mini"
-                    title="Bobot Inisiatif terhadap KR"
-                  >
-                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
                   </span>
                 </div>
 
@@ -219,14 +226,82 @@
                   </span>
                 </div>
 
-                <!-- Tasks summary chips -->
+                <!-- Tasks summary & Bucket list -->
                 <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                  <span class="task-count-tag">
-                    {{ ini.tasks.length }} Task ({{
-                      getCompletedTasksCount(ini)
-                    }}
-                    selesai)
-                  </span>
+                  <div
+                    v-if="expandedTaskIniIds.includes(ini.id)"
+                    class="tasks-bucket-list"
+                    style="
+                      margin-top: 8px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                    "
+                  >
+                    <div
+                      v-for="task in ini.tasks"
+                      :key="task.id"
+                      class="task-bucket-card"
+                      style="
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 6px;
+                        padding: 6px 8px;
+                        font-size: 11px;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: flex-start;
+                          gap: 4px;
+                        "
+                      >
+                        <span
+                          style="font-weight: 600; color: #1e293b; flex: 1"
+                          >{{ task.title }}</span
+                        >
+                        <span
+                          class="badge"
+                          :class="getTaskStatusClass(task.status)"
+                          style="
+                            font-size: 9px;
+                            padding: 1px 4px;
+                            border-radius: 4px;
+                          "
+                        >
+                          {{ task.status }}
+                        </span>
+                      </div>
+
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          margin-top: 4px;
+                          color: #64748b;
+                          font-size: 10px;
+                        "
+                      >
+                        <span>
+                          PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                        </span>
+                        <span>
+                          {{ task.currentValue }} / {{ task.targetValue }}
+                          {{ task.unit || "" }}
+                        </span>
+                      </div>
+
+                      <div
+                        v-if="task.sprintMonth"
+                        style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                      >
+                        Sprint: {{ task.sprintMonth }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="card-footer-meta">
@@ -315,7 +390,7 @@
                       title="Pindah ke In Progress"
                       @click="moveCard(ini.id, 'IN_PROGRESS')"
                     >
-                      Maju &rarr;
+                      Maju
                     </button>
                   </div>
                 </div>
@@ -350,6 +425,10 @@
                 v-for="ini in inProgressList"
                 :key="ini.id"
                 class="kanban-card card-in-progress"
+                :class="{
+                  'task-card-type': ini.isTaskCard,
+                  'ini-card-type': !ini.isTaskCard,
+                }"
                 :draggable="canMoveCards"
                 @dragstart="canMoveCards ? handleDragStart(ini) : null"
               >
@@ -365,7 +444,14 @@
                     {{ ini.keyResult.bscPerspective }}
                   </span>
                 </div>
-
+                <div style="margin-bottom: 12px">
+                  <span v-if="ini.isTaskCard" class="card-type-pill task"
+                    >Task Turunan</span
+                  >
+                  <span v-else class="card-type-pill initiative"
+                    >Inisiatif Leader</span
+                  >
+                </div>
                 <h4 class="card-title">{{ ini.title }}</h4>
                 <p v-if="ini.description" class="card-desc">
                   {{ ini.description }}
@@ -373,7 +459,7 @@
 
                 <div class="card-target-row">
                   <span v-if="ini.targetValue">
-                    <span class="target-label">Target:</span>
+                    <span class="target-label">Target: </span>
                     <strong class="target-val"
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
@@ -404,14 +490,109 @@
                   </span>
                 </div>
 
-                <!-- Tasks summary chips -->
+                <!-- Tasks summary & Bucket list -->
                 <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                  <span class="task-count-tag in-progress">
-                    {{ ini.tasks.length }} Task ({{
-                      getCompletedTasksCount(ini)
-                    }}/{{ ini.tasks.length }}
-                    selesai)
-                  </span>
+                  <!-- <div
+                    class="task-count-tag in-progress"
+                    @click.stop="toggleTasksExpand(ini.id)"
+                    style="
+                      cursor: pointer;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      width: 100%;
+                      font-weight: 500;
+                    "
+                    title="Klik untuk membuka/menutup daftar Task turunan"
+                  >
+                    <span>
+                      📋 {{ ini.tasks.length }} Task ({{
+                        getCompletedTasksCount(ini)
+                      }}/{{ ini.tasks.length }} selesai)
+                    </span>
+                    <span style="font-size: 10px; margin-left: 6px">
+                      {{
+                        expandedTaskIniIds.includes(ini.id)
+                          ? "▲ Hide"
+                          : "▼ Show"
+                      }}
+                    </span>
+                  </div> -->
+
+                  <!-- <div
+                    v-if="expandedTaskIniIds.includes(ini.id)"
+                    class="tasks-bucket-list"
+                    style="
+                      margin-top: 8px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                    "
+                  >
+                    <div
+                      v-for="task in ini.tasks"
+                      :key="task.id"
+                      class="task-bucket-card"
+                      style="
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 6px;
+                        padding: 6px 8px;
+                        font-size: 11px;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: flex-start;
+                          gap: 4px;
+                        "
+                      >
+                        <span
+                          style="font-weight: 600; color: #1e293b; flex: 1"
+                          >{{ task.title }}</span
+                        >
+                        <span
+                          class="badge"
+                          :class="getTaskStatusClass(task.status)"
+                          style="
+                            font-size: 9px;
+                            padding: 1px 4px;
+                            border-radius: 4px;
+                          "
+                        >
+                          {{ task.status }}
+                        </span>
+                      </div>
+
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          margin-top: 4px;
+                          color: #64748b;
+                          font-size: 10px;
+                        "
+                      >
+                        <span>
+                          PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                        </span>
+                        <span>
+                          {{ task.currentValue }} / {{ task.targetValue }}
+                          {{ task.unit || "" }}
+                        </span>
+                      </div>
+
+                      <div
+                        v-if="task.sprintMonth"
+                        style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                      >
+                        Sprint: {{ task.sprintMonth }}
+                      </div>
+                    </div>
+                  </div> -->
                 </div>
 
                 <div class="card-footer-meta">
@@ -500,14 +681,14 @@
                       title="Kembalikan ke To Do"
                       @click="moveCard(ini.id, 'TODO')"
                     >
-                      &larr; Mundur
+                      Mundur
                     </button>
                     <button
                       class="move-btn primary"
                       title="Selesaikan ke Done"
                       @click="moveCard(ini.id, 'DONE')"
                     >
-                      Selesai &rarr;
+                      Selesai
                     </button>
                   </div>
                 </div>
@@ -540,6 +721,10 @@
                 v-for="ini in doneList"
                 :key="ini.id"
                 class="kanban-card card-done"
+                :class="{
+                  'task-card-type': ini.isTaskCard,
+                  'ini-card-type': !ini.isTaskCard,
+                }"
                 :draggable="canMoveCards"
                 @dragstart="canMoveCards ? handleDragStart(ini) : null"
               >
@@ -550,6 +735,15 @@
                   <span class="completed-checkmark-badge">Selesai</span>
                 </div>
 
+                <div style="margin-bottom: 12px">
+                  <span v-if="ini.isTaskCard" class="card-type-pill task"
+                    >Task Turunan</span
+                  >
+                  <span v-else class="card-type-pill initiative"
+                    >Inisiatif Leader</span
+                  >
+                </div>
+
                 <h4 class="card-title text-done">{{ ini.title }}</h4>
                 <p v-if="ini.description" class="card-desc">
                   {{ ini.description }}
@@ -557,7 +751,7 @@
 
                 <div class="card-target-row">
                   <span v-if="ini.targetValue">
-                    <span class="target-label">Target:</span>
+                    <span class="target-label">Target: </span>
                     <strong class="target-val"
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
@@ -602,6 +796,108 @@
                       calculateAchievedPercent(ini)
                     }}%)
                   </strong>
+                </div>
+                <!-- Tasks summary & Bucket list -->
+                <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                  <div
+                    class="task-count-tag"
+                    @click.stop="toggleTasksExpand(ini.id)"
+                    style="
+                      cursor: pointer;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      width: 100%;
+                      font-weight: 500;
+                    "
+                    title="Klik untuk membuka/menutup daftar Task turunan"
+                  >
+                    <span>
+                      {{ ini.tasks.length }} Task ({{
+                        getCompletedTasksCount(ini)
+                      }}/{{ ini.tasks.length }} selesai)
+                    </span>
+                    <span style="font-size: 10px; margin-left: 6px">
+                      {{
+                        expandedTaskIniIds.includes(ini.id) ? "Hide" : "Show"
+                      }}
+                    </span>
+                  </div>
+
+                  <div
+                    v-if="expandedTaskIniIds.includes(ini.id)"
+                    class="tasks-bucket-list"
+                    style="
+                      margin-top: 8px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 6px;
+                    "
+                  >
+                    <div
+                      v-for="task in ini.tasks"
+                      :key="task.id"
+                      class="task-bucket-card"
+                      style="
+                        background: #f8fafc;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 6px;
+                        padding: 6px 8px;
+                        font-size: 11px;
+                      "
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: flex-start;
+                          gap: 4px;
+                        "
+                      >
+                        <span
+                          style="font-weight: 600; color: #1e293b; flex: 1"
+                          >{{ task.title }}</span
+                        >
+                        <span
+                          class="badge"
+                          :class="getTaskStatusClass(task.status)"
+                          style="
+                            font-size: 9px;
+                            padding: 1px 4px;
+                            border-radius: 4px;
+                          "
+                        >
+                          {{ task.status }}
+                        </span>
+                      </div>
+
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          margin-top: 4px;
+                          color: #64748b;
+                          font-size: 10px;
+                        "
+                      >
+                        <span>
+                          PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                        </span>
+                        <span>
+                          {{ task.currentValue }} / {{ task.targetValue }}
+                          {{ task.unit || "" }}
+                        </span>
+                      </div>
+
+                      <div
+                        v-if="task.sprintMonth"
+                        style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                      >
+                        Sprint: {{ task.sprintMonth }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="card-footer-meta">
@@ -682,7 +978,7 @@
                       title="Pindah ke In Progress"
                       @click="moveCard(ini.id, 'IN_PROGRESS')"
                     >
-                      &larr; Buka Kembali
+                      Buka Kembali
                     </button>
                   </div>
                 </div>
@@ -715,6 +1011,10 @@
                 v-for="ini in dropList"
                 :key="ini.id"
                 class="kanban-card card-drop"
+                :class="{
+                  'task-card-type': ini.isTaskCard,
+                  'ini-card-type': !ini.isTaskCard,
+                }"
                 :draggable="canMoveCards"
                 @dragstart="canMoveCards ? handleDragStart(ini) : null"
               >
@@ -725,6 +1025,15 @@
                   <span class="dropped-badge">Drop</span>
                 </div>
 
+                <div style="margin-bottom: 12px">
+                  <span v-if="ini.isTaskCard" class="card-type-pill task"
+                    >Task Turunan</span
+                  >
+                  <span v-else class="card-type-pill initiative"
+                    >Inisiatif Leader</span
+                  >
+                </div>
+
                 <h4 class="card-title text-drop">{{ ini.title }}</h4>
                 <p v-if="ini.description" class="card-desc">
                   {{ ini.description }}
@@ -732,7 +1041,7 @@
 
                 <div class="card-target-row">
                   <span v-if="ini.targetValue">
-                    <span class="target-label">Target:</span>
+                    <span class="target-label">Target: </span>
                     <strong class="target-val"
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
@@ -812,7 +1121,7 @@
                       title="Pindah ke To Do"
                       @click="moveCard(ini.id, 'TODO')"
                     >
-                      &larr; Aktifkan Kembali
+                      Aktifkan Kembali
                     </button>
                   </div>
                 </div>
@@ -877,7 +1186,26 @@
               </option>
             </select>
 
-            <label>PIC Pegawai (Penanggung Jawab)</label>
+            <label v-if="isManager || isAdmin"
+              >Assign ke Leader (Penanggung Jawab Level P)</label
+            >
+            <select
+              v-if="isManager || isAdmin"
+              v-model="initiativeForm.assignedLeaderId"
+              class="form-input"
+              style="margin-bottom: 12px"
+            >
+              <option value="">-- Pilih Leader (Opsional) --</option>
+              <option
+                v-for="leader in availableLeaders"
+                :key="leader.id"
+                :value="leader.id"
+              >
+                {{ leader.name }} ({{ leader.position || "Leader" }})
+              </option>
+            </select>
+
+            <label>PIC Pegawai (Penanggung Jawab Execution)</label>
             <input
               v-model="userSearch"
               type="text"
@@ -925,7 +1253,7 @@
                 />
               </div>
               <div>
-                <label>Target Tanggal Selesai</label>
+                <label>Target Tanggal Selesai (Due Date)</label>
                 <input
                   v-model="initiativeForm.dueDate"
                   type="date"
@@ -936,13 +1264,24 @@
 
             <div class="form-row-2">
               <div>
-                <label>Bulan / Sprint</label>
+                <label>Tanggal Realisasi Selesai (Finish Date)</label>
+                <input
+                  v-model="initiativeForm.finishDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Bulan / Sprint *</label>
                 <input
                   v-model="initiativeForm.sprintMonth"
                   type="month"
                   class="form-input"
                 />
               </div>
+            </div>
+
+            <div class="form-row-2">
               <div>
                 <label>Hasil Capaian Akhir (Selesai)</label>
                 <input
@@ -952,9 +1291,6 @@
                   placeholder="Opsional (Diisi jika DONE)"
                 />
               </div>
-            </div>
-
-            <div class="form-row-2">
               <div>
                 <label>Bobot Inisiatif (%) *</label>
                 <input
@@ -966,32 +1302,17 @@
                   class="form-input"
                   placeholder="Contoh: 25"
                 />
-                <p
-                  v-if="weightBudgetInfo"
-                  class="weight-hint"
-                  :class="{
-                    'weight-hint-warning': weightBudgetInfo.remaining <= 0,
-                  }"
-                >
-                  Terpakai {{ weightBudgetInfo.used.toFixed(1) }}% · Sisa
-                  {{ weightBudgetInfo.remaining.toFixed(1) }}% untuk sprint ini
-                </p>
-                <p v-else class="weight-hint">
-                  Pilih PIC Pegawai &amp; Bulan/Sprint untuk melihat sisa bobot
-                </p>
               </div>
-              <div>
-                <label>Kolom Kanban (Status)</label>
-                <select
-                  v-model="initiativeForm.kanbanStatus"
-                  class="form-input"
-                >
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Done</option>
-                  <option value="DROP">Drop</option>
-                </select>
-              </div>
+            </div>
+
+            <div>
+              <label>Kolom Kanban (Status)</label>
+              <select v-model="initiativeForm.kanbanStatus" class="form-input">
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+                <option value="DROP">Drop</option>
+              </select>
             </div>
           </div>
 
@@ -1023,7 +1344,28 @@
               v-model="taskForm.title"
               class="form-input"
               placeholder="Contoh: Selesaikan 10 unit test..."
+              style="margin-bottom: 12px"
             />
+
+            <label v-if="isLeader || isManager || isAdmin"
+              >Assign ke Anggota Tim (Team Member T)</label
+            >
+            <select
+              v-if="isLeader || isManager || isAdmin"
+              v-model="taskForm.assignedTeamMemberId"
+              class="form-input"
+              style="margin-bottom: 12px"
+            >
+              <option value="">-- Pilih Anggota Tim --</option>
+              <option
+                v-for="member in availableTeamMembers"
+                :key="member.id"
+                :value="member.id"
+              >
+                {{ member.name }} ({{ member.position || "Team Member" }})
+              </option>
+            </select>
+
             <div class="form-row-2">
               <div>
                 <label>Target Value *</label>
@@ -1039,6 +1381,36 @@
                   v-model="taskForm.unit"
                   class="form-input"
                   placeholder="%, task, doc..."
+                />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>Bulan / Sprint Task</label>
+                <input
+                  v-model="taskForm.sprintMonth"
+                  type="month"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Tanggal Mulai Task</label>
+                <input
+                  v-model="taskForm.startDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>Tanggal Selesai Task (Finish Date)</label>
+                <input
+                  v-model="taskForm.finishDate"
+                  type="date"
+                  class="form-input"
                 />
               </div>
             </div>
@@ -1066,11 +1438,16 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useAuthStore } from "~/stores/auth";
+import { useAssignment } from "~/composables/useAssignment";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
+const { fetchAvailableLeaders, fetchAvailableTeamMembers } = useAssignment();
+
+const availableLeaders = ref<any[]>([]);
+const availableTeamMembers = ref<any[]>([]);
 
 const getHeaders = () => ({
   "Content-Type": "application/json",
@@ -1118,7 +1495,7 @@ const scopeDescription = computed(() => {
   if (isLeader.value) {
     return "Menampilkan inisiatif Anda (P) dan seluruh anggota tim (T) di bawah pimpinan Anda.";
   }
-  return "Menampilkan seluruh inisiatif dalam departemen Anda. Anda hanya dapat memindahkan kartu milik Anda sendiri.";
+  return "Menampilkan seluruh inisiatif dalam departemen Anda.";
 });
 
 // ─── State ───
@@ -1130,6 +1507,7 @@ const allUsers = ref<any[]>([]);
 const searchQuery = ref("");
 const selectedTeamId = ref("");
 const selectedOwnerId = ref("");
+const selectedLeaderFilterId = ref("");
 const selectedKrId = ref("");
 const errorMessage = ref("");
 const successMessage = ref("");
@@ -1149,6 +1527,7 @@ const initiativeForm = ref({
   keyResultId: "",
   teamId: "",
   ownerId: "",
+  assignedLeaderId: "",
   targetValue: 0,
   achievedValue: null as number | null,
   unit: "",
@@ -1156,6 +1535,7 @@ const initiativeForm = ref({
   weight: 1.0,
   startDate: "",
   dueDate: "",
+  finishDate: "",
   sprintMonth: "",
 });
 
@@ -1293,7 +1673,15 @@ watch(
 // Task modal state
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
-const taskForm = ref({ title: "", targetValue: 0, unit: "" });
+const taskForm = ref({
+  title: "",
+  targetValue: 0,
+  unit: "",
+  assignedTeamMemberId: "",
+  sprintMonth: "",
+  startDate: "",
+  finishDate: "",
+});
 
 // Sprint Month filter & helper functions
 const selectedSprintMonth = ref("");
@@ -1377,9 +1765,16 @@ const filteredInitiatives = computed(() => {
     if (selectedTeamId.value && ini.teamId !== selectedTeamId.value)
       return false;
 
-    // Owner (PIC) Filter
-    if (selectedOwnerId.value && ini.ownerId !== selectedOwnerId.value)
-      return false;
+    // Owner (PIC) or Task Assignee Filter
+    if (selectedOwnerId.value) {
+      const isOwner = ini.ownerId === selectedOwnerId.value;
+      const isTaskAssignee = ini.tasks?.some(
+        (t: any) =>
+          t.assignedTeamMemberId === selectedOwnerId.value ||
+          t.assignments?.some((a: any) => a.userId === selectedOwnerId.value),
+      );
+      if (!isOwner && !isTaskAssignee) return false;
+    }
 
     // KR Filter
     if (selectedKrId.value && ini.keyResultId !== selectedKrId.value)
@@ -1423,6 +1818,34 @@ const dropList = computed(() => {
 function getCompletedTasksCount(ini: any) {
   if (!ini.tasks) return 0;
   return ini.tasks.filter((k: any) => k.currentValue >= k.targetValue).length;
+}
+
+const expandedTaskIniIds = ref<string[]>([]);
+
+function toggleTasksExpand(iniId: string) {
+  const idx = expandedTaskIniIds.value.indexOf(iniId);
+  if (idx === -1) {
+    expandedTaskIniIds.value.push(iniId);
+  } else {
+    expandedTaskIniIds.value.splice(idx, 1);
+  }
+}
+
+function getTaskAssigneeName(task: any): string {
+  if (task.assignedTeamMember?.name) return task.assignedTeamMember.name;
+  if (task.assignments && task.assignments.length > 0) {
+    return task.assignments
+      .map((a: any) => a.user?.name)
+      .filter(Boolean)
+      .join(", ");
+  }
+  return "Belum di-assign";
+}
+
+function getTaskStatusClass(status: string) {
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  return "bg-red";
 }
 
 // ─── Drag & Drop Handlers ───
@@ -1595,6 +2018,7 @@ function openAddInitiativeModal() {
       ? auth.user?.teamId || availableTeams.value[0]?.id || ""
       : selectedTeamId.value || "",
     ownerId: isTeam.value ? auth.user?.id || "" : "",
+    assignedLeaderId: "",
     targetValue: 0,
     achievedValue: null,
     unit: "",
@@ -1602,6 +2026,7 @@ function openAddInitiativeModal() {
     weight: 1.0,
     startDate: "",
     dueDate: "",
+    finishDate: "",
     sprintMonth: defaultSprint,
   };
   errorMessage.value = "";
@@ -1618,6 +2043,7 @@ function openEditInitiativeModal(ini: any) {
     keyResultId: ini.keyResultId || "",
     teamId: ini.teamId || "",
     ownerId: ini.ownerId || "",
+    assignedLeaderId: ini.assignedLeaderId || "",
     targetValue: ini.targetValue || 0,
     achievedValue:
       ini.achievedValue !== undefined && ini.achievedValue !== null
@@ -1631,6 +2057,9 @@ function openEditInitiativeModal(ini: any) {
       : "",
     dueDate: ini.dueDate
       ? new Date(ini.dueDate).toISOString().substring(0, 10)
+      : "",
+    finishDate: ini.finishDate
+      ? new Date(ini.finishDate).toISOString().substring(0, 10)
       : "",
     sprintMonth: ini.sprintMonth || "",
   };
@@ -1733,7 +2162,15 @@ async function deleteInitiative(id: string) {
 
 function openAddTaskModal(ini: any) {
   selectedInitiativeForTask.value = ini;
-  taskForm.value = { title: "", targetValue: 0, unit: "" };
+  taskForm.value = {
+    title: "",
+    targetValue: 0,
+    unit: "",
+    assignedTeamMemberId: "",
+    sprintMonth: ini.sprintMonth || "",
+    startDate: "",
+    finishDate: "",
+  };
   showTaskModal.value = true;
 }
 
@@ -1785,6 +2222,16 @@ onMounted(async () => {
     fetchAllUsers(),
     fetchMemberProgress(),
   ]);
+  if (isManager.value || isAdmin.value) {
+    availableLeaders.value = await fetchAvailableLeaders(
+      (auth.user as any)?.department,
+    );
+  }
+  if (isLeader.value || isManager.value || isAdmin.value) {
+    availableTeamMembers.value = await fetchAvailableTeamMembers(
+      (auth.user as any)?.department,
+    );
+  }
 });
 </script>
 
@@ -2311,6 +2758,7 @@ onMounted(async () => {
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px dashed var(--border-color, #e2e8f0);
+  gap: 12px;
 }
 
 .left-actions,
@@ -2742,5 +3190,39 @@ onMounted(async () => {
 .achieved-val {
   color: #047857;
   font-weight: 800;
+}
+
+/* Card Type Differentiation Styles */
+.kanban-card.task-card-type {
+  background: #f0f9ff !important;
+  border-left: 4px solid #0284c7 !important;
+  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.12);
+}
+
+.kanban-card.ini-card-type {
+  background: #ffffff;
+  border-left: 4px solid #3b82f6;
+}
+
+.card-type-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.card-type-pill.task {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.card-type-pill.initiative {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 </style>

@@ -10,19 +10,150 @@
         </div>
       </div>
 
+      <!-- Filter Bar for Search, Department, PIC, and Sprint -->
+      <div
+        class="filters-bar card mb-6"
+        style="
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+          padding: 12px 16px;
+          margin-top: 24px;
+        "
+      >
+        <!-- Search Input -->
+        <div class="filter-item" style="flex: 1; min-width: 220px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+            >Search Task / Inisiatif</label
+          >
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="form-input"
+            placeholder="Cari judul task, inisiatif, atau KR..."
+            style="width: 100%; font-size: 13px"
+          />
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-item" style="min-width: 170px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+            >Departemen</label
+          >
+          <select
+            v-model="selectedDepartment"
+            class="form-input"
+            style="width: 100%; font-size: 13px"
+          >
+            <option value="">Semua Departemen</option>
+            <option v-for="dept in departmentsList" :key="dept" :value="dept">
+              {{ getDeptLabel(dept) }}
+            </option>
+          </select>
+        </div>
+
+        <!-- PIC / Employee Filter -->
+        <div class="filter-item" style="min-width: 170px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+            >PIC / Pegawai</label
+          >
+          <select
+            v-model="selectedEmployeeId"
+            class="form-input"
+            style="width: 100%; font-size: 13px"
+          >
+            <option value="">Semua PIC</option>
+            <option v-for="emp in employeesList" :key="emp.id" :value="emp.id">
+              {{ emp.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Sprint Month Filter -->
+        <div class="filter-item" style="min-width: 150px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+          >
+            Periode Sprint</label
+          >
+          <input
+            v-model="selectedSprintMonth"
+            type="month"
+            class="form-input"
+            style="width: 100%; font-size: 13px"
+          />
+        </div>
+
+        <!-- Reset Button -->
+        <div
+          class="filter-item"
+          v-if="
+            searchQuery ||
+            selectedDepartment ||
+            selectedEmployeeId ||
+            selectedSprintMonth
+          "
+          style="align-self: flex-end"
+        >
+          <button
+            class="secondary-btn small"
+            @click="resetFilters"
+            style="
+              font-size: 12px;
+              padding: 6px 12px;
+              margin-bottom: 16px;
+              height: 36px;
+              min-width: 100px;
+            "
+          >
+            Reset Filter
+          </button>
+        </div>
+      </div>
+
       <div v-if="loading" class="alert alert-info">Memuat data...</div>
       <div v-else-if="errorMsg" class="alert alert-error">{{ errorMsg }}</div>
       <div v-if="successMsg" class="alert alert-success">{{ successMsg }}</div>
 
       <!-- Inisiatif Tim Section -->
       <div
-        v-if="!loading && teamInitiatives.length > 0"
+        v-if="!loading && filteredTeamInitiatives.length > 0"
         class="team-initiatives-section"
       >
         <h3 class="section-title">Inisiatif Saya</h3>
 
         <div
-          v-for="(inis, deptKey) in getGroupedInitiatives(teamInitiatives)"
+          v-for="(inis, deptKey) in getGroupedInitiatives(
+            filteredTeamInitiatives,
+          )"
           :key="deptKey"
           class="dept-group mb-6"
         >
@@ -313,7 +444,7 @@
 
       <h3 class="section-title mt-6">Task Yang Di-Assign Ke Saya</h3>
       <div
-        v-if="!loading && taskAssignments.length === 0"
+        v-if="!loading && filteredTaskAssignments.length === 0"
         class="empty-state card"
       >
         Belum ada Task yang di-assign ke Anda.
@@ -321,7 +452,7 @@
 
       <div class="task-grid">
         <div
-          v-for="assign in taskAssignments"
+          v-for="assign in filteredTaskAssignments"
           :key="assign.id"
           class="task-card card"
         >
@@ -510,21 +641,22 @@
 
         <div
           v-if="
-            (teamMembersWork.taskAssignments?.length || 0) === 0 &&
-            (teamMembersWork.initiatives?.length || 0) === 0
+            filteredTeamMembersTasks.length === 0 &&
+            filteredTeamMembersInitiatives.length === 0
           "
           class="empty-state card mt-4"
         >
-          Belum ada inisiatif atau Task yang dikerjakan oleh anggota tim Anda.
+          Belum ada inisiatif atau Task yang dikerjakan oleh anggota tim Anda
+          (atau tidak cocok dengan filter).
         </div>
 
         <div v-else>
           <!-- Team Initiatives -->
-          <div v-if="teamMembersWork.initiatives?.length > 0" class="mb-6">
+          <div v-if="filteredTeamMembersInitiatives.length > 0" class="mb-6">
             <h4 class="text-gray mb-4">Inisiatif Tim</h4>
             <div
               v-for="(inis, deptKey) in getGroupedInitiatives(
-                teamMembersWork.initiatives,
+                filteredTeamMembersInitiatives,
               )"
               :key="deptKey"
               class="dept-group mb-6"
@@ -753,11 +885,11 @@
           </div>
 
           <!-- Team Tasks -->
-          <div v-if="teamMembersWork.taskAssignments?.length > 0">
+          <div v-if="filteredTeamMembersTasks.length > 0">
             <h4 class="text-gray mb-4">Task Tim</h4>
             <div class="task-grid">
               <div
-                v-for="assign in teamMembersWork.taskAssignments"
+                v-for="assign in filteredTeamMembersTasks"
                 :key="'team_task_' + assign.id"
                 class="task-card card"
               >
@@ -1324,6 +1456,229 @@ function getHeaders() {
   };
 }
 
+// Filter State
+const searchQuery = ref("");
+const selectedDepartment = ref("");
+const selectedEmployeeId = ref("");
+const selectedSprintMonth = ref("");
+
+const allUsers = ref([]);
+
+async function fetchAllUsers() {
+  try {
+    const res = await fetch(`${API}/users`, { headers: getHeaders() });
+    if (res.ok) allUsers.value = await res.json();
+  } catch (err) {}
+}
+
+const departmentsList = computed(() => {
+  const depts = new Set();
+  allUsers.value.forEach((u) => {
+    if (u.department) depts.add(u.department);
+  });
+  teamInitiatives.value.forEach((i) => {
+    if (i.team?.department) depts.add(i.team.department);
+  });
+  if (teamMembersWork.value.initiatives) {
+    teamMembersWork.value.initiatives.forEach((i) => {
+      if (i.team?.department) depts.add(i.team.department);
+    });
+  }
+  return Array.from(depts).sort();
+});
+
+const employeesList = computed(() => {
+  if (!selectedDepartment.value) return allUsers.value;
+  return allUsers.value.filter(
+    (u) => u.department === selectedDepartment.value,
+  );
+});
+
+function resetFilters() {
+  searchQuery.value = "";
+  selectedDepartment.value = "";
+  selectedEmployeeId.value = "";
+  selectedSprintMonth.value = "";
+}
+
+const filteredTeamInitiatives = computed(() => {
+  return teamInitiatives.value.filter((ini) => {
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = ini.title?.toLowerCase().includes(q);
+      const matchDesc = ini.description?.toLowerCase().includes(q);
+      const matchKr = ini.keyResult?.title?.toLowerCase().includes(q);
+      const matchOwner = ini.owner?.name?.toLowerCase().includes(q);
+      const matchTask = ini.tasks?.some((t) =>
+        t.title?.toLowerCase().includes(q),
+      );
+      if (!matchTitle && !matchDesc && !matchKr && !matchOwner && !matchTask)
+        return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        ini.team?.department === selectedDepartment.value ||
+        ini.owner?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const isOwner = ini.ownerId === selectedEmployeeId.value;
+      const isAssignedLeader =
+        ini.assignedLeaderId === selectedEmployeeId.value;
+      const isTaskAssignee = ini.tasks?.some(
+        (t) =>
+          t.assignedTeamMemberId === selectedEmployeeId.value ||
+          t.assignments?.some((a) => a.userId === selectedEmployeeId.value),
+      );
+      if (!isOwner && !isAssignedLeader && !isTaskAssignee) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchIniSprint = ini.sprintMonth === selectedSprintMonth.value;
+      const matchTaskSprint = ini.tasks?.some(
+        (t) => t.sprintMonth === selectedSprintMonth.value,
+      );
+      if (!matchIniSprint && !matchTaskSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+const filteredTaskAssignments = computed(() => {
+  return taskAssignments.value.filter((assign) => {
+    const task = assign.task || assign;
+    if (!task) return false;
+
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = task.title?.toLowerCase().includes(q);
+      const matchIni = task.initiative?.title?.toLowerCase().includes(q);
+      const matchKr = task.initiative?.keyResult?.title
+        ?.toLowerCase()
+        .includes(q);
+      if (!matchTitle && !matchIni && !matchKr) return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        task.initiative?.team?.department === selectedDepartment.value ||
+        assign.user?.department === selectedDepartment.value ||
+        task.assignedTeamMember?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const matchUser =
+        assign.userId === selectedEmployeeId.value ||
+        task.assignedTeamMemberId === selectedEmployeeId.value ||
+        task.assignments?.some((a) => a.userId === selectedEmployeeId.value);
+      if (!matchUser) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchTaskSprint = task.sprintMonth === selectedSprintMonth.value;
+      const matchIniSprint =
+        task.initiative?.sprintMonth === selectedSprintMonth.value;
+      if (!matchTaskSprint && !matchIniSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+const filteredTeamMembersInitiatives = computed(() => {
+  if (!teamMembersWork.value.initiatives) return [];
+  return teamMembersWork.value.initiatives.filter((ini) => {
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = ini.title?.toLowerCase().includes(q);
+      const matchDesc = ini.description?.toLowerCase().includes(q);
+      const matchKr = ini.keyResult?.title?.toLowerCase().includes(q);
+      const matchOwner = ini.owner?.name?.toLowerCase().includes(q);
+      const matchTask = ini.tasks?.some((t) =>
+        t.title?.toLowerCase().includes(q),
+      );
+      if (!matchTitle && !matchDesc && !matchKr && !matchOwner && !matchTask)
+        return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        ini.team?.department === selectedDepartment.value ||
+        ini.owner?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const isOwner = ini.ownerId === selectedEmployeeId.value;
+      const isAssignedLeader =
+        ini.assignedLeaderId === selectedEmployeeId.value;
+      const isTaskAssignee = ini.tasks?.some(
+        (t) =>
+          t.assignedTeamMemberId === selectedEmployeeId.value ||
+          t.assignments?.some((a) => a.userId === selectedEmployeeId.value),
+      );
+      if (!isOwner && !isAssignedLeader && !isTaskAssignee) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchIniSprint = ini.sprintMonth === selectedSprintMonth.value;
+      const matchTaskSprint = ini.tasks?.some(
+        (t) => t.sprintMonth === selectedSprintMonth.value,
+      );
+      if (!matchIniSprint && !matchTaskSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+const filteredTeamMembersTasks = computed(() => {
+  if (!teamMembersWork.value.taskAssignments) return [];
+  return teamMembersWork.value.taskAssignments.filter((assign) => {
+    const task = assign.task || assign;
+    if (!task) return false;
+
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = task.title?.toLowerCase().includes(q);
+      const matchIni = task.initiative?.title?.toLowerCase().includes(q);
+      const matchKr = task.initiative?.keyResult?.title
+        ?.toLowerCase()
+        .includes(q);
+      if (!matchTitle && !matchIni && !matchKr) return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        task.initiative?.team?.department === selectedDepartment.value ||
+        assign.user?.department === selectedDepartment.value ||
+        task.assignedTeamMember?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const matchUser =
+        assign.userId === selectedEmployeeId.value ||
+        task.assignedTeamMemberId === selectedEmployeeId.value ||
+        task.assignments?.some((a) => a.userId === selectedEmployeeId.value);
+      if (!matchUser) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchTaskSprint = task.sprintMonth === selectedSprintMonth.value;
+      const matchIniSprint =
+        task.initiative?.sprintMonth === selectedSprintMonth.value;
+      if (!matchTaskSprint && !matchIniSprint) return false;
+    }
+
+    return true;
+  });
+});
+
 onMounted(async () => {
   if (
     !authStore.isAuthenticated ||
@@ -1332,7 +1687,7 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  await fetchMyWork();
+  await Promise.all([fetchMyWork(), fetchAllUsers()]);
 });
 
 const teamMembersWork = ref({ taskAssignments: [], initiatives: [] });
