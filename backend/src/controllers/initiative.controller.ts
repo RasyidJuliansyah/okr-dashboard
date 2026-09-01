@@ -698,7 +698,10 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         let taskKanbanStatus = "TODO";
         if (t.status === "DROP" || t.status === "OFF_TRACK") {
           taskKanbanStatus = "DROP";
-        } else if (t.targetValue > 0 && t.currentValue >= t.targetValue) {
+        } else if (
+          t.status === "DONE" ||
+          (t.targetValue > 0 && t.currentValue >= t.targetValue)
+        ) {
           taskKanbanStatus = "DONE";
         } else if (t.currentValue > 0) {
           taskKanbanStatus = "IN_PROGRESS";
@@ -962,19 +965,9 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
     if (!existing)
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
 
-    // TEAM hanya bisa edit inisiatif miliknya sendiri
-    if (role === "TEAM" && existing.ownerId !== userId) {
-      return res
-        .status(403)
-        .json({ message: "Anda hanya bisa mengedit inisiatif milik sendiri" });
-    }
-
+    // Non-restricted initiative editing
     const effectiveOwnerId =
-      role === "TEAM"
-        ? existing.ownerId
-        : ownerId !== undefined
-          ? ownerId || null
-          : existing.ownerId;
+      ownerId !== undefined ? ownerId || null : existing.ownerId;
     const effectiveSprintMonth =
       sprintMonth !== undefined ? sprintMonth || null : existing.sprintMonth;
     const effectiveWeight =
@@ -1171,7 +1164,7 @@ export async function updateInitiativeKanbanStatus(
             : task.targetValue > 0
               ? task.targetValue
               : 1;
-        newStatus = "ON_TRACK";
+        newStatus = "DONE";
       } else if (kanbanStatus === "TODO") {
         newCurrentValue = 0;
         newStatus = "ON_TRACK";
@@ -1202,6 +1195,21 @@ export async function updateInitiativeKanbanStatus(
 
       // Auto-cascade Task → Initiative → KR
       await cascadeTaskValueUpdate(taskId, task.initiativeId);
+
+      // Send notification to leader if moved by team member
+      const recipientLeaderId =
+        task.assignedBy ||
+        task.initiative.assignedLeaderId ||
+        task.initiative.ownerId;
+      if (recipientLeaderId && recipientLeaderId !== userId) {
+        await createNotification({
+          recipientId: recipientLeaderId,
+          type: "TASK_UPDATE_PENDING",
+          title: `Update Stage Task: ${kanbanStatus}`,
+          body: `Task "${task.title}" dipindahkan ke stage ${kanbanStatus} oleh anggota tim`,
+          link: "/approvals",
+        });
+      }
 
       return res.status(200).json({
         id: `task-${task.id}`,
@@ -1249,6 +1257,19 @@ export async function updateInitiativeKanbanStatus(
 
     // AUTO-CASCADE: recalculate KR.currentValue
     await cascadeInitiativeToMonthlyKr(existing.keyResultId);
+
+    // Send notification to leader if moved by team member
+    const recipientLeaderId =
+      existing.assignedLeaderId || existing.assignedBy || existing.ownerId;
+    if (recipientLeaderId && recipientLeaderId !== userId) {
+      await createNotification({
+        recipientId: recipientLeaderId,
+        type: "TASK_UPDATE_PENDING",
+        title: `Update Stage Inisiatif: ${kanbanStatus}`,
+        body: `Inisiatif "${existing.title}" dipindahkan ke stage ${kanbanStatus} oleh anggota tim`,
+        link: "/approvals",
+      });
+    }
 
     // Log history
     await prisma.initiativeUpdate.create({
