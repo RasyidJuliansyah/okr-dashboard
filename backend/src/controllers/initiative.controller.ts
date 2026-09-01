@@ -664,93 +664,192 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       orderBy: { createdAt: "desc" },
     });
 
-    if (role === "TEAM") {
-      const myTasks = await prisma.task.findMany({
-        where: {
+    // Query Task cards for Kanban (Task Turunan)
+    let taskWhere: any = {};
+    if (sprintMonth) {
+      taskWhere.OR = [
+        { sprintMonth: sprintMonth as string },
+        { initiative: { sprintMonth: sprintMonth as string } },
+      ];
+    }
+    if (krId) {
+      taskWhere.initiative = {
+        ...(taskWhere.initiative || {}),
+        keyResultId: krId as string,
+      };
+    }
+    if (teamId) {
+      taskWhere.initiative = {
+        ...(taskWhere.initiative || {}),
+        teamId: teamId as string,
+      };
+    }
+
+    if (ownerId) {
+      taskWhere.AND = [
+        ...(taskWhere.AND || []),
+        {
+          OR: [
+            { assignedTeamMemberId: ownerId as string },
+            { assignments: { some: { userId: ownerId as string } } },
+          ],
+        },
+      ];
+    } else if (role === "TEAM") {
+      taskWhere.AND = [
+        ...(taskWhere.AND || []),
+        {
           OR: [
             { assignedTeamMemberId: userId },
             { assignments: { some: { userId } } },
           ],
-          ...(sprintMonth && { sprintMonth: sprintMonth as string }),
-          ...(krId && { initiative: { keyResultId: krId as string } }),
         },
-        include: {
-          initiative: {
-            include: {
-              keyResult: {
-                select: { id: true, title: true, bscPerspective: true },
-              },
-              team: { select: { id: true, name: true, department: true } },
-              owner: {
-                select: { id: true, name: true, email: true, position: true },
-              },
-            },
-          },
-          assignedTeamMember: { select: { id: true, name: true } },
-          assignments: {
-            include: { user: { select: { id: true, name: true } } },
-          },
+      ];
+    } else if (role === "LEADER") {
+      const leaderTeams = await prisma.team.findMany({
+        where: { leaderId: userId },
+        select: { id: true },
+      });
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { teamId: true },
+      });
+      const teamIdSet = new Set<string>(leaderTeams.map((t) => t.id));
+      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
+      const teamIds = Array.from(teamIdSet);
+
+      taskWhere.AND = [
+        ...(taskWhere.AND || []),
+        {
+          OR: [
+            { assignedTeamMemberId: userId },
+            { assignments: { some: { userId } } },
+            { initiative: { teamId: { in: teamIds } } },
+            { assignedTeamMember: { teamId: { in: teamIds } } },
+          ],
         },
-        orderBy: { createdAt: "desc" },
+      ];
+    } else if (role === "MANAGER") {
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true },
+      });
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true, teamId: true },
       });
 
-      const taskCards = myTasks.map((t: any) => {
-        let taskKanbanStatus = "TODO";
-        if (t.status === "DROP" || t.status === "OFF_TRACK") {
-          taskKanbanStatus = "DROP";
-        } else if (
-          t.status === "DONE" ||
-          (t.targetValue > 0 && t.currentValue >= t.targetValue)
-        ) {
-          taskKanbanStatus = "DONE";
-        } else if (t.currentValue > 0) {
-          taskKanbanStatus = "IN_PROGRESS";
-        }
+      const deptValues = new Set<string>(managedDepts.map((d) => d.value));
+      if (dbUser?.department && dbUser.department.toUpperCase() !== "STRATEGIC")
+        deptValues.add(dbUser.department);
 
-        return {
-          id: `task-${t.id}`,
-          taskId: t.id,
-          isTaskCard: true,
-          title: t.title,
-          description: t.initiative?.title
-            ? `Task dari Inisiatif: ${t.initiative.title}`
-            : "Task Turunan",
-          targetValue: t.targetValue,
-          currentValue: t.currentValue,
-          unit: t.unit || "",
-          weight: t.weight || 1.0,
-          status: t.status,
-          kanbanStatus: taskKanbanStatus,
-          sprintMonth: t.sprintMonth || t.initiative?.sprintMonth || null,
-          startDate: t.startDate || t.initiative?.startDate || null,
-          dueDate: t.finishDate || t.initiative?.dueDate || null,
-          keyResultId: t.initiative?.keyResultId,
-          keyResult: t.initiative?.keyResult || null,
-          teamId: t.initiative?.teamId || null,
-          team: t.initiative?.team || null,
-          ownerId: userId,
-          owner: t.assignedTeamMember || {
-            id: userId,
-            name: req.user!.name || "Saya",
-          },
-          assignedLeader: t.initiative?.owner || null,
-          parentInitiativeTitle: t.initiative?.title,
-          parentInitiativeId: t.initiativeId,
-          tasks: [],
-        };
+      const deptTeams = await prisma.team.findMany({
+        where: {
+          OR: [
+            { department: { in: Array.from(deptValues) } },
+            { managerId: userId },
+          ],
+        },
+        select: { id: true },
       });
 
-      let filteredTaskCards = taskCards;
-      if (kanbanStatus) {
-        filteredTaskCards = taskCards.filter(
-          (c) => c.kanbanStatus === kanbanStatus,
-        );
-      }
+      const teamIdSet = new Set<string>(deptTeams.map((t) => t.id));
+      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
+      const teamIds = Array.from(teamIdSet);
 
-      return res.status(200).json([...initiatives, ...filteredTaskCards]);
+      taskWhere.AND = [
+        ...(taskWhere.AND || []),
+        {
+          OR: [
+            { assignedTeamMemberId: userId },
+            { assignments: { some: { userId } } },
+            { initiative: { teamId: { in: teamIds } } },
+          ],
+        },
+      ];
     }
 
-    return res.status(200).json(initiatives);
+    const tasksList = await prisma.task.findMany({
+      where: taskWhere,
+      include: {
+        initiative: {
+          include: {
+            keyResult: {
+              select: { id: true, title: true, bscPerspective: true },
+            },
+            team: { select: { id: true, name: true, department: true } },
+            owner: {
+              select: { id: true, name: true, email: true, position: true },
+            },
+          },
+        },
+        assignedTeamMember: { select: { id: true, name: true } },
+        assignments: {
+          include: { user: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const taskCards = tasksList.map((t: any) => {
+      let taskKanbanStatus = "TODO";
+      if (t.status === "DROP" || t.status === "OFF_TRACK") {
+        taskKanbanStatus = "DROP";
+      } else if (
+        t.status === "DONE" ||
+        (t.targetValue > 0 && t.currentValue >= t.targetValue)
+      ) {
+        taskKanbanStatus = "DONE";
+      } else if (t.currentValue > 0) {
+        taskKanbanStatus = "IN_PROGRESS";
+      }
+
+      const assignedOwnerId =
+        t.assignedTeamMemberId || t.assignments?.[0]?.userId || userId;
+      const assignedOwner = t.assignedTeamMember ||
+        t.assignments?.[0]?.user || {
+          id: userId,
+          name: req.user!.name || "Saya",
+        };
+
+      return {
+        id: `task-${t.id}`,
+        taskId: t.id,
+        isTaskCard: true,
+        title: t.title,
+        description: t.initiative?.title
+          ? `Task dari Inisiatif: ${t.initiative.title}`
+          : "Task Turunan",
+        targetValue: t.targetValue,
+        currentValue: t.currentValue,
+        unit: t.unit || "",
+        weight: t.weight || 1.0,
+        status: t.status,
+        kanbanStatus: taskKanbanStatus,
+        sprintMonth: t.sprintMonth || t.initiative?.sprintMonth || null,
+        startDate: t.startDate || t.initiative?.startDate || null,
+        dueDate: t.finishDate || t.initiative?.dueDate || null,
+        keyResultId: t.initiative?.keyResultId,
+        keyResult: t.initiative?.keyResult || null,
+        teamId: t.initiative?.teamId || null,
+        team: t.initiative?.team || null,
+        ownerId: assignedOwnerId,
+        owner: assignedOwner,
+        assignedLeader: t.initiative?.owner || null,
+        parentInitiativeTitle: t.initiative?.title,
+        parentInitiativeId: t.initiativeId,
+        tasks: [],
+      };
+    });
+
+    let filteredTaskCards = taskCards;
+    if (kanbanStatus) {
+      filteredTaskCards = taskCards.filter(
+        (c) => c.kanbanStatus === kanbanStatus,
+      );
+    }
+
+    return res.status(200).json([...initiatives, ...filteredTaskCards]);
   } catch (error) {
     console.error("Get initiatives error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -1871,7 +1970,11 @@ export async function createTask(req: AuthRequest, res: Response) {
       }
     }
 
-    const targetAssigneeId = targetMemberId || initiative.ownerId || userId;
+    const targetAssigneeId =
+      targetMemberId ||
+      initiative.assignedLeaderId ||
+      initiative.ownerId ||
+      userId;
     const finalSprintMonth = sprintMonth || initiative.sprintMonth || null;
 
     const task = await prisma.task.create({
