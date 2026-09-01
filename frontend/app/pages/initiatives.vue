@@ -1453,16 +1453,7 @@ const canMoveCards = computed(() => true); // All roles can move cards they are 
 const canCreateInitiative = computed(() => true); // All roles can create initiative
 
 function canManageInitiative(ini: any) {
-  if (isAdmin.value || isCLevel.value || isManager.value || isLeader.value)
-    return true;
-  if (
-    isTeam.value &&
-    (ini.ownerId === auth.user?.id ||
-      ini.assignedTeamMemberId === auth.user?.id ||
-      ini.isTaskCard)
-  )
-    return true;
-  return false;
+  return true;
 }
 
 const userRoleClass = computed(() => {
@@ -1960,7 +1951,7 @@ async function moveCard(id: string, newStatus: string) {
         `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${item.targetValue} ${item.unit || ""}):`,
         item.achievedValue !== null && item.achievedValue !== undefined
           ? String(item.achievedValue)
-          : String(item.targetValue),
+          : String(item.currentValue || item.targetValue),
       );
       if (input !== null && input.trim() !== "") {
         const val = parseFloat(input);

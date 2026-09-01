@@ -219,11 +219,11 @@
                 "
               >
                 <span
-                  >🎯 Inisiatif (Bobot 2):
+                  >Inisiatif (Bobot 2):
                   <strong>{{ m.initiativeAchievementPct || 0 }}%</strong></span
                 >
                 <span
-                  >📌 Task (Bobot 1):
+                  >Task (Bobot 1):
                   <strong>{{ m.taskAchievementPct || 0 }}%</strong></span
                 >
               </div>
@@ -241,25 +241,23 @@
                     class="task-info"
                     style="
                       display: flex;
-                      align-items: center;
-                      gap: 6px;
-                      flex-wrap: wrap;
+                      flex-direction: column;
+                      align-items: flex-start;
+                      gap: 4px;
                     "
                   >
-                    <span
-                      class="task-type-pill"
-                      :style="
-                        ini.type === 'TASK'
-                          ? 'background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #bae6fd;'
-                          : 'background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #cbd5e1;'
-                      "
-                    >
-                      {{
-                        ini.type === "TASK"
-                          ? "📌 TASK (B:1)"
-                          : "🎯 INISIATIF (B:2)"
-                      }}
-                    </span>
+                    <div>
+                      <span
+                        class="task-type-pill"
+                        :style="
+                          ini.type === 'TASK'
+                            ? 'background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #bae6fd;'
+                            : 'background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #cbd5e1;'
+                        "
+                      >
+                        {{ ini.type === "TASK" ? "TASK" : "INISIATIF" }}
+                      </span>
+                    </div>
                     <span class="task-title">{{ ini.title }}</span>
                     <span v-if="ini.sprintMonth" class="task-parent"
                       >sprint {{ formatSprintLabel(ini.sprintMonth) }}</span
@@ -859,8 +857,10 @@ onMounted(async () => {
 
 .task-info {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .task-title {
