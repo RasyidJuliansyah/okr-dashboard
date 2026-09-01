@@ -25,6 +25,7 @@ import {
   getPendingInitiativeUpdates,
   approveInitiativeUpdate,
   rejectInitiativeUpdate,
+  reassignInitiative,
 } from "../controllers/initiative.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
@@ -68,12 +69,23 @@ router.put(
   updateInitiative,
 );
 router.patch(
+  "/:id/reassign",
+  authMiddleware,
+  roleGuard(["LEADER", "MANAGER", "ADMIN"]),
+  reassignInitiative,
+);
+router.patch(
   "/:id/kanban-status",
   authMiddleware,
   roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   updateInitiativeKanbanStatus,
 );
-router.delete("/:id", authMiddleware, roleGuard(["ADMIN"]), deleteInitiative);
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
+  deleteInitiative,
+);
 router.get("/my-work/all", authMiddleware, getMyWork);
 router.get(
   "/my-team",
@@ -114,7 +126,12 @@ router.put(
   roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   updateTask,
 );
-router.delete("/tasks/:id", authMiddleware, roleGuard(["ADMIN"]), deleteTask);
+router.delete(
+  "/tasks/:id",
+  authMiddleware,
+  roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
+  deleteTask,
+);
 router.post(
   "/tasks/:id/assign",
   authMiddleware,
