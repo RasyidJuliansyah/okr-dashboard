@@ -310,15 +310,11 @@
                     <span v-if="ini.owner?.name" class="owner-tag">
                       {{ ini.owner.name }}
                       <span
-                        v-if="getMemberAchievement(ini.ownerId)"
                         class="owner-ach-pill"
-                        :class="
-                          getAchColorClass(
-                            getMemberAchievement(ini.ownerId).achievementPct,
-                          )
-                        "
+                        :class="getAchColorClass(calculateAchievedPercent(ini))"
+                        title="Persentase Capaian Card ini"
                       >
-                        {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                        {{ calculateAchievedPercent(ini) }}%
                       </span>
                     </span>
                   </div>
@@ -601,15 +597,11 @@
                     <span v-if="ini.owner?.name" class="owner-tag">
                       {{ ini.owner.name }}
                       <span
-                        v-if="getMemberAchievement(ini.ownerId)"
                         class="owner-ach-pill"
-                        :class="
-                          getAchColorClass(
-                            getMemberAchievement(ini.ownerId).achievementPct,
-                          )
-                        "
+                        :class="getAchColorClass(calculateAchievedPercent(ini))"
+                        title="Persentase Capaian Card ini"
                       >
-                        {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                        {{ calculateAchievedPercent(ini) }}%
                       </span>
                     </span>
                   </div>
@@ -906,15 +898,11 @@
                     <span v-if="ini.owner?.name" class="owner-tag">
                       {{ ini.owner.name }}
                       <span
-                        v-if="getMemberAchievement(ini.ownerId)"
                         class="owner-ach-pill"
-                        :class="
-                          getAchColorClass(
-                            getMemberAchievement(ini.ownerId).achievementPct,
-                          )
-                        "
+                        :class="getAchColorClass(calculateAchievedPercent(ini))"
+                        title="Persentase Capaian Card ini"
                       >
-                        {{ getMemberAchievement(ini.ownerId).achievementPct }}%
+                        {{ calculateAchievedPercent(ini) }}%
                       </span>
                     </span>
                   </div>
@@ -1465,10 +1453,15 @@ const canMoveCards = computed(() => true); // All roles can move cards they are 
 const canCreateInitiative = computed(() => true); // All roles can create initiative
 
 function canManageInitiative(ini: any) {
-  if (isAdmin.value) return true;
-  if (isManager.value) return true;
-  if (isLeader.value) return true;
-  if (isTeam.value && ini.ownerId === auth.user?.id) return true;
+  if (isAdmin.value || isCLevel.value || isManager.value || isLeader.value)
+    return true;
+  if (
+    isTeam.value &&
+    (ini.ownerId === auth.user?.id ||
+      ini.assignedTeamMemberId === auth.user?.id ||
+      ini.isTaskCard)
+  )
+    return true;
   return false;
 }
 

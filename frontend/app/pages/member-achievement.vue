@@ -187,10 +187,10 @@
             <!-- Tasks Summary & Expansion Footer -->
             <div class="member-card-footer">
               <div class="task-count-label">
-                <strong>{{ m.totalAssignedTasks }}</strong> Card Inisiatif
-                <span class="total-weight-tag" style="display: none">
-                  Total Bobot: {{ m.totalWeight }}%
-                </span>
+                <strong>{{ m.totalAssignedTasks }}</strong> Card ({{
+                  m.totalInitiativesCount || 0
+                }}
+                Inisiatif, {{ m.totalTasksCount || 0 }} Task)
               </div>
               <button class="detail-toggle-btn" @click="toggleExpand(m.userId)">
                 {{
@@ -201,14 +201,35 @@
               </button>
             </div>
 
-            <!-- Expanded Initiative Card Details -->
+            <!-- Expanded Initiative & Task Card Details -->
             <div
               v-if="expandedUserIds.includes(m.userId)"
               class="expanded-tasks-list"
             >
-              <h5 class="tasks-list-title">Daftar Card Inisiatif:</h5>
+              <div
+                class="breakdown-summary mb-3"
+                style="
+                  display: flex;
+                  gap: 12px;
+                  font-size: 11px;
+                  background: #f8fafc;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                "
+              >
+                <span
+                  >🎯 Inisiatif (Bobot 2):
+                  <strong>{{ m.initiativeAchievementPct || 0 }}%</strong></span
+                >
+                <span
+                  >📌 Task (Bobot 1):
+                  <strong>{{ m.taskAchievementPct || 0 }}%</strong></span
+                >
+              </div>
+              <h5 class="tasks-list-title">Daftar Card Pekerjaan & Capaian:</h5>
               <div v-if="m.initiatives?.length === 0" class="no-tasks">
-                Belum ada card inisiatif yang dimiliki.
+                Belum ada card inisiatif atau task yang dimiliki.
               </div>
               <div v-else class="task-items-wrapper">
                 <div
@@ -216,7 +237,29 @@
                   :key="ini.id"
                   class="task-detail-item"
                 >
-                  <div class="task-info">
+                  <div
+                    class="task-info"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
+                      flex-wrap: wrap;
+                    "
+                  >
+                    <span
+                      class="task-type-pill"
+                      :style="
+                        ini.type === 'TASK'
+                          ? 'background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #bae6fd;'
+                          : 'background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #cbd5e1;'
+                      "
+                    >
+                      {{
+                        ini.type === "TASK"
+                          ? "📌 TASK (B:1)"
+                          : "🎯 INISIATIF (B:2)"
+                      }}
+                    </span>
                     <span class="task-title">{{ ini.title }}</span>
                     <span v-if="ini.sprintMonth" class="task-parent"
                       >sprint {{ formatSprintLabel(ini.sprintMonth) }}</span

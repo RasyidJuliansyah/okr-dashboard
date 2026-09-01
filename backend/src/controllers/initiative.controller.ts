@@ -169,7 +169,8 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
     // 2. Ambil Initiative (card) yang dimiliki (ownerId) oleh user-user yang diizinkan.
     // Capaian member sekarang dihitung dari bobot (%) tiap card, bukan rata-rata Task polos,
     // agar konsisten dengan aturan "total bobot card per pegawai per sprint = 100%".
-    const usersWithInitiatives = await prisma.user.findMany({
+    // 2. Fetch users and their associated Initiatives (weight 2) and Tasks (weight 1)
+    const users = await prisma.user.findMany({
       where: { id: { in: visibleUserIds } },
       select: {
         id: true,
@@ -178,8 +179,20 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         position: true,
         department: true,
         team: { select: { id: true, name: true } },
-        ownedInitiatives: {
-          where: { kanbanStatus: { not: "DROP" } },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    const allSprintMonths = new Set<string>();
+
+    const memberProgressList = await Promise.all(
+      users.map(async (user) => {
+        // Initiatives (Milik sendiri atau di-assign oleh leader) - Bobot = 2
+        const ownedInitiatives = await prisma.initiative.findMany({
+          where: {
+            OR: [{ ownerId: user.id }, { assignedLeaderId: user.id }],
+            kanbanStatus: { not: "DROP" },
+          },
           select: {
             id: true,
             title: true,
@@ -189,22 +202,62 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             currentValue: true,
             achievedValue: true,
             sprintMonth: true,
+            keyResult: { select: { title: true } },
             tasks: { select: { targetValue: true, currentValue: true } },
           },
-        },
-      },
-      orderBy: { name: "asc" },
-    });
+        });
 
-    // 3. Hitung capaian weighted-average per member (opsional difilter per sprint)
-    const allSprintMonths = new Set<string>();
-    const result = usersWithInitiatives.map((user) => {
-      const initiatives = user.ownedInitiatives
-        .filter((init) => {
-          if (init.sprintMonth) allSprintMonths.add(init.sprintMonth);
+        // Tasks (Di-assign ke user ini oleh leader / role atas) - Bobot = 1
+        const assignedTasks = await prisma.task.findMany({
+          where: {
+            OR: [
+              { assignedTeamMemberId: user.id },
+              { assignments: { some: { userId: user.id } } },
+            ],
+            initiative: { kanbanStatus: { not: "DROP" } },
+          },
+          select: {
+            id: true,
+            title: true,
+            targetValue: true,
+            currentValue: true,
+            status: true,
+            sprintMonth: true,
+            initiative: {
+              select: {
+                title: true,
+                sprintMonth: true,
+                keyResult: { select: { title: true } },
+              },
+            },
+          },
+        });
+
+        // Kumpulkan semua sprint months untuk dropdown filter
+        ownedInitiatives.forEach((i) => {
+          if (i.sprintMonth) allSprintMonths.add(i.sprintMonth);
+        });
+        assignedTasks.forEach((t) => {
+          if (t.sprintMonth) allSprintMonths.add(t.sprintMonth);
+          else if (t.initiative?.sprintMonth)
+            allSprintMonths.add(t.initiative.sprintMonth);
+        });
+
+        // Filter per sprintMonth jika ada
+        const filteredInitiatives = ownedInitiatives.filter((init) => {
           return sprintMonth ? init.sprintMonth === sprintMonth : true;
-        })
-        .map((init) => {
+        });
+
+        const filteredTasks = assignedTasks.filter((t) => {
+          const taskSprint = t.sprintMonth || t.initiative?.sprintMonth;
+          return sprintMonth ? taskSprint === sprintMonth : true;
+        });
+
+        // Process Initiatives (Bobot = 2)
+        let iniWeightedSum = 0;
+        let iniTotalWeight = 0;
+
+        const processedInitiatives = filteredInitiatives.map((init) => {
           let progressPct: number;
           if (
             init.achievedValue !== null &&
@@ -212,7 +265,9 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             init.targetValue > 0
           ) {
             progressPct = (init.achievedValue / init.targetValue) * 100;
-          } else if (init.tasks.length > 0) {
+          } else if (init.currentValue > 0 && init.targetValue > 0) {
+            progressPct = (init.currentValue / init.targetValue) * 100;
+          } else if (init.tasks && init.tasks.length > 0) {
             progressPct =
               init.tasks.reduce((sum, k) => {
                 const pct =
@@ -224,55 +279,112 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
                     : 0;
                 return sum + pct;
               }, 0) / init.tasks.length;
-          } else if (init.targetValue > 0) {
-            progressPct = Math.min(
-              100,
-              Math.max(0, (init.currentValue / init.targetValue) * 100),
-            );
+          } else if (init.kanbanStatus === "DONE") {
+            progressPct = 100;
           } else {
             progressPct = 0;
           }
-          // Batasi agar berada di kisaran 0 - 100%
+
           progressPct = Math.min(100, Math.max(0, progressPct));
+          const roundedPct = Math.round(progressPct * 10) / 10;
+          const weightFactor = 2; // Inisiatif bobot = 2
+
+          iniWeightedSum += roundedPct * weightFactor;
+          iniTotalWeight += weightFactor;
+
           return {
             id: init.id,
             title: init.title,
-            weight: init.weight,
+            type: "INITIATIVE",
+            weightFactor,
             sprintMonth: init.sprintMonth,
             kanbanStatus: init.kanbanStatus,
-            progressPct: Math.round(progressPct * 10) / 10,
+            progressPct: roundedPct,
+            krTitle: init.keyResult?.title || "",
           };
         });
 
-      const achievementPct =
-        initiatives.length > 0
-          ? Math.round(
-              (initiatives.reduce((s, i) => s + i.progressPct, 0) /
-                initiatives.length) *
-                10,
-            ) / 10
-          : 0;
+        // Process Tasks (Bobot = 1)
+        let taskWeightedSum = 0;
+        let taskTotalWeight = 0;
 
-      return {
-        userId: user.id,
-        userName: user.name,
-        role: user.role,
-        position: user.position,
-        department: user.department,
-        teamName: user.team?.name,
-        totalAssignedTasks: initiatives.length,
-        totalWeight: 100,
-        achievementPct,
-        initiatives,
-      };
-    });
+        const processedTasks = filteredTasks.map((t) => {
+          let progressPct: number;
+          if (t.status === "ON_TRACK" && t.currentValue >= t.targetValue) {
+            progressPct = 100;
+          } else if (t.targetValue > 0) {
+            progressPct = Math.min(
+              100,
+              Math.max(0, (t.currentValue / t.targetValue) * 100),
+            );
+          } else {
+            progressPct = t.currentValue > 0 ? 100 : 0;
+          }
+
+          progressPct = Math.min(100, Math.max(0, progressPct));
+          const roundedPct = Math.round(progressPct * 10) / 10;
+          const weightFactor = 1; // Task bobot = 1
+
+          taskWeightedSum += roundedPct * weightFactor;
+          taskTotalWeight += weightFactor;
+
+          return {
+            id: t.id,
+            title: t.title,
+            type: "TASK",
+            weightFactor,
+            sprintMonth: t.sprintMonth || t.initiative?.sprintMonth,
+            kanbanStatus: t.status,
+            progressPct: roundedPct,
+            parentTitle: t.initiative?.title || "",
+            krTitle: t.initiative?.keyResult?.title || "",
+          };
+        });
+
+        const allItems = [...processedInitiatives, ...processedTasks];
+
+        const totalWeightFactor = iniTotalWeight + taskTotalWeight;
+        const totalWeightedSum = iniWeightedSum + taskWeightedSum;
+
+        const achievementPct =
+          totalWeightFactor > 0
+            ? Math.round((totalWeightedSum / totalWeightFactor) * 10) / 10
+            : 0;
+
+        const iniAvg =
+          iniTotalWeight > 0
+            ? Math.round((iniWeightedSum / iniTotalWeight) * 10) / 10
+            : 0;
+
+        const taskAvg =
+          taskTotalWeight > 0
+            ? Math.round((taskWeightedSum / taskTotalWeight) * 10) / 10
+            : 0;
+
+        return {
+          userId: user.id,
+          userName: user.name,
+          role: user.role,
+          position: user.position || user.role,
+          department: user.department || "",
+          teamName: user.team?.name || "",
+          achievementPct,
+          initiativeAchievementPct: iniAvg,
+          taskAchievementPct: taskAvg,
+          totalAssignedTasks: allItems.length,
+          totalInitiativesCount: processedInitiatives.length,
+          totalTasksCount: processedTasks.length,
+          initiatives: allItems,
+        };
+      }),
+    );
 
     return res.status(200).json({
       role,
-      userCount: result.length,
+      userCount: memberProgressList.length,
       sprintMonth: sprintMonth || null,
       availableSprintMonths: Array.from(allSprintMonths).sort().reverse(),
-      members: result,
+      members: memberProgressList,
     });
   } catch (error) {
     console.error("Get member progress error:", error);
@@ -448,9 +560,9 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
     if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
     if (sprintMonth) where.sprintMonth = sprintMonth as string;
 
-    // 1. TEAM (T): hanya melihat inisiatif milik sendiri + Task yang diassign padanya (dikemas sebagai Card di Kanban)
+    // 1. TEAM (T): hanya melihat inisiatif milik sendiri + inisiatif yang di-assign khusus padanya (bukan inisiatif induk Leader)
     if (role === "TEAM") {
-      where.ownerId = userId;
+      where.OR = [{ ownerId: userId }, { assignedLeaderId: userId }];
       if (teamId) where.teamId = teamId as string;
     }
 
@@ -584,7 +696,9 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
 
       const taskCards = myTasks.map((t: any) => {
         let taskKanbanStatus = "TODO";
-        if (t.targetValue > 0 && t.currentValue >= t.targetValue) {
+        if (t.status === "DROP" || t.status === "OFF_TRACK") {
+          taskKanbanStatus = "DROP";
+        } else if (t.targetValue > 0 && t.currentValue >= t.targetValue) {
           taskKanbanStatus = "DONE";
         } else if (t.currentValue > 0) {
           taskKanbanStatus = "IN_PROGRESS";
@@ -1018,7 +1132,7 @@ export async function reassignInitiative(req: AuthRequest, res: Response) {
   }
 }
 
-// PATCH /api/initiatives/:id/kanban-status — Update Kanban column
+// PATCH /api/initiatives/:id/kanban-status — Update Kanban column (Bebas digeser oleh role mana saja yang mengelola)
 export async function updateInitiativeKanbanStatus(
   req: AuthRequest,
   res: Response,
@@ -1026,7 +1140,7 @@ export async function updateInitiativeKanbanStatus(
   try {
     const { id } = req.params;
     const { kanbanStatus, achievedValue } = req.body;
-    const { role, id: userId } = req.user!;
+    const userId = req.user!.id;
 
     if (
       !kanbanStatus ||
@@ -1047,48 +1161,35 @@ export async function updateInitiativeKanbanStatus(
       if (!task)
         return res.status(404).json({ message: "Task tidak ditemukan" });
 
-      const isAssignedMember =
-        task.assignedTeamMemberId === userId ||
-        task.assignedBy === userId ||
-        Boolean(
-          await prisma.taskAssignment.findUnique({
-            where: { taskId_userId: { taskId, userId } },
-          }),
-        );
-
-      let canMove = isAssignedMember || ["ADMIN", "C_LEVEL"].includes(role);
-
-      if (!canMove && role === "LEADER") {
-        const leaderTeamIds = await getLeaderTeamIds(userId);
-        if (leaderTeamIds.includes(task.initiative.teamId)) canMove = true;
-      } else if (!canMove && role === "MANAGER") {
-        const managedDepts = await prisma.department.findMany({
-          where: { managerId: userId },
-          select: { value: true },
-        });
-        const deptList = managedDepts.map((d) => d.value);
-        if (
-          task.initiative.team?.department &&
-          deptList.includes(task.initiative.team.department)
-        ) {
-          canMove = true;
-        }
-      }
-
-      if (!canMove) {
-        return res.status(403).json({
-          message: "Forbidden: Anda tidak diizinkan memindahkan task ini",
-        });
-      }
-
       let newCurrentValue = task.currentValue;
       let newStatus = task.status;
 
       if (kanbanStatus === "DONE") {
-        newCurrentValue = task.targetValue > 0 ? task.targetValue : 1;
+        newCurrentValue =
+          task.currentValue > 0
+            ? task.currentValue
+            : task.targetValue > 0
+              ? task.targetValue
+              : 1;
         newStatus = "ON_TRACK";
       } else if (kanbanStatus === "TODO") {
         newCurrentValue = 0;
+        newStatus = "ON_TRACK";
+      } else if (kanbanStatus === "IN_PROGRESS") {
+        if (task.currentValue <= 0) {
+          newCurrentValue =
+            task.targetValue > 0
+              ? Math.max(1, Math.round(task.targetValue * 0.1 * 10) / 10)
+              : 1;
+        } else if (
+          task.targetValue > 0 &&
+          task.currentValue >= task.targetValue
+        ) {
+          newCurrentValue = Math.round(task.targetValue * 0.5 * 10) / 10;
+        }
+        newStatus = "ON_TRACK";
+      } else if (kanbanStatus === "DROP") {
+        newStatus = "DROP";
       }
 
       const updatedTask = await prisma.task.update({
@@ -1121,43 +1222,6 @@ export async function updateInitiativeKanbanStatus(
     if (!existing)
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
 
-    let canMoveIni =
-      existing.ownerId === userId || ["ADMIN", "C_LEVEL"].includes(role);
-
-    if (!canMoveIni && role === "LEADER") {
-      const leaderTeamIds = await getLeaderTeamIds(userId);
-      if (leaderTeamIds.includes(existing.teamId)) canMoveIni = true;
-    } else if (!canMoveIni && role === "MANAGER") {
-      const managedDepts = await prisma.department.findMany({
-        where: { managerId: userId },
-        select: { value: true },
-      });
-      const deptList = managedDepts.map((d) => d.value);
-      if (
-        existing.team?.department &&
-        deptList.includes(existing.team.department)
-      ) {
-        canMoveIni = true;
-      }
-    } else if (!canMoveIni && role === "TEAM") {
-      const hasTask = await prisma.task.findFirst({
-        where: {
-          initiativeId: id,
-          OR: [
-            { assignedTeamMemberId: userId },
-            { assignments: { some: { userId } } },
-          ],
-        },
-      });
-      if (hasTask) canMoveIni = true;
-    }
-
-    if (!canMoveIni) {
-      return res.status(403).json({
-        message: "Forbidden: Anda tidak diizinkan memindahkan inisiatif ini",
-      });
-    }
-
     const shouldSetToDone = kanbanStatus === "DONE";
 
     const updated = await prisma.initiative.update({
@@ -1165,7 +1229,8 @@ export async function updateInitiativeKanbanStatus(
       data: {
         kanbanStatus,
         ...(shouldSetToDone &&
-          existing.targetValue > 0 && { currentValue: existing.targetValue }),
+          existing.targetValue > 0 &&
+          existing.currentValue <= 0 && { currentValue: existing.targetValue }),
         ...(achievedValue !== undefined && {
           achievedValue:
             achievedValue !== null && achievedValue !== ""
