@@ -2231,7 +2231,7 @@ select:focus {
 
 .kr-stats {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-gamma-050);
 }
 
 .status-badge {
