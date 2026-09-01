@@ -18,31 +18,31 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       select: { teamId: true, department: true },
     });
 
-    // --- TEAM: hanya lihat Initiative & Task milik tim sendiri ---
+    // --- TEAM: hanya lihat Initiative & Task milik tim/pribadi ---
     if (role === "TEAM") {
-      if (!dbUser?.teamId) {
-        return res
-          .status(200)
-          .json({ role, scope: "team", initiatives: [], tasks: [] });
-      }
-
-      const initiatives = await prisma.initiative.findMany({
-        where: { teamId: dbUser.teamId },
-        include: {
-          keyResult: {
-            select: { id: true, title: true, bscPerspective: true },
-          },
-          tasks: {
+      const initiatives = dbUser?.teamId
+        ? await prisma.initiative.findMany({
+            where: { teamId: dbUser.teamId },
             include: {
-              assignments: { where: { userId }, select: { userId: true } },
+              keyResult: {
+                select: { id: true, title: true, bscPerspective: true },
+              },
+              tasks: {
+                include: {
+                  assignments: { where: { userId }, select: { userId: true } },
+                },
+              },
             },
-          },
-        },
-      });
+          })
+        : [];
 
-      // Hanya Task yang di-assign ke user ini
       const myTasks = await prisma.task.findMany({
-        where: { assignments: { some: { userId } } },
+        where: {
+          OR: [
+            { assignedTeamMemberId: userId },
+            { assignments: { some: { userId } } },
+          ],
+        },
         include: {
           initiative: { select: { id: true, title: true, teamId: true } },
           updates: {
@@ -52,21 +52,68 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         },
       });
 
-      return res
-        .status(200)
-        .json({ role, scope: "team", initiatives, myTasks });
+      let totalCount = 0,
+        sumProgress = 0,
+        onTrackCount = 0,
+        atRiskCount = 0,
+        offTrackCount = 0;
+
+      [...initiatives, ...myTasks].forEach((item: any) => {
+        const pct =
+          item.targetValue > 0
+            ? Math.min(
+                100,
+                Math.max(0, (item.currentValue / item.targetValue) * 100),
+              )
+            : item.currentValue > 0
+              ? 100
+              : 0;
+        sumProgress += pct;
+        totalCount++;
+        if (item.status === "ON_TRACK") onTrackCount++;
+        else if (item.status === "AT_RISK") atRiskCount++;
+        else if (item.status === "OFF_TRACK") offTrackCount++;
+      });
+
+      return res.status(200).json({
+        role,
+        scope: "team",
+        metrics: {
+          totalObjectives: initiatives.length,
+          totalKeyResults: totalCount,
+          averageProgress:
+            Math.round((totalCount > 0 ? sumProgress / totalCount : 0) * 10) /
+            10,
+          onTrackCount,
+          atRiskCount,
+          offTrackCount,
+        },
+        initiatives,
+        myTasks,
+      });
     }
 
-    // --- LEADER: KR (read-only, konteks) + Initiative dari semua Tim yang dipimpin ---
+    // --- LEADER: KR (read-only, konteks) + Initiative dari semua Tim yang dipimpin/dimiliki ---
     if (role === "LEADER") {
       const leadingTeams = await prisma.team.findMany({
-        where: { leaderId: userId },
+        where: {
+          OR: [
+            { leaderId: userId },
+            ...(dbUser?.teamId ? [{ id: dbUser.teamId }] : []),
+          ],
+        },
         select: { id: true, name: true },
       });
-      const leadingTeamIds = leadingTeams.map((t) => t.id);
+      const leaderTeamIds = leadingTeams.map((t) => t.id);
 
       const initiatives = await prisma.initiative.findMany({
-        where: { teamId: { in: leadingTeamIds } },
+        where: {
+          OR: [
+            { teamId: { in: leaderTeamIds } },
+            { ownerId: userId },
+            { assignedLeaderId: userId },
+          ],
+        },
         include: {
           keyResult: {
             select: {
@@ -81,9 +128,45 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         },
       });
 
-      return res
-        .status(200)
-        .json({ role, scope: "leader", leadingTeams, initiatives });
+      let totalCount = 0,
+        sumProgress = 0,
+        onTrackCount = 0,
+        atRiskCount = 0,
+        offTrackCount = 0;
+
+      initiatives.forEach((ini: any) => {
+        const pct =
+          ini.targetValue > 0
+            ? Math.min(
+                100,
+                Math.max(0, (ini.currentValue / ini.targetValue) * 100),
+              )
+            : ini.currentValue > 0
+              ? 100
+              : 0;
+        sumProgress += pct;
+        totalCount++;
+        if (ini.status === "ON_TRACK") onTrackCount++;
+        else if (ini.status === "AT_RISK") atRiskCount++;
+        else if (ini.status === "OFF_TRACK") offTrackCount++;
+      });
+
+      return res.status(200).json({
+        role,
+        scope: "leader",
+        metrics: {
+          totalObjectives: initiatives.length,
+          totalKeyResults: totalCount,
+          averageProgress:
+            Math.round((totalCount > 0 ? sumProgress / totalCount : 0) * 10) /
+            10,
+          onTrackCount,
+          atRiskCount,
+          offTrackCount,
+        },
+        leadingTeams,
+        initiatives,
+      });
     }
 
     // --- MANAGER: Objective & KR yang KrDepartment-nya cocok dengan dept Manager ---
