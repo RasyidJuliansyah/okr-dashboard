@@ -1723,7 +1723,8 @@ function calculateAchievedPercent(ini: any) {
       ? ini.achievedValue
       : ini.currentValue;
   if (!ini.targetValue || ini.targetValue <= 0) return 100;
-  return Math.round((achieved / ini.targetValue) * 100);
+  const pct = Math.round((achieved / ini.targetValue) * 100);
+  return Math.min(100, Math.max(0, pct));
 }
 
 // ─── Filtered Lists per Kanban Column ───
