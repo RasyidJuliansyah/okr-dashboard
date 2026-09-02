@@ -264,9 +264,15 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             init.achievedValue !== undefined &&
             init.targetValue > 0
           ) {
-            progressPct = (init.achievedValue / init.targetValue) * 100;
+            progressPct = Math.min(
+              100,
+              (init.achievedValue / init.targetValue) * 100,
+            );
           } else if (init.currentValue > 0 && init.targetValue > 0) {
-            progressPct = (init.currentValue / init.targetValue) * 100;
+            progressPct = Math.min(
+              100,
+              (init.currentValue / init.targetValue) * 100,
+            );
           } else if (init.tasks && init.tasks.length > 0) {
             progressPct =
               init.tasks.reduce((sum, k) => {
@@ -463,7 +469,7 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
         init.achievedValue !== null &&
         init.achievedValue !== undefined &&
         init.targetValue > 0
-          ? (init.achievedValue / init.targetValue) * 100
+          ? Math.min(100, (init.achievedValue / init.targetValue) * 100)
           : taskProgress.length > 0
             ? taskProgress.reduce((sum, k) => sum + k.progressPercent, 0) /
               taskProgress.length
@@ -2322,7 +2328,7 @@ export async function cascadeInitiativeToMonthlyKr(
         init.achievedValue !== undefined &&
         init.targetValue > 0
       ) {
-        initProgress = init.achievedValue / init.targetValue;
+        initProgress = Math.min(1, init.achievedValue / init.targetValue);
       } else if (init.tasks.length > 0) {
         const initTasksWeight = init.tasks.reduce(
           (s, t) => s + (t.weight || 1),

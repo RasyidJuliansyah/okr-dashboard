@@ -37,51 +37,6 @@
               </button>
             </div>
           </div>
-
-          <!-- Comparison Date Range Picker -->
-          <!-- <div class="comparison-row">
-            <span class="comparison-label">Bandingkan dengan periode:</span>
-            <div class="date-range-inputs">
-              <input
-                type="date"
-                v-model="compareFrom"
-                :max="compareTo || today"
-              />
-              <span class="date-sep">–</span>
-              <input
-                type="date"
-                v-model="compareTo"
-                :min="compareFrom"
-                :max="today"
-              />
-            </div>
-             Shortcut buttons 
-            <div class="shortcut-btns">
-              <button @click="setShortcut(7)" class="shortcut-btn">
-                7 Hari Lalu
-              </button>
-              <button @click="setShortcut(14)" class="shortcut-btn">
-                14 Hari Lalu
-              </button>
-              <button @click="setShortcut(30)" class="shortcut-btn">
-                30 Hari Lalu
-              </button>
-              <button
-                @click="clearComparison"
-                class="clear-btn"
-                v-if="compareFrom || compareTo"
-              >
-                Reset
-              </button>
-            </div>
-            <button
-              class="compare-btn"
-              @click="fetchDashboardData"
-              :disabled="!compareFrom || !compareTo"
-            >
-              Bandingkan
-            </button>
-          </div> -->
         </div>
       </section>
 
@@ -196,148 +151,142 @@
         <div v-if="myTasks.length === 0" class="empty-state">
           Belum ada Task yang di-assign ke kamu.
         </div>
-        <div v-for="task in myTasks" :key="task.id" class="task-card card">
-          <div class="task-header">
-            <span class="task-title">{{ task.title }}</span>
-            <span
-              :class="[
-                'status-badge',
-                task.status.toLowerCase().replace('_', '-'),
-              ]"
-              >{{ task.status }}</span
-            >
-          </div>
-          <div class="task-progress">
-            <span
-              >{{ task.currentValue }} / {{ task.targetValue }}
-              {{ task.unit }}</span
-            >
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{
-                  width:
-                    Math.min(
-                      100,
-                      (task.currentValue / task.targetValue) * 100,
-                    ) + '%',
-                }"
-              ></div>
+        <div v-else class="task-grid">
+          <div v-for="task in myTasks" :key="task.id" class="task-card card">
+            <div class="task-header">
+              <h3>{{ task.title }}</h3>
+              <span class="status-badge" :class="getStatusClass(task.status)">{{
+                task.status
+              }}</span>
             </div>
-          </div>
-          <div class="task-initiative">
-            Initiative: {{ task.initiative?.title }}
-          </div>
-          <button class="primary-btn" @click="openTaskSubmitModal(task)">
-            Submit Update
-          </button>
-        </div>
-      </section>
 
-      <!-- ─── SECTION: LEADER KEY RESULTS (LEADER ONLY) ─── -->
-      <section
-        v-if="userRole === 'LEADER'"
-        class="role-section leader-krs-section"
-      >
-        <div class="section-title-row">
-          <h3 class="section-title">KR Saya — Konteks Strategis</h3>
-          <span class="count-badge-sub"
-            >{{ leaderAssignedKrs.length }} Key Result</span
-          >
-        </div>
+            <div class="task-context" v-if="task.initiative">
+              <p v-if="task.initiative?.keyResult?.title">
+                <strong>KR:</strong> {{ task.initiative.keyResult.title }}
+              </p>
+              <p v-if="task.initiative?.title">
+                <strong>Inisiatif:</strong> {{ task.initiative.title }}
+              </p>
+            </div>
 
-        <div v-if="leaderAssignedKrs.length === 0" class="empty-state">
-          Belum ada Monthly Key Result yang di-assign ke Anda.
-        </div>
-
-        <div v-else class="leader-krs-grid">
-          <div
-            v-for="assign in leaderAssignedKrs"
-            :key="assign.id"
-            class="kr-card card"
-          >
-            <!-- Monthly KR Header -->
-            <div class="kr-header">
-              <div class="kr-title-area">
-                <span class="month-badge">{{
-                  formatMonthLabel(assign.keyResult?.month)
-                }}</span>
-                <h4 class="kr-title">{{ assign.keyResult?.title }}</h4>
-              </div>
-              <div class="kr-badge-area">
+            <div class="task-progress-section">
+              <div class="progress-labels">
                 <span
-                  class="badge"
-                  :class="getStatusClass(assign.keyResult?.status)"
+                  >Target:
+                  <strong
+                    >{{ task.targetValue }} {{ task.unit || "" }}</strong
+                  ></span
                 >
-                  {{ assign.keyResult?.status }}
-                </span>
                 <span
-                  v-if="assign.keyResult?.isManualOverride"
-                  class="override-badge badge-warn"
+                  >Saat ini:
+                  <strong
+                    >{{ task.currentValue }} {{ task.unit || "" }}</strong
+                  ></span
                 >
-                  Manual Override
-                </span>
-                <span v-else class="override-badge badge-info">
-                  Auto dari Inisiatif
-                </span>
-              </div>
-            </div>
-
-            <!-- Parent Annual KR Context -->
-            <div
-              v-if="assign.keyResult?.annualKeyResult"
-              class="parent-annual-context"
-            >
-              <div class="context-label">Annual KR Atap (Manajer):</div>
-              <div class="parent-info-row">
-                <span class="parent-title"
-                  >📌 {{ assign.keyResult.annualKeyResult.title }}</span
-                >
-                <span class="parent-status badge bg-green">{{
-                  assign.keyResult.annualKeyResult.status
-                }}</span>
-              </div>
-              <div class="parent-progress-row">
-                <span class="lbl-prog"
-                  >Target Tahunan:
-                  {{ assign.keyResult.annualKeyResult.currentValue }} /
-                  {{ assign.keyResult.annualKeyResult.targetValue }}</span
-                >
-                <span class="lbl-contrib"
-                  >Bobot Bulan ini:
-                  {{ Math.round(assign.keyResult.monthWeight * 100) }}%</span
-                >
-              </div>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="kr-progress-section">
-              <div class="progress-info">
-                <span class="progress-val">
-                  Capaian: {{ assign.keyResult?.currentValue }} /
-                  {{ assign.keyResult?.targetValue }}
-                  {{ assign.keyResult?.unit || "%" }}
-                </span>
-                <span class="progress-pct font-bold">
-                  {{ getProgressPercent(assign.keyResult).toFixed(1) }}%
-                </span>
               </div>
               <div class="progress-bar-container">
                 <div
-                  class="progress-bar-fill"
-                  :style="{ width: getProgressPercent(assign.keyResult) + '%' }"
+                  class="progress-bar"
+                  :style="{ width: getProgressPercent(task) + '%' }"
                 ></div>
               </div>
             </div>
 
-            <!-- Manual Update Button -->
-            <div class="kr-actions" v-if="assign.raciRole === 'RESPONSIBLE'">
-              <button
-                class="primary-btn small"
-                @click="openLeaderKrUpdateModal(assign.keyResult)"
-              >
-                Update Manual
-              </button>
+            <button
+              class="primary-btn small"
+              @click="openTaskSubmitModal(task)"
+            >
+              Submit Update
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION: PERSETUJUAN TASK (LEADER & MANAGER) ─── -->
+      <section
+        v-if="
+          ['LEADER', 'MANAGER'].includes(userRole) &&
+          pendingApprovals.length > 0
+        "
+        class="role-section approvals-section"
+      >
+        <div class="section-title-row">
+          <h3 class="section-title">Persetujuan Task — Level Di Bawahnya</h3>
+          <span class="count-badge-sub"
+            >{{ pendingApprovals.length }} Menunggu Persetujuan</span
+          >
+        </div>
+
+        <div class="pending-list">
+          <div v-for="upd in pendingApprovals" :key="upd.id" class="card mb-4">
+            <div class="kr-main">
+              <div class="kr-title-row mb-2">
+                <span class="kr-title">{{ upd.initiative?.title }}</span>
+                <span
+                  class="badge"
+                  :class="upd.type === 'TASK' ? 'bg-task' : 'bg-initiative'"
+                >
+                  {{ upd.type }}
+                </span>
+                <span class="badge bg-yellow ml-2">PENDING</span>
+              </div>
+
+              <div class="text-sm text-gray mb-4">
+                <strong>Tim Pelaksana:</strong>
+                {{ upd.initiative?.team?.name || "-" }}
+              </div>
+
+              <div class="update-details">
+                <div class="detail-box">
+                  <span class="lbl">Nilai Sebelumnya:</span>
+                  <span class="val">{{ upd.oldValue }}</span>
+                </div>
+                <div class="detail-box">
+                  <span class="lbl">Nilai Diajukan:</span>
+                  <span class="val text-blue">{{ upd.newValue }}</span>
+                </div>
+                <div v-if="upd.note" class="detail-box flex-2">
+                  <span class="lbl">Catatan:</span>
+                  <span class="val italic">"{{ upd.note }}"</span>
+                </div>
+                <div v-if="upd.link" class="detail-box">
+                  <span class="lbl">Dokumentasi:</span>
+                  <span class="val">
+                    <a
+                      :href="upd.link"
+                      target="_blank"
+                      class="text-blue hover:underline font-semibold"
+                    >
+                      Link Hasil
+                    </a>
+                  </span>
+                </div>
+              </div>
+
+              <div class="actions-row mt-4">
+                <button
+                  class="primary-btn small"
+                  @click="handleApprove(upd.id)"
+                >
+                  Approve
+                </button>
+                <button class="danger-btn small" @click="openRejectModal(upd)">
+                  Reject
+                </button>
+                <button
+                  class="secondary-btn small"
+                  @click="
+                    openDetailModal(
+                      upd.initiative?.title,
+                      upd.type === 'TASK' ? 'Task' : 'Inisiatif',
+                      upd,
+                      '—',
+                    )
+                  "
+                >
+                  Lihat Detail
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -481,87 +430,6 @@
         </div>
       </section>
 
-      <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
-      <section
-        v-if="userRole === 'MANAGER' && pendingApprovals.length > 0"
-        class="role-section manager-approvals"
-      >
-        <h3 class="section-title">Antrean Persetujuan (Pending Approvals)</h3>
-        <div class="pending-list">
-          <div v-for="upd in pendingApprovals" :key="upd.id" class="card mb-4">
-            <div class="kr-main">
-              <div class="kr-title-row mb-2">
-                <span class="kr-title">{{ upd.initiative?.title }}</span>
-                <span
-                  class="badge"
-                  :class="upd.type === 'TASK' ? 'bg-task' : 'bg-initiative'"
-                >
-                  {{ upd.type }}
-                </span>
-                <span class="badge bg-yellow ml-2">PENDING</span>
-              </div>
-
-              <div class="text-sm text-gray mb-4">
-                <strong>Tim Pelaksana:</strong>
-                {{ upd.initiative?.team?.name || "-" }}
-              </div>
-
-              <div class="update-details">
-                <div class="detail-box">
-                  <span class="lbl">Nilai Sebelumnya:</span>
-                  <span class="val">{{ upd.oldValue }}</span>
-                </div>
-                <div class="detail-box">
-                  <span class="lbl">Nilai Diajukan:</span>
-                  <span class="val text-blue">{{ upd.newValue }}</span>
-                </div>
-                <div v-if="upd.note" class="detail-box flex-2">
-                  <span class="lbl">Catatan:</span>
-                  <span class="val italic">"{{ upd.note }}"</span>
-                </div>
-                <div v-if="upd.link" class="detail-box">
-                  <span class="lbl">Dokumentasi:</span>
-                  <span class="val">
-                    <a
-                      :href="upd.link"
-                      target="_blank"
-                      class="text-blue hover:underline font-semibold"
-                    >
-                      Link Hasil
-                    </a>
-                  </span>
-                </div>
-              </div>
-
-              <div class="actions-row mt-4">
-                <button
-                  class="primary-btn small"
-                  @click="handleApprove(upd.id)"
-                >
-                  Approve
-                </button>
-                <button class="danger-btn small" @click="openRejectModal(upd)">
-                  Reject
-                </button>
-                <button
-                  class="secondary-btn small"
-                  @click="
-                    openDetailModal(
-                      upd.initiative?.title,
-                      upd.type === 'TASK' ? 'Task' : 'Inisiatif',
-                      upd,
-                      '—',
-                    )
-                  "
-                >
-                  Lihat Detail
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- ─── MODAL: Submit Task Update (TEAM) ─── -->
       <div
         v-if="showTaskSubmitModal"
@@ -570,7 +438,7 @@
       >
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Submit Update Task</h3>
+            <h3>Submit Update Progress Task</h3>
             <button
               class="modal-close-btn"
               @click="showTaskSubmitModal = false"
@@ -578,27 +446,107 @@
               &times;
             </button>
           </div>
-          <p>{{ selectedTask?.title }}</p>
-          <label>Nilai Baru:</label>
+          <p class="mb-4" style="font-size: 14px; color: #334155;">
+            Task: <strong>{{ selectedTask?.title }}</strong>
+          </p>
+
+          <div class="info-box mb-4">
+            Target: <strong>{{ selectedTask?.targetValue }} {{ selectedTask?.unit || "" }}</strong><br />
+            Saat ini: <strong>{{ selectedTask?.currentValue }} {{ selectedTask?.unit || "" }}</strong>
+          </div>
+
+          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #475569;">Nilai Baru (Kumulatif) *</label>
           <input
             v-model.number="submitNewValue"
             type="number"
             class="form-input"
           />
-          <label>Catatan (opsional):</label>
-          <textarea v-model="submitNote" class="form-input" rows="3"></textarea>
-          <label>Link Dokumentasi Hasil (opsional):</label>
+
+          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #475569;">Catatan Progress</label>
+          <textarea
+            v-model="submitNote"
+            class="form-input"
+            rows="3"
+            placeholder="Apa yang sudah dikerjakan?"
+          ></textarea>
+
+          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #475569;">Link Dokumentasi Hasil (opsional)</label>
           <input
             v-model="submitLink"
             type="url"
             class="form-input"
             placeholder="https://example.com/..."
           />
+
+          <div v-if="['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER'].includes(userRole)" class="info-box info-approved mb-4">
+            Sebagai <strong>{{ userRole }}</strong>, update Anda akan <strong>langsung diterapkan</strong> tanpa perlu persetujuan.
+          </div>
+          <div v-else class="info-box mb-4">
+            Update akan dikirim ke Leader/Manager untuk disetujui terlebih dahulu.
+          </div>
+
+          <!-- Riwayat Task updates sebelumnya jika ada -->
+          <div
+            v-if="selectedTask?.updates?.length > 0"
+            class="mini-history mb-4"
+            style="border-top: 1px solid #e2e8f0; padding-top: 12px"
+          >
+            <h5 style="margin: 0 0 8px 0; font-size: 13px; color: #475569">
+              Riwayat Update Sebelumnya:
+            </h5>
+            <div
+              style="
+                max-height: 120px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <div
+                v-for="upd in selectedTask.updates"
+                :key="upd.id"
+                style="
+                  font-size: 11px;
+                  padding: 6px;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 6px;
+                "
+              >
+                <div style="display: flex; justify-content: space-between">
+                  <span style="color: #64748b">{{
+                    new Date(upd.createdAt).toLocaleDateString("id-ID")
+                  }}</span>
+                  <span style="font-weight: 500"
+                    >Nilai: {{ upd.newValue }}</span
+                  >
+                </div>
+                <div style="margin-top: 2px">
+                  Status: {{ upd.status }}
+                </div>
+                <div
+                  v-if="upd.note"
+                  style="color: #64748b; font-style: italic; margin-top: 2px"
+                >
+                  "{{ upd.note }}"
+                </div>
+                <div
+                  v-if="upd.reviewNote"
+                  style="color: #ef4444; margin-top: 2px; font-weight: 500"
+                >
+                  Alasan reject: "{{ upd.reviewNote }}"
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="modal-actions">
             <button class="secondary-btn" @click="showTaskSubmitModal = false">
               Batal
             </button>
-            <button class="primary-btn" @click="submitTaskUpdate">Kirim</button>
+            <button class="primary-btn" @click="submitTaskUpdate">
+              Kirim Update
+            </button>
           </div>
         </div>
       </div>
@@ -1110,6 +1058,21 @@ function getProgressColorClass(pct) {
   return "progress-low";
 }
 
+function getStatusClass(status) {
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  if (status === "OFF_TRACK") return "bg-red";
+  return "bg-gray";
+}
+
+function getProgressPercent(task) {
+  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
+  return Math.min(
+    100,
+    Math.max(0, (task.currentValue / task.targetValue) * 100),
+  );
+}
+
 async function fetchInitiativeProgress() {
   try {
     const res = await $fetch(`${config.public.apiBase}/initiatives/progress`, {
@@ -1300,8 +1263,10 @@ async function fetchDashboardData() {
     } else if (userRole.value === "LEADER") {
       leadingTeams.value = response.leadingTeams || [];
       leaderInitiatives.value = response.initiatives || [];
+      await fetchPendingApprovals();
     } else if (userRole.value === "MANAGER") {
       pendingApprovals.value = response.pendingApprovals || [];
+      await fetchPendingApprovals();
     }
 
     summaryData.value = response;
@@ -1310,6 +1275,22 @@ async function fetchDashboardData() {
     console.error("Error fetching dashboard summary:", err);
   } finally {
     loading.value = false;
+  }
+}
+
+async function fetchPendingApprovals() {
+  if (!["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(userRole.value))
+    return;
+  try {
+    const res = await $fetch(
+      `${config.public.apiBase}/initiatives/initiative-updates/pending`,
+      {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      },
+    );
+    pendingApprovals.value = res || [];
+  } catch (err) {
+    console.error("Error fetching pending approvals:", err);
   }
 }
 
@@ -1325,6 +1306,9 @@ onMounted(() => {
   fetchDashboardData();
   if (showInitiativeProgress.value) {
     fetchInitiativeProgress();
+  }
+  if (["LEADER", "MANAGER"].includes(auth.user?.role)) {
+    fetchPendingApprovals();
   }
   if (auth.user?.role === "LEADER") {
     fetchLeaderAssignedKrs();
@@ -1614,13 +1598,11 @@ async function handleReject() {
 }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
 }
 
 /* Controls */
@@ -1682,23 +1664,151 @@ async function handleReject() {
   color: #0e97d6;
 }
 
-/* Task Summary Cards Grid */
+/* Task Cards Grid (matching Pekerjaan Saya / my-work.vue) */
 .task-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 768px) {
-  .task-grid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .task-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.task-header h3 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--text-color, #0f172a);
+  flex: 1;
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.task-context {
+  background: var(--input-bg, #f8fafc);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #475569);
+  border: 1px solid var(--card-border, #e2e8f0);
+}
+
+.task-context p {
+  margin: 0 0 4px 0;
+}
+
+.task-context p:last-child {
+  margin: 0;
+}
+
+.task-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary, #475569);
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: var(--card-border, #e2e8f0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #0ea5e9;
+  transition: width 0.3s;
+}
+
+.bg-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+
+.bg-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.bg-gray {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.bg-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.kr-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--card-border, #f1f5f9);
+}
+
+.kr-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: var(--text-color, #0f172a);
+}
+
+.kr-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--input-bg, #f1f5f9);
+  color: var(--text-secondary, #475569);
+}
+
+.kr-progress {
+  width: 220px;
+  text-align: right;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
 }
 
 .task-label {
@@ -2452,42 +2562,72 @@ async function handleReject() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 .modal-box {
-  background: #1e293b;
-  color: #fff;
+  background: #ffffff;
+  color: var(--text-color, #0f172a);
   border-radius: 16px;
   padding: 24px;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--card-border, #e2e8f0);
 }
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 .modal-header h3 {
   margin: 0;
+  font-size: 18px;
+  color: var(--text-color, #0f172a);
 }
 .modal-close-btn {
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.6);
+  color: #64748b;
 }
 .modal-close-btn:hover {
-  color: #fff;
+  color: #0f172a;
+}
+.info-box {
+  background: var(--input-bg, #f8fafc);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  color: var(--text-color, #334155);
+}
+.info-approved {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  font-size: 14px;
+  background: #ffffff;
+  color: var(--text-color, #0f172a);
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 /* ─── INITIATIVE PROGRESS STYLES ─── */
@@ -2761,9 +2901,11 @@ async function handleReject() {
 
 /* LEADER KEY RESULTS SECTION STYLES */
 .leader-krs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  .kr-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 }
 .kr-header {
   display: flex;
@@ -2861,26 +3003,27 @@ async function handleReject() {
   justify-content: flex-end;
 }
 
-/* --- Manager Approvals (matching approvals.vue) --- */
-.manager-approvals {
-  margin-top: 20px;
+/* --- Pending Approvals List (matching approvals.vue) --- */
+.approvals-section {
+  margin-top: 24px;
 }
 
-.manager-approvals .pending-list {
+.approvals-section .pending-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.manager-approvals .card.mb-4 {
+.approvals-section .card.mb-4 {
   margin-bottom: 16px;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border, #e4e4e4);
+  border: 1px solid var(--card-border, #e2e8f0);
   border-radius: 16px;
   padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.manager-approvals .kr-title-row {
+.approvals-section .kr-title-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -2888,13 +3031,13 @@ async function handleReject() {
   margin-bottom: 8px;
 }
 
-.manager-approvals .kr-title {
+.approvals-section .kr-title {
   font-weight: 600;
   font-size: 16px;
   color: var(--text-color, #1e293b);
 }
 
-.manager-approvals .badge {
+.approvals-section .badge {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 6px;
@@ -2902,40 +3045,36 @@ async function handleReject() {
   text-transform: uppercase;
 }
 
-.manager-approvals .bg-task {
+.approvals-section .bg-task {
   background: #e0f2fe;
   color: #0369a1;
 }
 
-.manager-approvals .bg-initiative {
+.approvals-section .bg-initiative {
   background: #f3e8ff;
   color: #7e22ce;
 }
 
-.manager-approvals .bg-yellow {
+.approvals-section .bg-yellow {
   background: #fef08a;
   color: #854d0e;
 }
 
-.manager-approvals .text-gray {
+.approvals-section .text-gray {
   color: #64748b;
 }
 
-.manager-approvals .mb-4 {
-  margin-bottom: 16px;
-}
-
-.manager-approvals .update-details {
+.approvals-section .update-details {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  background: var(--color-field, #f8fafc) !important;
+  background: var(--input-bg, #f8fafc);
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid var(--card-border, #e2e8f0);
+  border: 1px solid var(--card-border, #f1f5f9);
 }
 
-.manager-approvals .detail-box {
+.approvals-section .detail-box {
   flex: 1;
   min-width: 150px;
   display: flex;
@@ -2943,35 +3082,35 @@ async function handleReject() {
   gap: 4px;
 }
 
-.manager-approvals .detail-box.flex-2 {
+.approvals-section .detail-box.flex-2 {
   flex: 2;
   min-width: 250px;
 }
 
-.manager-approvals .detail-box .lbl {
+.approvals-section .detail-box .lbl {
   font-size: 11px;
   color: #64748b;
   text-transform: uppercase;
   font-weight: 500;
 }
 
-.manager-approvals .detail-box .val {
+.approvals-section .detail-box .val {
   font-size: 14px;
   color: var(--text-color, #334155);
   font-weight: 600;
 }
 
-.manager-approvals .text-blue {
+.approvals-section .text-blue {
   color: #0e97d6 !important;
 }
 
-.manager-approvals .actions-row {
+.approvals-section .actions-row {
   display: flex;
   gap: 12px;
   margin-top: 16px;
 }
 
-.manager-approvals .primary-btn.small {
+.approvals-section .primary-btn.small {
   background-color: #0e97d6;
   color: white;
   border: none;
@@ -2983,11 +3122,11 @@ async function handleReject() {
   font-size: 13px;
 }
 
-.manager-approvals .primary-btn.small:hover {
+.approvals-section .primary-btn.small:hover {
   background-color: #0a84be;
 }
 
-.manager-approvals .danger-btn.small {
+.approvals-section .danger-btn.small {
   background-color: #ef4444;
   color: white;
   border: none;
@@ -2999,11 +3138,11 @@ async function handleReject() {
   font-size: 13px;
 }
 
-.manager-approvals .danger-btn.small:hover {
+.approvals-section .danger-btn.small:hover {
   background-color: #dc2626;
 }
 
-.manager-approvals .secondary-btn.small {
+.approvals-section .secondary-btn.small {
   background-color: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
@@ -3015,7 +3154,7 @@ async function handleReject() {
   font-size: 13px;
 }
 
-.manager-approvals .secondary-btn.small:hover {
+.approvals-section .secondary-btn.small:hover {
   background-color: #e2e8f0;
 }
 </style>
