@@ -460,12 +460,6 @@
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
                   </span>
-                  <span
-                    class="weight-badge-mini"
-                    title="Bobot Inisiatif terhadap KR"
-                  >
-                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                  </span>
                 </div>
 
                 <!-- Date Range & Sprint Meta Row -->
@@ -748,12 +742,6 @@
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
                   </span>
-                  <span
-                    class="weight-badge-mini"
-                    title="Bobot Inisiatif terhadap KR"
-                  >
-                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                  </span>
                 </div>
 
                 <!-- Date Range & Sprint Meta Row -->
@@ -1034,12 +1022,6 @@
                       >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                     >
                   </span>
-                  <span
-                    class="weight-badge-mini"
-                    title="Bobot Inisiatif terhadap KR"
-                  >
-                    Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
-                  </span>
                 </div>
 
                 <div class="card-footer-meta">
@@ -1277,18 +1259,6 @@
                   type="number"
                   class="form-input"
                   placeholder="Opsional (Diisi jika DONE)"
-                />
-              </div>
-              <div>
-                <label>Bobot Inisiatif (%) *</label>
-                <input
-                  v-model.number="initiativeForm.weight"
-                  type="number"
-                  step="1"
-                  min="0.1"
-                  max="100"
-                  class="form-input"
-                  placeholder="Contoh: 25"
                 />
               </div>
             </div>
@@ -2077,29 +2047,6 @@ async function saveInitiative() {
   if (!initiativeForm.value.keyResultId) {
     errorMessage.value = "Key Result wajib dipilih";
     return;
-  }
-  if (
-    initiativeForm.value.weight === undefined ||
-    initiativeForm.value.weight === null ||
-    initiativeForm.value.weight <= 0 ||
-    initiativeForm.value.weight > 100
-  ) {
-    errorMessage.value =
-      "Bobot inisiatif wajib diisi, dengan nilai antara 0.1% - 100%";
-    return;
-  }
-
-  if (initiativeForm.value.ownerId && initiativeForm.value.sprintMonth) {
-    const used = computeUsedWeight(
-      initiativeForm.value.ownerId,
-      initiativeForm.value.sprintMonth,
-      editingInitiative.value?.id,
-    );
-    const total = used + initiativeForm.value.weight;
-    if (total > 100.01) {
-      errorMessage.value = `Total bobot pegawai ini pada sprint tersebut menjadi ${total.toFixed(1)}%, melebihi batas 100%. Sisa bobot tersedia: ${Math.max(0, 100 - used).toFixed(1)}%`;
-      return;
-    }
   }
 
   if (isTeam.value) {

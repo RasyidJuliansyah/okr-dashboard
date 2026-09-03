@@ -455,20 +455,6 @@
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
           <span>Persetujuan Task</span>
-          <span
-            v-if="notifStore.unreadCount > 0"
-            style="
-              margin-left: auto;
-              background: #eb3123;
-              color: #ffffff;
-              font-size: 11px;
-              font-weight: 700;
-              padding: 2px 7px;
-              border-radius: 10px;
-            "
-          >
-            {{ notifStore.unreadCount }}
-          </span>
         </NuxtLink>
       </div>
     </nav>

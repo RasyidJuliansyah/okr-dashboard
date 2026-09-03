@@ -285,15 +285,6 @@
             </div>
           </div>
 
-          <label class="form-label">Bobot Inisiatif *</label>
-          <input
-            v-model.number="initiativeForm.weight"
-            type="number"
-            step="0.1"
-            min="0.1"
-            class="form-input mb-3"
-          />
-
           <div class="modal-actions">
             <button
               class="secondary-btn"

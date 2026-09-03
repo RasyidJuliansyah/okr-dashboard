@@ -164,9 +164,12 @@
                             <span class="badge-team"
                               >→ {{ ini.team?.name }}</span
                             >
-                            <span v-if="ini.owner" class="badge-owner">{{
-                              ini.owner.name
-                            }}</span>
+                            <span
+                              v-if="ini.assignedLeader || ini.owner"
+                              class="badge-owner"
+                            >
+                              PIC: {{ (ini.assignedLeader || ini.owner)?.name }}
+                            </span>
                             <span v-if="ini.sprintMonth" class="badge bg-blue">
                               Sprint: {{ ini.sprintMonth }}
                             </span>

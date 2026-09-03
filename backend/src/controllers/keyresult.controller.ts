@@ -613,6 +613,8 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
             initiatives: {
               include: {
                 team: true,
+                owner: true,
+                assignedLeader: true,
                 tasks: {
                   include: { assignments: { include: { user: true } } },
                 },

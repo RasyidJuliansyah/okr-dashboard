@@ -168,12 +168,6 @@
                     >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                   >
                 </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
-                </span>
               </div>
 
               <!-- Tasks summary chips -->
@@ -316,12 +310,6 @@
                   <strong class="target-val"
                     >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                   >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
                 </span>
               </div>
 
@@ -468,12 +456,6 @@
                     >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                   >
                 </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
-                </span>
               </div>
 
               <div class="card-footer-meta">
@@ -595,12 +577,6 @@
                   <strong class="target-val"
                     >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                   >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
                 </span>
               </div>
 
@@ -771,20 +747,6 @@
                   v-model="initiativeForm.unit"
                   class="form-input"
                   placeholder="%, Sesi, tasks..."
-                />
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div>
-                <label>Bobot Inisiatif *</label>
-                <input
-                  v-model.number="initiativeForm.weight"
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  class="form-input"
-                  placeholder="Contoh: 1.0"
                 />
               </div>
               <div>
@@ -1122,15 +1084,6 @@ async function saveInitiative() {
   }
   if (!initiativeForm.value.teamId) {
     errorMessage.value = "Tim wajib dipilih";
-    return;
-  }
-  if (
-    initiativeForm.value.weight === undefined ||
-    initiativeForm.value.weight === null ||
-    initiativeForm.value.weight <= 0
-  ) {
-    errorMessage.value =
-      "Bobot inisiatif wajib diisi dan harus bernilai lebih dari 0";
     return;
   }
 
