@@ -175,6 +175,7 @@ model Initiative {
   sprintMonth   String?   // e.g., "2026-08"
   documentationLink String?
   tasks         Task[]    // kpis Kpi[] -> tasks Task[]
+  kpis          InitiativeKpi[]
   progressUpdates InitiativeUpdate[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -202,6 +203,7 @@ model Task {
   documentationLink   String?
   assignments         TaskAssignment[]
   updates             TaskUpdate[]
+  kpis                TaskKpi[]
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
@@ -281,3 +283,54 @@ model Notification {
   @@index([recipientId, isRead])
   @@index([recipientId, createdAt])
 }
+
+model Kpi {
+  id             String          @id @default(uuid())
+  name           String
+  description    String?
+  department     String?
+  bscPerspective String
+  unit           String
+  defaultTarget  Float?
+  status         String          @default("ACTIVE")
+  initiativeKpis InitiativeKpi[]
+  taskKpis       TaskKpi[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([department])
+  @@index([bscPerspective])
+}
+
+model InitiativeKpi {
+  id           String     @id @default(uuid())
+  initiativeId String
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  kpiId        String
+  kpi          Kpi        @relation(fields: [kpiId], references: [id])
+  targetValue  Float
+  currentValue Float      @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([initiativeId, kpiId])
+  @@index([initiativeId])
+  @@index([kpiId])
+}
+
+model TaskKpi {
+  id           String   @id @default(uuid())
+  taskId       String
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kpiId        String
+  kpi          Kpi      @relation(fields: [kpiId], references: [id])
+  targetValue  Float
+  currentValue Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([taskId, kpiId])
+  @@index([taskId])
+  @@index([kpiId])
+}
+

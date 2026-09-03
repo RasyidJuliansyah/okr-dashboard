@@ -13,6 +13,7 @@ import departmentRoutes from "./routes/department.routes";
 import bulkUploadRoutes from "./routes/bulkUpload.routes";
 import annualKeyResultRoutes from "./routes/annualKeyResult.routes";
 import notificationRoutes from "./routes/notification.routes";
+import kpiRoutes from "./routes/kpi.routes";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/bulk-upload", bulkUploadRoutes);
 app.use("/api/annual-key-results", annualKeyResultRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/kpis", kpiRoutes);
 
 // Base route for sanity check
 app.get("/", (req, res) => {
