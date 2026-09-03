@@ -446,23 +446,49 @@
               &times;
             </button>
           </div>
-          <p class="mb-4" style="font-size: 14px; color: #334155;">
+          <p class="mb-4" style="font-size: 14px; color: #334155">
             Task: <strong>{{ selectedTask?.title }}</strong>
           </p>
 
           <div class="info-box mb-4">
-            Target: <strong>{{ selectedTask?.targetValue }} {{ selectedTask?.unit || "" }}</strong><br />
-            Saat ini: <strong>{{ selectedTask?.currentValue }} {{ selectedTask?.unit || "" }}</strong>
+            Target:
+            <strong
+              >{{ selectedTask?.targetValue }}
+              {{ selectedTask?.unit || "" }}</strong
+            ><br />
+            Saat ini:
+            <strong
+              >{{ selectedTask?.currentValue }}
+              {{ selectedTask?.unit || "" }}</strong
+            >
           </div>
 
-          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #475569;">Nilai Baru (Kumulatif) *</label>
+          <label
+            style="
+              display: block;
+              font-size: 13px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              color: #475569;
+            "
+            >Nilai Baru (Kumulatif) *</label
+          >
           <input
             v-model.number="submitNewValue"
             type="number"
             class="form-input"
           />
 
-          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #475569;">Catatan Progress</label>
+          <label
+            style="
+              display: block;
+              font-size: 13px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              color: #475569;
+            "
+            >Catatan Progress</label
+          >
           <textarea
             v-model="submitNote"
             class="form-input"
@@ -470,7 +496,16 @@
             placeholder="Apa yang sudah dikerjakan?"
           ></textarea>
 
-          <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #475569;">Link Dokumentasi Hasil (opsional)</label>
+          <label
+            style="
+              display: block;
+              font-size: 13px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              color: #475569;
+            "
+            >Link Dokumentasi Hasil (opsional)</label
+          >
           <input
             v-model="submitLink"
             type="url"
@@ -478,11 +513,17 @@
             placeholder="https://example.com/..."
           />
 
-          <div v-if="['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER'].includes(userRole)" class="info-box info-approved mb-4">
-            Sebagai <strong>{{ userRole }}</strong>, update Anda akan <strong>langsung diterapkan</strong> tanpa perlu persetujuan.
+          <div
+            v-if="['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER'].includes(userRole)"
+            class="info-box info-approved mb-4"
+          >
+            Sebagai <strong>{{ userRole }}</strong
+            >, update Anda akan <strong>langsung diterapkan</strong> tanpa perlu
+            persetujuan.
           </div>
           <div v-else class="info-box mb-4">
-            Update akan dikirim ke Leader/Manager untuk disetujui terlebih dahulu.
+            Update akan dikirim ke Leader/Manager untuk disetujui terlebih
+            dahulu.
           </div>
 
           <!-- Riwayat Task updates sebelumnya jika ada -->
@@ -521,9 +562,7 @@
                     >Nilai: {{ upd.newValue }}</span
                   >
                 </div>
-                <div style="margin-top: 2px">
-                  Status: {{ upd.status }}
-                </div>
+                <div style="margin-top: 2px">Status: {{ upd.status }}</div>
                 <div
                   v-if="upd.note"
                   style="color: #64748b; font-style: italic; margin-top: 2px"
@@ -1604,7 +1643,16 @@ async function handleReject() {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   border: 1px solid #f1f5f9;
 }
-
+.primary-btn {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
 /* Controls */
 .controls-card {
   padding: 20px 24px;
@@ -1676,7 +1724,13 @@ async function handleReject() {
   flex-direction: column;
   gap: 16px;
 }
-
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+}
 .task-header {
   display: flex;
   justify-content: space-between;

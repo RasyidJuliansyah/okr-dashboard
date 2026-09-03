@@ -238,10 +238,7 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
         continue;
       }
 
-      if (
-        emp.role &&
-        !VALID_ROLES.includes(emp.role.toUpperCase())
-      ) {
+      if (emp.role && !VALID_ROLES.includes(emp.role.toUpperCase())) {
         results.errors.push({
           row: rowNum,
           email: emp.email,
@@ -330,9 +327,13 @@ export async function updateTeam(req: AuthRequest, res: Response) {
 
     // Jika leaderId dikirim, pastikan user tersebut ada dan role-nya LEADER
     if (leaderId) {
-      const leaderUser = await prisma.user.findUnique({ where: { id: leaderId } });
+      const leaderUser = await prisma.user.findUnique({
+        where: { id: leaderId },
+      });
       if (!leaderUser || leaderUser.role !== "LEADER") {
-        return res.status(400).json({ message: "User tidak ditemukan atau bukan LEADER" });
+        return res
+          .status(400)
+          .json({ message: "User tidak ditemukan atau bukan LEADER" });
       }
     }
 
@@ -361,32 +362,59 @@ export async function getTeamMembers(req: AuthRequest, res: Response) {
     const { role, id: userId } = req.user!;
 
     // LEADER: hanya bisa melihat member tim yang dipimpinnya / tim miliknya / tim di departemennya
-    if (role === 'LEADER') {
+    if (role === "LEADER") {
       const dbUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { teamId: true, department: true }
+        select: { teamId: true, department: true },
       });
       const team = await prisma.team.findUnique({ where: { id } });
-      const isAllowed = team && (
-        team.leaderId === userId ||
-        team.id === dbUser?.teamId ||
-        (dbUser?.department && team.department === dbUser.department)
-      );
+      const isAllowed =
+        team &&
+        (team.leaderId === userId ||
+          team.id === dbUser?.teamId ||
+          (dbUser?.department && team.department === dbUser.department));
       if (!isAllowed) {
-        return res.status(403).json({ message: 'Forbidden: Bukan tim yang Anda pimpin' });
+        return res
+          .status(403)
+          .json({ message: "Forbidden: Bukan tim yang Anda pimpin" });
       }
     }
 
     const members = await prisma.user.findMany({
       where: { teamId: id },
       select: { id: true, name: true, email: true, role: true, position: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
 
     return res.status(200).json(members);
   } catch (error) {
-    console.error('Get team members error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error("Get team members error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
 
+// POST /api/users/:id/reset-password — Admin reset password user ke SkollaEdu
+export async function resetUserPassword(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({ message: "User tidak ditemukan" });
+    }
+
+    const hashedPassword = await bcrypt.hash("SkollaEdu", 10);
+
+    await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+
+    return res.status(200).json({
+      message: `Password untuk ${user.name} berhasil direset ke 'SkollaEdu'`,
+    });
+  } catch (error) {
+    console.error("Reset user password error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

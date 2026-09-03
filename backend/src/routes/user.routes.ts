@@ -9,19 +9,38 @@ import {
   getTeams,
   updateTeam,
   getTeamMembers,
+  resetUserPassword,
 } from "../controllers/user.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
 const router = Router();
 
 // GET /api/users — Semua role bisa melihat daftar user/pegawai
-router.get("/", authMiddleware, roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]), getAllUsers);
+router.get(
+  "/",
+  authMiddleware,
+  roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
+  getAllUsers,
+);
 
 // POST /api/users — Admin membuat pegawai baru
 router.post("/", authMiddleware, roleGuard(["ADMIN"]), createEmployee);
 
 // POST /api/users/bulk-upload — Admin import banyak pegawai via CSV
-router.post("/bulk-upload", authMiddleware, roleGuard(["ADMIN"]), bulkUploadEmployees);
+router.post(
+  "/bulk-upload",
+  authMiddleware,
+  roleGuard(["ADMIN"]),
+  bulkUploadEmployees,
+);
+
+// POST /api/users/:id/reset-password — Admin reset password user ke SkollaEdu
+router.post(
+  "/:id/reset-password",
+  authMiddleware,
+  roleGuard(["ADMIN"]),
+  resetUserPassword,
+);
 
 // PATCH /api/users/:id — Admin mengedit data pegawai (nama, posisi, dept)
 router.patch("/:id", authMiddleware, roleGuard(["ADMIN"]), updateEmployee);
@@ -34,14 +53,24 @@ router.patch(
   "/:id/department",
   authMiddleware,
   roleGuard(["ADMIN"]),
-  updateUserDepartment
+  updateUserDepartment,
 );
 
 // GET /api/teams — Semua role bisa melihat daftar team
-router.get("/teams", authMiddleware, roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]), getTeams);
+router.get(
+  "/teams",
+  authMiddleware,
+  roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
+  getTeams,
+);
 
 // GET /api/teams/:id/members — Ambil member dari tim tertentu
-router.get("/teams/:id/members", authMiddleware, roleGuard(["ADMIN", "MANAGER", "LEADER"]), getTeamMembers);
+router.get(
+  "/teams/:id/members",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER"]),
+  getTeamMembers,
+);
 
 // PATCH /api/teams/:id — Admin update leader & dept sebuah team
 router.patch("/teams/:id", authMiddleware, roleGuard(["ADMIN"]), updateTeam);

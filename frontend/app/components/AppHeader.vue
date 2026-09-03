@@ -34,7 +34,10 @@
           flex-direction: column;
           align-items: flex-end;
           gap: 4px;
+          cursor: pointer;
         "
+        @click="showChangePasswordModal = true"
+        title="Klik untuk ganti password"
       >
         <span
           class="user-name"
@@ -58,6 +61,41 @@
           {{ auth.user.role?.replace("_", " ") }}
         </span>
       </div>
+
+      <button
+        v-if="auth.user"
+        class="icon-btn-header"
+        @click="showChangePasswordModal = true"
+        title="Ganti Password"
+        aria-label="Ganti Password"
+        style="
+          background: none;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 6px;
+          cursor: pointer;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        "
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </button>
+
       <div v-if="auth.user" class="notif-wrapper">
         <button
           class="notif-bell-btn"
@@ -116,6 +154,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Ganti Password -->
+    <ChangePasswordModal
+      :isOpen="showChangePasswordModal"
+      @close="showChangePasswordModal = false"
+    />
   </header>
 </template>
 
@@ -123,6 +167,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
+import ChangePasswordModal from "./ChangePasswordModal.vue";
 
 const auth = useAuthStore();
 const notifStore = useNotificationStore();
@@ -136,6 +181,7 @@ const props = defineProps({
 });
 
 const showNotifDropdown = ref(false);
+const showChangePasswordModal = ref(false);
 
 const roleBadgeClass = computed(() => {
   return auth.user?.role?.toLowerCase().replace("_", "") || "";

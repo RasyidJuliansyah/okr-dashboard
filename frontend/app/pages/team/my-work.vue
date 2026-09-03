@@ -424,7 +424,11 @@
                 Belum ada Task untuk inisiatif ini.
               </div>
 
-              <div class="card-actions" style="margin-top: 16px">
+              <div
+                v-if="canReportInitiative(ini)"
+                class="card-actions"
+                style="margin-top: 16px"
+              >
                 <button
                   class="secondary-btn full-width"
                   style="
@@ -621,7 +625,7 @@
             <p v-else class="text-sm text-gray">Belum ada update.</p>
           </div>
 
-          <div class="card-actions">
+          <div v-if="canReportTask(assign.task)" class="card-actions">
             <button
               class="primary-btn full-width"
               @click="openUpdateModal(assign.task)"
@@ -1759,7 +1763,34 @@ function getStatusClass(status) {
   return "bg-gray";
 }
 
+function canReportInitiative(ini) {
+  if (!ini) return false;
+  const role = userRole.value;
+  if (["LEADER", "MANAGER", "ADMIN"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  return (
+    ini.ownerId === userId ||
+    ini.owner?.id === userId ||
+    ini.assignedLeaderId === userId
+  );
+}
+
+function canReportTask(task) {
+  if (!task) return false;
+  const role = userRole.value;
+  if (["LEADER", "MANAGER", "ADMIN"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  return (
+    task.assignedTeamMemberId === userId ||
+    task.assignedTeamMember?.id === userId ||
+    task.assignments?.some((a) => a.userId === userId || a.user?.id === userId)
+  );
+}
+
 function openUpdateModal(task) {
+  if (!canReportTask(task)) return;
   selectedTask.value = task;
   updateForm.value = {
     newValue: task.currentValue,
@@ -1771,6 +1802,7 @@ function openUpdateModal(task) {
 }
 
 function openIniModal(ini) {
+  if (!canReportInitiative(ini)) return;
   selectedIni.value = ini;
   iniForm.value = {
     newValue: ini.currentValue,

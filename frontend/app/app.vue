@@ -21,6 +21,140 @@
         @toggle-sidebar="isSidebarOpen = !isSidebarOpen"
       />
       <main :class="['page-content', { 'padded-content': showShell }]">
+        <!-- Filter Bar for Manager Role -->
+        <!-- <div
+          v-if="showShell && isManagerRole"
+          class="filters-bar card mb-6"
+          style="
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+          "
+        >
+          <!-- Search Input 
+          <div class="filter-item" style="flex: 1; min-width: 220px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: #64748b;
+                margin-bottom: 4px;
+                display: block;
+              "
+              >Search Task / Inisiatif</label
+            >
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="form-input"
+              placeholder="Cari judul task, inisiatif, atau KR..."
+              style="width: 100%; font-size: 13px"
+            />
+          </div>
+
+          <!-- Department Filter 
+          <div class="filter-item" style="min-width: 170px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: #64748b;
+                margin-bottom: 4px;
+                display: block;
+              "
+              >Departemen</label
+            >
+            <select
+              v-model="selectedDepartment"
+              class="form-input"
+              style="width: 100%; font-size: 13px"
+            >
+              <option value="">Semua Departemen</option>
+              <option v-for="dept in departmentsList" :key="dept" :value="dept">
+                {{ dept }}
+              </option>
+            </select>
+          </div>
+
+          <!-- PIC / Employee Filter 
+          <div class="filter-item" style="min-width: 170px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: #64748b;
+                margin-bottom: 4px;
+                display: block;
+              "
+              >PIC / Pegawai</label
+            >
+            <select
+              v-model="selectedEmployeeId"
+              class="form-input"
+              style="width: 100%; font-size: 13px"
+            >
+              <option value="">Semua PIC</option>
+              <option
+                v-for="emp in employeesList"
+                :key="emp.id"
+                :value="emp.id"
+              >
+                {{ emp.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Sprint Month Filter 
+          <div class="filter-item" style="min-width: 150px">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 600;
+                color: #64748b;
+                margin-bottom: 4px;
+                display: block;
+              "
+            >
+              Periode Sprint</label
+            >
+            <input
+              v-model="selectedSprintMonth"
+              type="month"
+              class="form-input"
+              style="width: 100%; font-size: 13px"
+            />
+          </div>
+
+          <!-- Reset Button 
+          <div
+            class="filter-item"
+            v-if="
+              searchQuery ||
+              selectedDepartment ||
+              selectedEmployeeId ||
+              selectedSprintMonth
+            "
+            style="align-self: flex-end"
+          >
+            <button
+              class="secondary-btn small"
+              @click="resetFilters"
+              style="
+                font-size: 12px;
+                padding: 6px 12px;
+                margin-bottom: 16px;
+                height: 36px;
+                min-width: 100px;
+              "
+            >
+              Reset Filter
+            </button>
+          </div>
+        </div> -->
+
         <NuxtPage />
       </main>
     </div>
@@ -28,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch, provide } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import AppSidebar from "./components/AppSidebar.vue";
@@ -36,12 +170,75 @@ import AppHeader from "./components/AppHeader.vue";
 
 const auth = useAuthStore();
 const route = useRoute();
+const config = useRuntimeConfig();
 
 const isSidebarOpen = ref(false);
 
 const isAuthenticated = computed(() => auth.isAuthenticated);
 const isLoginPage = computed(() => route.path === "/login");
 const showShell = computed(() => isAuthenticated.value && !isLoginPage.value);
+const isManagerRole = computed(() => auth.user?.role === "MANAGER");
+
+// Filter State for Manager
+const searchQuery = ref("");
+const selectedDepartment = ref("");
+const selectedEmployeeId = ref("");
+const selectedSprintMonth = ref("");
+const allUsers = ref([]);
+
+async function fetchAllUsers() {
+  if (!auth.token) return;
+  const API = config.public?.apiBase || "http://localhost:3001/api";
+  try {
+    const res = await fetch(`${API}/users`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+    if (res.ok) allUsers.value = await res.json();
+  } catch (err) {}
+}
+
+watch(
+  () => auth.token,
+  (newToken) => {
+    if (newToken && isManagerRole.value) {
+      fetchAllUsers();
+    }
+  },
+  { immediate: true },
+);
+
+const departmentsList = computed(() => {
+  const depts = new Set();
+  allUsers.value.forEach((u) => {
+    if (u.department) depts.add(u.department);
+  });
+  return Array.from(depts).sort();
+});
+
+const employeesList = computed(() => {
+  if (!selectedDepartment.value) return allUsers.value;
+  return allUsers.value.filter(
+    (u) => u.department === selectedDepartment.value,
+  );
+});
+
+function resetFilters() {
+  searchQuery.value = "";
+  selectedDepartment.value = "";
+  selectedEmployeeId.value = "";
+  selectedSprintMonth.value = "";
+}
+
+provide("managerFilters", {
+  searchQuery,
+  selectedDepartment,
+  selectedEmployeeId,
+  selectedSprintMonth,
+  resetFilters,
+});
 
 const pageTitle = computed(() => {
   const path = route.path;
