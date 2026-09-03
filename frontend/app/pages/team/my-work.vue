@@ -1237,7 +1237,9 @@
             Target: {{ selectedIni?.targetValue }} {{ selectedIni?.unit || "%"
             }}<br />
             Saat ini: {{ selectedIni?.currentValue }}
-            {{ selectedIni?.unit || "%" }}
+            {{ selectedIni?.unit || "%" }}<br />
+            Status Kanban:
+            <strong>{{ selectedIni?.kanbanStatus || "TODO" }}</strong>
           </div>
 
           <label>Status Pekerjaan (Kanban)</label>
@@ -1245,6 +1247,7 @@
             <option value="TODO">Todo</option>
             <option value="IN_PROGRESS">In Progress</option>
             <option value="DONE">Done</option>
+            <option value="DROP">Drop</option>
           </select>
 
           <label>Nilai Realisasi Saat Ini *</label>

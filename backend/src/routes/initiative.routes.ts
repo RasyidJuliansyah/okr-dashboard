@@ -23,6 +23,7 @@ import {
   submitInitiativeUpdate,
   getInitiativeProgressUpdates,
   getPendingInitiativeUpdates,
+  getInitiativeUpdatesHistory,
   approveInitiativeUpdate,
   rejectInitiativeUpdate,
   reassignInitiative,
@@ -179,6 +180,12 @@ router.get(
   authMiddleware,
   roleGuard(["MANAGER", "LEADER", "TEAM", "ADMIN", "C_LEVEL"]),
   getPendingInitiativeUpdates,
+);
+router.get(
+  "/initiative-updates/history",
+  authMiddleware,
+  roleGuard(["MANAGER", "LEADER", "TEAM", "ADMIN", "C_LEVEL"]),
+  getInitiativeUpdatesHistory,
 );
 router.patch(
   "/initiative-updates/:updateId/approve",

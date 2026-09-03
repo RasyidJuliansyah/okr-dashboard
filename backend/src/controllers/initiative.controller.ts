@@ -2386,37 +2386,55 @@ export async function cascadeInitiativeToMonthlyKr(
 
   if (allInitiatives.length === 0 || kr.targetValue <= 0) return;
 
-  const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
-  const weightedAvgPercent =
-    allInitiatives.reduce((sum, init) => {
-      let initProgress = 0;
-      if (
-        init.achievedValue !== null &&
-        init.achievedValue !== undefined &&
-        init.targetValue > 0
-      ) {
-        initProgress = Math.min(1, init.achievedValue / init.targetValue);
-      } else if (init.tasks.length > 0) {
-        const initTasksWeight = init.tasks.reduce(
-          (s, t) => s + (t.weight || 1),
-          0,
-        );
-        initProgress =
-          init.tasks.reduce((s, k) => {
-            return (
-              s +
-              (k.targetValue > 0 ? k.currentValue / k.targetValue : 0) *
-                (k.weight || 1)
-            );
-          }, 0) / (initTasksWeight || 1);
-      } else if (init.targetValue > 0) {
-        initProgress = init.currentValue / init.targetValue;
-      }
-      return sum + initProgress * (init.weight || 1);
-    }, 0) / (totalWeight || 1);
+  const isPercentUnit = !kr.unit || kr.unit.trim() === "%";
 
-  const newKrValue =
-    Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
+  let newKrValue = 0;
+
+  if (isPercentUnit) {
+    // Untuk KR berbasis persentase ('%'), gunakan weighted average percentage
+    const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
+    const weightedAvgPercent =
+      allInitiatives.reduce((sum, init) => {
+        let initProgress = 0;
+        if (
+          init.achievedValue !== null &&
+          init.achievedValue !== undefined &&
+          init.targetValue > 0
+        ) {
+          initProgress = Math.min(1, init.achievedValue / init.targetValue);
+        } else if (init.tasks.length > 0) {
+          const initTasksWeight = init.tasks.reduce(
+            (s, t) => s + (t.weight || 1),
+            0,
+          );
+          initProgress =
+            init.tasks.reduce((s, k) => {
+              return (
+                s +
+                (k.targetValue > 0 ? k.currentValue / k.targetValue : 0) *
+                  (k.weight || 1)
+              );
+            }, 0) / (initTasksWeight || 1);
+        } else if (init.targetValue > 0) {
+          initProgress = init.currentValue / init.targetValue;
+        }
+        return sum + initProgress * (init.weight || 1);
+      }, 0) / (totalWeight || 1);
+
+    newKrValue = Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
+  } else {
+    // Untuk KR berbasis nominal (IDR, Qty, Jam, Unit, dll):
+    // Agregasikan (sum) realisasi nilai riil dari seluruh Inisiatif di bawah KR ini
+    const sumInitiativeValues = allInitiatives.reduce((sum, init) => {
+      let initVal = init.currentValue || 0;
+      if (init.achievedValue !== null && init.achievedValue !== undefined) {
+        initVal = init.achievedValue;
+      }
+      return sum + initVal;
+    }, 0);
+
+    newKrValue = Math.round(sumInitiativeValues * 100) / 100;
+  }
 
   const krProgress = newKrValue / kr.targetValue;
   let newStatus = "ON_TRACK";
@@ -3028,8 +3046,26 @@ export async function getPendingInitiativeUpdates(
       orderBy: { createdAt: "desc" },
     });
 
+    const userIds = new Set<string>();
+    updates.forEach((u) => {
+      if (u.submittedBy) userIds.add(u.submittedBy);
+      if (u.reviewedBy) userIds.add(u.reviewedBy);
+    });
+    taskUpdates.forEach((t) => {
+      if (t.submittedBy) userIds.add(t.submittedBy);
+      if (t.reviewedBy) userIds.add(t.reviewedBy);
+    });
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: Array.from(userIds) } },
+      select: { id: true, name: true, email: true, role: true, position: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
     const mappedInitiativeUpdates = updates.map((u: any) => ({
       ...u,
+      submitter: userMap.get(u.submittedBy) || null,
+      reviewer: u.reviewedBy ? userMap.get(u.reviewedBy) || null : null,
       type: "INITIATIVE",
     }));
 
@@ -3044,20 +3080,174 @@ export async function getPendingInitiativeUpdates(
       oldValue: t.oldValue,
       newValue: t.newValue,
       note: t.note,
+      reviewNote: t.reviewNote || null,
       link: t.link,
       status: t.status,
+      submittedBy: t.submittedBy,
+      reviewedBy: t.reviewedBy,
+      reviewedAt: t.reviewedAt,
       createdAt: t.createdAt,
+      submitter: userMap.get(t.submittedBy) || null,
+      reviewer: t.reviewedBy ? userMap.get(t.reviewedBy) || null : null,
       type: "TASK",
     }));
 
     const combinedUpdates = [
       ...mappedInitiativeUpdates,
       ...mappedTaskUpdates,
-    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
     return res.status(200).json(combinedUpdates);
   } catch (error) {
     console.error("Get pending Initiative updates error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// GET /api/initiatives/initiative-updates/history
+export async function getInitiativeUpdatesHistory(
+  req: AuthRequest,
+  res: Response,
+) {
+  try {
+    const { id: userId, role } = req.user!;
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { department: true },
+    });
+
+    let deptValues: string[] = [];
+    let leadingTeamIds: string[] = [];
+
+    let whereClause: any = { status: { in: ["APPROVED", "REJECTED"] } };
+    let taskWhereClause: any = { status: { in: ["APPROVED", "REJECTED"] } };
+
+    if (role === "MANAGER") {
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true },
+      });
+      deptValues = managedDepts.map((d) => d.value);
+      if (
+        dbUser?.department &&
+        dbUser.department.toUpperCase() !== "STRATEGIC" &&
+        !deptValues.includes(dbUser.department)
+      ) {
+        deptValues.push(dbUser.department);
+      }
+
+      whereClause.initiative = {
+        team: { department: { in: deptValues } },
+      };
+      taskWhereClause.task = {
+        initiative: {
+          team: { department: { in: deptValues } },
+        },
+      };
+    } else if (role === "LEADER") {
+      leadingTeamIds = await getLeaderTeamIds(userId);
+
+      whereClause.initiative = {
+        teamId: { in: leadingTeamIds },
+      };
+      taskWhereClause.task = {
+        initiative: {
+          teamId: { in: leadingTeamIds },
+        },
+      };
+    } else if (role === "TEAM") {
+      whereClause.submittedBy = userId;
+      taskWhereClause.submittedBy = userId;
+    }
+
+    const updates = await prisma.initiativeUpdate.findMany({
+      where: whereClause,
+      include: {
+        initiative: {
+          include: { team: true },
+        },
+      },
+      orderBy: { reviewedAt: "desc" },
+      take: 100,
+    });
+
+    const taskUpdates = await prisma.taskUpdate.findMany({
+      where: taskWhereClause,
+      include: {
+        task: {
+          include: {
+            initiative: {
+              include: { team: true },
+            },
+          },
+        },
+      },
+      orderBy: { reviewedAt: "desc" },
+      take: 100,
+    });
+
+    const userIds = new Set<string>();
+    updates.forEach((u) => {
+      if (u.submittedBy) userIds.add(u.submittedBy);
+      if (u.reviewedBy) userIds.add(u.reviewedBy);
+    });
+    taskUpdates.forEach((t) => {
+      if (t.submittedBy) userIds.add(t.submittedBy);
+      if (t.reviewedBy) userIds.add(t.reviewedBy);
+    });
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: Array.from(userIds) } },
+      select: { id: true, name: true, email: true, role: true, position: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const mappedInitiativeUpdates = updates.map((u: any) => ({
+      ...u,
+      submitter: userMap.get(u.submittedBy) || null,
+      reviewer: u.reviewedBy ? userMap.get(u.reviewedBy) || null : null,
+      type: "INITIATIVE",
+    }));
+
+    const mappedTaskUpdates = taskUpdates.map((t: any) => ({
+      id: t.id,
+      initiativeId: t.task.initiativeId,
+      initiative: {
+        id: t.task.initiativeId,
+        title: `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`,
+        team: t.task.initiative.team,
+      },
+      oldValue: t.oldValue,
+      newValue: t.newValue,
+      note: t.note,
+      reviewNote: t.reviewNote || null,
+      link: t.link,
+      status: t.status,
+      submittedBy: t.submittedBy,
+      reviewedBy: t.reviewedBy,
+      reviewedAt: t.reviewedAt,
+      createdAt: t.createdAt,
+      submitter: userMap.get(t.submittedBy) || null,
+      reviewer: t.reviewedBy ? userMap.get(t.reviewedBy) || null : null,
+      type: "TASK",
+    }));
+
+    const combinedUpdates = [
+      ...mappedInitiativeUpdates,
+      ...mappedTaskUpdates,
+    ].sort(
+      (a, b) =>
+        new Date(b.reviewedAt || b.createdAt).getTime() -
+        new Date(a.reviewedAt || a.createdAt).getTime(),
+    );
+
+    return res.status(200).json(combinedUpdates);
+  } catch (error) {
+    console.error("Get Initiative updates history error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
