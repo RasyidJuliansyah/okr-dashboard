@@ -24,7 +24,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 24px;
+        padding: 32px;
         flex-shrink: 0;
       "
     >
@@ -295,6 +295,25 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
           <span>Data Pegawai</span>
+        </NuxtLink>
+        <NuxtLink
+          to="/admin/kpis"
+          :style="navItemStyle('/admin/kpis')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 20v-6M6 20V10M18 20V4" />
+          </svg>
+          <span>Master KPI</span>
         </NuxtLink>
         <NuxtLink
           to="/departments"

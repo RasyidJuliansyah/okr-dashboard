@@ -578,6 +578,9 @@
           <label>Unit</label>
           <input v-model="form.unit" class="form-input" placeholder="%" />
 
+          <!-- KpiSelector -->
+          <KpiSelector v-model="form.kpis" />
+
           <div v-if="modalError" class="alert alert-error mt-2">
             {{ modalError }}
           </div>
@@ -791,6 +794,7 @@ const form = ref({
   sprintMonth: "",
   targetValue: 0,
   unit: "%",
+  kpis: [],
 });
 
 const availableInitiativesForTask = computed(() => {
@@ -947,6 +951,7 @@ function openInitiativeModal(kr) {
     unit: "%",
     keyResultId: kr?.id || "",
     sprintMonth: new Date().toISOString().slice(0, 7),
+    kpis: [],
   };
   modalError.value = "";
   showModal.value = true;
@@ -970,6 +975,7 @@ function openCreateTaskModal(ini, kr) {
     sprintMonth: ini.sprintMonth || new Date().toISOString().slice(0, 7),
     targetValue: 100,
     unit: "%",
+    kpis: [],
   };
   modalError.value = "";
   showModal.value = true;
@@ -991,6 +997,14 @@ function startEditInitiative(ini, kr) {
     unit: ini.unit || "%",
     keyResultId: ini.keyResultId || kr?.id || "",
     sprintMonth: ini.sprintMonth || "",
+    kpis: ini.kpis
+      ? ini.kpis.map((ik) => ({
+          kpiId: ik.kpiId,
+          targetValue: ik.targetValue,
+          currentValue: ik.currentValue,
+          kpi: ik.kpi,
+        }))
+      : [],
   };
   modalError.value = "";
   showModal.value = true;
@@ -1014,6 +1028,14 @@ function startEditTask(task, ini, kr) {
     sprintMonth: task.sprintMonth || ini.sprintMonth || "",
     targetValue: task.targetValue || 0,
     unit: task.unit || "%",
+    kpis: task.kpis
+      ? task.kpis.map((tk) => ({
+          kpiId: tk.kpiId,
+          targetValue: tk.targetValue,
+          currentValue: tk.currentValue,
+          kpi: tk.kpi,
+        }))
+      : [],
   };
   modalError.value = "";
   showModal.value = true;

@@ -1125,6 +1125,13 @@
             placeholder="https://example.com/..."
           />
 
+          <!-- KpiSelector jika task memiliki KPI terlampir -->
+          <KpiSelector
+            v-if="selectedTask?.kpis?.length"
+            v-model="selectedTask.kpis"
+            :showCurrentValue="true"
+          />
+
           <div v-if="isAutoApproveRole" class="info-box info-approved mb-4">
             Sebagai <strong>{{ userRole }}</strong
             >, update Anda akan <strong>langsung diterapkan</strong> tanpa perlu
@@ -1261,6 +1268,13 @@
             type="url"
             class="form-input"
             placeholder="https://example.com/..."
+          />
+
+          <!-- KpiSelector jika inisiatif memiliki KPI terlampir -->
+          <KpiSelector
+            v-if="selectedIni?.kpis?.length"
+            v-model="selectedIni.kpis"
+            :showCurrentValue="true"
           />
 
           <div class="info-box mb-4">

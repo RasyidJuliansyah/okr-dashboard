@@ -1302,6 +1302,9 @@
                 <option value="DROP">Drop</option>
               </select>
             </div>
+
+            <!-- KpiSelector -->
+            <KpiSelector v-model="initiativeForm.kpis" />
           </div>
 
           <div class="modal-actions">
@@ -1402,6 +1405,9 @@
                 />
               </div>
             </div>
+
+            <!-- KpiSelector -->
+            <KpiSelector v-model="taskForm.kpis" />
           </div>
           <div class="modal-actions">
             <button class="secondary-btn" @click="showTaskModal = false">
@@ -1521,6 +1527,7 @@ const initiativeForm = ref({
   dueDate: "",
   finishDate: "",
   sprintMonth: "",
+  kpis: [],
 });
 
 const teamSearch = ref("");
@@ -1665,6 +1672,7 @@ const taskForm = ref({
   sprintMonth: "",
   startDate: "",
   finishDate: "",
+  kpis: [],
 });
 
 // Sprint Month filter & helper functions
@@ -2013,6 +2021,7 @@ function openAddInitiativeModal() {
     dueDate: "",
     finishDate: "",
     sprintMonth: defaultSprint,
+    kpis: [],
   };
   errorMessage.value = "";
   showInitiativeModal.value = true;
@@ -2047,6 +2056,14 @@ function openEditInitiativeModal(ini: any) {
       ? new Date(ini.finishDate).toISOString().substring(0, 10)
       : "",
     sprintMonth: ini.sprintMonth || "",
+    kpis: ini.kpis
+      ? ini.kpis.map((ik: any) => ({
+          kpiId: ik.kpiId,
+          targetValue: ik.targetValue,
+          currentValue: ik.currentValue,
+          kpi: ik.kpi,
+        }))
+      : [],
   };
   errorMessage.value = "";
   showInitiativeModal.value = true;
@@ -2155,6 +2172,7 @@ function openAddTaskModal(ini: any) {
     sprintMonth: ini.sprintMonth || "",
     startDate: "",
     finishDate: "",
+    kpis: [],
   };
   showTaskModal.value = true;
 }

@@ -880,6 +880,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       dueDate,
       finishDate,
       sprintMonth,
+      kpis,
     } = req.body;
     const { role, id: userId } = req.user!;
 
@@ -1015,6 +1016,16 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         dueDate: dueDate ? new Date(dueDate) : null,
         finishDate: finishDate ? new Date(finishDate) : null,
         sprintMonth: sprintMonth || null,
+        ...(Array.isArray(kpis) &&
+          kpis.length > 0 && {
+            kpis: {
+              create: kpis.map((k: any) => ({
+                kpiId: k.kpiId,
+                targetValue: parseFloat(k.targetValue) || 0,
+                currentValue: parseFloat(k.currentValue) || 0,
+              })),
+            },
+          }),
       },
       include: {
         team: true,
@@ -1023,6 +1034,11 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         },
         assignedLeader: {
           select: { id: true, name: true, position: true },
+        },
+        kpis: {
+          include: {
+            kpi: true,
+          },
         },
       },
     });
@@ -1063,6 +1079,7 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
       dueDate,
       finishDate,
       sprintMonth,
+      kpis,
     } = req.body;
     const { role, id: userId } = req.user!;
 
@@ -1144,8 +1161,27 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
         assignedLeader: {
           select: { id: true, name: true, position: true },
         },
+        kpis: {
+          include: {
+            kpi: true,
+          },
+        },
       },
     });
+
+    if (Array.isArray(kpis)) {
+      await prisma.initiativeKpi.deleteMany({ where: { initiativeId: id } });
+      if (kpis.length > 0) {
+        await prisma.initiativeKpi.createMany({
+          data: kpis.map((k: any) => ({
+            initiativeId: id,
+            kpiId: k.kpiId,
+            targetValue: parseFloat(k.targetValue) || 0,
+            currentValue: parseFloat(k.currentValue) || 0,
+          })),
+        });
+      }
+    }
 
     if (assignedLeaderId && assignedLeaderId !== existing.assignedLeaderId) {
       await createNotification({
@@ -1926,6 +1962,7 @@ export async function createTask(req: AuthRequest, res: Response) {
       startDate,
       finishDate,
       keyResultId,
+      kpis,
     } = req.body;
     const { role, id: userId } = req.user!;
 
@@ -2002,9 +2039,24 @@ export async function createTask(req: AuthRequest, res: Response) {
             },
           },
         }),
+        ...(Array.isArray(kpis) &&
+          kpis.length > 0 && {
+            kpis: {
+              create: kpis.map((k: any) => ({
+                kpiId: k.kpiId,
+                targetValue: parseFloat(k.targetValue) || 0,
+                currentValue: parseFloat(k.currentValue) || 0,
+              })),
+            },
+          }),
       },
       include: {
         assignedTeamMember: { select: { id: true, name: true } },
+        kpis: {
+          include: {
+            kpi: true,
+          },
+        },
       },
     });
 
@@ -2039,6 +2091,7 @@ export async function updateTask(req: AuthRequest, res: Response) {
       startDate,
       finishDate,
       keyResultId,
+      kpis,
     } = req.body;
     const { role, id: userId } = req.user!;
 
@@ -2093,6 +2146,20 @@ export async function updateTask(req: AuthRequest, res: Response) {
         }),
       },
     });
+
+    if (Array.isArray(kpis)) {
+      await prisma.taskKpi.deleteMany({ where: { taskId: id } });
+      if (kpis.length > 0) {
+        await prisma.taskKpi.createMany({
+          data: kpis.map((k: any) => ({
+            taskId: id,
+            kpiId: k.kpiId,
+            targetValue: parseFloat(k.targetValue) || 0,
+            currentValue: parseFloat(k.currentValue) || 0,
+          })),
+        });
+      }
+    }
 
     // Cascade update task progress to parent initiative & KR
     await cascadeTaskValueUpdate(id, existing.initiativeId);
