@@ -133,18 +133,69 @@
               </td>
               <td class="action-col">
                 <button
+                  class="icon-btn key-btn"
+                  title="Reset Password ke SkollaEdu"
+                  @click="openResetPasswordModal(emp)"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </button>
+                <button
                   class="icon-btn edit-btn"
                   title="Edit Pegawai"
                   @click="openEditModal(emp)"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                    <path
+                      d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    />
+                  </svg>
                 </button>
                 <button
                   class="icon-btn delete-btn"
                   title="Hapus Pegawai"
                   @click="confirmDelete(emp)"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path
+                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
                 </button>
               </td>
             </tr>
@@ -408,7 +459,19 @@
         <!-- Step 3: Result -->
         <div v-if="importStep === 3" class="import-step result-step">
           <div class="success-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
           </div>
           <h4>Import Selesai!</h4>
           <div class="result-stats">
@@ -441,6 +504,112 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Konfirmasi Reset Password -->
+    <div
+      v-if="showResetModal"
+      class="modal-backdrop"
+      @click.self="closeResetModal"
+    >
+      <div class="modal-card card" style="max-width: 440px">
+        <div class="modal-header">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              color: #d97706;
+            "
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <h3 style="margin: 0; font-size: 1.125rem; font-weight: 600">
+              Reset Password Pegawai
+            </h3>
+          </div>
+          <button class="close-btn" @click="closeResetModal">&times;</button>
+        </div>
+
+        <div style="padding: 1.25rem 0">
+          <p
+            style="
+              margin-bottom: 1rem;
+              font-size: 0.95rem;
+              color: #334155;
+              line-height: 1.5;
+            "
+          >
+            Apakah Anda yakin ingin mereset password untuk pegawai berikut?
+          </p>
+          <div
+            style="
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 1rem;
+              margin-bottom: 1.25rem;
+            "
+          >
+            <div style="font-weight: 600; color: #0f172a; font-size: 1rem">
+              {{ selectedEmployeeForReset?.name }}
+            </div>
+            <div style="color: #64748b; font-size: 0.875rem; margin-top: 2px">
+              {{ selectedEmployeeForReset?.email }}
+            </div>
+          </div>
+          <p
+            style="
+              font-size: 0.875rem;
+              color: #64748b;
+              margin: 0;
+              line-height: 1.4;
+            "
+          >
+            Password akan diubah kembali menjadi default:
+            <strong style="color: #0f172a">SkollaEdu</strong>
+          </p>
+        </div>
+
+        <div
+          class="modal-footer"
+          style="
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+          "
+        >
+          <button
+            type="button"
+            class="secondary-btn"
+            @click="closeResetModal"
+            :disabled="resettingPassword"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            class="primary-btn"
+            @click="executeResetPassword"
+            :disabled="resettingPassword"
+            style="background-color: #d97706; color: #ffffff"
+          >
+            {{ resettingPassword ? "Mereset..." : "Ya, Reset Password" }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -459,6 +628,49 @@ const selectedDept = ref("");
 const errorMessage = ref("");
 const successMessage = ref("");
 const modalError = ref("");
+
+// === Reset Password state ===
+const showResetModal = ref(false);
+const selectedEmployeeForReset = ref(null);
+const resettingPassword = ref(false);
+
+function openResetPasswordModal(emp) {
+  selectedEmployeeForReset.value = emp;
+  showResetModal.value = true;
+}
+
+function closeResetModal() {
+  if (resettingPassword.value) return;
+  showResetModal.value = false;
+  selectedEmployeeForReset.value = null;
+}
+
+async function executeResetPassword() {
+  if (!selectedEmployeeForReset.value) return;
+
+  resettingPassword.value = true;
+  try {
+    const res = await $fetch(
+      `${config.public.apiBase}/users/${selectedEmployeeForReset.value.id}/reset-password`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${auth.token}` },
+      },
+    );
+    successMessage.value =
+      res.message ||
+      `Password untuk ${selectedEmployeeForReset.value.name} berhasil direset ke 'SkollaEdu'.`;
+    closeResetModal();
+    setTimeout(() => (successMessage.value = ""), 5000);
+  } catch (err) {
+    console.error("Error resetting password:", err);
+    errorMessage.value = err.data?.message || "Gagal mereset password pegawai.";
+    closeResetModal();
+    setTimeout(() => (errorMessage.value = ""), 5000);
+  } finally {
+    resettingPassword.value = false;
+  }
+}
 
 // === Import CSV state ===
 const showImportModal = ref(false);
@@ -1009,7 +1221,7 @@ onMounted(async () => {
 
 .action-col {
   text-align: right;
-  width: 100px;
+  width: 120px;
 }
 
 .icon-btn {
@@ -1020,6 +1232,14 @@ onMounted(async () => {
   padding: 0.3rem;
   border-radius: 4px;
   transition: background 0.15s;
+}
+
+.icon-btn.key-btn {
+  color: #d97706;
+}
+
+.icon-btn.key-btn:hover {
+  background: #fef3c7;
 }
 
 .icon-btn:hover {
