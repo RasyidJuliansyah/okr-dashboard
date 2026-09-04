@@ -87,6 +87,17 @@ Berikut adalah rekapitulasi riwayat rilis dan pembaruan fitur berdasarkan git hi
   - Satuan `%`: Rata-rata sederhana (_simple average_).
   - Satuan Nominal (`IDR`, `Qty`, `Jam`, `Unit`, dll): Penjumlahan nilai riil (_real sum_).
 
+### 📦 Release 1.5: Kanban Card Monitoring, Direct Stage Update, & Collapsible My-Work (4 September 2026)
+
+- **Restrukturisasi Papan Inisiatif (Kanban Murni Monitoring)**:
+  - Tombol header diubah dari `+ Tambah Inisiatif` menjadi `+ Tambah Card` dengan dukungan terpadu pembuatan kartu **Inisiatif** maupun **Task Turunan** (dengan pilihan inisiatif induk).
+  - Papan Kanban dijadikan murni untuk monitoring: menonaktifkan geser kartu (drag-and-drop), serta menghapus tombol edit, tombol pindah stage (Maju/Mundur), dan shortcut `+ Task` dari kartu individual.
+- **Peningkatan Fitur Menu Pekerjaan Saya (`my-work.vue`)**:
+  - **Direct Stage Selector Dropdown**: Penambahan dropdown selector stage (`TO DO`, `IN PROGRESS`, `DONE`, `DROP`) langsung pada setiap kartu Inisiatif & Task di Pekerjaan Saya untuk perpindahan status alur kerja secara langsung.
+  - **Dukungan Pembuatan Task oleh T-Level & P-Level**: Tombol `+ Buat Task Baru` di bawah kartu inisiatif pada Pekerjaan Saya, memungkinkan T-Level (Team Member) membuat Task baru dengan default assignee terisi otomatis ke diri sendiri (dan opsi memilih rekan 1 tim).
+- **Desain UI Ringkas & Collapsible Section**:
+  - Penambahan kapabilitas **Expand / Collapse** pada section _Inisiatif Saya_ dan _Inisiatif Tim_ di Pekerjaan Saya dengan indikator panah toggle (▼ / ▶) dan counter badge. Default berstatus **Tertutup (Collapsed)** saat halaman dimuat untuk kerapian dan kenyamanan navigasi.
+
 ---
 
 ## 4. Matriks Kemampuan Otorisasi (RBAC Current State)
