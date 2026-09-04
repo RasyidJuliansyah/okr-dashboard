@@ -2414,7 +2414,7 @@ function getGroupedInitiatives(initiatives) {
   background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border: 2px solid var(--border-color, #e2e8f0);
 }
 .header-section {
   display: flex;
