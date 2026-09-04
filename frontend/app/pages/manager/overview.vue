@@ -805,7 +805,7 @@ function getGroupedKrs(keyResults) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: #ffff;
   padding: 32px;
 }
 .admin-content {
@@ -819,8 +819,7 @@ function getGroupedKrs(keyResults) {
   background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
+  border: 2px solid #f1f5f9;
   margin: 16px;
 }
 .header-section {

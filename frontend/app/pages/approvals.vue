@@ -4,13 +4,16 @@
       <div class="header-title">
         <h2>Persetujuan (Approvals)</h2>
         <p class="section-desc">
-          Tinjau dan kelola pengajuan persetujuan progress serta riwayat persetujuan Task dan Inisiatif.
+          Tinjau dan kelola pengajuan persetujuan progress serta riwayat
+          persetujuan Task dan Inisiatif.
         </p>
       </div>
     </div>
 
     <!-- Alert / Status -->
-    <div v-if="loading" class="alert alert-info">Memuat data persetujuan...</div>
+    <div v-if="loading" class="alert alert-info">
+      Memuat data persetujuan...
+    </div>
     <div v-if="error" class="alert alert-error">{{ error }}</div>
 
     <div v-if="!loading" class="content-section">
@@ -65,7 +68,9 @@
                 <strong>Tim Pelaksana:</strong>
                 {{ upd.initiative?.team?.name || "-" }}
                 <span v-if="upd.submitter" class="ml-2">
-                  | <strong>Diajukan oleh:</strong> {{ upd.submitter.name }} ({{ upd.submitter.position || upd.submitter.role }})
+                  | <strong>Diajukan oleh:</strong> {{ upd.submitter.name }} ({{
+                    upd.submitter.position || upd.submitter.role
+                  }})
                 </span>
               </div>
 
@@ -167,7 +172,11 @@
                   class="badge ml-2"
                   :class="upd.status === 'APPROVED' ? 'bg-green' : 'bg-red'"
                 >
-                  {{ upd.status === 'APPROVED' ? 'DISETUJUI (APPROVED)' : 'DITOLAK (REJECTED)' }}
+                  {{
+                    upd.status === "APPROVED"
+                      ? "DISETUJUI (APPROVED)"
+                      : "DITOLAK (REJECTED)"
+                  }}
                 </span>
               </div>
 
@@ -176,7 +185,10 @@
                   <span class="meta-lbl">Diajukan Oleh:</span>
                   <span class="meta-val">
                     {{ upd.submitter?.name || "Anggota Tim" }}
-                    <span v-if="upd.submitter?.position || upd.submitter?.role" class="sub-meta">
+                    <span
+                      v-if="upd.submitter?.position || upd.submitter?.role"
+                      class="sub-meta"
+                    >
                       ({{ upd.submitter.position || upd.submitter.role }})
                     </span>
                   </span>
@@ -185,7 +197,10 @@
                   <span class="meta-lbl">Ditinjau / Disetujui Oleh:</span>
                   <span class="meta-val highlight-reviewer">
                     {{ upd.reviewer?.name || "Manager / Leader" }}
-                    <span v-if="upd.reviewer?.position || upd.reviewer?.role" class="sub-meta">
+                    <span
+                      v-if="upd.reviewer?.position || upd.reviewer?.role"
+                      class="sub-meta"
+                    >
                       ({{ upd.reviewer.position || upd.reviewer.role }})
                     </span>
                   </span>
@@ -213,7 +228,10 @@
                     "{{ upd.note || "Tidak ada catatan" }}"
                   </span>
                 </div>
-                <div v-if="upd.reviewNote" class="detail-box flex-2 bg-red-light">
+                <div
+                  v-if="upd.reviewNote"
+                  class="detail-box flex-2 bg-red-light"
+                >
                   <span class="lbl text-red">Alasan Penolakan:</span>
                   <span class="val text-red italic">
                     "{{ upd.reviewNote }}"
@@ -401,8 +419,7 @@ onMounted(() => {
   background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
+  border: 2px solid #f1f5f9;
 }
 
 .header-title h2 {
