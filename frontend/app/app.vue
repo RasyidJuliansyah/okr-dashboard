@@ -367,7 +367,7 @@ textarea {
 }
 
 body {
-  background: var(--surface-page);
+  background: inherit;
   color: var(--text-heading);
   margin: 0;
   overflow-x: hidden;

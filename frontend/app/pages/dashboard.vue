@@ -194,6 +194,7 @@
 
             <button
               class="primary-btn small"
+              :disabled="isTaskDone(task)"
               @click="openTaskSubmitModal(task)"
             >
               Submit Update
@@ -1104,6 +1105,18 @@ function getStatusClass(status) {
   return "bg-gray";
 }
 
+function isTaskDone(task) {
+  if (!task) return false;
+  const status = String(task.status || "").toUpperCase();
+  const kanbanStatus = String(task.kanbanStatus || "").toUpperCase();
+  return (
+    status === "DONE" ||
+    status === "COMPLETED" ||
+    kanbanStatus === "DONE" ||
+    kanbanStatus === "COMPLETED"
+  );
+}
+
 function getProgressPercent(task) {
   if (!task || !task.targetValue || task.targetValue <= 0) return 0;
   return Math.min(
@@ -1394,6 +1407,7 @@ function openDetailModal(title, type, update, submitterName) {
 }
 
 function openTaskSubmitModal(task) {
+  if (isTaskDone(task)) return;
   selectedTask.value = task;
   submitNewValue.value = task.currentValue;
   submitNote.value = "";
@@ -1489,7 +1503,7 @@ async function handleReject() {
 .dashboard-root {
   font-family: "Rubik", sans-serif;
   min-height: 100vh;
-  background: var(--content-bg);
+  background: inherit;
   color: var(--text-color);
   padding: 0 0 60px 0;
 }
@@ -1635,13 +1649,12 @@ async function handleReject() {
   flex-direction: column;
   gap: 30px;
 }
-
 .card {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
 }
 .primary-btn {
   background: #0ea5e9;
@@ -1652,6 +1665,11 @@ async function handleReject() {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
+}
+.primary-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 /* Controls */
 .controls-card {
@@ -1723,13 +1741,6 @@ async function handleReject() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-.card {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
 }
 .task-header {
   display: flex;
