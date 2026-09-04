@@ -309,13 +309,6 @@
                     <span class="team-tag">{{ ini.team?.name }}</span>
                     <span v-if="ini.owner?.name" class="owner-tag">
                       {{ ini.owner.name }}
-                      <span
-                        class="owner-ach-pill"
-                        :class="getAchColorClass(calculateAchievedPercent(ini))"
-                        title="Persentase Capaian Card ini"
-                      >
-                        {{ calculateAchievedPercent(ini) }}%
-                      </span>
                     </span>
                   </div>
                 </div>
@@ -482,107 +475,71 @@
 
                 <!-- Tasks summary & Bucket list -->
                 <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                  <!-- <div
-                    class="task-count-tag in-progress"
-                    @click.stop="toggleTasksExpand(ini.id)"
+                  v-if="expandedTaskIniIds.includes(ini.id)"
+                  class="tasks-bucket-list" style=" margin-top: 8px; display:
+                  flex; flex-direction: column; gap: 6px; " >
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-bucket-card"
                     style="
-                      cursor: pointer;
-                      display: flex;
-                      justify-content: space-between;
-                      align-items: center;
-                      width: 100%;
-                      font-weight: 500;
-                    "
-                    title="Klik untuk membuka/menutup daftar Task turunan"
-                  >
-                    <span>
-                      📋 {{ ini.tasks.length }} Task ({{
-                        getCompletedTasksCount(ini)
-                      }}/{{ ini.tasks.length }} selesai)
-                    </span>
-                    <span style="font-size: 10px; margin-left: 6px">
-                      {{
-                        expandedTaskIniIds.includes(ini.id)
-                          ? "▲ Hide"
-                          : "▼ Show"
-                      }}
-                    </span>
-                  </div> -->
-
-                  <!-- <div
-                    v-if="expandedTaskIniIds.includes(ini.id)"
-                    class="tasks-bucket-list"
-                    style="
-                      margin-top: 8px;
-                      display: flex;
-                      flex-direction: column;
-                      gap: 6px;
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      padding: 6px 8px;
+                      font-size: 11px;
                     "
                   >
                     <div
-                      v-for="task in ini.tasks"
-                      :key="task.id"
-                      class="task-bucket-card"
                       style="
-                        background: #f8fafc;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 6px;
-                        padding: 6px 8px;
-                        font-size: 11px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 4px;
                       "
                     >
-                      <div
+                      <span style="font-weight: 600; color: #1e293b; flex: 1">{{
+                        task.title
+                      }}</span>
+                      <span
+                        class="badge"
+                        :class="getTaskStatusClass(task.status)"
                         style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: flex-start;
-                          gap: 4px;
+                          font-size: 9px;
+                          padding: 1px 4px;
+                          border-radius: 4px;
                         "
                       >
-                        <span
-                          style="font-weight: 600; color: #1e293b; flex: 1"
-                          >{{ task.title }}</span
-                        >
-                        <span
-                          class="badge"
-                          :class="getTaskStatusClass(task.status)"
-                          style="
-                            font-size: 9px;
-                            padding: 1px 4px;
-                            border-radius: 4px;
-                          "
-                        >
-                          {{ task.status }}
-                        </span>
-                      </div>
-
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: center;
-                          margin-top: 4px;
-                          color: #64748b;
-                          font-size: 10px;
-                        "
-                      >
-                        <span>
-                          PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
-                        </span>
-                        <span>
-                          {{ task.currentValue }} / {{ task.targetValue }}
-                          {{ task.unit || "" }}
-                        </span>
-                      </div>
-
-                      <div
-                        v-if="task.sprintMonth"
-                        style="margin-top: 2px; font-size: 9px; color: #0284c7"
-                      >
-                        Sprint: {{ task.sprintMonth }}
-                      </div>
+                        {{ task.status }}
+                      </span>
                     </div>
-                  </div> -->
+
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 4px;
+                        color: #64748b;
+                        font-size: 10px;
+                      "
+                    >
+                      <span>
+                        PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                      </span>
+                      <span>
+                        {{ task.currentValue }} / {{ task.targetValue }}
+                        {{ task.unit || "" }}
+                      </span>
+                    </div>
+
+                    <div
+                      v-if="task.sprintMonth"
+                      style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                    >
+                      Sprint: {{ task.sprintMonth }}
+                    </div>
+                  </div>
                 </div>
 
                 <div class="card-footer-meta">
@@ -590,13 +547,6 @@
                     <span class="team-tag">{{ ini.team?.name }}</span>
                     <span v-if="ini.owner?.name" class="owner-tag">
                       {{ ini.owner.name }}
-                      <span
-                        class="owner-ach-pill"
-                        :class="getAchColorClass(calculateAchievedPercent(ini))"
-                        title="Persentase Capaian Card ini"
-                      >
-                        {{ calculateAchievedPercent(ini) }}%
-                      </span>
                     </span>
                   </div>
                 </div>
@@ -885,13 +835,6 @@
                     <span class="team-tag">{{ ini.team?.name }}</span>
                     <span v-if="ini.owner?.name" class="owner-tag">
                       {{ ini.owner.name }}
-                      <span
-                        class="owner-ach-pill"
-                        :class="getAchColorClass(calculateAchievedPercent(ini))"
-                        title="Persentase Capaian Card ini"
-                      >
-                        {{ calculateAchievedPercent(ini) }}%
-                      </span>
                     </span>
                   </div>
                 </div>

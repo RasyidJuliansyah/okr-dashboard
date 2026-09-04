@@ -628,6 +628,7 @@
           <div v-if="canReportTask(assign.task)" class="card-actions">
             <button
               class="primary-btn full-width"
+              :disabled="isTaskDone(assign.task)"
               @click="openUpdateModal(assign.task)"
             >
               Submit Update Progress
@@ -1780,6 +1781,18 @@ function getStatusClass(status) {
   return "bg-gray";
 }
 
+function isTaskDone(task) {
+  if (!task) return false;
+  const status = String(task.status || "").toUpperCase();
+  const kanbanStatus = String(task.kanbanStatus || "").toUpperCase();
+  return (
+    status === "DONE" ||
+    status === "COMPLETED" ||
+    kanbanStatus === "DONE" ||
+    kanbanStatus === "COMPLETED"
+  );
+}
+
 function canReportInitiative(ini) {
   if (!ini) return false;
   const role = userRole.value;
@@ -1807,7 +1820,7 @@ function canReportTask(task) {
 }
 
 function openUpdateModal(task) {
-  if (!canReportTask(task)) return;
+  if (!canReportTask(task) || isTaskDone(task)) return;
   selectedTask.value = task;
   updateForm.value = {
     newValue: task.currentValue,
@@ -1991,7 +2004,6 @@ function getGroupedInitiatives(initiatives) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
   padding: 32px;
 }
 .admin-content {
@@ -2005,8 +2017,7 @@ function getGroupedInitiatives(initiatives) {
   background: #ffffff;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--border-color, #e2e8f0);
 }
 .header-section {
   display: flex;
