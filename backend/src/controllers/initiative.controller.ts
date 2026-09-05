@@ -558,7 +558,8 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
 // GET /api/initiatives?krId=xxx&kanbanStatus=xxx&teamId=xxx&ownerId=xxx&sprintMonth=xxx — list initiatives
 export async function getInitiatives(req: AuthRequest, res: Response) {
   try {
-    const { krId, kanbanStatus, teamId, ownerId, sprintMonth } = req.query;
+    const { krId, kanbanStatus, teamId, ownerId, sprintMonth, managerId } =
+      req.query;
     const { role, id: userId } = req.user!;
 
     let where: any = {};
@@ -641,6 +642,43 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
 
     // 4. ADMIN & C_LEVEL: Seluruh departemen (Company-wide)
     else {
+      if (managerId) {
+        const managedDepts = await prisma.department.findMany({
+          where: { managerId: managerId as string },
+          select: { value: true },
+        });
+        const mgrUser = await prisma.user.findUnique({
+          where: { id: managerId as string },
+          select: { department: true, teamId: true },
+        });
+        const deptValues = new Set<string>(managedDepts.map((d) => d.value));
+        if (
+          mgrUser?.department &&
+          mgrUser.department.toUpperCase() !== "STRATEGIC"
+        ) {
+          deptValues.add(mgrUser.department);
+        }
+
+        const deptTeams = await prisma.team.findMany({
+          where: {
+            OR: [
+              { department: { in: Array.from(deptValues) } },
+              { managerId: managerId as string },
+            ],
+          },
+          select: { id: true },
+        });
+
+        const teamIdSet = new Set<string>(deptTeams.map((t) => t.id));
+        if (mgrUser?.teamId) teamIdSet.add(mgrUser.teamId);
+        const teamIds = Array.from(teamIdSet);
+
+        where.OR = [
+          { teamId: { in: teamIds } },
+          { ownerId: managerId as string },
+          { owner: { department: { in: Array.from(deptValues) } } },
+        ];
+      }
       if (teamId) where.teamId = teamId as string;
       if (ownerId) where.ownerId = ownerId as string;
     }
@@ -648,7 +686,14 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
     let initiatives = await prisma.initiative.findMany({
       where,
       include: {
-        keyResult: { select: { id: true, title: true, bscPerspective: true } },
+        keyResult: {
+          select: {
+            id: true,
+            title: true,
+            bscPerspective: true,
+            departments: { select: { department: true } },
+          },
+        },
         team: { select: { id: true, name: true, department: true } },
         owner: {
           select: { id: true, name: true, email: true, position: true },

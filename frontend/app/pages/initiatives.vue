@@ -91,6 +91,19 @@
         </div>
 
         <div class="filter-controls-row">
+          <!-- Filter Manager (Admin & C-Level) -->
+          <div v-if="isAdmin || isCLevel" class="filter-item">
+            <label>Filter Manager:</label>
+            <select v-model="selectedManagerId" class="filter-select">
+              <option value="">
+                Semua Manager ({{ availableManagers.length }})
+              </option>
+              <option v-for="m in availableManagers" :key="m.id" :value="m.id">
+                {{ m.name }}
+              </option>
+            </select>
+          </div>
+
           <div class="filter-item">
             <label>Filter Tim:</label>
             <select v-model="selectedTeamId" class="filter-select">
@@ -117,8 +130,10 @@
           <div class="filter-item">
             <label>Filter Key Result:</label>
             <select v-model="selectedKrId" class="filter-select">
-              <option value="">Semua Key Result ({{ allKrs.length }})</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+              <option value="">
+                Semua Key Result ({{ availableKrs.length }})
+              </option>
+              <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
                 {{ kr.title }}
               </option>
             </select>
@@ -1092,7 +1107,7 @@
               <label>Parent Key Result *</label>
               <select v-model="initiativeForm.keyResultId" class="form-input">
                 <option value="">-- Pilih Key Result --</option>
-                <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+                <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
                   {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
                   }}{{ kr.title }}
                 </option>
@@ -1445,10 +1460,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 import { useAssignment } from "~/composables/useAssignment";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
 
+const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
@@ -1507,8 +1525,10 @@ const initiatives = ref<any[]>([]);
 const allKrs = ref<any[]>([]);
 const allTeams = ref<any[]>([]);
 const allUsers = ref<any[]>([]);
+const allDepartments = ref<any[]>([]);
 
 const searchQuery = ref("");
+const selectedManagerId = ref("");
 const selectedTeamId = ref("");
 const selectedOwnerId = ref("");
 const selectedLeaderFilterId = ref("");
@@ -1547,7 +1567,74 @@ const initiativeForm = ref({
 const teamSearch = ref("");
 const userSearch = ref("");
 
+// ─── Manager & Department Hierarchy Logic ───
+const availableManagers = computed(() => {
+  const managerMap = new Map<string, any>();
+  for (const u of allUsers.value) {
+    if (u.role === "MANAGER") {
+      managerMap.set(u.id, {
+        id: u.id,
+        name: u.name,
+        department: u.department,
+      });
+    }
+  }
+  for (const d of allDepartments.value) {
+    if (d.managerId && d.manager) {
+      if (!managerMap.has(d.managerId)) {
+        managerMap.set(d.managerId, {
+          id: d.managerId,
+          name: d.manager.name,
+          department: d.value,
+        });
+      }
+    }
+  }
+  return Array.from(managerMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+});
+
+const activeManagerId = computed(() => {
+  if (isManager.value && auth.user?.id) {
+    return auth.user.id;
+  }
+  return selectedManagerId.value || "";
+});
+
+const managedDepartmentValues = computed(() => {
+  if (!activeManagerId.value) return [];
+  const mgrId = activeManagerId.value;
+  const deptSet = new Set<string>();
+
+  for (const d of allDepartments.value) {
+    if (d.managerId === mgrId && d.value) {
+      deptSet.add(d.value.toUpperCase());
+    }
+  }
+
+  const mgrUser = allUsers.value.find((u) => u.id === mgrId);
+  if (mgrUser?.department && mgrUser.department.toUpperCase() !== "STRATEGIC") {
+    deptSet.add(mgrUser.department.toUpperCase());
+  }
+  if (auth.user?.id === mgrId && (auth.user as any)?.department) {
+    const dept = (auth.user as any).department;
+    if (dept.toUpperCase() !== "STRATEGIC") deptSet.add(dept.toUpperCase());
+  }
+
+  return Array.from(deptSet);
+});
+
 const availableTeams = computed(() => {
+  if (managedDepartmentValues.value.length > 0) {
+    const depts = managedDepartmentValues.value;
+    const mgrId = activeManagerId.value;
+    return allTeams.value.filter(
+      (t: any) =>
+        (t.department && depts.includes(t.department.toUpperCase())) ||
+        t.managerId === mgrId,
+    );
+  }
   if (isLeader.value) {
     const userTeamId = auth.user?.teamId;
     const userDept = (auth.user as any)?.department;
@@ -1582,7 +1669,7 @@ watch(
   },
 );
 
-// Subordinates list based on role
+// Subordinates list based on active Manager or role
 const availableOwners = computed(() => {
   if (isTeam.value) {
     return auth.user ? [auth.user] : [];
@@ -1594,6 +1681,15 @@ const availableOwners = computed(() => {
           (u: any) => u.teamId === auth.user?.teamId || u.id === auth.user?.id,
         );
   }
+  if (managedDepartmentValues.value.length > 0) {
+    const depts = managedDepartmentValues.value;
+    const mgrId = activeManagerId.value;
+    return allUsers.value.filter(
+      (u: any) =>
+        (u.department && depts.includes(u.department.toUpperCase())) ||
+        u.id === mgrId,
+    );
+  }
   if (isManager.value) {
     const dept = (auth.user as any)?.department;
     if (!dept) return allUsers.value;
@@ -1601,7 +1697,83 @@ const availableOwners = computed(() => {
       (u: any) => u.department === dept || u.id === auth.user?.id,
     );
   }
-  return allUsers.value; // Admin & C-Level
+  return allUsers.value; // Admin & C-Level without manager filter
+});
+
+// Available Key Results based on active Manager or role
+const availableKrs = computed(() => {
+  if (managedDepartmentValues.value.length > 0) {
+    const depts = managedDepartmentValues.value;
+    const mgrId = activeManagerId.value;
+    return allKrs.value.filter((kr: any) => {
+      const matchDept = kr.departments?.some((d: any) =>
+        depts.includes((d.department || "").toUpperCase()),
+      );
+      const matchAssign = kr.assignments?.some((a: any) => a.userId === mgrId);
+      return matchDept || matchAssign;
+    });
+  }
+  if (isLeader.value) {
+    const userDept = (auth.user as any)?.department;
+    return allKrs.value.filter((kr: any) => {
+      const matchDept =
+        userDept && kr.departments?.some((d: any) => d.department === userDept);
+      const matchAssign = kr.assignments?.some(
+        (a: any) => a.userId === auth.user?.id,
+      );
+      return matchDept || matchAssign;
+    });
+  }
+  return allKrs.value;
+});
+
+// Sync URL query with selectedManagerId
+watch(
+  () => route.query,
+  (query) => {
+    if (query.managerId) {
+      selectedManagerId.value = query.managerId as string;
+    } else if (query.manager) {
+      const qName = (query.manager as string).toLowerCase();
+      const match = availableManagers.value.find((m) =>
+        m.name.toLowerCase().includes(qName),
+      );
+      if (match) selectedManagerId.value = match.id;
+    }
+  },
+  { immediate: true },
+);
+
+// When selectedManagerId changes, update URL and reset invalid dependent filters
+watch(selectedManagerId, (newVal) => {
+  const query = { ...route.query };
+  if (newVal) {
+    query.managerId = newVal;
+    delete query.manager;
+  } else {
+    delete query.managerId;
+    delete query.manager;
+  }
+  router.replace({ query });
+
+  if (
+    selectedTeamId.value &&
+    !availableTeams.value.some((t: any) => t.id === selectedTeamId.value)
+  ) {
+    selectedTeamId.value = "";
+  }
+  if (
+    selectedOwnerId.value &&
+    !availableOwners.value.some((u: any) => u.id === selectedOwnerId.value)
+  ) {
+    selectedOwnerId.value = "";
+  }
+  if (
+    selectedKrId.value &&
+    !availableKrs.value.some((kr: any) => kr.id === selectedKrId.value)
+  ) {
+    selectedKrId.value = "";
+  }
 });
 
 const filteredTeams = computed(() => {
@@ -1767,6 +1939,25 @@ const filteredInitiatives = computed(() => {
       const matchOwner =
         ini.owner?.name && ini.owner.name.toLowerCase().includes(q);
       if (!matchTitle && !matchDesc && !matchKr && !matchTeam && !matchOwner)
+        return false;
+    }
+
+    // Manager Hierarchy Filter (if active manager / manager filter selected)
+    if (managedDepartmentValues.value.length > 0) {
+      const depts = managedDepartmentValues.value;
+      const mgrId = activeManagerId.value;
+      const matchTeamDept =
+        ini.team?.department &&
+        depts.includes(ini.team.department.toUpperCase());
+      const matchOwnerDept =
+        ini.owner?.department &&
+        depts.includes(ini.owner.department.toUpperCase());
+      const matchOwner =
+        ini.ownerId === mgrId || ini.assignedLeaderId === mgrId;
+      const matchKrDept = ini.keyResult?.departments?.some((d: any) =>
+        depts.includes((d.department || "").toUpperCase()),
+      );
+      if (!matchTeamDept && !matchOwnerDept && !matchOwner && !matchKrDept)
         return false;
     }
 
@@ -2255,12 +2446,20 @@ async function fetchAllUsers() {
   } catch (err) {}
 }
 
+async function fetchAllDepartments() {
+  try {
+    const res = await fetch(`${API}/departments`, { headers: getHeaders() });
+    if (res.ok) allDepartments.value = await res.json();
+  } catch (err) {}
+}
+
 onMounted(async () => {
   await Promise.all([
     fetchInitiatives(),
     fetchAllKrs(),
     fetchAllTeams(),
     fetchAllUsers(),
+    fetchAllDepartments(),
     fetchMemberProgress(),
   ]);
   if (isManager.value || isAdmin.value) {
