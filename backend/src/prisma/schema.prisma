@@ -8,329 +8,361 @@ generator client {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  name            String
-  email           String           @unique
-  password        String
-  role            String           @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
-  department      String?
-  position        String?
-  teamId          String?
-  team            Team?            @relation("TeamMembers", fields: [teamId], references: [id])
-  leadingTeams    Team[]           @relation("TeamLeader")
-  assignments     KrAssignment[]
-  taskAssignments TaskAssignment[]
-  managedDepartments Department[]  @relation("DepartmentManager")
-  ownedInitiatives Initiative[]    @relation("InitiativeOwner")
-  assignedInitiatives Initiative[] @relation("InitiativeLeader")
-  assignedTasks       Task[]       @relation("TaskAssignedMember")
-  notifications       Notification[]
-  createdAt       DateTime         @default(now())
+  id                  String           @id @default(uuid())
+  name                String
+  email               String           @unique(map: "User_email_key")
+  password            String
+  role                String           @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
+  department          String?
+  position            String?
+  teamId              String?          @map("team_id")
+  team                Team?            @relation("TeamMembers", fields: [teamId], references: [id], map: "User_teamId_fkey")
+  leadingTeams        Team[]           @relation("TeamLeader")
+  assignments         KrAssignment[]
+  taskAssignments     TaskAssignment[]
+  managedDepartments  Department[]     @relation("DepartmentManager")
+  ownedInitiatives    Initiative[]     @relation("InitiativeOwner")
+  assignedInitiatives Initiative[]     @relation("InitiativeLeader") // NOTE: FK to user currently missing in DB
+  assignedTasks       Task[]           @relation("TaskAssignedMember") // NOTE: FK to user currently missing in DB
+  notifications       Notification[]                                  // NOTE: FK to user currently missing in DB
+  createdAt           DateTime         @default(now()) @map("created_at")
+
+  @@index([teamId], map: "User_teamId_idx")
+  @@map("user")
 }
 
 model Team {
   id          String       @id @default(uuid())
   name        String
-  managerId   String?
-  leaderId    String?
-  leader      User?        @relation("TeamLeader", fields: [leaderId], references: [id])
+  managerId   String?      @map("manager_id")
+  leaderId    String?      @map("leader_id")
+  leader      User?        @relation("TeamLeader", fields: [leaderId], references: [id], map: "Team_leaderId_fkey")
   department  String?
   users       User[]       @relation("TeamMembers")
   initiatives Initiative[]
+
+  @@index([leaderId], map: "Team_leaderId_idx")
+  @@map("team")
 }
 
 model Objective {
-  id                String            @id @default(uuid())
-  title             String
-  description       String?
-  year              String            // Replaced quarter with year
-  ownerId           String?
-  keyResults        KeyResult[]
-  annualKeyResults  AnnualKeyResult[]
-  createdAt         DateTime          @default(now())
+  id               String            @id @default(uuid())
+  title            String
+  description      String?           @db.Text
+  quarter          String?
+  year             String            @default("Q3-2026")
+  ownerId          String?           @map("owner_id")
+  keyResults       KeyResult[]
+  annualKeyResults AnnualKeyResult[]
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  @@map("objective")
 }
 
 model AnnualKeyResult {
   id             String      @id @default(uuid())
-  objectiveId    String
-  objective      Objective   @relation(fields: [objectiveId], references: [id])
+  objectiveId    String      @map("objective_id")
+  objective      Objective   @relation(fields: [objectiveId], references: [id], map: "AnnualKeyResult_objectiveId_fkey")
   title          String
   description    String?
-  targetValue    Float
-  currentValue   Float       @default(0)
+  targetValue    Float       @map("target_value")
+  currentValue   Float       @default(0) @map("current_value")
   unit           String
-  bscPerspective String
-  year           String      // e.g. "2026"
+  bscPerspective String      @map("bsc_perspective")
+  year           String
   status         String      @default("ON_TRACK")
   keyResults     KeyResult[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
 
-  @@index([objectiveId])
-  @@index([year])
+  @@index([objectiveId], map: "AnnualKeyResult_objectiveId_fkey")
+  @@map("annual_key_result")
 }
 
 model KeyResult {
   id                String           @id @default(uuid())
-  objectiveId       String
-  objective         Objective        @relation(fields: [objectiveId], references: [id])
-  annualKeyResultId String?          // BARU
-  annualKeyResult   AnnualKeyResult? @relation(fields: [annualKeyResultId], references: [id])
-  month             String?          // BARU, contoh "2026-08"
-  monthWeight       Float            @default(1.0)  // BARU
+  objectiveId       String           @map("objective_id")
+  objective         Objective        @relation(fields: [objectiveId], references: [id], map: "KeyResult_objectiveId_fkey")
+  annualKeyResultId String?          @map("annual_key_result_id")
+  annualKeyResult   AnnualKeyResult? @relation(fields: [annualKeyResultId], references: [id], map: "KeyResult_annualKeyResultId_fkey")
+  month             String?
+  monthWeight       Float            @default(1.0) @map("month_weight")
   title             String
-  targetValue       Float
-  currentValue      Float            @default(0)
+  targetValue       Float            @map("target_value")
+  currentValue      Float            @default(0) @map("current_value")
   unit              String
-  bscPerspective    String
+  bscPerspective    String           @map("bsc_perspective")
   status            String           @default("ON_TRACK")
-  isManualOverride  Boolean          @default(false)  // BARU
+  isManualOverride  Boolean          @default(false) @map("is_manual_override")
   assignments       KrAssignment[]
   departments       KrDepartment[]
   updates           KrUpdate[]
   initiatives       Initiative[]
   sourceLinksA      CausalLink[]     @relation("SourceKR")
   sourceLinksB      CausalLink[]     @relation("TargetKR")
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  @@index([annualKeyResultId])
-  @@index([month])
+  @@index([annualKeyResultId], map: "KeyResult_annualKeyResultId_fkey")
+  @@index([objectiveId], map: "KeyResult_objectiveId_idx")
+  @@map("key_result")
 }
 
 model KrAssignment {
   id          String    @id @default(uuid())
-  keyResultId String
-  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  assignedBy  String
-  assignedAt  DateTime  @default(now())
-  raciRole    String    @default("RESPONSIBLE")
+  keyResultId String    @map("key_result_id")
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id], map: "KrAssignment_keyResultId_fkey")
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], map: "KrAssignment_userId_fkey")
+  assignedBy  String    @map("assigned_by")
+  assignedAt  DateTime  @default(now()) @map("assigned_at")
+  raciRole    String    @default("RESPONSIBLE") @map("raci_role")
 
-  @@unique([keyResultId, userId])
-  @@index([keyResultId])
-  @@index([userId])
+  @@unique([keyResultId, userId], map: "KrAssignment_keyResultId_userId_key")
+  @@index([keyResultId], map: "KrAssignment_keyResultId_idx")
+  @@index([userId], map: "KrAssignment_userId_idx")
+  @@map("kr_assignment")
 }
 
 model KrDepartment {
   id          String    @id @default(uuid())
-  keyResultId String
-  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
+  keyResultId String    @map("key_result_id")
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id], map: "KrDepartment_keyResultId_fkey")
   department  String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  @@unique([keyResultId, department])
-  @@index([keyResultId])
+  @@unique([keyResultId, department], map: "KrDepartment_keyResultId_department_key")
+  @@index([keyResultId], map: "KrDepartment_keyResultId_idx")
+  @@map("kr_department")
 }
 
 model KrUpdate {
   id          String    @id @default(uuid())
-  keyResultId String
-  keyResult   KeyResult @relation(fields: [keyResultId], references: [id])
-  oldValue    Float
-  newValue    Float
-  note        String?
-  updatedBy   String
-  updatedAt   DateTime  @default(now())
+  keyResultId String    @map("key_result_id")
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id], map: "KrUpdate_keyResultId_fkey")
+  oldValue    Float     @map("old_value")
+  newValue    Float     @map("new_value")
+  note        String?   @db.Text
+  updatedBy   String    @map("updated_by")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
 
-  @@index([keyResultId, updatedAt])
+  @@index([keyResultId, updatedAt], map: "KrUpdate_keyResultId_updatedAt_idx")
+  @@map("kr_update")
 }
 
 model CausalLink {
   id           String    @id @default(uuid())
-  sourceKrId   String
-  sourceKr     KeyResult @relation("SourceKR", fields: [sourceKrId], references: [id])
-  targetKrId   String
-  targetKr     KeyResult @relation("TargetKR", fields: [targetKrId], references: [id])
+  sourceKrId   String    @map("source_kr_id")
+  sourceKr     KeyResult @relation("SourceKR", fields: [sourceKrId], references: [id], map: "CausalLink_sourceKrId_fkey")
+  targetKrId   String    @map("target_kr_id")
+  targetKr     KeyResult @relation("TargetKR", fields: [targetKrId], references: [id], map: "CausalLink_targetKrId_fkey")
   relationship String
-  note         String?
-  createdBy    String
-  createdAt    DateTime  @default(now())
+  note         String?   @db.Text
+  createdBy    String    @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([sourceKrId], map: "CausalLink_sourceKrId_idx")
+  @@index([targetKrId], map: "CausalLink_targetKrId_idx")
+  @@map("causal_link")
 }
 
 model Initiative {
-  id            String    @id @default(uuid())
-  keyResultId   String
-  keyResult     KeyResult @relation(fields: [keyResultId], references: [id])
-  teamId        String
-  team          Team      @relation(fields: [teamId], references: [id])
-  ownerId       String?
-  owner         User?     @relation("InitiativeOwner", fields: [ownerId], references: [id])
-  assignedLeaderId String?
-  assignedLeader   User?     @relation("InitiativeLeader", fields: [assignedLeaderId], references: [id])
-  assignedBy       String?
-  title         String
-  description   String?
-  targetValue   Float     @default(0)
-  currentValue  Float     @default(0)
-  achievedValue Float?
-  unit          String?
-  status        String    @default("ON_TRACK")
-  kanbanStatus  String    @default("TODO") // TODO, IN_PROGRESS, DONE
-  weight        Float     @default(1.0)
-  startDate     DateTime?
-  dueDate       DateTime?
-  finishDate    DateTime?
-  sprintMonth   String?   // e.g., "2026-08"
-  documentationLink String?
-  tasks         Task[]    // kpis Kpi[] -> tasks Task[]
-  kpis          InitiativeKpi[]
-  progressUpdates InitiativeUpdate[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String             @id @default(uuid())
+  keyResultId       String             @map("key_result_id")
+  keyResult         KeyResult          @relation(fields: [keyResultId], references: [id], map: "Initiative_keyResultId_fkey")
+  teamId            String             @map("team_id")
+  team              Team               @relation(fields: [teamId], references: [id], map: "Initiative_teamId_fkey")
+  ownerId           String?            @map("owner_id")
+  owner             User?              @relation("InitiativeOwner", fields: [ownerId], references: [id], map: "Initiative_ownerId_fkey")
+  assignedLeaderId  String?            @map("assigned_leader_id")
+  assignedLeader    User?              @relation("InitiativeLeader", fields: [assignedLeaderId], references: [id]) // NOTE: FK missing in DB
+  assignedBy        String?            @map("assigned_by")
+  title             String
+  description       String?            @db.Text
+  targetValue       Float              @default(0) @map("target_value")
+  currentValue      Float              @default(0) @map("current_value")
+  achievedValue     Float?             @map("achieved_value")
+  unit              String?
+  status            String             @default("ON_TRACK")
+  kanbanStatus      String             @default("TODO") @map("kanban_status")
+  weight            Float              @default(1.0)
+  startDate         DateTime?          @map("start_date")
+  dueDate           DateTime?          @map("due_date")
+  finishDate        DateTime?          @map("finish_date")
+  sprintMonth       String?            @map("sprint_month")
+  documentationLink String?            @map("documentation_link")
+  tasks             Task[]
+  kpis              InitiativeKpi[]                                    // NOTE: FK missing in DB
+  progressUpdates   InitiativeUpdate[]
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 
-  @@index([sprintMonth])
-  @@index([assignedLeaderId])
+  @@index([sprintMonth], map: "Initiative_sprintMonth_idx")
+  @@index([assignedLeaderId], map: "Initiative_assignedLeaderId_idx")
+  @@index([keyResultId], map: "Initiative_keyResultId_idx")
+  @@index([ownerId], map: "Initiative_ownerId_idx")
+  @@index([teamId], map: "Initiative_teamId_idx")
+  @@map("initiative")
 }
 
 model Task {
-  id                  String           @id @default(uuid())
-  initiativeId        String
-  initiative          Initiative       @relation(fields: [initiativeId], references: [id])
-  assignedTeamMemberId String?
-  assignedTeamMember   User?            @relation("TaskAssignedMember", fields: [assignedTeamMemberId], references: [id])
-  assignedBy           String?
-  sprintMonth          String?
-  startDate            DateTime?
-  finishDate           DateTime?
-  title               String
-  targetValue         Float
-  currentValue        Float            @default(0)
-  weight              Float            @default(1.0) // BARU
-  unit                String?
-  status              String           @default("ON_TRACK")
-  documentationLink   String?
-  assignments         TaskAssignment[]
-  updates             TaskUpdate[]
-  kpis                TaskKpi[]
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id                   String           @id @default(uuid())
+  initiativeId         String           @map("initiative_id")
+  initiative           Initiative       @relation(fields: [initiativeId], references: [id], map: "Kpi_initiativeId_fkey")
+  assignedTeamMemberId String?          @map("assigned_team_member_id")
+  assignedTeamMember   User?            @relation("TaskAssignedMember", fields: [assignedTeamMemberId], references: [id]) // NOTE: FK missing in DB
+  assignedBy           String?          @map("assigned_by")
+  sprintMonth          String?          @map("sprint_month")
+  startDate            DateTime?        @map("start_date")
+  finishDate           DateTime?        @map("finish_date")
+  title                String
+  targetValue          Float            @map("target_value")
+  currentValue         Float            @default(0) @map("current_value")
+  weight               Float            @default(1.0)
+  unit                 String?
+  status               String           @default("ON_TRACK")
+  documentationLink    String?          @map("documentation_link")
+  assignments          TaskAssignment[]
+  updates              TaskUpdate[]
+  kpis                 TaskKpi[]                                          // NOTE: FK missing in DB
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
 
-  @@index([assignedTeamMemberId])
-  @@index([sprintMonth])
+  @@index([initiativeId], map: "Kpi_initiativeId_idx")
+  @@index([assignedTeamMemberId], map: "Task_assignedTeamMemberId_idx")
+  @@index([sprintMonth], map: "Task_sprintMonth_idx")
+  @@map("task")
 }
 
 model TaskAssignment {
   id         String   @id @default(uuid())
-  taskId     String
-  task       Task     @relation(fields: [taskId], references: [id])
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  assignedAt DateTime @default(now())
+  taskId     String   @map("task_id")
+  task       Task     @relation(fields: [taskId], references: [id], map: "KpiAssignment_kpiId_fkey")
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], map: "KpiAssignment_userId_fkey")
+  assignedAt DateTime @default(now()) @map("assigned_at")
 
-  @@unique([taskId, userId])
-  @@index([taskId])
-  @@index([userId])
+  @@unique([taskId, userId], map: "TaskAssignment_taskId_userId_key")
+  @@index([taskId], map: "TaskAssignment_taskId_idx")
+  @@index([userId], map: "KpiAssignment_userId_idx")
+  @@map("task_assignment")
 }
 
 model TaskUpdate {
   id          String    @id @default(uuid())
-  taskId      String
-  task        Task      @relation(fields: [taskId], references: [id])
-  oldValue    Float
-  newValue    Float
-  note        String?
+  taskId      String    @map("task_id")
+  task        Task      @relation(fields: [taskId], references: [id], map: "KpiUpdate_kpiId_fkey")
+  oldValue    Float     @map("old_value")
+  newValue    Float     @map("new_value")
+  note        String?   @db.Text
   link        String?
-  submittedBy String
+  submittedBy String    @map("submitted_by")
   status      String    @default("PENDING_APPROVAL")
-  reviewedBy  String?
-  reviewNote  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  reviewedBy  String?   @map("reviewed_by")
+  reviewNote  String?   @db.Text @map("review_note")
+  reviewedAt  DateTime? @map("reviewed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  @@index([taskId, createdAt])
+  @@index([taskId, createdAt], map: "TaskUpdate_taskId_createdAt_idx")
+  @@map("task_update")
 }
 
 model Department {
   id        String   @id @default(uuid())
   name      String
-  value     String   @unique
-  managerId String?
-  manager   User?    @relation("DepartmentManager", fields: [managerId], references: [id])
-  createdAt DateTime @default(now())
+  value     String   @unique(map: "Department_value_key")
+  managerId String?  @map("manager_id")
+  manager   User?    @relation("DepartmentManager", fields: [managerId], references: [id], map: "Department_managerId_fkey")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([managerId], map: "Department_managerId_fkey")
+  @@map("department")
 }
 
 model InitiativeUpdate {
   id           String     @id @default(uuid())
-  initiativeId String
-  initiative   Initiative @relation(fields: [initiativeId], references: [id])
-  oldValue     Float
-  newValue     Float
-  note         String?
-  kanbanStatus String?
+  initiativeId String     @map("initiative_id")
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], map: "InitiativeUpdate_initiativeId_fkey")
+  oldValue     Float      @map("old_value")
+  newValue     Float      @map("new_value")
+  note         String?    @db.Text
+  kanbanStatus String?    @map("kanban_status")
   link         String?
-  submittedBy  String
+  submittedBy  String     @map("submitted_by")
   status       String     @default("PENDING_APPROVAL")
-  reviewedBy   String?
-  reviewedAt   DateTime?
-  createdAt    DateTime   @default(now())
+  reviewedBy   String?    @map("reviewed_by")
+  reviewedAt   DateTime?  @map("reviewed_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
 
-  @@index([initiativeId, createdAt])
+  @@index([initiativeId, createdAt], map: "InitiativeUpdate_initiativeId_createdAt_idx")
+  @@map("initiative_update")
 }
 
 model Notification {
   id          String   @id @default(uuid())
-  recipientId String
-  recipient   User     @relation(fields: [recipientId], references: [id])
-  type        String
-  title       String
-  body        String
-  link        String?
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  recipientId String   @map("recipient_id")
+  recipient   User     @relation(fields: [recipientId], references: [id]) // NOTE: FK missing in DB
+  type        String   @db.VarChar(100)
+  title       String   @db.VarChar(255)
+  body        String   @db.Text
+  link        String?  @db.VarChar(500)
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  @@index([recipientId, isRead])
-  @@index([recipientId, createdAt])
+  @@index([recipientId, isRead], map: "Notification_recipientId_isRead_idx")
+  @@index([recipientId, createdAt], map: "Notification_recipientId_createdAt_idx")
+  @@map("notification")
 }
 
 model Kpi {
   id             String          @id @default(uuid())
   name           String
-  description    String?
+  description    String?         @db.Text
   department     String?
-  bscPerspective String
+  bscPerspective String          @map("bsc_perspective")
   unit           String
-  defaultTarget  Float?
+  defaultTarget  Float?          @map("default_target")
   status         String          @default("ACTIVE")
-  initiativeKpis InitiativeKpi[]
-  taskKpis       TaskKpi[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  initiativeKpis InitiativeKpi[] // NOTE: FK missing in DB
+  taskKpis       TaskKpi[]       // NOTE: FK missing in DB
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
-  @@index([department])
-  @@index([bscPerspective])
+  @@index([bscPerspective], map: "Kpi_bscPerspective_idx")
+  @@index([department], map: "Kpi_department_idx")
+  @@map("kpi")
 }
 
 model InitiativeKpi {
   id           String     @id @default(uuid())
-  initiativeId String
-  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
-  kpiId        String
-  kpi          Kpi        @relation(fields: [kpiId], references: [id])
-  targetValue  Float
-  currentValue Float      @default(0)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  initiativeId String     @map("initiative_id")
+  initiative   Initiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade) // NOTE: FK missing in DB, cascade not enforced
+  kpiId        String     @map("kpi_id")
+  kpi          Kpi        @relation(fields: [kpiId], references: [id]) // NOTE: FK missing in DB
+  targetValue  Float      @map("target_value")
+  currentValue Float      @default(0) @map("current_value")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  @@unique([initiativeId, kpiId])
-  @@index([initiativeId])
-  @@index([kpiId])
+  @@unique([initiativeId, kpiId], map: "InitiativeKpi_initiativeId_kpiId_key")
+  @@index([initiativeId], map: "InitiativeKpi_initiativeId_idx")
+  @@index([kpiId], map: "InitiativeKpi_kpiId_idx")
+  @@map("initiative_kpi")
 }
 
 model TaskKpi {
   id           String   @id @default(uuid())
-  taskId       String
-  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  kpiId        String
-  kpi          Kpi      @relation(fields: [kpiId], references: [id])
-  targetValue  Float
-  currentValue Float    @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  taskId       String   @map("task_id")
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade) // NOTE: FK missing in DB, cascade not enforced
+  kpiId        String   @map("kpi_id")
+  kpi          Kpi      @relation(fields: [kpiId], references: [id]) // NOTE: FK missing in DB
+  targetValue  Float    @map("target_value")
+  currentValue Float    @default(0) @map("current_value")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@unique([taskId, kpiId])
-  @@index([taskId])
-  @@index([kpiId])
+  @@unique([taskId, kpiId], map: "TaskKpi_taskId_kpiId_key")
+  @@index([taskId], map: "TaskKpi_taskId_idx")
+  @@index([kpiId], map: "TaskKpi_kpiId_idx")
+  @@map("task_kpi")
 }
-
