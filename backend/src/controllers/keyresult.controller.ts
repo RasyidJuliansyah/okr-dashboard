@@ -716,6 +716,8 @@ export async function getKrsForInitiativeDropdown(
       where: krWhere,
       include: {
         objective: { select: { id: true, title: true, year: true } },
+        departments: true,
+        assignments: { select: { userId: true, raciRole: true } },
       },
       orderBy: { createdAt: "desc" },
     });
