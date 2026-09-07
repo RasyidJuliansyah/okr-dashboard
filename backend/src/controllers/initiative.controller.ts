@@ -481,21 +481,17 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
       byKeyResult[krId].initiatives.push(init);
     }
 
-    // Hitung progress KR dari Initiative (weighted average)
+    // Hitung progress KR dari Initiative (unweighted simple average)
     for (const kr of Object.values(byKeyResult)) {
-      const totalWeight = kr.initiatives.reduce(
-        (s: number, i: any) => s + (i.weight || 1),
-        0,
-      );
+      const count = kr.initiatives.length;
       kr.krProgress =
-        totalWeight > 0
+        count > 0
           ? Math.round(
               (kr.initiatives.reduce(
-                (s: number, i: any) =>
-                  s + i.calculatedProgress * (i.weight || 1),
+                (s: number, i: any) => s + i.calculatedProgress,
                 0,
               ) /
-                totalWeight) *
+                count) *
                 10,
             ) / 10
           : 0;
@@ -692,7 +688,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Query Task cards for Kanban (Task Turunan)
+    // Query Task cards for Kanban (Task Individual)
     let taskWhere: any = {};
     if (sprintMonth) {
       taskWhere.OR = [
@@ -847,7 +843,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         title: t.title,
         description: t.initiative?.title
           ? `Task dari Inisiatif: ${t.initiative.title}`
-          : "Task Turunan",
+          : "Task Individual",
         targetValue: t.targetValue,
         currentValue: t.currentValue,
         unit: t.unit || "",
@@ -990,29 +986,9 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 
     const finalOwnerId = ownerId || (role === "TEAM" ? userId : null);
     const parsedWeight =
-      weight !== undefined && weight !== null && weight !== ""
+      weight !== undefined && weight !== null && !isNaN(parseFloat(weight))
         ? parseFloat(weight)
         : 1.0;
-
-    if (
-      isNaN(parsedWeight) ||
-      parsedWeight <= 0 ||
-      parsedWeight > WEIGHT_BUDGET_MAX
-    ) {
-      return res.status(400).json({
-        message: `Bobot inisiatif harus berupa angka lebih dari 0 dan maksimal ${WEIGHT_BUDGET_MAX}%`,
-      });
-    }
-
-    if (finalOwnerId && sprintMonth) {
-      const used = await getUsedWeight(finalOwnerId, sprintMonth);
-      const total = used + parsedWeight;
-      if (total > WEIGHT_BUDGET_MAX + WEIGHT_EPSILON) {
-        return res.status(400).json({
-          message: `Total bobot inisiatif pegawai ini pada sprint ${sprintMonth} akan menjadi ${total.toFixed(1)}%, melebihi batas ${WEIGHT_BUDGET_MAX}%. Sisa bobot tersedia: ${Math.max(0, WEIGHT_BUDGET_MAX - used).toFixed(1)}%`,
-        });
-      }
-    }
 
     const initiative = await prisma.initiative.create({
       data: {
@@ -1116,31 +1092,6 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
       sprintMonth !== undefined ? sprintMonth || null : existing.sprintMonth;
     const effectiveWeight =
       weight !== undefined ? parseFloat(weight) : existing.weight;
-
-    if (
-      weight !== undefined &&
-      (isNaN(effectiveWeight) ||
-        effectiveWeight <= 0 ||
-        effectiveWeight > WEIGHT_BUDGET_MAX)
-    ) {
-      return res.status(400).json({
-        message: `Bobot inisiatif harus berupa angka lebih dari 0 dan maksimal ${WEIGHT_BUDGET_MAX}%`,
-      });
-    }
-
-    if (effectiveOwnerId && effectiveSprintMonth) {
-      const used = await getUsedWeight(
-        effectiveOwnerId,
-        effectiveSprintMonth,
-        id,
-      );
-      const total = used + effectiveWeight;
-      if (total > WEIGHT_BUDGET_MAX + WEIGHT_EPSILON) {
-        return res.status(400).json({
-          message: `Total bobot inisiatif pegawai ini pada sprint ${effectiveSprintMonth} akan menjadi ${total.toFixed(1)}%, melebihi batas ${WEIGHT_BUDGET_MAX}%. Sisa bobot tersedia: ${Math.max(0, WEIGHT_BUDGET_MAX - used).toFixed(1)}%`,
-        });
-      }
-    }
 
     const updated = await prisma.initiative.update({
       where: { id },
@@ -1317,44 +1268,20 @@ export async function updateInitiativeKanbanStatus(
       if (!task)
         return res.status(404).json({ message: "Task tidak ditemukan" });
 
-      let newCurrentValue = task.currentValue;
       let newStatus = task.status;
 
       if (kanbanStatus === "DONE") {
-        newCurrentValue =
-          task.currentValue > 0
-            ? task.currentValue
-            : task.targetValue > 0
-              ? task.targetValue
-              : 1;
         newStatus = "DONE";
-      } else if (kanbanStatus === "TODO") {
-        newCurrentValue = 0;
-        newStatus = "ON_TRACK";
-      } else if (kanbanStatus === "IN_PROGRESS") {
-        if (task.currentValue <= 0) {
-          newCurrentValue =
-            task.targetValue > 0
-              ? Math.max(0.1, Math.round(task.targetValue * 0.1 * 10) / 10)
-              : 1;
-        } else if (
-          task.targetValue > 0 &&
-          task.currentValue >= task.targetValue
-        ) {
-          newCurrentValue = Math.max(
-            0.1,
-            Math.round(task.targetValue * 0.5 * 10) / 10,
-          );
-        }
-        newStatus = "ON_TRACK";
       } else if (kanbanStatus === "DROP") {
         newStatus = "DROP";
+      } else {
+        newStatus = "ON_TRACK";
       }
 
       const updatedTask = await prisma.task.update({
         where: { id: taskId },
         data: {
-          currentValue: newCurrentValue,
+          kanbanStatus,
           status: newStatus,
         },
       });
@@ -1396,15 +1323,10 @@ export async function updateInitiativeKanbanStatus(
     if (!existing)
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
 
-    const shouldSetToDone = kanbanStatus === "DONE";
-
     const updated = await prisma.initiative.update({
       where: { id },
       data: {
         kanbanStatus,
-        ...(shouldSetToDone &&
-          existing.targetValue > 0 &&
-          existing.currentValue <= 0 && { currentValue: existing.targetValue }),
         ...(achievedValue !== undefined && {
           achievedValue:
             achievedValue !== null && achievedValue !== ""
@@ -1442,10 +1364,7 @@ export async function updateInitiativeKanbanStatus(
       data: {
         initiativeId: id,
         oldValue: existing.currentValue,
-        newValue:
-          shouldSetToDone && existing.targetValue > 0
-            ? existing.targetValue
-            : existing.currentValue,
+        newValue: existing.achievedValue ?? existing.currentValue,
         note: `Status Kanban diubah ke ${kanbanStatus}`,
         kanbanStatus,
         submittedBy: userId,
@@ -1549,13 +1468,9 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
             ini.targetValue > 0
               ? Math.min(100, (ini.currentValue / ini.targetValue) * 100)
               : 0;
-          return acc + p * (ini.weight || 1.0);
+          return acc + p;
         }, 0);
-        const totalWeight = remainingInitiatives.reduce(
-          (acc, ini) => acc + (ini.weight || 1.0),
-          0,
-        );
-        avgProgress = totalWeight > 0 ? totalProgress / totalWeight : 0;
+        avgProgress = totalProgress / remainingInitiatives.length;
       }
       const kr = await prisma.keyResult.findUnique({
         where: { id: existing.keyResultId },
@@ -1582,6 +1497,7 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
 
 function getTaskKanbanStatus(t: any): string {
   if (!t) return "TODO";
+  if (t.kanbanStatus) return t.kanbanStatus;
   if (t.status === "DROP" || t.status === "OFF_TRACK") {
     return "DROP";
   }
@@ -2152,6 +2068,120 @@ export async function createTask(req: AuthRequest, res: Response) {
   }
 }
 
+// POST /api/initiatives/:initiativeId/tasks/batch — Create Multiple Tasks at once
+export async function createTasksBatch(req: AuthRequest, res: Response) {
+  try {
+    const { initiativeId } = req.params;
+    const { tasks } = req.body;
+    const { role, id: userId } = req.user!;
+
+    if (!Array.isArray(tasks) || tasks.length === 0) {
+      return res.status(400).json({
+        message:
+          "Daftar task (tasks) harus berupa array dan tidak boleh kosong",
+      });
+    }
+
+    const initiative = await prisma.initiative.findUnique({
+      where: { id: initiativeId },
+    });
+    if (!initiative) {
+      return res.status(404).json({ message: "Initiative tidak ditemukan" });
+    }
+
+    if (initiative.keyResultId) {
+      try {
+        await validateCascadeKR(initiativeId, initiative.keyResultId);
+      } catch (err: any) {
+        return res.status(400).json({ message: err.message });
+      }
+    }
+
+    const createdTasks: any[] = [];
+    const notificationsToSend: {
+      recipientId: string;
+      title: string;
+      body: string;
+    }[] = [];
+
+    const validTaskItems = tasks.filter(
+      (t: any) => t && typeof t.title === "string" && t.title.trim().length > 0,
+    );
+    if (validTaskItems.length === 0) {
+      return res.status(400).json({
+        message: "Tidak ada baris task valid dengan judul yang diisi",
+      });
+    }
+
+    for (const item of validTaskItems) {
+      const targetAssigneeId =
+        item.assignedTeamMemberId ||
+        item.assignedMemberId ||
+        initiative.assignedLeaderId ||
+        initiative.ownerId ||
+        userId;
+
+      const finalSprintMonth =
+        item.sprintMonth || initiative.sprintMonth || null;
+      const targetVal = parseFloat(item.targetValue) || 1;
+
+      const created = await prisma.task.create({
+        data: {
+          initiativeId,
+          title: item.title.trim(),
+          targetValue: targetVal,
+          unit: item.unit || null,
+          status: "ON_TRACK",
+          kanbanStatus: "TODO",
+          assignedTeamMemberId: targetAssigneeId,
+          assignedBy: userId,
+          sprintMonth: finalSprintMonth,
+          startDate: item.startDate ? new Date(item.startDate) : null,
+          finishDate: item.finishDate ? new Date(item.finishDate) : null,
+          ...(targetAssigneeId && {
+            assignments: {
+              create: {
+                userId: targetAssigneeId,
+              },
+            },
+          }),
+        },
+        include: {
+          assignedTeamMember: { select: { id: true, name: true } },
+        },
+      });
+
+      createdTasks.push(created);
+
+      if (targetAssigneeId && targetAssigneeId !== userId) {
+        notificationsToSend.push({
+          recipientId: targetAssigneeId,
+          title: "Task Baru Ditugaskan",
+          body: `Anda mendapat assignment Task: "${item.title.trim()}"`,
+        });
+      }
+    }
+
+    for (const notif of notificationsToSend) {
+      createNotification({
+        recipientId: notif.recipientId,
+        type: "TASK_ASSIGNED",
+        title: notif.title,
+        body: notif.body,
+        link: "/team/my-work",
+      }).catch((e) => console.error("Batch task notification error:", e));
+    }
+
+    return res.status(201).json({
+      message: `${createdTasks.length} task berhasil dibuat`,
+      tasks: createdTasks,
+    });
+  } catch (error) {
+    console.error("Create Tasks Batch error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 // PUT /api/tasks/:id — Update Task
 export async function updateTask(req: AuthRequest, res: Response) {
   try {
@@ -2466,9 +2496,8 @@ export async function cascadeInitiativeToMonthlyKr(
   let newKrValue = 0;
 
   if (isPercentUnit) {
-    // Untuk KR berbasis persentase ('%'), gunakan weighted average percentage
-    const totalWeight = allInitiatives.reduce((s, i) => s + (i.weight || 1), 0);
-    const weightedAvgPercent =
+    // Untuk KR berbasis persentase ('%'), gunakan simple average percentage
+    const avgPercent =
       allInitiatives.reduce((sum, init) => {
         let initProgress = 0;
         if (
@@ -2486,10 +2515,10 @@ export async function cascadeInitiativeToMonthlyKr(
             Math.max(0, (init.currentValue || 0) / init.targetValue),
           );
         }
-        return sum + initProgress * (init.weight || 1);
-      }, 0) / (totalWeight || 1);
+        return sum + initProgress;
+      }, 0) / allInitiatives.length;
 
-    newKrValue = Math.round(weightedAvgPercent * kr.targetValue * 100) / 100;
+    newKrValue = Math.round(avgPercent * kr.targetValue * 100) / 100;
   } else {
     // Untuk KR berbasis nominal (IDR, Qty, Jam, Unit, dll):
     // Agregasikan (sum) realisasi nilai riil dari seluruh Inisiatif di bawah KR ini
@@ -2899,11 +2928,10 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
     let finalNewValue = parseFloat(newValue);
     let finalKanbanStatus = kanbanStatus;
 
-    if (kanbanStatus === "DONE" && initiative.targetValue > 0) {
-      finalNewValue = initiative.targetValue;
-    } else if (
+    if (
       initiative.targetValue > 0 &&
-      finalNewValue >= initiative.targetValue
+      finalNewValue >= initiative.targetValue &&
+      !finalKanbanStatus
     ) {
       finalKanbanStatus = "DONE";
     }

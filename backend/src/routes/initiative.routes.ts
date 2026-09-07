@@ -9,6 +9,7 @@ import {
   updateInitiativeKanbanStatus,
   getTasksForInitiative,
   createTask,
+  createTasksBatch,
   updateTask,
   deleteTask,
   assignUsersToTask,
@@ -118,6 +119,12 @@ router.post(
   authMiddleware,
   roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   createTask,
+);
+router.post(
+  "/:initiativeId/tasks/batch",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  createTasksBatch,
 );
 
 // Task standalone endpoints

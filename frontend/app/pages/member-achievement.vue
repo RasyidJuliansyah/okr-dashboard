@@ -219,12 +219,11 @@
                 "
               >
                 <span
-                  >Inisiatif (Bobot 2):
+                  >Inisiatif:
                   <strong>{{ m.initiativeAchievementPct || 0 }}%</strong></span
                 >
                 <span
-                  >Task (Bobot 1):
-                  <strong>{{ m.taskAchievementPct || 0 }}%</strong></span
+                  >Task: <strong>{{ m.taskAchievementPct || 0 }}%</strong></span
                 >
               </div>
               <h5 class="tasks-list-title">Daftar Card Pekerjaan & Capaian:</h5>

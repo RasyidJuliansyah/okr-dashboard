@@ -221,6 +221,7 @@ model Task {
   weight               Float            @default(1.0)
   unit                 String?
   status               String           @default("ON_TRACK")
+  kanbanStatus         String?          @default("TODO") @map("kanban_status")
   documentationLink    String?          @map("documentation_link")
   assignments          TaskAssignment[]
   updates              TaskUpdate[]
