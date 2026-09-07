@@ -1177,18 +1177,6 @@
                   class="form-input"
                 />
               </div>
-              <div>
-                <label>Bobot (%)</label>
-                <input
-                  v-model.number="initiativeForm.weight"
-                  type="number"
-                  step="0.1"
-                  class="form-input"
-                />
-                <small v-if="weightBudgetInfo" class="text-xs text-gray"
-                  >Sisa kuota: {{ weightBudgetInfo.remaining }}%</small
-                >
-              </div>
             </div>
 
             <div class="form-row-2">
@@ -1341,103 +1329,155 @@
     </div>
 
     <!-- ─── MODAL: Add/Edit Task ─── -->
+    <!-- ─── MODAL: Add Tasks Batch (Massal) ─── -->
     <div
       v-if="showTaskModal"
       class="modal-overlay"
       @click.self="showTaskModal = false"
     >
-      <div class="modal-box">
+      <div class="modal-box modal-box-large">
         <div class="modal-header">
-          <h3>Tambah Task untuk: {{ selectedInitiativeForTask?.title }}</h3>
+          <h3>Tambah Task Massal untuk Inisiatif</h3>
           <button class="modal-close-btn" @click="showTaskModal = false">
             &times;
           </button>
         </div>
         <div class="modal-body-scroll">
-          <label>Judul Task *</label>
-          <input
-            v-model="taskForm.title"
-            class="form-input"
-            placeholder="Contoh: Selesaikan 10 unit test..."
-            style="margin-bottom: 12px"
-          />
+          <p class="mb-3" style="font-size: 13px; color: #475569">
+            Inisiatif Induk:
+            <strong>{{ selectedInitiativeForTask?.title }}</strong>
+          </p>
 
-          <label v-if="isLeader || isManager || isAdmin"
-            >Assign ke Anggota Tim (Team Member T)</label
-          >
-          <select
-            v-if="isLeader || isManager || isAdmin"
-            v-model="taskForm.assignedTeamMemberId"
-            class="form-input"
-            style="margin-bottom: 12px"
-          >
-            <option value="">-- Pilih Anggota Tim --</option>
-            <option
-              v-for="member in availableTeamMembers"
-              :key="member.id"
-              :value="member.id"
+          <!-- Batch Default Settings Card -->
+          <div class="batch-defaults-card mb-4">
+            <div class="batch-defaults-title">
+              ⚡ Default Settings untuk Baris Task Baru
+            </div>
+            <div class="form-row-4">
+              <div>
+                <label>Target Value Default</label>
+                <input
+                  v-model.number="batchDefaults.targetValue"
+                  type="number"
+                  class="form-input"
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <label>Satuan (Unit) Default</label>
+                <input
+                  v-model="batchDefaults.unit"
+                  class="form-input"
+                  placeholder="%, task..."
+                />
+              </div>
+              <div>
+                <label>Bulan Sprint</label>
+                <input
+                  v-model="batchDefaults.sprintMonth"
+                  type="month"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Assignee Default</label>
+                <select
+                  v-model="batchDefaults.assignedTeamMemberId"
+                  class="form-input"
+                >
+                  <option value="">-- Inisiator / Induk --</option>
+                  <option
+                    v-for="member in availableTeamMembers"
+                    :key="member.id"
+                    :value="member.id"
+                  >
+                    {{ member.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="mt-2 text-right">
+              <button
+                type="button"
+                class="btn-text-action"
+                @click="applyDefaultsToAllRows"
+              >
+                Terapkan Default ke Semua Baris
+              </button>
+            </div>
+          </div>
+
+          <!-- Task Rows Header & List -->
+          <div class="task-rows-header">
+            <label style="font-weight: 700; color: #334155; font-size: 14px">
+              Daftar Baris Task ({{ taskRows.length }})
+            </label>
+            <button type="button" class="btn-add-row" @click="addTaskRow">
+              + Tambah Baris Task
+            </button>
+          </div>
+
+          <div class="task-rows-container">
+            <div
+              v-for="(row, idx) in taskRows"
+              :key="idx"
+              class="task-row-card"
             >
-              {{ member.name }} ({{ member.position || "Team Member" }})
-            </option>
-          </select>
-
-          <div class="form-row-2">
-            <div>
-              <label>Target Value *</label>
-              <input
-                v-model.number="taskForm.targetValue"
-                type="number"
-                class="form-input"
-              />
-            </div>
-            <div>
-              <label>Satuan (Unit)</label>
-              <input
-                v-model="taskForm.unit"
-                class="form-input"
-                placeholder="%, task, doc..."
-              />
-            </div>
-          </div>
-
-          <div class="form-row-2">
-            <div>
-              <label>Bulan / Sprint Task</label>
-              <input
-                v-model="taskForm.sprintMonth"
-                type="month"
-                class="form-input"
-              />
-            </div>
-            <div>
-              <label>Tanggal Mulai Task</label>
-              <input
-                v-model="taskForm.startDate"
-                type="date"
-                class="form-input"
-              />
-            </div>
-          </div>
-
-          <div class="form-row-2">
-            <div>
-              <label>Tanggal Selesai Task (Finish Date)</label>
-              <input
-                v-model="taskForm.finishDate"
-                type="date"
-                class="form-input"
-              />
+              <div class="task-row-num">{{ idx + 1 }}</div>
+              <div class="task-row-fields">
+                <input
+                  v-model="row.title"
+                  class="form-input row-title"
+                  placeholder="Judul Task (Contoh: Selesaikan unit test...)..."
+                />
+                <input
+                  v-model.number="row.targetValue"
+                  type="number"
+                  class="form-input row-target"
+                  placeholder="Target"
+                />
+                <input
+                  v-model="row.unit"
+                  class="form-input row-unit"
+                  placeholder="Satuan"
+                />
+                <select
+                  v-model="row.assignedTeamMemberId"
+                  class="form-input row-assignee"
+                >
+                  <option value="">-- Inisiator / Induk --</option>
+                  <option
+                    v-for="member in availableTeamMembers"
+                    :key="member.id"
+                    :value="member.id"
+                  >
+                    {{ member.name }}
+                  </option>
+                </select>
+              </div>
+              <button
+                type="button"
+                class="btn-remove-row"
+                :disabled="taskRows.length <= 1"
+                @click="removeTaskRow(idx)"
+                title="Hapus baris"
+              >
+                &times;
+              </button>
             </div>
           </div>
-
-          <!-- KpiSelector -->
-          <KpiSelector v-model="taskForm.kpis" />
         </div>
         <div class="modal-actions">
           <button class="secondary-btn" @click="showTaskModal = false">
             Batal
           </button>
-          <button class="primary-btn" @click="saveTask">Simpan Task</button>
+          <button
+            class="primary-btn"
+            :disabled="saving || validTaskCount === 0"
+            @click="saveTasksBatch"
+          >
+            {{ saving ? "Menyimpan..." : `Simpan (${validTaskCount} Task)` }}
+          </button>
         </div>
       </div>
     </div>
@@ -1845,17 +1885,25 @@ watch(
 const cardType = ref<"INISIATIF" | "TASK">("INISIATIF");
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
-const taskForm = ref({
-  initiativeId: "",
-  title: "",
-  targetValue: 0,
-  unit: "",
-  assignedTeamMemberId: "",
+const batchDefaults = ref({
+  targetValue: 100,
+  unit: "%",
   sprintMonth: "",
-  startDate: "",
-  finishDate: "",
-  kpis: [],
+  assignedTeamMemberId: "",
 });
+const taskRows = ref<any[]>([
+  {
+    title: "",
+    targetValue: 100,
+    unit: "%",
+    assignedTeamMemberId: "",
+    sprintMonth: "",
+  },
+]);
+const validTaskCount = computed(
+  () =>
+    taskRows.value.filter((r) => r.title && r.title.trim().length > 0).length,
+);
 
 // Sprint Month filter & helper functions
 const selectedSprintMonth = ref("");
@@ -2387,42 +2435,91 @@ async function deleteInitiative(id: string) {
 
 function openAddTaskModal(ini: any) {
   selectedInitiativeForTask.value = ini;
-  taskForm.value = {
-    title: "",
-    targetValue: 0,
-    unit: "",
+  const now = new Date();
+  const defaultSprint =
+    ini.sprintMonth ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
+    sprintMonth: defaultSprint,
     assignedTeamMemberId: "",
-    sprintMonth: ini.sprintMonth || "",
-    startDate: "",
-    finishDate: "",
-    kpis: [],
   };
+
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      unit: "%",
+      assignedTeamMemberId: "",
+      sprintMonth: defaultSprint,
+    },
+  ];
   showTaskModal.value = true;
 }
 
-async function saveTask() {
-  if (!taskForm.value.title.trim()) {
-    alert("Judul Task wajib diisi");
+function addTaskRow() {
+  taskRows.value.push({
+    title: "",
+    targetValue: batchDefaults.value.targetValue || 100,
+    unit: batchDefaults.value.unit || "%",
+    assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
+    sprintMonth: batchDefaults.value.sprintMonth || "",
+  });
+}
+
+function removeTaskRow(index: number) {
+  if (taskRows.value.length > 1) {
+    taskRows.value.splice(index, 1);
+  }
+}
+
+function applyDefaultsToAllRows() {
+  taskRows.value.forEach((r) => {
+    r.targetValue = batchDefaults.value.targetValue;
+    r.unit = batchDefaults.value.unit;
+    r.sprintMonth = batchDefaults.value.sprintMonth;
+    r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
+  });
+}
+
+async function saveTasksBatch() {
+  const validTasks = taskRows.value.filter(
+    (r) => r.title && r.title.trim().length > 0,
+  );
+
+  if (validTasks.length === 0) {
+    alert("Setidaknya 1 baris Judul Task wajib diisi");
     return;
   }
+  if (!selectedInitiativeForTask.value?.id) {
+    alert("Inisiatif induk tidak ditemukan");
+    return;
+  }
+  saving.value = true;
   try {
     const res = await fetch(
-      `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`,
+      `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks/batch`,
       {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify(taskForm.value),
+        body: JSON.stringify({ tasks: validTasks }),
       },
     );
     if (res.ok) {
       showTaskModal.value = false;
+      successMessage.value = `${validTasks.length} Task berhasil ditambahkan!`;
+      setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      alert(err.message || "Gagal membuat Task");
+      alert(err.message || "Gagal membuat Task massal");
     }
   } catch (err: any) {
     alert(err.message);
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -3458,5 +3555,139 @@ onMounted(async () => {
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #cbd5e1;
+}
+
+/* Bulk Task Modal Styles */
+.modal-box-large {
+  max-width: 840px !important;
+  width: 95% !important;
+}
+
+.batch-defaults-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.batch-defaults-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+.form-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 768px) {
+  .form-row-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.btn-text-action {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-text-action:hover {
+  text-decoration: underline;
+}
+
+.task-rows-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.btn-add-row {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-add-row:hover {
+  background: #dbeafe;
+}
+
+.task-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.task-row-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.task-row-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.task-row-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.row-title {
+  flex: 3;
+  margin-bottom: 0 !important;
+}
+.row-target {
+  flex: 1;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+}
+.row-unit {
+  flex: 1;
+  min-width: 70px;
+  margin-bottom: 0 !important;
+}
+.row-assignee {
+  flex: 2;
+  min-width: 130px;
+  margin-bottom: 0 !important;
+}
+.btn-remove-row {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-remove-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-remove-row:hover:not(:disabled) {
+  background: #fee2e2;
 }
 </style>

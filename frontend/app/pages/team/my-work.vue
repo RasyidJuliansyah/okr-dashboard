@@ -1615,14 +1615,15 @@
       </div>
 
       <!-- Modal Buat Task Baru di Pekerjaan Saya -->
+      <!-- ─── MODAL: Tambah Task Massal ─── -->
       <div
         v-if="showMyWorkTaskModal"
         class="modal-overlay"
         @click.self="showMyWorkTaskModal = false"
       >
-        <div class="modal-box">
+        <div class="modal-box modal-box-large">
           <div class="modal-header">
-            <h3>Tambah Task Baru</h3>
+            <h3>Tambah Task Massal untuk Inisiatif</h3>
             <button
               class="modal-close-btn"
               @click="showMyWorkTaskModal = false"
@@ -1630,92 +1631,151 @@
               &times;
             </button>
           </div>
-          <p class="mb-2" style="font-size: 13px; color: #475569">
-            Inisiatif Induk: <strong>{{ selectedIniForTask?.title }}</strong>
-          </p>
+          <div class="modal-body-scroll">
+            <p class="mb-3" style="font-size: 13px; color: #475569">
+              Inisiatif Induk: <strong>{{ selectedIniForTask?.title }}</strong>
+            </p>
 
-          <div v-if="modalError" class="alert alert-error mb-4">
-            {{ modalError }}
-          </div>
-
-          <label>Judul Task *</label>
-          <input
-            v-model="myWorkTaskForm.title"
-            class="form-input mb-3"
-            placeholder="Contoh: Implementasi modul A..."
-          />
-
-          <label>Assignee (Penerima Tugas)</label>
-          <select
-            v-model="myWorkTaskForm.assignedTeamMemberId"
-            class="form-input mb-3"
-          >
-            <option value="">-- Diri Sendiri --</option>
-            <option v-for="u in availableAssignees" :key="u.id" :value="u.id">
-              {{ u.name }} ({{ u.role }})
-            </option>
-          </select>
-
-          <div class="form-row-2 mb-3">
-            <div>
-              <label>Target Value *</label>
-              <input
-                v-model.number="myWorkTaskForm.targetValue"
-                type="number"
-                class="form-input"
-              />
+            <div v-if="modalError" class="alert alert-error mb-4">
+              {{ modalError }}
             </div>
-            <div>
-              <label>Satuan (Unit)</label>
-              <input
-                v-model="myWorkTaskForm.unit"
-                class="form-input"
-                placeholder="%, task, doc..."
-              />
-            </div>
-          </div>
 
-          <div class="form-row-2 mb-3">
-            <div>
-              <label>Bulan / Sprint Task</label>
-              <input
-                v-model="myWorkTaskForm.sprintMonth"
-                type="month"
-                class="form-input"
-              />
+            <!-- Batch Default Settings Card -->
+            <div class="batch-defaults-card mb-4">
+              <div class="batch-defaults-title">
+                ⚡ Default Settings untuk Baris Task Baru
+              </div>
+              <div class="form-row-4">
+                <div>
+                  <label>Target Value Default</label>
+                  <input
+                    v-model.number="batchDefaults.targetValue"
+                    type="number"
+                    class="form-input"
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <label>Satuan (Unit) Default</label>
+                  <input
+                    v-model="batchDefaults.unit"
+                    class="form-input"
+                    placeholder="%, task..."
+                  />
+                </div>
+                <div>
+                  <label>Bulan Sprint</label>
+                  <input
+                    v-model="batchDefaults.sprintMonth"
+                    type="month"
+                    class="form-input"
+                  />
+                </div>
+                <div>
+                  <label>Assignee Default</label>
+                  <select
+                    v-model="batchDefaults.assignedTeamMemberId"
+                    class="form-input"
+                  >
+                    <option value="">-- Diri Sendiri --</option>
+                    <option
+                      v-for="u in availableAssignees"
+                      :key="u.id"
+                      :value="u.id"
+                    >
+                      {{ u.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2 text-right">
+                <button
+                  type="button"
+                  class="btn-text-action"
+                  @click="applyDefaultsToAllRows"
+                >
+                  Terapkan Default ke Semua Baris
+                </button>
+              </div>
             </div>
-            <div>
-              <label>Tanggal Mulai Task</label>
-              <input
-                v-model="myWorkTaskForm.startDate"
-                type="date"
-                class="form-input"
-              />
-            </div>
-          </div>
 
-          <div class="form-row-2 mb-3">
-            <div>
-              <label>Tanggal Selesai (Finish Date)</label>
-              <input
-                v-model="myWorkTaskForm.finishDate"
-                type="date"
-                class="form-input"
-              />
+            <!-- Task Rows Header & List -->
+            <div class="task-rows-header">
+              <label style="font-weight: 700; color: #334155; font-size: 14px">
+                Daftar Baris Task ({{ taskRows.length }})
+              </label>
+              <button type="button" class="btn-add-row" @click="addTaskRow">
+                + Tambah Baris Task
+              </button>
             </div>
-          </div>
 
-          <div class="modal-actions">
-            <button class="secondary-btn" @click="showMyWorkTaskModal = false">
-              Batal
-            </button>
-            <button
-              class="primary-btn"
-              :disabled="saving"
-              @click="saveMyWorkTask"
-            >
-              {{ saving ? "Menyimpan..." : "Simpan Task" }}
-            </button>
+            <div class="task-rows-container">
+              <div
+                v-for="(row, idx) in taskRows"
+                :key="idx"
+                class="task-row-card"
+              >
+                <div class="task-row-num">{{ idx + 1 }}</div>
+                <div class="task-row-fields">
+                  <input
+                    v-model="row.title"
+                    class="form-input row-title"
+                    placeholder="Judul Task (Contoh: Implementasi modul Auth)..."
+                  />
+                  <input
+                    v-model.number="row.targetValue"
+                    type="number"
+                    class="form-input row-target"
+                    placeholder="Target"
+                  />
+                  <input
+                    v-model="row.unit"
+                    class="form-input row-unit"
+                    placeholder="Satuan"
+                  />
+                  <select
+                    v-model="row.assignedTeamMemberId"
+                    class="form-input row-assignee"
+                  >
+                    <option value="">-- Diri Sendiri --</option>
+                    <option
+                      v-for="u in availableAssignees"
+                      :key="u.id"
+                      :value="u.id"
+                    >
+                      {{ u.name }}
+                    </option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  class="btn-remove-row"
+                  :disabled="taskRows.length <= 1"
+                  @click="removeTaskRow(idx)"
+                  title="Hapus baris"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <div class="modal-actions mt-4">
+              <button
+                class="secondary-btn"
+                @click="showMyWorkTaskModal = false"
+              >
+                Batal
+              </button>
+              <button
+                class="primary-btn"
+                :disabled="saving || validTaskCount === 0"
+                @click="saveMyWorkTasksBatch"
+              >
+                {{
+                  saving ? "Menyimpan..." : `Simpan (${validTaskCount} Task)`
+                }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1748,19 +1808,28 @@ const successMsg = ref("");
 const selectedTask = ref(null);
 const selectedIni = ref(null);
 
-// Modal Tambah Task Baru di Pekerjaan Saya
+// Modal Tambah Task Massal di Pekerjaan Saya
 const showMyWorkTaskModal = ref(false);
 const selectedIniForTask = ref(null);
-const myWorkTaskForm = ref({
-  title: "",
-  targetValue: 0,
-  unit: "",
-  assignedTeamMemberId: "",
+const batchDefaults = ref({
+  targetValue: 100,
+  unit: "%",
   sprintMonth: "",
-  startDate: "",
-  finishDate: "",
-  kpis: [],
+  assignedTeamMemberId: "",
 });
+const taskRows = ref([
+  {
+    title: "",
+    targetValue: 100,
+    unit: "%",
+    assignedTeamMemberId: "",
+    sprintMonth: "",
+  },
+]);
+const validTaskCount = computed(
+  () =>
+    taskRows.value.filter((r) => r.title && r.title.trim().length > 0).length,
+);
 
 const updateForm = ref({
   newValue: 0,
@@ -2096,23 +2165,59 @@ function openMyWorkAddTaskModal(ini) {
   const defaultSprint =
     ini.sprintMonth ||
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  myWorkTaskForm.value = {
-    title: "",
-    targetValue: 0,
-    unit: "",
-    assignedTeamMemberId: authStore.user?.id || "",
+
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
     sprintMonth: defaultSprint,
-    startDate: "",
-    finishDate: "",
-    kpis: [],
+    assignedTeamMemberId: authStore.user?.id || "",
   };
+
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      unit: "%",
+      assignedTeamMemberId: authStore.user?.id || "",
+      sprintMonth: defaultSprint,
+    },
+  ];
   modalError.value = "";
   showMyWorkTaskModal.value = true;
 }
 
-async function saveMyWorkTask() {
-  if (!myWorkTaskForm.value.title.trim()) {
-    modalError.value = "Judul Task wajib diisi";
+function addTaskRow() {
+  taskRows.value.push({
+    title: "",
+    targetValue: batchDefaults.value.targetValue || 100,
+    unit: batchDefaults.value.unit || "%",
+    assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
+    sprintMonth: batchDefaults.value.sprintMonth || "",
+  });
+}
+
+function removeTaskRow(index) {
+  if (taskRows.value.length > 1) {
+    taskRows.value.splice(index, 1);
+  }
+}
+
+function applyDefaultsToAllRows() {
+  taskRows.value.forEach((r) => {
+    r.targetValue = batchDefaults.value.targetValue;
+    r.unit = batchDefaults.value.unit;
+    r.sprintMonth = batchDefaults.value.sprintMonth;
+    r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
+  });
+}
+
+async function saveMyWorkTasksBatch() {
+  const validTasks = taskRows.value.filter(
+    (r) => r.title && r.title.trim().length > 0,
+  );
+
+  if (validTasks.length === 0) {
+    modalError.value = "Setidaknya 1 baris Judul Task wajib diisi";
     return;
   }
   if (!selectedIniForTask.value?.id) {
@@ -2123,20 +2228,21 @@ async function saveMyWorkTask() {
   modalError.value = "";
   try {
     const res = await fetch(
-      `${API}/initiatives/${selectedIniForTask.value.id}/tasks`,
+      `${API}/initiatives/${selectedIniForTask.value.id}/tasks/batch`,
       {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify(myWorkTaskForm.value),
+        body: JSON.stringify({ tasks: validTasks }),
       },
     );
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.message || "Gagal membuat Task");
+      throw new Error(err.message || "Gagal membuat Task massal");
     }
+    const data = await res.json();
     showMyWorkTaskModal.value = false;
-    successMsg.value = "Task baru berhasil ditambahkan!";
-    setTimeout(() => (successMsg.value = ""), 3000);
+    successMsg.value = `${data.tasks?.length || validTasks.length} task baru berhasil dibuat!`;
+    setTimeout(() => (successMsg.value = ""), 3500);
     await fetchMyWork();
   } catch (err) {
     modalError.value = err.message;
@@ -2928,5 +3034,139 @@ function getGroupedInitiatives(initiatives) {
   border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Bulk Task Modal Styles */
+.modal-box-large {
+  max-width: 840px !important;
+  width: 95% !important;
+}
+
+.batch-defaults-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.batch-defaults-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+.form-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 768px) {
+  .form-row-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.btn-text-action {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-text-action:hover {
+  text-decoration: underline;
+}
+
+.task-rows-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.btn-add-row {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-add-row:hover {
+  background: #dbeafe;
+}
+
+.task-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.task-row-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.task-row-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.task-row-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.row-title {
+  flex: 3;
+  margin-bottom: 0 !important;
+}
+.row-target {
+  flex: 1;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+}
+.row-unit {
+  flex: 1;
+  min-width: 70px;
+  margin-bottom: 0 !important;
+}
+.row-assignee {
+  flex: 2;
+  min-width: 130px;
+  margin-bottom: 0 !important;
+}
+.btn-remove-row {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-remove-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-remove-row:hover:not(:disabled) {
+  background: #fee2e2;
 }
 </style>
