@@ -151,348 +151,109 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Kanban Board Container -->
-      <div class="kanban-board-wrapper">
-        <div class="kanban-board">
-          <!-- COLUMN 1: TO DO -->
-          <div
-            class="kanban-column"
-            :class="{ 'drop-active': dragOverColumn === 'TODO' }"
-            @dragover.prevent="canMoveCards ? (dragOverColumn = 'TODO') : null"
-            @dragleave="dragOverColumn = null"
-            @drop="canMoveCards ? handleDrop('TODO') : null"
-          >
-            <div class="column-header todo-head">
-              <div class="col-title-wrap">
-                <span class="col-dot todo"></span>
-                <h4>TO DO</h4>
-              </div>
-              <span class="col-count-badge">{{ todoList.length }}</span>
+    <!-- Kanban Board Container -->
+    <div class="kanban-board-wrapper">
+      <div class="kanban-board">
+        <!-- COLUMN 1: TO DO -->
+        <div
+          class="kanban-column"
+          :class="{ 'drop-active': dragOverColumn === 'TODO' }"
+          @dragover.prevent="canMoveCards ? (dragOverColumn = 'TODO') : null"
+          @dragleave="dragOverColumn = null"
+          @drop="canMoveCards ? handleDrop('TODO') : null"
+        >
+          <div class="column-header todo-head">
+            <div class="col-title-wrap">
+              <span class="col-dot todo"></span>
+              <h4>TO DO</h4>
             </div>
-
-            <div class="column-cards-list">
-              <div v-if="todoList.length === 0" class="kanban-empty-col">
-                Belum ada inisiatif di kolom ini
-              </div>
-
-              <div
-                v-for="ini in todoList"
-                :key="ini.id"
-                class="kanban-card"
-                :class="{
-                  'task-card-type': ini.isTaskCard,
-                  'ini-card-type': !ini.isTaskCard,
-                }"
-                :draggable="canMoveCards"
-                @dragstart="canMoveCards ? handleDragStart(ini) : null"
-              >
-                <div class="card-top-meta">
-                  <span
-                    v-if="ini.keyResult?.bscPerspective"
-                    class="perspective-pill"
-                    :class="ini.keyResult.bscPerspective.toLowerCase()"
-                  >
-                    {{ ini.keyResult.bscPerspective }}
-                  </span>
-                  <span class="card-kr-badge" :title="ini.keyResult?.title">
-                    {{ ini.keyResult?.title || "Key Result" }}
-                  </span>
-                </div>
-
-                <div style="margin-bottom: 12px">
-                  <span v-if="ini.isTaskCard" class="card-type-pill task"
-                    >Task Turunan</span
-                  >
-                  <span v-else class="card-type-pill initiative"
-                    >Inisiatif Leader</span
-                  >
-                </div>
-
-                <h4 class="card-title">{{ ini.title }}</h4>
-                <p v-if="ini.description" class="card-desc">
-                  {{ ini.description }}
-                </p>
-
-                <div class="card-target-row">
-                  <span v-if="ini.targetValue">
-                    <span class="target-label">Target: </span>
-                    <strong class="target-val"
-                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                    >
-                  </span>
-                </div>
-
-                <!-- Date Range & Sprint Meta Row -->
-                <div
-                  class="card-dates-sprint-row"
-                  v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
-                >
-                  <span v-if="ini.sprintMonth" class="sprint-pill">
-                    {{ formatSprintLabel(ini.sprintMonth) }}
-                  </span>
-                  <span
-                    v-if="ini.startDate || ini.dueDate"
-                    class="date-range-pill"
-                    :class="{ overdue: isOverdue(ini) }"
-                  >
-                    {{ formatDateShort(ini.startDate) }} –
-                    {{ formatDateShort(ini.dueDate) }}
-                  </span>
-                </div>
-
-                <!-- Tasks summary & Bucket list -->
-                <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                  <div
-                    v-if="expandedTaskIniIds.includes(ini.id)"
-                    class="tasks-bucket-list"
-                    style="
-                      margin-top: 8px;
-                      display: flex;
-                      flex-direction: column;
-                      gap: 6px;
-                    "
-                  >
-                    <div
-                      v-for="task in ini.tasks"
-                      :key="task.id"
-                      class="task-bucket-card"
-                      style="
-                        background: #f8fafc;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 6px;
-                        padding: 6px 8px;
-                        font-size: 11px;
-                      "
-                    >
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: flex-start;
-                          gap: 4px;
-                        "
-                      >
-                        <span
-                          style="font-weight: 600; color: #1e293b; flex: 1"
-                          >{{ task.title }}</span
-                        >
-                        <span
-                          class="badge"
-                          :class="getTaskStatusClass(task.status)"
-                          style="
-                            font-size: 9px;
-                            padding: 1px 4px;
-                            border-radius: 4px;
-                          "
-                        >
-                          {{ task.status }}
-                        </span>
-                      </div>
-
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: center;
-                          margin-top: 4px;
-                          color: #64748b;
-                          font-size: 10px;
-                        "
-                      >
-                        <span>
-                          PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
-                        </span>
-                        <span>
-                          {{ task.currentValue }} / {{ task.targetValue }}
-                          {{ task.unit || "" }}
-                        </span>
-                      </div>
-
-                      <div
-                        v-if="task.sprintMonth"
-                        style="margin-top: 2px; font-size: 9px; color: #0284c7"
-                      >
-                        Sprint: {{ task.sprintMonth }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="card-footer-meta">
-                  <div class="card-team-owner">
-                    <span class="team-tag">{{ ini.team?.name }}</span>
-                    <span v-if="ini.owner?.name" class="owner-tag">
-                      {{ ini.owner.name }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Card Action Buttons -->
-                <div v-if="canMoveCards" class="card-hover-actions">
-                  <div class="left-actions">
-                    <button
-                      v-if="canManageInitiative(ini)"
-                      class="action-btn"
-                      title="Tambah Task"
-                      @click="openAddTaskModal(ini)"
-                    >
-                      + Task
-                    </button>
-                    <button
-                      v-if="canManageInitiative(ini)"
-                      class="action-btn"
-                      title="Edit Inisiatif"
-                      @click="openEditInitiativeModal(ini)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="isAdmin"
-                      class="action-btn danger"
-                      title="Hapus"
-                      @click="deleteInitiative(ini.id)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="move-actions">
-                    <button
-                      class="move-btn"
-                      title="Pindah ke In Progress"
-                      @click="moveCard(ini.id, 'IN_PROGRESS')"
-                    >
-                      Maju
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <span class="col-count-badge">{{ todoList.length }}</span>
           </div>
 
-          <!-- COLUMN 2: IN PROGRESS -->
-          <div
-            class="kanban-column"
-            :class="{ 'drop-active': dragOverColumn === 'IN_PROGRESS' }"
-            @dragover.prevent="
-              canMoveCards ? (dragOverColumn = 'IN_PROGRESS') : null
-            "
-            @dragleave="dragOverColumn = null"
-            @drop="canMoveCards ? handleDrop('IN_PROGRESS') : null"
-          >
-            <div class="column-header progress-head">
-              <div class="col-title-wrap">
-                <span class="col-dot progress"></span>
-                <h4>IN PROGRESS</h4>
-              </div>
-              <span class="col-count-badge">{{ inProgressList.length }}</span>
+          <div class="column-cards-list">
+            <div v-if="todoList.length === 0" class="kanban-empty-col">
+              Belum ada inisiatif di kolom ini
             </div>
 
-            <div class="column-cards-list">
-              <div v-if="inProgressList.length === 0" class="kanban-empty-col">
-                Tidak ada inisiatif yang sedang berjalan
+            <div
+              v-for="ini in todoList"
+              :key="ini.id"
+              class="kanban-card"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
+              :draggable="canMoveCards"
+              @dragstart="canMoveCards ? handleDragStart(ini) : null"
+            >
+              <div class="card-top-meta">
+                <span
+                  v-if="ini.keyResult?.bscPerspective"
+                  class="perspective-pill"
+                  :class="ini.keyResult.bscPerspective.toLowerCase()"
+                >
+                  {{ ini.keyResult.bscPerspective }}
+                </span>
+                <span class="card-kr-badge" :title="ini.keyResult?.title">
+                  {{ ini.keyResult?.title || "Key Result" }}
+                </span>
               </div>
 
-              <div
-                v-for="ini in inProgressList"
-                :key="ini.id"
-                class="kanban-card card-in-progress"
-                :class="{
-                  'task-card-type': ini.isTaskCard,
-                  'ini-card-type': !ini.isTaskCard,
-                }"
-                :draggable="canMoveCards"
-                @dragstart="canMoveCards ? handleDragStart(ini) : null"
-              >
-                <div class="card-top-meta">
-                  <span class="card-kr-badge" :title="ini.keyResult?.title">
-                    {{ ini.keyResult?.title || "Key Result" }}
-                  </span>
-                  <span
-                    v-if="ini.keyResult?.bscPerspective"
-                    class="perspective-pill"
-                    :class="ini.keyResult.bscPerspective.toLowerCase()"
-                  >
-                    {{ ini.keyResult.bscPerspective }}
-                  </span>
-                </div>
-                <div style="margin-bottom: 12px">
-                  <span v-if="ini.isTaskCard" class="card-type-pill task"
-                    >Task Turunan</span
-                  >
-                  <span v-else class="card-type-pill initiative"
-                    >Inisiatif Leader</span
-                  >
-                </div>
-                <h4 class="card-title">{{ ini.title }}</h4>
-                <p v-if="ini.description" class="card-desc">
-                  {{ ini.description }}
-                </p>
-
-                <div class="card-target-row">
-                  <span v-if="ini.targetValue">
-                    <span class="target-label">Target: </span>
-                    <strong class="target-val"
-                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                    >
-                  </span>
-                </div>
-
-                <!-- Date Range & Sprint Meta Row -->
-                <div
-                  class="card-dates-sprint-row"
-                  v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Turunan</span
                 >
-                  <span v-if="ini.sprintMonth" class="sprint-pill">
-                    {{ formatSprintLabel(ini.sprintMonth) }}
-                  </span>
-                  <span
-                    v-if="ini.startDate || ini.dueDate"
-                    class="date-range-pill"
-                    :class="{ overdue: isOverdue(ini) }"
-                  >
-                    {{ formatDateShort(ini.startDate) }} –
-                    {{ formatDateShort(ini.dueDate) }}
-                  </span>
-                </div>
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
 
-                <!-- Tasks summary & Bucket list -->
-                <div class="card-tasks-summary" v-if="ini.tasks?.length">
+              <h4 class="card-title">{{ ini.title }}</h4>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
+
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
+                </span>
+              </div>
+
+              <!-- Date Range & Sprint Meta Row -->
+              <div
+                class="card-dates-sprint-row"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+              >
+                <span v-if="ini.sprintMonth" class="sprint-pill">
+                  {{ formatSprintLabel(ini.sprintMonth) }}
+                </span>
+                <span
+                  v-if="ini.startDate || ini.dueDate"
+                  class="date-range-pill"
+                  :class="{ overdue: isOverdue(ini) }"
+                >
+                  {{ formatDateShort(ini.startDate) }} –
+                  {{ formatDateShort(ini.dueDate) }}
+                </span>
+              </div>
+
+              <!-- Tasks summary & Bucket list -->
+              <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                <div
                   v-if="expandedTaskIniIds.includes(ini.id)"
-                  class="tasks-bucket-list" style=" margin-top: 8px; display:
-                  flex; flex-direction: column; gap: 6px; " >
+                  class="tasks-bucket-list"
+                  style="
+                    margin-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                  "
+                >
                   <div
                     v-for="task in ini.tasks"
                     :key="task.id"
@@ -556,809 +317,939 @@
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div class="card-footer-meta">
-                  <div class="card-team-owner">
-                    <span class="team-tag">{{ ini.team?.name }}</span>
-                    <span v-if="ini.owner?.name" class="owner-tag">
-                      {{ ini.owner.name }}
-                    </span>
-                  </div>
+              <div class="card-footer-meta">
+                <div class="card-team-owner">
+                  <span class="team-tag">{{ ini.team?.name }}</span>
+                  <span v-if="ini.owner?.name" class="owner-tag">
+                    {{ ini.owner.name }}
+                  </span>
                 </div>
+              </div>
 
-                <!-- Card Action Buttons -->
-                <div v-if="canMoveCards" class="card-hover-actions">
-                  <div class="left-actions">
-                    <button
-                      v-if="canManageInitiative(ini)"
-                      class="action-btn"
-                      title="Tambah Task"
-                      @click="openAddTaskModal(ini)"
+              <!-- Card Action Buttons -->
+              <div v-if="canMoveCards" class="card-hover-actions">
+                <div class="left-actions">
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit Inisiatif"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
-                      + Task
-                    </button>
-                    <button
-                      v-if="canManageInitiative(ini)"
-                      class="action-btn"
-                      title="Edit Inisiatif"
-                      @click="openEditInitiativeModal(ini)"
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="isAdmin"
-                      class="action-btn danger"
-                      title="Hapus"
-                      @click="deleteInitiative(ini.id)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="move-actions">
-                    <button
-                      class="move-btn"
-                      title="Kembalikan ke To Do"
-                      @click="moveCard(ini.id, 'TODO')"
-                    >
-                      Mundur
-                    </button>
-                    <button
-                      class="move-btn primary"
-                      title="Selesaikan ke Done"
-                      @click="moveCard(ini.id, 'DONE')"
-                    >
-                      Selesai
-                    </button>
-                  </div>
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="move-actions">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke In Progress"
+                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+                  >
+                    Maju
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- COLUMN 3: DONE -->
-          <div
-            class="kanban-column"
-            :class="{ 'drop-active': dragOverColumn === 'DONE' }"
-            @dragover.prevent="canMoveCards ? (dragOverColumn = 'DONE') : null"
-            @dragleave="dragOverColumn = null"
-            @drop="canMoveCards ? handleDrop('DONE') : null"
-          >
-            <div class="column-header done-head">
-              <div class="col-title-wrap">
-                <span class="col-dot done"></span>
-                <h4>DONE</h4>
-              </div>
-              <span class="col-count-badge">{{ doneList.length }}</span>
+        <!-- COLUMN 2: IN PROGRESS -->
+        <div
+          class="kanban-column"
+          :class="{ 'drop-active': dragOverColumn === 'IN_PROGRESS' }"
+          @dragover.prevent="
+            canMoveCards ? (dragOverColumn = 'IN_PROGRESS') : null
+          "
+          @dragleave="dragOverColumn = null"
+          @drop="canMoveCards ? handleDrop('IN_PROGRESS') : null"
+        >
+          <div class="column-header progress-head">
+            <div class="col-title-wrap">
+              <span class="col-dot progress"></span>
+              <h4>IN PROGRESS</h4>
+            </div>
+            <span class="col-count-badge">{{ inProgressList.length }}</span>
+          </div>
+
+          <div class="column-cards-list">
+            <div v-if="inProgressList.length === 0" class="kanban-empty-col">
+              Tidak ada inisiatif yang sedang berjalan
             </div>
 
-            <div class="column-cards-list">
-              <div v-if="doneList.length === 0" class="kanban-empty-col">
-                Belum ada inisiatif yang selesai
+            <div
+              v-for="ini in inProgressList"
+              :key="ini.id"
+              class="kanban-card card-in-progress"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
+              :draggable="canMoveCards"
+              @dragstart="canMoveCards ? handleDragStart(ini) : null"
+            >
+              <div class="card-top-meta">
+                <span class="card-kr-badge" :title="ini.keyResult?.title">
+                  {{ ini.keyResult?.title || "Key Result" }}
+                </span>
+                <span
+                  v-if="ini.keyResult?.bscPerspective"
+                  class="perspective-pill"
+                  :class="ini.keyResult.bscPerspective.toLowerCase()"
+                >
+                  {{ ini.keyResult.bscPerspective }}
+                </span>
+              </div>
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Turunan</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
+              <h4 class="card-title">{{ ini.title }}</h4>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
+
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
+                </span>
               </div>
 
+              <!-- Date Range & Sprint Meta Row -->
               <div
-                v-for="ini in doneList"
-                :key="ini.id"
-                class="kanban-card card-done"
-                :class="{
-                  'task-card-type': ini.isTaskCard,
-                  'ini-card-type': !ini.isTaskCard,
-                }"
-                :draggable="canMoveCards"
-                @dragstart="canMoveCards ? handleDragStart(ini) : null"
+                class="card-dates-sprint-row"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
               >
-                <div class="card-top-meta">
-                  <span class="card-kr-badge" :title="ini.keyResult?.title">
-                    {{ ini.keyResult?.title || "Key Result" }}
-                  </span>
-                  <span class="completed-checkmark-badge">Selesai</span>
-                </div>
-
-                <div style="margin-bottom: 12px">
-                  <span v-if="ini.isTaskCard" class="card-type-pill task"
-                    >Task Turunan</span
-                  >
-                  <span v-else class="card-type-pill initiative"
-                    >Inisiatif Leader</span
-                  >
-                </div>
-
-                <h4 class="card-title text-done">{{ ini.title }}</h4>
-                <p v-if="ini.description" class="card-desc">
-                  {{ ini.description }}
-                </p>
-
-                <div class="card-target-row">
-                  <span v-if="ini.targetValue">
-                    <span class="target-label">Target: </span>
-                    <strong class="target-val"
-                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                    >
-                  </span>
-                </div>
-
-                <!-- Date Range & Sprint Meta Row -->
-                <div
-                  class="card-dates-sprint-row"
-                  v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                <span v-if="ini.sprintMonth" class="sprint-pill">
+                  {{ formatSprintLabel(ini.sprintMonth) }}
+                </span>
+                <span
+                  v-if="ini.startDate || ini.dueDate"
+                  class="date-range-pill"
+                  :class="{ overdue: isOverdue(ini) }"
                 >
-                  <span v-if="ini.sprintMonth" class="sprint-pill">
-                    {{ formatSprintLabel(ini.sprintMonth) }}
-                  </span>
-                  <span
-                    v-if="ini.startDate || ini.dueDate"
-                    class="date-range-pill"
-                    :class="{ overdue: isOverdue(ini) }"
-                  >
-                    {{ formatDateShort(ini.startDate) }} –
-                    {{ formatDateShort(ini.dueDate) }}
-                  </span>
-                </div>
+                  {{ formatDateShort(ini.startDate) }} –
+                  {{ formatDateShort(ini.dueDate) }}
+                </span>
+              </div>
 
-                <!-- Achieved Value Row for DONE cards -->
+              <!-- Tasks summary & Bucket list -->
+              <div class="card-tasks-summary" v-if="ini.tasks?.length">
                 <div
-                  class="card-achieved-row"
-                  v-if="
-                    ini.kanbanStatus === 'DONE' || ini.achievedValue !== null
+                  v-if="expandedTaskIniIds.includes(ini.id)"
+                  class="tasks-bucket-list"
+                  style="
+                    margin-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
                   "
                 >
-                  <span class="achieved-label">Capaian Akhir:</span>
-                  <strong class="achieved-val">
-                    {{ ini.achievedValue ?? ini.currentValue }} /
-                    {{ ini.targetValue }} {{ ini.unit || "" }} ({{
-                      calculateAchievedPercent(ini)
-                    }}%)
-                  </strong>
-                </div>
-                <!-- Tasks summary & Bucket list -->
-                <div class="card-tasks-summary" v-if="ini.tasks?.length">
                   <div
-                    class="task-count-tag"
-                    @click.stop="toggleTasksExpand(ini.id)"
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-bucket-card"
                     style="
-                      cursor: pointer;
-                      display: flex;
-                      justify-content: space-between;
-                      align-items: center;
-                      width: 100%;
-                      font-weight: 500;
-                    "
-                    title="Klik untuk membuka/menutup daftar Task turunan"
-                  >
-                    <span>
-                      {{ ini.tasks.length }} Task ({{
-                        getCompletedTasksCount(ini)
-                      }}/{{ ini.tasks.length }} selesai)
-                    </span>
-                    <span style="font-size: 10px; margin-left: 6px">
-                      {{
-                        expandedTaskIniIds.includes(ini.id) ? "Hide" : "Show"
-                      }}
-                    </span>
-                  </div>
-
-                  <div
-                    v-if="expandedTaskIniIds.includes(ini.id)"
-                    class="tasks-bucket-list"
-                    style="
-                      margin-top: 8px;
-                      display: flex;
-                      flex-direction: column;
-                      gap: 6px;
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      padding: 6px 8px;
+                      font-size: 11px;
                     "
                   >
                     <div
-                      v-for="task in ini.tasks"
-                      :key="task.id"
-                      class="task-bucket-card"
                       style="
-                        background: #f8fafc;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 6px;
-                        padding: 6px 8px;
-                        font-size: 11px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 4px;
                       "
                     >
-                      <div
+                      <span style="font-weight: 600; color: #1e293b; flex: 1">{{
+                        task.title
+                      }}</span>
+                      <span
+                        class="badge"
+                        :class="getTaskStatusClass(task.status)"
                         style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: flex-start;
-                          gap: 4px;
+                          font-size: 9px;
+                          padding: 1px 4px;
+                          border-radius: 4px;
                         "
                       >
-                        <span
-                          style="font-weight: 600; color: #1e293b; flex: 1"
-                          >{{ task.title }}</span
-                        >
-                        <span
-                          class="badge"
-                          :class="getTaskStatusClass(task.status)"
-                          style="
-                            font-size: 9px;
-                            padding: 1px 4px;
-                            border-radius: 4px;
-                          "
-                        >
-                          {{ task.status }}
-                        </span>
-                      </div>
+                        {{ task.status }}
+                      </span>
+                    </div>
 
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: center;
-                          margin-top: 4px;
-                          color: #64748b;
-                          font-size: 10px;
-                        "
-                      >
-                        <span>
-                          PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
-                        </span>
-                        <span>
-                          {{ task.currentValue }} / {{ task.targetValue }}
-                          {{ task.unit || "" }}
-                        </span>
-                      </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 4px;
+                        color: #64748b;
+                        font-size: 10px;
+                      "
+                    >
+                      <span>
+                        PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                      </span>
+                      <span>
+                        {{ task.currentValue }} / {{ task.targetValue }}
+                        {{ task.unit || "" }}
+                      </span>
+                    </div>
 
-                      <div
-                        v-if="task.sprintMonth"
-                        style="margin-top: 2px; font-size: 9px; color: #0284c7"
-                      >
-                        Sprint: {{ task.sprintMonth }}
-                      </div>
+                    <div
+                      v-if="task.sprintMonth"
+                      style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                    >
+                      Sprint: {{ task.sprintMonth }}
                     </div>
                   </div>
                 </div>
-
-                <div class="card-footer-meta">
-                  <div class="card-team-owner">
-                    <span class="team-tag">{{ ini.team?.name }}</span>
-                    <span v-if="ini.owner?.name" class="owner-tag">
-                      {{ ini.owner.name }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Card Action Buttons -->
-                <div v-if="canMoveCards" class="card-hover-actions">
-                  <div class="left-actions">
-                    <button
-                      v-if="canManageInitiative(ini)"
-                      class="action-btn"
-                      title="Edit"
-                      @click="openEditInitiativeModal(ini)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="isAdmin"
-                      class="action-btn danger"
-                      title="Hapus"
-                      @click="deleteInitiative(ini.id)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="move-actions">
-                    <button
-                      class="move-btn"
-                      title="Pindah ke In Progress"
-                      @click="moveCard(ini.id, 'IN_PROGRESS')"
-                    >
-                      Buka Kembali
-                    </button>
-                  </div>
-                </div>
               </div>
-            </div>
-          </div>
-
-          <!-- COLUMN 4: DROP -->
-          <div
-            class="kanban-column"
-            :class="{ 'drop-active': dragOverColumn === 'DROP' }"
-            @dragover.prevent="canMoveCards ? (dragOverColumn = 'DROP') : null"
-            @dragleave="dragOverColumn = null"
-            @drop="canMoveCards ? handleDrop('DROP') : null"
-          >
-            <div class="column-header drop-head">
-              <div class="col-title-wrap">
-                <span class="col-dot drop"></span>
-                <h4>DROP</h4>
-              </div>
-              <span class="col-count-badge">{{ dropList.length }}</span>
-            </div>
-
-            <div class="column-cards-list">
-              <div v-if="dropList.length === 0" class="kanban-empty-col">
-                Belum ada inisiatif yang dibatalkan
-              </div>
-
-              <div
-                v-for="ini in dropList"
-                :key="ini.id"
-                class="kanban-card card-drop"
-                :class="{
-                  'task-card-type': ini.isTaskCard,
-                  'ini-card-type': !ini.isTaskCard,
-                }"
-                :draggable="canMoveCards"
-                @dragstart="canMoveCards ? handleDragStart(ini) : null"
-              >
-                <div class="card-top-meta">
-                  <span class="card-kr-badge" :title="ini.keyResult?.title">
-                    {{ ini.keyResult?.title || "Key Result" }}
-                  </span>
-                  <span class="dropped-badge">Drop</span>
-                </div>
-
-                <div style="margin-bottom: 12px">
-                  <span v-if="ini.isTaskCard" class="card-type-pill task"
-                    >Task Turunan</span
-                  >
-                  <span v-else class="card-type-pill initiative"
-                    >Inisiatif Leader</span
-                  >
-                </div>
-
-                <h4 class="card-title text-drop">{{ ini.title }}</h4>
-                <p v-if="ini.description" class="card-desc">
-                  {{ ini.description }}
-                </p>
-
-                <div class="card-target-row">
-                  <span v-if="ini.targetValue">
-                    <span class="target-label">Target: </span>
-                    <strong class="target-val"
-                      >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                    >
+              <div class="card-footer-meta">
+                <div class="card-team-owner">
+                  <span class="team-tag">{{ ini.team?.name }}</span>
+                  <span v-if="ini.owner?.name" class="owner-tag">
+                    {{ ini.owner.name }}
                   </span>
                 </div>
+              </div>
 
-                <div class="card-footer-meta">
-                  <div class="card-team-owner">
-                    <span class="team-tag">{{ ini.team?.name }}</span>
-                    <span v-if="ini.owner?.name" class="owner-tag">
-                      {{ ini.owner.name }}
-                    </span>
-                  </div>
+              <!-- Card Action Buttons -->
+              <div v-if="canMoveCards" class="card-hover-actions">
+                <div class="left-actions">
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit Inisiatif"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
-
-                <!-- Card Action Buttons -->
-                <div v-if="canMoveCards" class="card-hover-actions">
-                  <div class="left-actions">
-                    <button
-                      v-if="canManageInitiative(ini)"
-                      class="action-btn"
-                      title="Edit"
-                      @click="openEditInitiativeModal(ini)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      v-if="isAdmin"
-                      class="action-btn danger"
-                      title="Hapus"
-                      @click="deleteInitiative(ini.id)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="move-actions">
-                    <button
-                      class="move-btn"
-                      title="Pindah ke To Do"
-                      @click="moveCard(ini.id, 'TODO')"
-                    >
-                      Aktifkan Kembali
-                    </button>
-                  </div>
+                <div class="move-actions">
+                  <button
+                    class="move-btn"
+                    title="Kembalikan ke To Do"
+                    @click="moveCard(ini.id, 'TODO')"
+                  >
+                    Mundur
+                  </button>
+                  <button
+                    class="move-btn primary"
+                    title="Selesaikan ke Done"
+                    @click="moveCard(ini.id, 'DONE')"
+                  >
+                    Selesai
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ─── MODAL: Add/Edit Initiative ─── -->
-      <div
-        v-if="showInitiativeModal"
-        class="modal-overlay"
-        @click.self="showInitiativeModal = false"
-      >
-        <div class="modal-box">
-          <div class="modal-header">
-            <h3>{{ editingInitiative ? "Edit" : "Tambah" }} Card</h3>
-            <button
-              class="modal-close-btn"
-              @click="showInitiativeModal = false"
+        <!-- COLUMN 3: DONE -->
+        <div
+          class="kanban-column"
+          :class="{ 'drop-active': dragOverColumn === 'DONE' }"
+          @dragover.prevent="canMoveCards ? (dragOverColumn = 'DONE') : null"
+          @dragleave="dragOverColumn = null"
+          @drop="canMoveCards ? handleDrop('DONE') : null"
+        >
+          <div class="column-header done-head">
+            <div class="col-title-wrap">
+              <span class="col-dot done"></span>
+              <h4>DONE</h4>
+            </div>
+            <span class="col-count-badge">{{ doneList.length }}</span>
+          </div>
+
+          <div class="column-cards-list">
+            <div v-if="doneList.length === 0" class="kanban-empty-col">
+              Belum ada inisiatif yang selesai
+            </div>
+
+            <div
+              v-for="ini in doneList"
+              :key="ini.id"
+              class="kanban-card card-done"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
+              :draggable="canMoveCards"
+              @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
-              &times;
-            </button>
+              <div class="card-top-meta">
+                <span class="card-kr-badge" :title="ini.keyResult?.title">
+                  {{ ini.keyResult?.title || "Key Result" }}
+                </span>
+                <span class="completed-checkmark-badge">Selesai</span>
+              </div>
+
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Turunan</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
+
+              <h4 class="card-title text-done">{{ ini.title }}</h4>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
+
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
+                  >
+                </span>
+              </div>
+
+              <!-- Date Range & Sprint Meta Row -->
+              <div
+                class="card-dates-sprint-row"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+              >
+                <span v-if="ini.sprintMonth" class="sprint-pill">
+                  {{ formatSprintLabel(ini.sprintMonth) }}
+                </span>
+                <span
+                  v-if="ini.startDate || ini.dueDate"
+                  class="date-range-pill"
+                  :class="{ overdue: isOverdue(ini) }"
+                >
+                  {{ formatDateShort(ini.startDate) }} –
+                  {{ formatDateShort(ini.dueDate) }}
+                </span>
+              </div>
+
+              <!-- Achieved Value Row for DONE cards -->
+              <div
+                class="card-achieved-row"
+                v-if="ini.kanbanStatus === 'DONE' || ini.achievedValue !== null"
+              >
+                <span class="achieved-label">Capaian Akhir:</span>
+                <strong class="achieved-val">
+                  {{ ini.achievedValue ?? ini.currentValue }} /
+                  {{ ini.targetValue }} {{ ini.unit || "" }} ({{
+                    calculateAchievedPercent(ini)
+                  }}%)
+                </strong>
+              </div>
+              <!-- Tasks summary & Bucket list -->
+              <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                <div
+                  class="task-count-tag"
+                  @click.stop="toggleTasksExpand(ini.id)"
+                  style="
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    width: 100%;
+                    font-weight: 500;
+                  "
+                  title="Klik untuk membuka/menutup daftar Task turunan"
+                >
+                  <span>
+                    {{ ini.tasks.length }} Task ({{
+                      getCompletedTasksCount(ini)
+                    }}/{{ ini.tasks.length }} selesai)
+                  </span>
+                  <span style="font-size: 10px; margin-left: 6px">
+                    {{ expandedTaskIniIds.includes(ini.id) ? "Hide" : "Show" }}
+                  </span>
+                </div>
+
+                <div
+                  v-if="expandedTaskIniIds.includes(ini.id)"
+                  class="tasks-bucket-list"
+                  style="
+                    margin-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-bucket-card"
+                    style="
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      padding: 6px 8px;
+                      font-size: 11px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 4px;
+                      "
+                    >
+                      <span style="font-weight: 600; color: #1e293b; flex: 1">{{
+                        task.title
+                      }}</span>
+                      <span
+                        class="badge"
+                        :class="getTaskStatusClass(task.status)"
+                        style="
+                          font-size: 9px;
+                          padding: 1px 4px;
+                          border-radius: 4px;
+                        "
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
+
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 4px;
+                        color: #64748b;
+                        font-size: 10px;
+                      "
+                    >
+                      <span>
+                        PIC:
+                        <strong>{{ getTaskAssigneeName(task) }}</strong>
+                      </span>
+                      <span>
+                        {{ task.currentValue }} / {{ task.targetValue }}
+                        {{ task.unit || "" }}
+                      </span>
+                    </div>
+
+                    <div
+                      v-if="task.sprintMonth"
+                      style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                    >
+                      Sprint: {{ task.sprintMonth }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-footer-meta">
+                <div class="card-team-owner">
+                  <span class="team-tag">{{ ini.team?.name }}</span>
+                  <span v-if="ini.owner?.name" class="owner-tag">
+                    {{ ini.owner.name }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card Action Buttons -->
+              <div v-if="canMoveCards" class="card-hover-actions">
+                <div class="left-actions">
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="move-actions">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke In Progress"
+                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+                  >
+                    Buka Kembali
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="modal-body-scroll">
-            <!-- Selector Jenis Card saat Tambah Card Baru -->
-            <div v-if="!editingInitiative" style="margin-bottom: 16px">
-              <label style="font-weight: 600; color: #0f172a"
-                >Jenis Card *</label
-              >
-              <select
-                v-model="cardType"
-                class="form-input"
-                style="
-                  background: #f1f5f9;
-                  border-color: #0ea5e9;
-                  font-weight: 600;
-                "
-              >
-                <option value="INISIATIF">Inisiatif</option>
-                <option value="TASK">Task Turunan</option>
-              </select>
+        </div>
+
+        <!-- COLUMN 4: DROP -->
+        <div
+          class="kanban-column"
+          :class="{ 'drop-active': dragOverColumn === 'DROP' }"
+          @dragover.prevent="canMoveCards ? (dragOverColumn = 'DROP') : null"
+          @dragleave="dragOverColumn = null"
+          @drop="canMoveCards ? handleDrop('DROP') : null"
+        >
+          <div class="column-header drop-head">
+            <div class="col-title-wrap">
+              <span class="col-dot drop"></span>
+              <h4>DROP</h4>
+            </div>
+            <span class="col-count-badge">{{ dropList.length }}</span>
+          </div>
+
+          <div class="column-cards-list">
+            <div v-if="dropList.length === 0" class="kanban-empty-col">
+              Belum ada inisiatif yang dibatalkan
             </div>
 
-            <!-- FORM CARD: INISIATIF -->
-            <template v-if="cardType === 'INISIATIF'">
-              <label>Judul Inisiatif *</label>
-              <input
-                v-model="initiativeForm.title"
-                class="form-input"
-                placeholder="Contoh: Optimalisasi query database..."
-              />
-
-              <label>Parent Key Result *</label>
-              <select v-model="initiativeForm.keyResultId" class="form-input">
-                <option value="">-- Pilih Key Result --</option>
-                <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
-                  {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
-                  }}{{ kr.title }}
-                </option>
-              </select>
-
-              <label>Tim / Departemen *</label>
-              <input
-                v-model="teamSearch"
-                type="text"
-                class="form-input"
-                style="margin-bottom: 6px"
-                placeholder="Cari departemen / tim..."
-              />
-              <select v-model="initiativeForm.teamId" class="form-input">
-                <option value="">-- Pilih Tim / Departemen --</option>
-                <option
-                  v-for="team in filteredTeams"
-                  :key="team.id"
-                  :value="team.id"
-                >
-                  {{ team.name }}
-                </option>
-              </select>
-
-              <label>PIC / Owner Inisiatif *</label>
-              <input
-                v-model="userSearch"
-                type="text"
-                class="form-input"
-                style="margin-bottom: 6px"
-                placeholder="Cari PIC / Owner..."
-              />
-              <select v-model="initiativeForm.ownerId" class="form-input">
-                <option value="">-- Pilih PIC / Owner --</option>
-                <option
-                  v-for="user in filteredUsers"
-                  :key="user.id"
-                  :value="user.id"
-                >
-                  {{ user.name }} ({{ user.role }})
-                </option>
-              </select>
-
-              <div class="form-row-2">
-                <div>
-                  <label>Target Value *</label>
-                  <input
-                    v-model.number="initiativeForm.targetValue"
-                    type="number"
-                    class="form-input"
-                  />
-                </div>
-                <div>
-                  <label>Satuan (Unit)</label>
-                  <input
-                    v-model="initiativeForm.unit"
-                    class="form-input"
-                    placeholder="%, doc, fitur..."
-                  />
-                </div>
+            <div
+              v-for="ini in dropList"
+              :key="ini.id"
+              class="kanban-card card-drop"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
+              :draggable="canMoveCards"
+              @dragstart="canMoveCards ? handleDragStart(ini) : null"
+            >
+              <div class="card-top-meta">
+                <span class="card-kr-badge" :title="ini.keyResult?.title">
+                  {{ ini.keyResult?.title || "Key Result" }}
+                </span>
+                <span class="dropped-badge">Drop</span>
               </div>
 
-              <div class="form-row-2">
-                <div>
-                  <label>Bulan / Sprint Inisiatif *</label>
-                  <input
-                    v-model="initiativeForm.sprintMonth"
-                    type="month"
-                    class="form-input"
-                  />
-                </div>
-                <div>
-                  <label>Bobot (%)</label>
-                  <input
-                    v-model.number="initiativeForm.weight"
-                    type="number"
-                    step="0.1"
-                    class="form-input"
-                  />
-                  <small v-if="weightBudgetInfo" class="text-xs text-gray"
-                    >Sisa kuota: {{ weightBudgetInfo.remaining }}%</small
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Turunan</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
+
+              <h4 class="card-title text-drop">{{ ini.title }}</h4>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
+
+              <div class="card-target-row">
+                <span v-if="ini.targetValue">
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val"
+                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
                   >
+                </span>
+              </div>
+
+              <div class="card-footer-meta">
+                <div class="card-team-owner">
+                  <span class="team-tag">{{ ini.team?.name }}</span>
+                  <span v-if="ini.owner?.name" class="owner-tag">
+                    {{ ini.owner.name }}
+                  </span>
                 </div>
               </div>
 
-              <div class="form-row-2">
-                <div>
-                  <label>Tanggal Mulai</label>
-                  <input
-                    v-model="initiativeForm.startDate"
-                    type="date"
-                    class="form-input"
-                  />
+              <!-- Card Action Buttons -->
+              <div v-if="canMoveCards" class="card-hover-actions">
+                <div class="left-actions">
+                  <button
+                    v-if="canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Edit"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="isAdmin"
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
-                <div>
-                  <label>Target Tenggat Waktu (Due Date)</label>
-                  <input
-                    v-model="initiativeForm.dueDate"
-                    type="date"
-                    class="form-input"
-                  />
-                </div>
-              </div>
-
-              <div v-if="editingInitiative" class="form-row-2">
-                <div>
-                  <label>Realisasi Saat Ini</label>
-                  <input
-                    v-model.number="initiativeForm.achievedValue"
-                    type="number"
-                    class="form-input"
-                    placeholder="Opsional (Diisi jika DONE)"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label>Kolom Kanban (Status)</label>
-                <select
-                  v-model="initiativeForm.kanbanStatus"
-                  class="form-input"
-                >
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Done</option>
-                  <option value="DROP">Drop</option>
-                </select>
-              </div>
-
-              <!-- KpiSelector -->
-              <KpiSelector v-model="initiativeForm.kpis" />
-            </template>
-
-            <!-- FORM CARD: TASK -->
-            <template v-else-if="cardType === 'TASK'">
-              <label>Pilih Inisiatif Induk *</label>
-              <select v-model="taskForm.initiativeId" class="form-input">
-                <option value="">-- Pilih Inisiatif --</option>
-                <option
-                  v-for="ini in filteredInitiatives"
-                  :key="ini.id"
-                  :value="ini.id"
-                >
-                  {{ ini.title }} ({{ ini.team?.name || "Tim" }})
-                </option>
-              </select>
-
-              <label>Judul Task *</label>
-              <input
-                v-model="taskForm.title"
-                class="form-input"
-                placeholder="Contoh: Selesaikan 10 unit test..."
-                style="margin-bottom: 12px"
-              />
-
-              <label v-if="isLeader || isManager || isAdmin"
-                >Assign ke Anggota Tim (Team Member T)</label
-              >
-              <select
-                v-if="isLeader || isManager || isAdmin"
-                v-model="taskForm.assignedTeamMemberId"
-                class="form-input"
-                style="margin-bottom: 12px"
-              >
-                <option value="">-- Pilih Anggota Tim --</option>
-                <option
-                  v-for="member in availableTeamMembers"
-                  :key="member.id"
-                  :value="member.id"
-                >
-                  {{ member.name }} ({{ member.position || "Team Member" }})
-                </option>
-              </select>
-
-              <div class="form-row-2">
-                <div>
-                  <label>Target Value *</label>
-                  <input
-                    v-model.number="taskForm.targetValue"
-                    type="number"
-                    class="form-input"
-                  />
-                </div>
-                <div>
-                  <label>Satuan (Unit)</label>
-                  <input
-                    v-model="taskForm.unit"
-                    class="form-input"
-                    placeholder="%, task, doc..."
-                  />
+                <div class="move-actions">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke To Do"
+                    @click="moveCard(ini.id, 'TODO')"
+                  >
+                    Aktifkan Kembali
+                  </button>
                 </div>
               </div>
-
-              <div class="form-row-2">
-                <div>
-                  <label>Bulan / Sprint Task</label>
-                  <input
-                    v-model="taskForm.sprintMonth"
-                    type="month"
-                    class="form-input"
-                  />
-                </div>
-                <div>
-                  <label>Tanggal Mulai Task</label>
-                  <input
-                    v-model="taskForm.startDate"
-                    type="date"
-                    class="form-input"
-                  />
-                </div>
-              </div>
-
-              <div class="form-row-2">
-                <div>
-                  <label>Tanggal Selesai Task (Finish Date)</label>
-                  <input
-                    v-model="taskForm.finishDate"
-                    type="date"
-                    class="form-input"
-                  />
-                </div>
-              </div>
-
-              <!-- KpiSelector -->
-              <KpiSelector v-model="taskForm.kpis" />
-            </template>
-          </div>
-
-          <div class="modal-actions">
-            <button class="secondary-btn" @click="showInitiativeModal = false">
-              Batal
-            </button>
-            <button class="primary-btn" @click="saveCard">Simpan Card</button>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ─── MODAL: Add/Edit Task ─── -->
-      <div
-        v-if="showTaskModal"
-        class="modal-overlay"
-        @click.self="showTaskModal = false"
-      >
-        <div class="modal-box">
-          <div class="modal-header">
-            <h3>Tambah Task untuk: {{ selectedInitiativeForTask?.title }}</h3>
-            <button class="modal-close-btn" @click="showTaskModal = false">
-              &times;
-            </button>
+    <!-- ─── MODAL: Add/Edit Initiative ─── -->
+    <div
+      v-if="showInitiativeModal"
+      class="modal-overlay"
+      @click.self="showInitiativeModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>{{ editingInitiative ? "Edit" : "Tambah" }} Card</h3>
+          <button class="modal-close-btn" @click="showInitiativeModal = false">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body-scroll">
+          <!-- Selector Jenis Card saat Tambah Card Baru -->
+          <div v-if="!editingInitiative" style="margin-bottom: 16px">
+            <label style="font-weight: 600; color: #0f172a">Jenis Card *</label>
+            <select
+              v-model="cardType"
+              class="form-input"
+              style="
+                background: #f1f5f9;
+                border-color: #0ea5e9;
+                font-weight: 600;
+              "
+            >
+              <option value="INISIATIF">Inisiatif</option>
+              <option value="TASK">Task Turunan</option>
+            </select>
           </div>
-          <div class="modal-body-scroll">
+
+          <!-- FORM CARD: INISIATIF -->
+          <template v-if="cardType === 'INISIATIF'">
+            <label>Judul Inisiatif *</label>
+            <input
+              v-model="initiativeForm.title"
+              class="form-input"
+              placeholder="Contoh: Optimalisasi query database..."
+            />
+
+            <label>Parent Key Result *</label>
+            <select v-model="initiativeForm.keyResultId" class="form-input">
+              <option value="">-- Pilih Key Result --</option>
+              <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
+                {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
+                }}{{ kr.title }}
+              </option>
+            </select>
+
+            <label>Tim / Departemen *</label>
+            <input
+              v-model="teamSearch"
+              type="text"
+              class="form-input"
+              style="margin-bottom: 6px"
+              placeholder="Cari departemen / tim..."
+            />
+            <select v-model="initiativeForm.teamId" class="form-input">
+              <option value="">-- Pilih Tim / Departemen --</option>
+              <option
+                v-for="team in filteredTeams"
+                :key="team.id"
+                :value="team.id"
+              >
+                {{ team.name }}
+              </option>
+            </select>
+
+            <label>PIC / Owner Inisiatif *</label>
+            <input
+              v-model="userSearch"
+              type="text"
+              class="form-input"
+              style="margin-bottom: 6px"
+              placeholder="Cari PIC / Owner..."
+            />
+            <select v-model="initiativeForm.ownerId" class="form-input">
+              <option value="">-- Pilih PIC / Owner --</option>
+              <option
+                v-for="user in filteredUsers"
+                :key="user.id"
+                :value="user.id"
+              >
+                {{ user.name }} ({{ user.role }})
+              </option>
+            </select>
+
+            <div class="form-row-2">
+              <div>
+                <label>Target Value *</label>
+                <input
+                  v-model.number="initiativeForm.targetValue"
+                  type="number"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Satuan (Unit)</label>
+                <input
+                  v-model="initiativeForm.unit"
+                  class="form-input"
+                  placeholder="%, doc, fitur..."
+                />
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>Bulan / Sprint Inisiatif *</label>
+                <input
+                  v-model="initiativeForm.sprintMonth"
+                  type="month"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Bobot (%)</label>
+                <input
+                  v-model.number="initiativeForm.weight"
+                  type="number"
+                  step="0.1"
+                  class="form-input"
+                />
+                <small v-if="weightBudgetInfo" class="text-xs text-gray"
+                  >Sisa kuota: {{ weightBudgetInfo.remaining }}%</small
+                >
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div>
+                <label>Tanggal Mulai</label>
+                <input
+                  v-model="initiativeForm.startDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Target Tenggat Waktu (Due Date)</label>
+                <input
+                  v-model="initiativeForm.dueDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div v-if="editingInitiative" class="form-row-2">
+              <div>
+                <label>Realisasi Saat Ini</label>
+                <input
+                  v-model.number="initiativeForm.achievedValue"
+                  type="number"
+                  class="form-input"
+                  placeholder="Opsional (Diisi jika DONE)"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label>Kolom Kanban (Status)</label>
+              <select v-model="initiativeForm.kanbanStatus" class="form-input">
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+                <option value="DROP">Drop</option>
+              </select>
+            </div>
+
+            <!-- KpiSelector -->
+            <KpiSelector v-model="initiativeForm.kpis" />
+          </template>
+
+          <!-- FORM CARD: TASK -->
+          <template v-else-if="cardType === 'TASK'">
+            <label>Pilih Inisiatif Induk *</label>
+            <select v-model="taskForm.initiativeId" class="form-input">
+              <option value="">-- Pilih Inisiatif --</option>
+              <option
+                v-for="ini in filteredInitiatives"
+                :key="ini.id"
+                :value="ini.id"
+              >
+                {{ ini.title }} ({{ ini.team?.name || "Tim" }})
+              </option>
+            </select>
+
             <label>Judul Task *</label>
             <input
               v-model="taskForm.title"
@@ -1437,24 +1328,127 @@
 
             <!-- KpiSelector -->
             <KpiSelector v-model="taskForm.kpis" />
-          </div>
-          <div class="modal-actions">
-            <button class="secondary-btn" @click="showTaskModal = false">
-              Batal
-            </button>
-            <button class="primary-btn" @click="saveTask">Simpan Task</button>
-          </div>
+          </template>
+        </div>
+
+        <div class="modal-actions">
+          <button class="secondary-btn" @click="showInitiativeModal = false">
+            Batal
+          </button>
+          <button class="primary-btn" @click="saveCard">Simpan Card</button>
         </div>
       </div>
-
-      <!-- Bulk Upload Modal Component -->
-      <BulkUploadModal
-        v-if="showBulkModal"
-        type="initiative"
-        @close="showBulkModal = false"
-        @done="fetchInitiatives"
-      />
     </div>
+
+    <!-- ─── MODAL: Add/Edit Task ─── -->
+    <div
+      v-if="showTaskModal"
+      class="modal-overlay"
+      @click.self="showTaskModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Tambah Task untuk: {{ selectedInitiativeForTask?.title }}</h3>
+          <button class="modal-close-btn" @click="showTaskModal = false">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body-scroll">
+          <label>Judul Task *</label>
+          <input
+            v-model="taskForm.title"
+            class="form-input"
+            placeholder="Contoh: Selesaikan 10 unit test..."
+            style="margin-bottom: 12px"
+          />
+
+          <label v-if="isLeader || isManager || isAdmin"
+            >Assign ke Anggota Tim (Team Member T)</label
+          >
+          <select
+            v-if="isLeader || isManager || isAdmin"
+            v-model="taskForm.assignedTeamMemberId"
+            class="form-input"
+            style="margin-bottom: 12px"
+          >
+            <option value="">-- Pilih Anggota Tim --</option>
+            <option
+              v-for="member in availableTeamMembers"
+              :key="member.id"
+              :value="member.id"
+            >
+              {{ member.name }} ({{ member.position || "Team Member" }})
+            </option>
+          </select>
+
+          <div class="form-row-2">
+            <div>
+              <label>Target Value *</label>
+              <input
+                v-model.number="taskForm.targetValue"
+                type="number"
+                class="form-input"
+              />
+            </div>
+            <div>
+              <label>Satuan (Unit)</label>
+              <input
+                v-model="taskForm.unit"
+                class="form-input"
+                placeholder="%, task, doc..."
+              />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div>
+              <label>Bulan / Sprint Task</label>
+              <input
+                v-model="taskForm.sprintMonth"
+                type="month"
+                class="form-input"
+              />
+            </div>
+            <div>
+              <label>Tanggal Mulai Task</label>
+              <input
+                v-model="taskForm.startDate"
+                type="date"
+                class="form-input"
+              />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div>
+              <label>Tanggal Selesai Task (Finish Date)</label>
+              <input
+                v-model="taskForm.finishDate"
+                type="date"
+                class="form-input"
+              />
+            </div>
+          </div>
+
+          <!-- KpiSelector -->
+          <KpiSelector v-model="taskForm.kpis" />
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-btn" @click="showTaskModal = false">
+            Batal
+          </button>
+          <button class="primary-btn" @click="saveTask">Simpan Task</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Upload Modal Component -->
+    <BulkUploadModal
+      v-if="showBulkModal"
+      type="initiative"
+      @close="showBulkModal = false"
+      @done="fetchInitiatives"
+    />
   </div>
 </template>
 
