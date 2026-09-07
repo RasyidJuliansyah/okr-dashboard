@@ -203,7 +203,7 @@
 
               <div style="margin-bottom: 12px">
                 <span v-if="ini.isTaskCard" class="card-type-pill task"
-                  >Task Turunan</span
+                  >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
                   >Inisiatif Leader</span
@@ -450,7 +450,7 @@
               </div>
               <div style="margin-bottom: 12px">
                 <span v-if="ini.isTaskCard" class="card-type-pill task"
-                  >Task Turunan</span
+                  >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
                   >Inisiatif Leader</span
@@ -695,7 +695,7 @@
 
               <div style="margin-bottom: 12px">
                 <span v-if="ini.isTaskCard" class="card-type-pill task"
-                  >Task Turunan</span
+                  >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
                   >Inisiatif Leader</span
@@ -760,7 +760,7 @@
                     width: 100%;
                     font-weight: 500;
                   "
-                  title="Klik untuk membuka/menutup daftar Task turunan"
+                  title="Klik untuk membuka/menutup daftar Task Individual"
                 >
                   <span>
                     {{ ini.tasks.length }} Task ({{
@@ -964,7 +964,7 @@
 
               <div style="margin-bottom: 12px">
                 <span v-if="ini.isTaskCard" class="card-type-pill task"
-                  >Task Turunan</span
+                  >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
                   >Inisiatif Leader</span
@@ -1089,7 +1089,7 @@
               "
             >
               <option value="INISIATIF">Inisiatif</option>
-              <option value="TASK">Task Turunan</option>
+              <option value="TASK">Task Individual</option>
             </select>
           </div>
 
