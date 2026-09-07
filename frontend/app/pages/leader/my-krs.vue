@@ -375,7 +375,7 @@
                         </div>
                       </div>
                       <div v-else class="empty-task-row">
-                        <p class="empty-task-text">Belum ada Task turunan</p>
+                        <p class="empty-task-text">Belum ada Task Individual</p>
                         <button
                           v-if="
                             ['LEADER', 'MANAGER', 'ADMIN'].includes(
