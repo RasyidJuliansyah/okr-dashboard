@@ -279,7 +279,8 @@
                     <span
                       >Realisasi:
                       <strong
-                        >{{ ini.currentValue }} {{ ini.unit || "%" }}</strong
+                        >{{ ini.achievedValue ?? ini.currentValue }}
+                        {{ ini.unit || "%" }}</strong
                       ></span
                     >
                   </div>
@@ -898,7 +899,7 @@
                         <span
                           >Realisasi:
                           <strong
-                            >{{ ini.currentValue }}
+                            >{{ ini.achievedValue ?? ini.currentValue }}
                             {{ ini.unit || "%" }}</strong
                           ></span
                         >
@@ -2164,11 +2165,12 @@ async function fetchMyWork() {
 }
 
 function getProgressPercent(task) {
-  if (!task || !task.targetValue) return 0;
-  return Math.min(
-    100,
-    Math.max(0, (task.currentValue / task.targetValue) * 100),
-  );
+  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
+  const val =
+    task.achievedValue !== null && task.achievedValue !== undefined
+      ? task.achievedValue
+      : task.currentValue || 0;
+  return Math.min(100, Math.max(0, (val / task.targetValue) * 100));
 }
 
 function getStatusClass(status) {

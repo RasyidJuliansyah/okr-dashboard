@@ -259,32 +259,12 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
 
         const processedInitiatives = filteredInitiatives.map((init) => {
           let progressPct: number;
-          if (
-            init.achievedValue !== null &&
-            init.achievedValue !== undefined &&
-            init.targetValue > 0
-          ) {
-            progressPct = Math.min(
-              100,
-              (init.achievedValue / init.targetValue) * 100,
-            );
-          } else if (init.currentValue > 0 && init.targetValue > 0) {
-            progressPct = Math.min(
-              100,
-              (init.currentValue / init.targetValue) * 100,
-            );
-          } else if (init.tasks && init.tasks.length > 0) {
-            progressPct =
-              init.tasks.reduce((sum, k) => {
-                const pct =
-                  k.targetValue > 0
-                    ? Math.min(
-                        100,
-                        Math.max(0, (k.currentValue / k.targetValue) * 100),
-                      )
-                    : 0;
-                return sum + pct;
-              }, 0) / init.tasks.length;
+          const val =
+            init.achievedValue !== null && init.achievedValue !== undefined
+              ? init.achievedValue
+              : init.currentValue || 0;
+          if (init.targetValue > 0) {
+            progressPct = Math.min(100, (val / init.targetValue) * 100);
           } else if (init.kanbanStatus === "DONE") {
             progressPct = 100;
           } else {
@@ -465,17 +445,14 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
         return { ...task, progressPercent: Math.round(pct * 10) / 10 };
       });
 
+      const val =
+        init.achievedValue !== null && init.achievedValue !== undefined
+          ? init.achievedValue
+          : init.currentValue || 0;
       const avgProgress =
-        init.achievedValue !== null &&
-        init.achievedValue !== undefined &&
         init.targetValue > 0
-          ? Math.min(100, (init.achievedValue / init.targetValue) * 100)
-          : taskProgress.length > 0
-            ? taskProgress.reduce((sum, k) => sum + k.progressPercent, 0) /
-              taskProgress.length
-            : init.targetValue > 0
-              ? Math.min(100, (init.currentValue / init.targetValue) * 100)
-              : 0;
+          ? Math.min(100, Math.max(0, (val / init.targetValue) * 100))
+          : 0;
 
       const completedTasks = taskProgress.filter(
         (k) => k.progressPercent >= 100,
@@ -2446,22 +2423,15 @@ export async function cascadeInitiativeToMonthlyKr(
           init.achievedValue !== undefined &&
           init.targetValue > 0
         ) {
-          initProgress = Math.min(1, init.achievedValue / init.targetValue);
-        } else if (init.tasks.length > 0) {
-          const initTasksWeight = init.tasks.reduce(
-            (s, t) => s + (t.weight || 1),
-            0,
+          initProgress = Math.min(
+            1,
+            Math.max(0, init.achievedValue / init.targetValue),
           );
-          initProgress =
-            init.tasks.reduce((s, k) => {
-              return (
-                s +
-                (k.targetValue > 0 ? k.currentValue / k.targetValue : 0) *
-                  (k.weight || 1)
-              );
-            }, 0) / (initTasksWeight || 1);
         } else if (init.targetValue > 0) {
-          initProgress = init.currentValue / init.targetValue;
+          initProgress = Math.min(
+            1,
+            Math.max(0, (init.currentValue || 0) / init.targetValue),
+          );
         }
         return sum + initProgress * (init.weight || 1);
       }, 0) / (totalWeight || 1);
@@ -2502,28 +2472,14 @@ export async function cascadeTaskValueUpdate(
   taskId: string,
   initiativeId: string,
 ): Promise<void> {
-  // 1. Recalculate Initiative.currentValue dari weighted average Task progress
-  const allTasks = await prisma.task.findMany({ where: { initiativeId } });
+  // Task update does NOT mutate Initiative.currentValue, because task progress
+  // and initiative achievement are decoupled.
   const initiative = await prisma.initiative.findUnique({
     where: { id: initiativeId },
   });
 
-  if (initiative && allTasks.length > 0 && initiative.targetValue > 0) {
-    const totalTaskWeight = allTasks.reduce((s, t) => s + (t.weight || 1), 0);
-    const weightedTaskPercent =
-      allTasks.reduce((sum, t) => {
-        const pct = t.targetValue > 0 ? t.currentValue / t.targetValue : 0;
-        return sum + pct * (t.weight || 1);
-      }, 0) / (totalTaskWeight || 1);
-    const newInitiativeValue =
-      Math.round(weightedTaskPercent * initiative.targetValue * 100) / 100;
-
-    await prisma.initiative.update({
-      where: { id: initiative.id },
-      data: { currentValue: newInitiativeValue },
-    });
-
-    // 2. Recalculate KR.currentValue dari weighted average Initiative progress
+  if (initiative) {
+    // Recalculate KR progress if needed
     await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
   }
 }

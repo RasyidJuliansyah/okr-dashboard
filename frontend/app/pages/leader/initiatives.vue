@@ -430,17 +430,15 @@ function getTaskProgressPct(task) {
 }
 
 function getInitiativeProgressPct(init) {
-  if (!init || !init.tasks || init.tasks.length === 0) {
-    if (init.targetValue > 0) {
-      return Math.min(
-        100,
-        Math.round((init.currentValue / init.targetValue) * 100),
-      );
-    }
-    return 0;
-  }
-  const sum = init.tasks.reduce((acc, k) => acc + getTaskProgressPct(k), 0);
-  return Math.round((sum / init.tasks.length) * 10) / 10;
+  if (!init || !init.targetValue || init.targetValue <= 0) return 0;
+  const val =
+    init.achievedValue !== null && init.achievedValue !== undefined
+      ? init.achievedValue
+      : init.currentValue || 0;
+  return Math.min(
+    100,
+    Math.max(0, Math.round((val / init.targetValue) * 100 * 10) / 10),
+  );
 }
 
 async function openReviewModal(task) {
