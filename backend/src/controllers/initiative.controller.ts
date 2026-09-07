@@ -1335,13 +1335,16 @@ export async function updateInitiativeKanbanStatus(
         if (task.currentValue <= 0) {
           newCurrentValue =
             task.targetValue > 0
-              ? Math.max(1, Math.round(task.targetValue * 0.1 * 10) / 10)
+              ? Math.max(0.1, Math.round(task.targetValue * 0.1 * 10) / 10)
               : 1;
         } else if (
           task.targetValue > 0 &&
           task.currentValue >= task.targetValue
         ) {
-          newCurrentValue = Math.round(task.targetValue * 0.5 * 10) / 10;
+          newCurrentValue = Math.max(
+            0.1,
+            Math.round(task.targetValue * 0.5 * 10) / 10,
+          );
         }
         newStatus = "ON_TRACK";
       } else if (kanbanStatus === "DROP") {
@@ -1575,6 +1578,47 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
     console.error("Delete initiative error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
+}
+
+function getTaskKanbanStatus(t: any): string {
+  if (!t) return "TODO";
+  if (t.status === "DROP" || t.status === "OFF_TRACK") {
+    return "DROP";
+  }
+  if (
+    t.status === "DONE" ||
+    (t.targetValue > 0 && t.currentValue >= t.targetValue)
+  ) {
+    return "DONE";
+  }
+  if (t.currentValue > 0) {
+    return "IN_PROGRESS";
+  }
+  return "TODO";
+}
+
+function formatTaskForResponse(t: any): any {
+  if (!t) return t;
+  return {
+    ...t,
+    kanbanStatus: getTaskKanbanStatus(t),
+  };
+}
+
+function formatTaskAssignmentForResponse(a: any): any {
+  if (!a) return a;
+  return {
+    ...a,
+    task: formatTaskForResponse(a.task),
+  };
+}
+
+function formatInitiativeForResponse(ini: any): any {
+  if (!ini) return ini;
+  return {
+    ...ini,
+    tasks: Array.isArray(ini.tasks) ? ini.tasks.map(formatTaskForResponse) : [],
+  };
 }
 
 // GET /api/initiatives/my-work — Semua Task yang di-assign ke user
@@ -1838,9 +1882,18 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     }
 
     return res.status(200).json({
-      taskAssignments: combinedTaskAssignments,
-      myInitiatives,
-      teamMembersWork,
+      taskAssignments: combinedTaskAssignments.map(
+        formatTaskAssignmentForResponse,
+      ),
+      myInitiatives: myInitiatives.map(formatInitiativeForResponse),
+      teamMembersWork: {
+        taskAssignments: (teamMembersWork.taskAssignments || []).map(
+          formatTaskAssignmentForResponse,
+        ),
+        initiatives: (teamMembersWork.initiatives || []).map(
+          formatInitiativeForResponse,
+        ),
+      },
     });
   } catch (error) {
     console.error("Get my work error:", error);

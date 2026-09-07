@@ -538,37 +538,37 @@
           :key="assign.id"
           class="task-card card"
         >
-          <div class="task-header">
-            <h3>{{ assign.task.title }}</h3>
-            <div style="display: flex; gap: 8px; align-items: center">
-              <span
-                class="status-badge"
-                :class="getStatusClass(assign.task.status)"
-                >{{ assign.task.status }}</span
-              >
-              <!-- Selector Stage Kanban Task -->
-              <select
-                :value="assign.task.kanbanStatus || 'TODO'"
-                style="
-                  font-size: 11px;
-                  padding: 2px 8px;
-                  border-radius: 6px;
-                  border: 1px solid #cbd5e1;
-                  background: #f8fafc;
-                  font-weight: 600;
-                  color: #334155;
-                  cursor: pointer;
-                "
-                @change="
-                  updateKanbanStage(assign.task, 'task', $event.target.value)
-                "
-              >
-                <option value="TODO">TO DO</option>
-                <option value="IN_PROGRESS">IN PROGRESS</option>
-                <option value="DONE">DONE</option>
-                <option value="DROP">DROP</option>
-              </select>
+          <div class="title-wrapper">
+            <span
+              class="status-badge"
+              :class="getStatusClass(assign.task.status)"
+              >{{ assign.task.status }}</span
+            >
+            <div class="task-header">
+              <h3>{{ assign.task.title }}</h3>
             </div>
+            <!-- Selector Stage Kanban Task -->
+            <select
+              :value="assign.task.kanbanStatus || 'TODO'"
+              style="
+                font-size: 12px;
+                padding: 8px;
+                border-radius: 6px;
+                border: 1px solid #cbd5e1;
+                background: #f8fafc;
+                font-weight: 600;
+                color: #334155;
+                cursor: pointer;
+              "
+              @change="
+                updateKanbanStage(assign.task, 'task', $event.target.value)
+              "
+            >
+              <option value="TODO">TO DO</option>
+              <option value="IN_PROGRESS">IN PROGRESS</option>
+              <option value="DONE">DONE</option>
+              <option value="DROP">DROP</option>
+            </select>
           </div>
 
           <div class="task-context">
@@ -1083,181 +1083,212 @@
                 :key="'team_task_' + assign.id"
                 class="task-card card"
               >
-                <div class="member-badge">{{ assign.user?.name }}</div>
+                <div class="title-wrapper">
+                  <div class="member-badge">{{ assign.user?.name }}</div>
 
-                <div class="task-header">
-                  <h3>{{ assign.task.title }}</h3>
-                  <span
-                    class="status-badge"
-                    :class="getStatusClass(assign.task.status)"
-                    >{{ assign.task.status }}</span
+                  <div class="task-header">
+                    <h3>{{ assign.task.title }}</h3>
+                    <span
+                      class="status-badge"
+                      :class="getStatusClass(assign.task.status)"
+                      >{{ assign.task.status }}</span
+                    >
+                  </div>
+                  <!-- Selector Stage Kanban Task -->
+                  <select
+                    :value="assign.task.kanbanStatus || 'TODO'"
+                    style="
+                      font-size: 11px;
+                      padding: 2px 8px;
+                      border-radius: 6px;
+                      border: 1px solid #cbd5e1;
+                      background: #f8fafc;
+                      font-weight: 600;
+                      color: #334155;
+                      cursor: pointer;
+                      margin-top: 4px;
+                    "
+                    @change="
+                      updateKanbanStage(
+                        assign.task,
+                        'task',
+                        $event.target.value,
+                      )
+                    "
                   >
-                </div>
+                    <option value="TODO">TO DO</option>
+                    <option value="IN_PROGRESS">IN PROGRESS</option>
+                    <option value="DONE">DONE</option>
+                    <option value="DROP">DROP</option>
+                  </select>
 
-                <div class="task-context">
-                  <p>
-                    <strong>KR:</strong>
-                    {{ assign.task.initiative?.keyResult?.title }}
-                  </p>
-                  <p>
-                    <strong>Inisiatif:</strong>
-                    {{ assign.task.initiative?.title }}
-                  </p>
-                </div>
-
-                <div class="task-progress-section">
-                  <div class="progress-labels">
-                    <span
-                      >Target:
-                      <strong
-                        >{{ assign.task.targetValue }}
-                        {{ assign.task.unit }}</strong
-                      ></span
-                    >
-                    <span
-                      >Saat ini:
-                      <strong
-                        >{{ assign.task.currentValue }}
-                        {{ assign.task.unit }}</strong
-                      ></span
-                    >
+                  <div class="task-context">
+                    <p>
+                      <strong>KR:</strong>
+                      {{ assign.task.initiative?.keyResult?.title }}
+                    </p>
+                    <p>
+                      <strong>Inisiatif:</strong>
+                      {{ assign.task.initiative?.title }}
+                    </p>
                   </div>
-                  <div class="progress-bar-container">
-                    <div
-                      class="progress-bar"
-                      :style="{ width: getProgressPercent(assign.task) + '%' }"
-                    ></div>
-                  </div>
-                </div>
 
-                <!-- Full history untuk LEADER melihat anggota tim -->
-                <div class="task-updates">
-                  <div v-if="assign.task.updates?.length > 0">
-                    <div class="update-latest">
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          align-items: flex-start;
-                        "
+                  <div class="task-progress-section">
+                    <div class="progress-labels">
+                      <span
+                        >Target:
+                        <strong
+                          >{{ assign.task.targetValue }}
+                          {{ assign.task.unit }}</strong
+                        ></span
                       >
-                        <div>
-                          <span class="update-timestamp">{{
-                            formatDateTime(assign.task.updates[0].createdAt)
-                          }}</span>
-                          <span class="update-val"
-                            >Nilai dilaporkan:
-                            {{ assign.task.updates[0].newValue }}</span
-                          >
-                          <span
-                            class="update-status"
-                            :class="
-                              'status-' +
-                              assign.task.updates[0].status.toLowerCase()
-                            "
-                          >
-                            {{
-                              getUpdateStatusLabel(
-                                assign.task.updates[0].status,
-                              )
-                            }}
-                          </span>
-                        </div>
-                        <button
-                          class="toggle-history-btn"
-                          style="margin: 0; padding: 2px 6px; font-size: 11px"
-                          @click="
-                            openDetailModal(
-                              assign.task.title,
-                              'Task',
-                              assign.task.updates[0],
-                              assign.user?.name,
-                            )
+                      <span
+                        >Saat ini:
+                        <strong
+                          >{{ assign.task.currentValue }}
+                          {{ assign.task.unit }}</strong
+                        ></span
+                      >
+                    </div>
+                    <div class="progress-bar-container">
+                      <div
+                        class="progress-bar"
+                        :style="{
+                          width: getProgressPercent(assign.task) + '%',
+                        }"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <!-- Full history untuk LEADER melihat anggota tim -->
+                  <div class="task-updates">
+                    <div v-if="assign.task.updates?.length > 0">
+                      <div class="update-latest">
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
                           "
                         >
-                          Lihat Hasil
-                        </button>
-                      </div>
-                      <span
-                        v-if="assign.task.updates[0].note"
-                        class="history-note"
-                        >"{{ assign.task.updates[0].note }}"</span
-                      >
-                    </div>
-
-                    <div v-if="assign.task.updates.length > 1">
-                      <button
-                        class="toggle-history-btn"
-                        @click="toggleTaskHistory('team_' + assign.task.id)"
-                      >
-                        {{
-                          expandedTaskIds.includes("team_" + assign.task.id)
-                            ? "▲ Sembunyikan riwayat"
-                            : `▼ Lihat ${assign.task.updates.length - 1} riwayat sebelumnya`
-                        }}
-                      </button>
-                      <div
-                        v-if="
-                          expandedTaskIds.includes('team_' + assign.task.id)
-                        "
-                        class="history-timeline"
-                      >
-                        <div
-                          v-for="upd in assign.task.updates.slice(1)"
-                          :key="upd.id"
-                          class="history-item"
-                        >
-                          <div
-                            style="
-                              display: flex;
-                              justify-content: space-between;
-                              align-items: flex-start;
-                            "
-                          >
-                            <div>
-                              <span class="history-timestamp">{{
-                                formatDateTime(upd.createdAt)
-                              }}</span>
-                              <span class="history-value"
-                                >Nilai: {{ upd.newValue }}</span
-                              >
-                              <span
-                                class="update-status"
-                                :class="'status-' + upd.status.toLowerCase()"
-                              >
-                                {{ getUpdateStatusLabel(upd.status) }}
-                              </span>
-                            </div>
-                            <button
-                              class="toggle-history-btn"
-                              style="
-                                margin: 0;
-                                padding: 2px 6px;
-                                font-size: 11px;
-                              "
-                              @click="
-                                openDetailModal(
-                                  assign.task.title,
-                                  'Task',
-                                  upd,
-                                  assign.user?.name,
-                                )
+                          <div>
+                            <span class="update-timestamp">{{
+                              formatDateTime(assign.task.updates[0].createdAt)
+                            }}</span>
+                            <span class="update-val"
+                              >Nilai dilaporkan:
+                              {{ assign.task.updates[0].newValue }}</span
+                            >
+                            <span
+                              class="update-status"
+                              :class="
+                                'status-' +
+                                assign.task.updates[0].status.toLowerCase()
                               "
                             >
-                              Lihat Hasil
-                            </button>
+                              {{
+                                getUpdateStatusLabel(
+                                  assign.task.updates[0].status,
+                                )
+                              }}
+                            </span>
                           </div>
-                          <div v-if="upd.note" class="history-note">
-                            "{{ upd.note }}"
-                          </div>
-                          <div v-if="upd.reviewNote" class="reject-note">
-                            Alasan reject: "{{ upd.reviewNote }}"
+                          <button
+                            class="toggle-history-btn"
+                            style="margin: 0; padding: 2px 6px; font-size: 11px"
+                            @click="
+                              openDetailModal(
+                                assign.task.title,
+                                'Task',
+                                assign.task.updates[0],
+                                assign.user?.name,
+                              )
+                            "
+                          >
+                            Lihat Hasil
+                          </button>
+                        </div>
+                        <span
+                          v-if="assign.task.updates[0].note"
+                          class="history-note"
+                          >"{{ assign.task.updates[0].note }}"</span
+                        >
+                      </div>
+
+                      <div v-if="assign.task.updates.length > 1">
+                        <button
+                          class="toggle-history-btn"
+                          @click="toggleTaskHistory('team_' + assign.task.id)"
+                        >
+                          {{
+                            expandedTaskIds.includes("team_" + assign.task.id)
+                              ? "▲ Sembunyikan riwayat"
+                              : `▼ Lihat ${assign.task.updates.length - 1} riwayat sebelumnya`
+                          }}
+                        </button>
+                        <div
+                          v-if="
+                            expandedTaskIds.includes('team_' + assign.task.id)
+                          "
+                          class="history-timeline"
+                        >
+                          <div
+                            v-for="upd in assign.task.updates.slice(1)"
+                            :key="upd.id"
+                            class="history-item"
+                          >
+                            <div
+                              style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: flex-start;
+                              "
+                            >
+                              <div>
+                                <span class="history-timestamp">{{
+                                  formatDateTime(upd.createdAt)
+                                }}</span>
+                                <span class="history-value"
+                                  >Nilai: {{ upd.newValue }}</span
+                                >
+                                <span
+                                  class="update-status"
+                                  :class="'status-' + upd.status.toLowerCase()"
+                                >
+                                  {{ getUpdateStatusLabel(upd.status) }}
+                                </span>
+                              </div>
+                              <button
+                                class="toggle-history-btn"
+                                style="
+                                  margin: 0;
+                                  padding: 2px 6px;
+                                  font-size: 11px;
+                                "
+                                @click="
+                                  openDetailModal(
+                                    assign.task.title,
+                                    'Task',
+                                    upd,
+                                    assign.user?.name,
+                                  )
+                                "
+                              >
+                                Lihat Hasil
+                              </button>
+                            </div>
+                            <div v-if="upd.note" class="history-note">
+                              "{{ upd.note }}"
+                            </div>
+                            <div v-if="upd.reviewNote" class="reject-note">
+                              Alasan reject: "{{ upd.reviewNote }}"
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
+                    <p v-else class="text-sm text-gray">Belum ada update.</p>
                   </div>
-                  <p v-else class="text-sm text-gray">Belum ada update.</p>
                 </div>
               </div>
             </div>
@@ -2445,10 +2476,15 @@ function getGroupedInitiatives(initiatives) {
   flex-direction: column;
   gap: 16px;
 }
+.title-wrapper {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+}
 .task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: table-column;
+  gap: 8px;
+  align-items: right;
 }
 .task-header h3 {
   font-size: 16px;
@@ -2458,9 +2494,11 @@ function getGroupedInitiatives(initiatives) {
 }
 .status-badge {
   font-size: 11px;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   font-weight: 600;
+  gap: 12px;
+  display: flex;
 }
 
 .task-context {
