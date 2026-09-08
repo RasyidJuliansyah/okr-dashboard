@@ -46,6 +46,20 @@
             Bulk Upload CSV
           </button>
           <button
+            class="secondary-btn"
+            style="
+              gap: 6px;
+              display: inline-flex;
+              align-items: center;
+              border: 1px dashed #0ea5e9;
+              color: #0ea5e9;
+              font-weight: 600;
+            "
+            @click="openHeaderAddTaskModal"
+          >
+            + Tambah Task
+          </button>
+          <button
             v-if="canCreateInitiative"
             class="primary-btn"
             @click="openAddInitiativeModal"
@@ -332,7 +346,7 @@
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
                   <button
-                    v-if="canManageInitiative(ini)"
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
                     class="action-btn"
                     title="Tambah Task"
                     @click="openAddTaskModal(ini)"
@@ -577,7 +591,7 @@
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
                   <button
-                    v-if="canManageInitiative(ini)"
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
                     class="action-btn"
                     title="Tambah Task"
                     @click="openAddTaskModal(ini)"
@@ -861,6 +875,14 @@
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
                   <button
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
+                  <button
                     v-if="canManageInitiative(ini)"
                     class="action-btn"
                     title="Edit"
@@ -997,6 +1019,14 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
+                  <button
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
                   <button
                     v-if="canManageInitiative(ini)"
                     class="action-btn"
@@ -1224,11 +1254,17 @@
             <KpiSelector v-model="initiativeForm.kpis" />
           </template>
 
-          <!-- FORM CARD: TASK -->
+          <!-- FORM CARD: TASK MASSAL -->
           <template v-else-if="cardType === 'TASK'">
-            <label>Pilih Inisiatif Induk *</label>
-            <select v-model="taskForm.initiativeId" class="form-input">
-              <option value="">-- Pilih Inisiatif --</option>
+            <label style="font-weight: 600; color: #0f172a"
+              >Pilih Inisiatif Induk *</label
+            >
+            <select
+              v-model="batchInitiativeId"
+              class="form-input mb-3"
+              style="margin-bottom: 14px"
+            >
+              <option value="">-- Pilih Inisiatif Induk --</option>
               <option
                 v-for="ini in filteredInitiatives"
                 :key="ini.id"
@@ -1238,84 +1274,124 @@
               </option>
             </select>
 
-            <label>Judul Task *</label>
-            <input
-              v-model="taskForm.title"
-              class="form-input"
-              placeholder="Contoh: Selesaikan 10 unit test..."
-              style="margin-bottom: 12px"
-            />
+            <!-- Batch Default Settings Card -->
+            <div class="batch-defaults-card mb-4">
+              <div class="batch-defaults-title">
+                ⚡ Default Settings untuk Baris Task Baru
+              </div>
+              <div class="form-row-4">
+                <div>
+                  <label>Target Value Default</label>
+                  <input
+                    v-model.number="batchDefaults.targetValue"
+                    type="number"
+                    class="form-input"
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <label>Satuan (Unit) Default</label>
+                  <input
+                    v-model="batchDefaults.unit"
+                    class="form-input"
+                    placeholder="%, task..."
+                  />
+                </div>
+                <div>
+                  <label>Bulan Sprint</label>
+                  <input
+                    v-model="batchDefaults.sprintMonth"
+                    type="month"
+                    class="form-input"
+                  />
+                </div>
+                <div>
+                  <label>Assignee Default</label>
+                  <select
+                    v-model="batchDefaults.assignedTeamMemberId"
+                    class="form-input"
+                  >
+                    <option value="">-- Inisiator / Induk --</option>
+                    <option
+                      v-for="member in availableTeamMembers"
+                      :key="member.id"
+                      :value="member.id"
+                    >
+                      {{ member.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2 text-right">
+                <button
+                  type="button"
+                  class="btn-text-action"
+                  @click="applyDefaultsToAllRows"
+                >
+                  Terapkan Default ke Semua Baris
+                </button>
+              </div>
+            </div>
 
-            <label v-if="isLeader || isManager || isAdmin"
-              >Assign ke Anggota Tim (Team Member T)</label
-            >
-            <select
-              v-if="isLeader || isManager || isAdmin"
-              v-model="taskForm.assignedTeamMemberId"
-              class="form-input"
-              style="margin-bottom: 12px"
-            >
-              <option value="">-- Pilih Anggota Tim --</option>
-              <option
-                v-for="member in availableTeamMembers"
-                :key="member.id"
-                :value="member.id"
+            <!-- Task Rows Header & List -->
+            <div class="task-rows-header">
+              <label style="font-weight: 700; color: #334155; font-size: 14px">
+                Daftar Baris Task ({{ taskRows.length }})
+              </label>
+              <button type="button" class="btn-add-row" @click="addTaskRow">
+                + Tambah Baris Task
+              </button>
+            </div>
+
+            <div class="task-rows-container">
+              <div
+                v-for="(row, idx) in taskRows"
+                :key="idx"
+                class="task-row-card"
               >
-                {{ member.name }} ({{ member.position || "Team Member" }})
-              </option>
-            </select>
-
-            <div class="form-row-2">
-              <div>
-                <label>Target Value *</label>
-                <input
-                  v-model.number="taskForm.targetValue"
-                  type="number"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Satuan (Unit)</label>
-                <input
-                  v-model="taskForm.unit"
-                  class="form-input"
-                  placeholder="%, task, doc..."
-                />
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div>
-                <label>Bulan / Sprint Task</label>
-                <input
-                  v-model="taskForm.sprintMonth"
-                  type="month"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Tanggal Mulai Task</label>
-                <input
-                  v-model="taskForm.startDate"
-                  type="date"
-                  class="form-input"
-                />
-              </div>
-            </div>
-
-            <div class="form-row-2">
-              <div>
-                <label>Tanggal Selesai Task (Finish Date)</label>
-                <input
-                  v-model="taskForm.finishDate"
-                  type="date"
-                  class="form-input"
-                />
+                <div class="task-row-num">{{ idx + 1 }}</div>
+                <div class="task-row-fields">
+                  <input
+                    v-model="row.title"
+                    class="form-input row-title"
+                    placeholder="Judul Task (Contoh: Selesaikan unit test...)..."
+                  />
+                  <input
+                    v-model.number="row.targetValue"
+                    type="number"
+                    class="form-input row-target"
+                    placeholder="Target"
+                  />
+                  <input
+                    v-model="row.unit"
+                    class="form-input row-unit"
+                    placeholder="Satuan"
+                  />
+                  <select
+                    v-model="row.assignedTeamMemberId"
+                    class="form-input row-assignee"
+                  >
+                    <option value="">-- Inisiator / Induk --</option>
+                    <option
+                      v-for="member in availableTeamMembers"
+                      :key="member.id"
+                      :value="member.id"
+                    >
+                      {{ member.name }}
+                    </option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  class="btn-remove-row"
+                  :disabled="taskRows.length <= 1"
+                  @click="removeTaskRow(idx)"
+                  title="Hapus baris"
+                >
+                  &times;
+                </button>
               </div>
             </div>
-
-            <!-- KpiSelector -->
-            <KpiSelector v-model="taskForm.kpis" />
           </template>
         </div>
 
@@ -1343,10 +1419,25 @@
           </button>
         </div>
         <div class="modal-body-scroll">
-          <p class="mb-3" style="font-size: 13px; color: #475569">
-            Inisiatif Induk:
-            <strong>{{ selectedInitiativeForTask?.title }}</strong>
-          </p>
+          <div class="mb-3">
+            <label style="font-weight: 600; color: #0f172a; font-size: 13px"
+              >Pilih Inisiatif Induk *</label
+            >
+            <select
+              v-model="batchInitiativeId"
+              class="form-input"
+              style="font-weight: 600; background: #f8fafc; margin-top: 4px"
+            >
+              <option value="">-- Pilih Inisiatif Induk --</option>
+              <option
+                v-for="ini in filteredInitiatives"
+                :key="ini.id"
+                :value="ini.id"
+              >
+                {{ ini.title }} ({{ ini.team?.name || "Tim" }})
+              </option>
+            </select>
+          </div>
 
           <!-- Batch Default Settings Card -->
           <div class="batch-defaults-card mb-4">
@@ -2381,34 +2472,41 @@ async function saveCard() {
   if (cardType.value === "INISIATIF") {
     await saveInitiative();
   } else {
-    const parentIniId =
-      selectedInitiativeForTask.value?.id || taskForm.value.initiativeId;
-    if (!parentIniId) {
+    if (!batchInitiativeId.value) {
       alert("Silakan pilih Inisiatif induk untuk Task ini");
       return;
     }
-    if (!taskForm.value.title.trim()) {
-      alert("Judul Task wajib diisi");
+    const validTasks = taskRows.value.filter(
+      (r) => r.title && r.title.trim().length > 0,
+    );
+
+    if (validTasks.length === 0) {
+      alert("Setidaknya 1 baris Judul Task wajib diisi");
       return;
     }
+    saving.value = true;
     try {
-      const res = await fetch(`${API}/initiatives/${parentIniId}/tasks`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(taskForm.value),
-      });
+      const res = await fetch(
+        `${API}/initiatives/${batchInitiativeId.value}/tasks/batch`,
+        {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ tasks: validTasks }),
+        },
+      );
       if (res.ok) {
         showInitiativeModal.value = false;
-        showTaskModal.value = false;
-        successMessage.value = "Task baru berhasil dibuat";
+        successMessage.value = `${validTasks.length} Task berhasil ditambahkan!`;
         setTimeout(() => (successMessage.value = ""), 3000);
         await fetchInitiatives();
       } else {
         const err = await res.json();
-        alert(err.message || "Gagal membuat Task");
+        alert(err.message || "Gagal membuat Task massal");
       }
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      saving.value = false;
     }
   }
 }
@@ -2433,11 +2531,40 @@ async function deleteInitiative(id: string) {
   }
 }
 
-function openAddTaskModal(ini: any) {
-  selectedInitiativeForTask.value = ini;
+function openHeaderAddTaskModal() {
+  const firstIni = filteredInitiatives.value[0] || null;
+  selectedInitiativeForTask.value = firstIni;
+  batchInitiativeId.value = firstIni?.id || "";
   const now = new Date();
   const defaultSprint =
-    ini.sprintMonth ||
+    firstIni?.sprintMonth ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
+    sprintMonth: defaultSprint,
+    assignedTeamMemberId: "",
+  };
+
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      unit: "%",
+      assignedTeamMemberId: "",
+      sprintMonth: defaultSprint,
+    },
+  ];
+  showTaskModal.value = true;
+}
+
+function openAddTaskModal(ini: any) {
+  selectedInitiativeForTask.value = ini;
+  batchInitiativeId.value = ini?.id || "";
+  const now = new Date();
+  const defaultSprint =
+    ini?.sprintMonth ||
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   batchDefaults.value = {
@@ -2485,6 +2612,8 @@ function applyDefaultsToAllRows() {
 }
 
 async function saveTasksBatch() {
+  const targetId =
+    selectedInitiativeForTask.value?.id || batchInitiativeId.value;
   const validTasks = taskRows.value.filter(
     (r) => r.title && r.title.trim().length > 0,
   );
@@ -2493,22 +2622,20 @@ async function saveTasksBatch() {
     alert("Setidaknya 1 baris Judul Task wajib diisi");
     return;
   }
-  if (!selectedInitiativeForTask.value?.id) {
+  if (!targetId) {
     alert("Inisiatif induk tidak ditemukan");
     return;
   }
   saving.value = true;
   try {
-    const res = await fetch(
-      `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks/batch`,
-      {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ tasks: validTasks }),
-      },
-    );
+    const res = await fetch(`${API}/initiatives/${targetId}/tasks/batch`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ tasks: validTasks }),
+    });
     if (res.ok) {
       showTaskModal.value = false;
+      showInitiativeModal.value = false;
       successMessage.value = `${validTasks.length} Task berhasil ditambahkan!`;
       setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
@@ -2558,11 +2685,11 @@ onMounted(async () => {
       (auth.user as any)?.department,
     );
   }
-  if (isLeader.value || isManager.value || isAdmin.value) {
+  try {
     availableTeamMembers.value = await fetchAvailableTeamMembers(
       (auth.user as any)?.department,
     );
-  }
+  } catch (err) {}
 });
 </script>
 
