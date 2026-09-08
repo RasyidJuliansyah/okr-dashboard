@@ -1,7 +1,7 @@
 -- ============================================================
 -- MIGRATION SCRIPT: OKR Hierarchical Achievement Tracking
--- Versi: Standar (Kompatibel dengan MySQL 5.7+ / MariaDB / DBeaver)
--- Deskripsi: Menambahkan tabel & kolom baru untuk OKR & Initiative
+-- Versi: Snake_case (Sesuai dengan schema.prisma MySQL)
+-- Deskripsi: Menambahkan tabel & kolom baru untuk OKR, Initiative, & Task
 -- ============================================================
 -- PETUNJUK:
 -- Jika DBeaver memunculkan error "Duplicate column name" atau 
@@ -10,83 +10,89 @@
 -- ============================================================
 
 -- ─────────────────────────────────────────────────────────────
--- BAGIAN 1: Tabel AnnualKeyResult (BARU)
+-- BAGIAN 1: Tabel annual_key_result (BARU)
 -- ─────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS `AnnualKeyResult` (
-  `id`             VARCHAR(191) NOT NULL,
-  `objectiveId`    VARCHAR(191) NOT NULL,
-  `title`          VARCHAR(191) NOT NULL,
-  `description`    VARCHAR(191) NULL,
-  `targetValue`    DOUBLE NOT NULL,
-  `currentValue`   DOUBLE NOT NULL DEFAULT 0,
-  `unit`           VARCHAR(191) NOT NULL,
-  `bscPerspective` VARCHAR(191) NOT NULL,
-  `year`           VARCHAR(191) NOT NULL,
-  `status`         VARCHAR(191) NOT NULL DEFAULT 'ON_TRACK',
-  `createdAt`      DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  `updatedAt`      DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+CREATE TABLE IF NOT EXISTS `annual_key_result` (
+  `id`              VARCHAR(191) NOT NULL,
+  `objective_id`    VARCHAR(191) NOT NULL,
+  `title`           VARCHAR(191) NOT NULL,
+  `description`     VARCHAR(191) NULL,
+  `target_value`    DOUBLE NOT NULL,
+  `current_value`   DOUBLE NOT NULL DEFAULT 0,
+  `unit`            VARCHAR(191) NOT NULL,
+  `bsc_perspective` VARCHAR(191) NOT NULL,
+  `year`            VARCHAR(191) NOT NULL,
+  `status`          VARCHAR(191) NOT NULL DEFAULT 'ON_TRACK',
+  `created_at`      DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at`      DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 
   PRIMARY KEY (`id`),
-  INDEX `AnnualKeyResult_objectiveId_idx` (`objectiveId`),
-  INDEX `AnnualKeyResult_year_idx` (`year`),
+  INDEX `AnnualKeyResult_objectiveId_fkey` (`objective_id`),
   CONSTRAINT `AnnualKeyResult_objectiveId_fkey`
-    FOREIGN KEY (`objectiveId`) REFERENCES `Objective` (`id`)
+    FOREIGN KEY (`objective_id`) REFERENCES `objective` (`id`)
     ON DELETE RESTRICT ON UPDATE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 
 -- ─────────────────────────────────────────────────────────────
--- BAGIAN 2: Kolom Baru di tabel KeyResult
+-- BAGIAN 2: Kolom Baru di tabel key_result
 -- Jalankan satu per satu. Jika kolom sudah ada, lewati ke baris berikutnya.
 -- ─────────────────────────────────────────────────────────────
 
 -- 2a. Tambah kolom-kolom baru
-ALTER TABLE `KeyResult` ADD COLUMN `annualKeyResultId` VARCHAR(191) NULL AFTER `objectiveId`;
-ALTER TABLE `KeyResult` ADD COLUMN `month` VARCHAR(191) NULL AFTER `annualKeyResultId`;
-ALTER TABLE `KeyResult` ADD COLUMN `monthWeight` DOUBLE NOT NULL DEFAULT 1.0 AFTER `month`;
-ALTER TABLE `KeyResult` ADD COLUMN `isManualOverride` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`;
+ALTER TABLE `key_result` ADD COLUMN `annual_key_result_id` VARCHAR(191) NULL AFTER `objective_id`;
+ALTER TABLE `key_result` ADD COLUMN `month` VARCHAR(191) NULL AFTER `annual_key_result_id`;
+ALTER TABLE `key_result` ADD COLUMN `month_weight` DOUBLE NOT NULL DEFAULT 1.0 AFTER `month`;
+ALTER TABLE `key_result` ADD COLUMN `is_manual_override` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`;
 
 -- 2b. Tambah index untuk kolom baru
-ALTER TABLE `KeyResult` ADD INDEX `KeyResult_annualKeyResultId_idx` (`annualKeyResultId`);
-ALTER TABLE `KeyResult` ADD INDEX `KeyResult_month_idx` (`month`);
+ALTER TABLE `key_result` ADD INDEX `KeyResult_annualKeyResultId_fkey` (`annual_key_result_id`);
+ALTER TABLE `key_result` ADD INDEX `KeyResult_month_idx` (`month`);
 
--- 2c. Tambah foreign key relasi ke AnnualKeyResult
-ALTER TABLE `KeyResult` ADD CONSTRAINT `KeyResult_annualKeyResultId_fkey` 
-  FOREIGN KEY (`annualKeyResultId`) REFERENCES `AnnualKeyResult` (`id`) 
+-- 2c. Tambah foreign key relasi ke annual_key_result
+ALTER TABLE `key_result` ADD CONSTRAINT `KeyResult_annualKeyResultId_fkey` 
+  FOREIGN KEY (`annual_key_result_id`) REFERENCES `annual_key_result` (`id`) 
   ON DELETE SET NULL ON UPDATE CASCADE;
 
 
 -- ─────────────────────────────────────────────────────────────
--- BAGIAN 3: Kolom Baru di tabel InitiativeUpdate
+-- BAGIAN 3: Kolom Baru di tabel initiative_update
 -- ─────────────────────────────────────────────────────────────
 
 -- 3a. Tambah kolom-kolom status approval
-ALTER TABLE `InitiativeUpdate` ADD COLUMN `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING_APPROVAL' AFTER `submittedBy`;
-ALTER TABLE `InitiativeUpdate` ADD COLUMN `reviewedBy` VARCHAR(191) NULL AFTER `status`;
-ALTER TABLE `InitiativeUpdate` ADD COLUMN `reviewedAt` DATETIME(3) NULL AFTER `reviewedBy`;
+ALTER TABLE `initiative_update` ADD COLUMN `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING_APPROVAL' AFTER `submitted_by`;
+ALTER TABLE `initiative_update` ADD COLUMN `reviewed_by` VARCHAR(191) NULL AFTER `status`;
+ALTER TABLE `initiative_update` ADD COLUMN `reviewed_at` DATETIME(3) NULL AFTER `reviewed_by`;
 
 -- 3b. Isi nilai default untuk data inisiatif lama yang sudah disubmit
-UPDATE `InitiativeUpdate` SET `status` = 'APPROVED' WHERE `status` = '' OR `status` IS NULL;
+UPDATE `initiative_update` SET `status` = 'APPROVED' WHERE `status` = '' OR `status` IS NULL;
 
 
 -- ─────────────────────────────────────────────────────────────
--- BAGIAN 4: Tabel Department & Relasi Manager
+-- BAGIAN 4: Tabel department & Relasi Manager
 -- ─────────────────────────────────────────────────────────────
 
--- Buat tabel Department jika belum ada
-CREATE TABLE IF NOT EXISTS `Department` (
-  `id`        VARCHAR(191) NOT NULL,
-  `name`      VARCHAR(191) NOT NULL,
-  `value`     VARCHAR(191) NOT NULL,
-  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+-- Buat tabel department jika belum ada
+CREATE TABLE IF NOT EXISTS `department` (
+  `id`         VARCHAR(191) NOT NULL,
+  `name`       VARCHAR(191) NOT NULL,
+  `value`      VARCHAR(191) NOT NULL,
+  `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
   UNIQUE INDEX `Department_value_key` (`value`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Tambah kolom managerId ke Department (jika tabel sudah ada sebelumnya)
-ALTER TABLE `Department` ADD COLUMN `managerId` VARCHAR(191) NULL AFTER `value`;
+-- Tambah kolom manager_id ke department (jika tabel sudah ada sebelumnya)
+ALTER TABLE `department` ADD COLUMN `manager_id` VARCHAR(191) NULL AFTER `value`;
 
--- Tambah foreign key managerId ke User
-ALTER TABLE `Department` ADD CONSTRAINT `Department_managerId_fkey` 
-  FOREIGN KEY (`managerId`) REFERENCES `User` (`id`) 
+-- Tambah foreign key manager_id ke user
+ALTER TABLE `department` ADD CONSTRAINT `Department_managerId_fkey` 
+  FOREIGN KEY (`manager_id`) REFERENCES `user` (`id`) 
   ON DELETE SET NULL ON UPDATE CASCADE;
+
+
+-- ─────────────────────────────────────────────────────────────
+-- BAGIAN 5: Kolom kanban_status di tabel task
+-- ─────────────────────────────────────────────────────────────
+-- Tambah kolom kanban_status untuk melacak stage Kanban Task (TODO, IN_PROGRESS, DONE, DROP)
+ALTER TABLE `task` ADD COLUMN `kanban_status` VARCHAR(191) NULL DEFAULT 'TODO';
