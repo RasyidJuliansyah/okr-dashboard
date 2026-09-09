@@ -896,27 +896,11 @@
               required
             />
           </div>
-          <div class="form-row">
-            <div class="form-group half">
-              <label>Target Nilai *</label>
-              <input
-                v-model.number="taskForm.targetValue"
-                type="number"
-                step="any"
-                min="0.000001"
-                required
-              />
-            </div>
-            <div class="form-group half">
-              <label>Satuan *</label>
-              <input
-                v-model="taskForm.unit"
-                type="text"
-                placeholder="%, Unit, Rp, dll"
-                required
-              />
-            </div>
-          </div>
+          <UnitTargetInput
+            v-model:targetValue="taskForm.targetValue"
+            v-model:unit="taskForm.unit"
+            :required="true"
+          />
           <div class="modal-actions">
             <button
               type="button"

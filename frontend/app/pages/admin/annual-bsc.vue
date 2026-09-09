@@ -90,49 +90,11 @@
             ></textarea>
           </div>
 
-          <div style="display: flex; gap: 1rem; margin-bottom: 1rem">
-            <div class="form-group" style="flex: 1">
-              <label
-                for="kr-target"
-                style="font-weight: 600; display: block; margin-bottom: 0.25rem"
-                >Target Value *</label
-              >
-              <input
-                id="kr-target"
-                v-model.number="form.targetValue"
-                type="number"
-                step="any"
-                min="0.001"
-                required
-                style="
-                  width: 100%;
-                  padding: 0.5rem;
-                  border: 1px solid #ccc;
-                  border-radius: 4px;
-                "
-              />
-            </div>
-            <div class="form-group" style="flex: 1">
-              <label
-                for="kr-unit"
-                style="font-weight: 600; display: block; margin-bottom: 0.25rem"
-                >Unit *</label
-              >
-              <input
-                id="kr-unit"
-                v-model="form.unit"
-                type="text"
-                placeholder="%, Rp, dll"
-                required
-                style="
-                  width: 100%;
-                  padding: 0.5rem;
-                  border: 1px solid #ccc;
-                  border-radius: 4px;
-                "
-              />
-            </div>
-          </div>
+          <UnitTargetInput
+            v-model:targetValue="form.targetValue"
+            v-model:unit="form.unit"
+            :required="true"
+          />
 
           <div class="form-group" style="margin-bottom: 1.5rem">
             <label

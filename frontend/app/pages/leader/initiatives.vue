@@ -268,24 +268,11 @@
             </option>
           </select>
 
-          <div class="form-row-2 mb-3">
-            <div>
-              <label class="form-label">Target Value</label>
-              <input
-                v-model.number="initiativeForm.targetValue"
-                type="number"
-                class="form-input"
-              />
-            </div>
-            <div>
-              <label class="form-label">Satuan (Unit)</label>
-              <input
-                v-model="initiativeForm.unit"
-                class="form-input"
-                placeholder="%, session, tasks..."
-              />
-            </div>
-          </div>
+          <UnitTargetInput
+            v-model:targetValue="initiativeForm.targetValue"
+            v-model:unit="initiativeForm.unit"
+            :required="true"
+          />
 
           <div class="modal-actions">
             <button

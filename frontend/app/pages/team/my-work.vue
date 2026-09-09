@@ -554,8 +554,8 @@
             <select
               :value="assign.task.kanbanStatus || 'TODO'"
               style="
-                font-size: 12px;
-                padding: 8px;
+                font-size: 14px;
+                padding: 12px;
                 border-radius: 6px;
                 border: 1px solid #cbd5e1;
                 background: #f8fafc;
@@ -1104,7 +1104,7 @@
                   <select
                     :value="assign.task.kanbanStatus || 'TODO'"
                     style="
-                      font-size: 11px;
+                      font-size: 14px;
                       padding: 2px 8px;
                       border-radius: 6px;
                       border: 1px solid #cbd5e1;
@@ -1667,7 +1667,7 @@
               <div class="batch-defaults-title">
                 ⚡ Default Settings untuk Baris Task Baru
               </div>
-              <div class="form-row-4">
+              <div class="form-input">
                 <div>
                   <label>Target Value Default</label>
                   <input
@@ -2616,12 +2616,12 @@ function getGroupedInitiatives(initiatives) {
 }
 .task-header h3 {
   font-size: 16px;
-  margin: 0;
+  margin: 8px;
   color: #0f172a;
   flex: 1;
 }
 .status-badge {
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 8px;
   border-radius: 6px;
   font-weight: 600;
@@ -2908,9 +2908,9 @@ function getGroupedInitiatives(initiatives) {
   padding-top: 24px;
 }
 .member-badge {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
-  color: #334155;
+  color: var(--color-gray-450, #475569);
   background: #f0f9ff;
   border: 1px solid #bae6fd;
   border-radius: 6px;
@@ -3079,7 +3079,12 @@ function getGroupedInitiatives(initiatives) {
 .form-row-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
 }
 @media (max-width: 768px) {
   .form-row-4 {

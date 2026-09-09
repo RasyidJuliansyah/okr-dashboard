@@ -732,35 +732,28 @@
               </option>
             </select>
 
-            <div class="form-row-2">
-              <div>
-                <label>Target Value</label>
-                <input
-                  v-model.number="initiativeForm.targetValue"
-                  type="number"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Unit / Satuan</label>
-                <input
-                  v-model="initiativeForm.unit"
-                  class="form-input"
-                  placeholder="%, Sesi, tasks..."
-                />
-              </div>
-              <div>
-                <label>Kolom Kanban (Status)</label>
-                <select
-                  v-model="initiativeForm.kanbanStatus"
-                  class="form-input"
-                >
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Done</option>
-                  <option value="DROP">Drop</option>
-                </select>
-              </div>
+            <UnitTargetInput
+              v-model:targetValue="initiativeForm.targetValue"
+              v-model:unit="initiativeForm.unit"
+              :required="true"
+            />
+
+            <div style="margin-bottom: 12px">
+              <label
+                style="
+                  display: block;
+                  margin-bottom: 4px;
+                  font-weight: 500;
+                  font-size: 13px;
+                "
+                >Kolom Kanban (Status)</label
+              >
+              <select v-model="initiativeForm.kanbanStatus" class="form-input">
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+                <option value="DROP">Drop</option>
+              </select>
             </div>
           </div>
 
@@ -793,24 +786,11 @@
               class="form-input"
               placeholder="Contoh: Selesaikan 10 unit test..."
             />
-            <div class="form-row-2">
-              <div>
-                <label>Target Value *</label>
-                <input
-                  v-model.number="taskForm.targetValue"
-                  type="number"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Satuan (Unit)</label>
-                <input
-                  v-model="taskForm.unit"
-                  class="form-input"
-                  placeholder="%, task, doc..."
-                />
-              </div>
-            </div>
+            <UnitTargetInput
+              v-model:targetValue="taskForm.targetValue"
+              v-model:unit="taskForm.unit"
+              :required="true"
+            />
           </div>
           <div class="modal-actions">
             <button class="secondary-btn" @click="showTaskModal = false">
