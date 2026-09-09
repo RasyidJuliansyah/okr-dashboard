@@ -173,15 +173,15 @@
               <div class="progress-labels">
                 <span
                   >Target:
-                  <strong
-                    >{{ task.targetValue }} {{ task.unit || "" }}</strong
-                  ></span
+                  <strong>{{
+                    formatTargetValue(task.targetValue, task.unit)
+                  }}</strong></span
                 >
                 <span
                   >Saat ini:
-                  <strong
-                    >{{ task.currentValue }} {{ task.unit || "" }}</strong
-                  ></span
+                  <strong>{{
+                    formatTargetValue(task.currentValue, task.unit)
+                  }}</strong></span
                 >
               </div>
               <div class="progress-bar-container">
@@ -403,7 +403,8 @@
               >
                 <span class="task-detail-name">{{ task.title }}</span>
                 <span class="task-detail-val">
-                  {{ task.currentValue }}/{{ task.targetValue }} {{ task.unit }}
+                  {{ formatTargetValue(task.currentValue, task.unit) }} /
+                  {{ formatTargetValue(task.targetValue, task.unit) }}
                 </span>
                 <div class="task-mini-track">
                   <div
@@ -879,8 +880,12 @@
                   <!-- Details -->
                   <div class="kr-details-row">
                     <span class="kr-values">
-                      Nilai: <strong>{{ kr.currentValue }}</strong> /
-                      {{ kr.targetValue }} {{ kr.unit }}
+                      Nilai:
+                      <strong>{{
+                        formatTargetValue(kr.currentValue, kr.unit)
+                      }}</strong>
+                      /
+                      {{ formatTargetValue(kr.targetValue, kr.unit) }}
                     </span>
                     <span
                       class="status-badge"
@@ -1732,8 +1737,8 @@ async function handleReject() {
 
 /* Task Cards Grid (matching Pekerjaan Saya / my-work.vue) */
 .task-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 

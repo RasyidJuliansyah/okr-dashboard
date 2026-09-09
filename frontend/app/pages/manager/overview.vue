@@ -67,116 +67,300 @@
               <div
                 v-for="(krs, deptKey) in getGroupedKrs(obj.keyResults)"
                 :key="deptKey"
-                class="dept-group"
+                class="dept-group mb-4"
               >
-                <div class="dept-group-header">
-                  <span class="dept-title-badge">{{
-                    getDeptLabel(deptKey)
-                  }}</span>
+                <div class="dept-group-header mb-2">
+                  <span class="dept-title-badge"
+                    >Section: {{ getDeptLabel(deptKey) }}</span
+                  >
                 </div>
-                <div v-for="kr in krs" :key="kr.id" class="kr-item">
-                  <div class="kr-main">
-                    <div
-                      class="kr-title-row"
-                      style="
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                      "
-                    >
-                      <div>
-                        <span class="kr-title">{{ kr.title }}</span>
-                        <span
-                          class="badge"
-                          :class="getStatusClass(kr.status)"
-                          style="margin-left: 8px; margin-right: 8px"
-                          >{{ kr.status }}</span
-                        >
-                        <span class="text-sm"
-                          >Progress: {{ kr.currentValue }}/{{
-                            kr.targetValue
-                          }}
-                          ({{ getProgressPercent(kr).toFixed(1) }}%)</span
-                        >
-                      </div>
-                      <button
-                        class="secondary-btn small"
-                        @click="openDelegateModal(kr)"
+                <div class="table-container" style="overflow-x: auto">
+                  <table
+                    class="overview-table"
+                    style="
+                      width: 100%;
+                      border-collapse: collapse;
+                      font-size: 13px;
+                    "
+                  >
+                    <thead>
+                      <tr
                         style="
-                          padding: 4px 8px;
-                          font-size: 12px;
-                          background-color: #f1f5f9;
-                          border: 1px solid #cbd5e1;
-                          border-radius: 4px;
-                          cursor: pointer;
+                          background: #f8fafc;
+                          border-bottom: 2px solid #e2e8f0;
+                          text-align: left;
                         "
                       >
-                        Delegasikan
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Initiatives under KR -->
-                  <div
-                    v-if="kr.initiatives?.length > 0"
-                    class="initiatives-list"
-                  >
-                    <div
-                      v-for="ini in kr.initiatives"
-                      :key="ini.id"
-                      class="initiative-item"
-                    >
-                      <div class="ini-header" style="flex-wrap: wrap; gap: 4px">
-                        <span class="tree-line">└─</span>
-                        <span class="ini-title"
-                          >Inisiatif: {{ ini.title }}</span
+                        <th style="padding: 10px 12px; width: 50px">No</th>
+                        <th style="padding: 10px 12px">Nama Key Result</th>
+                        <th style="padding: 10px 12px; width: 140px">Target</th>
+                        <th style="padding: 10px 12px; width: 140px">Actual</th>
+                        <th style="padding: 10px 12px; width: 140px">GAP</th>
+                        <th
+                          style="
+                            padding: 10px 12px;
+                            width: 110px;
+                            text-align: right;
+                          "
                         >
-                        <span class="team-badge"
-                          >Tim: {{ ini.team?.name }}</span
-                        >
-                        <span
-                          class="text-sm"
-                          style="color: #64748b; margin-left: 8px"
-                          >({{ ini.currentValue }}/{{ ini.targetValue }}
-                          {{ ini.unit || "%" }} -
-                          {{ getProgressPercent(ini).toFixed(1) }}%)</span
-                        >
-                      </div>
-                      <div
-                        class="progress-bar-container mt-1"
-                        style="margin-left: 24px; margin-bottom: 8px"
-                      >
-                        <div
-                          class="progress-bar"
-                          :style="{ width: getProgressPercent(ini) + '%' }"
-                        ></div>
-                      </div>
-
-                      <!-- Tasks under Initiative -->
-                      <div v-if="ini.tasks?.length > 0" class="tasks-list">
-                        <div
-                          v-for="task in ini.tasks"
-                          :key="task.id"
-                          class="task-item"
-                        >
-                          <span class="tree-line indent">└─</span>
-                          <span class="task-title">Task: {{ task.title }}</span>
-                          <span class="text-sm"
-                            >Target: {{ task.targetValue }} {{ task.unit }} |
-                            Saat ini: {{ task.currentValue }}</span
+                          Aksi
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template v-for="(kr, krIdx) in krs" :key="kr.id">
+                        <tr style="border-bottom: 1px solid #f1f5f9">
+                          <td style="padding: 10px 12px">{{ krIdx + 1 }}</td>
+                          <td style="padding: 10px 12px">
+                            <div
+                              style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                              "
+                            >
+                              <button
+                                v-if="kr.initiatives?.length > 0"
+                                @click="toggleKrExpand(kr.id)"
+                                class="btn-expand"
+                                style="
+                                  background: #f1f5f9;
+                                  border: 1px solid #cbd5e1;
+                                  border-radius: 4px;
+                                  cursor: pointer;
+                                  font-size: 11px;
+                                  color: #475569;
+                                  padding: 2px 6px;
+                                "
+                                :title="
+                                  isKrExpanded(kr.id)
+                                    ? 'Sembunyikan Inisiatif'
+                                    : 'Tampilkan Inisiatif'
+                                "
+                              >
+                                {{
+                                  isKrExpanded(kr.id)
+                                    ? "▼ Sembunyikan"
+                                    : "▶ Expand (" +
+                                      kr.initiatives.length +
+                                      " Inisiatif)"
+                                }}
+                              </button>
+                              <span style="font-weight: 600; color: #1e293b">{{
+                                kr.title
+                              }}</span>
+                              <span
+                                class="badge"
+                                :class="getStatusClass(kr.status)"
+                                >{{ kr.status }}</span
+                              >
+                            </div>
+                          </td>
+                          <td
+                            style="
+                              padding: 10px 12px;
+                              font-weight: 600;
+                              color: #0f172a;
+                            "
                           >
-                          <span class="text-sm text-gray">
-                            (Assignee:
+                            {{ formatTargetValue(kr.targetValue, kr.unit) }}
+                          </td>
+                          <td
+                            style="
+                              padding: 10px 12px;
+                              font-weight: 600;
+                              color: #059669;
+                            "
+                          >
+                            {{ formatTargetValue(kr.currentValue, kr.unit) }}
+                          </td>
+                          <td
+                            style="
+                              padding: 10px 12px;
+                              font-weight: 600;
+                              color: #dc2626;
+                            "
+                          >
                             {{
-                              task.assignments
-                                ?.map((a) => a.user?.name)
-                                .join(", ") || "Belum ada"
-                            }})
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                              calculateGap(
+                                kr.targetValue,
+                                kr.currentValue,
+                                kr.unit,
+                              )
+                            }}
+                          </td>
+                          <td style="padding: 10px 12px; text-align: right">
+                            <button
+                              class="secondary-btn small"
+                              @click="openDelegateModal(kr)"
+                              style="
+                                padding: 4px 8px;
+                                font-size: 12px;
+                                background-color: #f1f5f9;
+                                border: 1px solid #cbd5e1;
+                                border-radius: 4px;
+                                cursor: pointer;
+                              "
+                            >
+                              Delegasikan
+                            </button>
+                          </td>
+                        </tr>
+
+                        <!-- Expand sub-row for Initiatives & Tasks -->
+                        <tr
+                          v-if="
+                            kr.initiatives?.length > 0 && isKrExpanded(kr.id)
+                          "
+                          style="background-color: #f8fafc"
+                        >
+                          <td colspan="6" style="padding: 12px 16px">
+                            <div
+                              class="nested-initiatives"
+                              style="
+                                padding-left: 12px;
+                                border-left: 3px solid #3b82f6;
+                              "
+                            >
+                              <div
+                                style="
+                                  font-weight: 600;
+                                  font-size: 12px;
+                                  color: #475569;
+                                  margin-bottom: 8px;
+                                "
+                              >
+                                Sub-Inisiatif & Task:
+                              </div>
+                              <div
+                                v-for="ini in kr.initiatives"
+                                :key="ini.id"
+                                class="nested-ini-item"
+                                style="
+                                  margin-bottom: 10px;
+                                  background: #ffffff;
+                                  padding: 10px 12px;
+                                  border-radius: 6px;
+                                  border: 1px solid #e2e8f0;
+                                "
+                              >
+                                <div
+                                  style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    flex-wrap: wrap;
+                                    gap: 8px;
+                                  "
+                                >
+                                  <div>
+                                    <strong style="color: #0f172a"
+                                      >Inisiatif: {{ ini.title }}</strong
+                                    >
+                                    <span
+                                      class="team-badge"
+                                      style="margin-left: 8px"
+                                      >Tim: {{ ini.team?.name }}</span
+                                    >
+                                  </div>
+                                  <div style="font-size: 12px; color: #64748b">
+                                    Target:
+                                    {{
+                                      formatTargetValue(
+                                        ini.targetValue,
+                                        ini.unit,
+                                        "%",
+                                      )
+                                    }}
+                                    | Realisasi:
+                                    {{
+                                      formatTargetValue(
+                                        ini.achievedValue ?? ini.currentValue,
+                                        ini.unit,
+                                        "%",
+                                      )
+                                    }}
+                                    ({{ getProgressPercent(ini).toFixed(1) }}%)
+                                  </div>
+                                </div>
+                                <div
+                                  class="progress-bar-container mt-1"
+                                  style="
+                                    height: 6px;
+                                    background: #e2e8f0;
+                                    border-radius: 3px;
+                                    overflow: hidden;
+                                    margin-top: 6px;
+                                  "
+                                >
+                                  <div
+                                    class="progress-bar"
+                                    :style="{
+                                      width: getProgressPercent(ini) + '%',
+                                      background: '#3b82f6',
+                                      height: '100%',
+                                    }"
+                                  ></div>
+                                </div>
+
+                                <!-- Tasks under Initiative -->
+                                <div
+                                  v-if="ini.tasks?.length > 0"
+                                  class="nested-tasks"
+                                  style="
+                                    margin-top: 8px;
+                                    padding-left: 12px;
+                                    border-left: 2px solid #cbd5e1;
+                                  "
+                                >
+                                  <div
+                                    v-for="task in ini.tasks"
+                                    :key="task.id"
+                                    style="
+                                      font-size: 12px;
+                                      color: #334155;
+                                      padding: 3px 0;
+                                    "
+                                  >
+                                    <span style="color: #94a3b8">└─ </span>
+                                    <strong>Task: {{ task.title }}</strong>
+                                    <span
+                                      style="color: #64748b; margin-left: 6px"
+                                    >
+                                      (Target:
+                                      {{
+                                        formatTargetValue(
+                                          task.targetValue,
+                                          task.unit,
+                                        )
+                                      }}
+                                      | Saat ini:
+                                      {{
+                                        formatTargetValue(
+                                          task.currentValue,
+                                          task.unit,
+                                        )
+                                      }})
+                                    </span>
+                                    <span
+                                      style="color: #64748b; margin-left: 6px"
+                                    >
+                                      Assignee:
+                                      {{
+                                        task.assignments
+                                          ?.map((a) => a.user?.name)
+                                          .join(", ") || "Belum ada"
+                                      }}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -454,6 +638,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useAuthStore } from "~/stores/auth";
 import { useRouter } from "vue-router";
+import { formatTargetValue } from "~/utils/formatters";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -477,6 +662,20 @@ const delegateError = ref("");
 const annualKeyResults = ref([]);
 const annualLoading = ref(false);
 const selectedYear = ref("2026");
+
+const expandedKrs = ref({});
+function toggleKrExpand(krId) {
+  expandedKrs.value[krId] = !expandedKrs.value[krId];
+}
+function isKrExpanded(krId) {
+  return !!expandedKrs.value[krId];
+}
+function calculateGap(targetVal, currentVal, unit) {
+  const t = Number(targetVal) || 0;
+  const c = Number(currentVal) || 0;
+  const diff = Math.max(0, t - c);
+  return formatTargetValue(diff, unit);
+}
 
 watch(activeTab, async (newTab) => {
   if (newTab === "annualProgress" && annualKeyResults.value.length === 0) {

@@ -125,9 +125,13 @@
           <div v-for="task in initiative.tasks" :key="task.id" class="task-row">
             <span class="task-name">{{ task.title }}</span>
             <span class="task-target"
-              >Target: {{ task.targetValue }} {{ task.unit }}</span
+              >Target:
+              {{ formatTargetValue(task.targetValue, task.unit) }}</span
             >
-            <span class="task-current">Saat ini: {{ task.currentValue }}</span>
+            <span class="task-current"
+              >Saat ini:
+              {{ formatTargetValue(task.currentValue, task.unit) }}</span
+            >
             <div class="task-assignees">
               <span
                 v-for="a in task.assignments"

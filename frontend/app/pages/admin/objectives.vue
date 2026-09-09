@@ -477,7 +477,9 @@
                       <span class="kr-title">{{ kr.title }}</span>
                       <div class="kr-stats">
                         Target:
-                        <strong>{{ kr.targetValue }} {{ kr.unit }}</strong>
+                        <strong>{{
+                          formatTargetValue(kr.targetValue, kr.unit)
+                        }}</strong>
                         <span
                           class="status-badge"
                           :class="kr.status.toLowerCase().replace('_', '')"

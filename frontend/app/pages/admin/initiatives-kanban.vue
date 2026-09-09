@@ -164,9 +164,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -307,9 +307,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -452,9 +452,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -574,9 +574,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
