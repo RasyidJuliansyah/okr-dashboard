@@ -304,8 +304,13 @@
                         PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
                       </span>
                       <span>
-                        {{ task.currentValue }} / {{ task.targetValue }}
-                        {{ task.unit || "" }}
+                        {{
+                          formatProgressRange(
+                            task.currentValue,
+                            task.targetValue,
+                            task.unit,
+                          )
+                        }}
                       </span>
                     </div>
 
@@ -550,8 +555,13 @@
                         PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
                       </span>
                       <span>
-                        {{ task.currentValue }} / {{ task.targetValue }}
-                        {{ task.unit || "" }}
+                        {{
+                          formatProgressRange(
+                            task.currentValue,
+                            task.targetValue,
+                            task.unit,
+                          )
+                        }}
                       </span>
                     </div>
 
@@ -838,8 +848,13 @@
                         <strong>{{ getTaskAssigneeName(task) }}</strong>
                       </span>
                       <span>
-                        {{ task.currentValue }} / {{ task.targetValue }}
-                        {{ task.unit || "" }}
+                        {{
+                          formatProgressRange(
+                            task.currentValue,
+                            task.targetValue,
+                            task.unit,
+                          )
+                        }}
                       </span>
                     </div>
 
@@ -1170,24 +1185,11 @@
               </option>
             </select>
 
-            <div class="form-row-2">
-              <div>
-                <label>Target Value *</label>
-                <input
-                  v-model.number="initiativeForm.targetValue"
-                  type="number"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Satuan (Unit)</label>
-                <input
-                  v-model="initiativeForm.unit"
-                  class="form-input"
-                  placeholder="%, doc, fitur..."
-                />
-              </div>
-            </div>
+            <UnitTargetInput
+              v-model:targetValue="initiativeForm.targetValue"
+              v-model:unit="initiativeForm.unit"
+              :required="true"
+            />
 
             <div class="form-row-2">
               <div>

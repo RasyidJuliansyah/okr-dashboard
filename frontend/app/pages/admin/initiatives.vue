@@ -261,17 +261,10 @@
               {{ user.name }}
             </option>
           </select>
-          <label>Target Value</label>
-          <input
-            v-model.number="initiativeForm.targetValue"
-            type="number"
-            class="form-input"
-          />
-          <label>Unit</label>
-          <input
-            v-model="initiativeForm.unit"
-            class="form-input"
-            placeholder="%, IDR, tasks..."
+          <UnitTargetInput
+            v-model:targetValue="initiativeForm.targetValue"
+            v-model:unit="initiativeForm.unit"
+            :required="true"
           />
           <div class="modal-actions">
             <button class="secondary-btn" @click="showInitiativeModal = false">
@@ -304,17 +297,10 @@
             class="form-input"
             placeholder="Judul Task..."
           />
-          <label>Target Value *</label>
-          <input
-            v-model.number="taskForm.targetValue"
-            type="number"
-            class="form-input"
-          />
-          <label>Unit</label>
-          <input
-            v-model="taskForm.unit"
-            class="form-input"
-            placeholder="%, IDR, tasks..."
+          <UnitTargetInput
+            v-model:targetValue="taskForm.targetValue"
+            v-model:unit="taskForm.unit"
+            :required="true"
           />
           <div class="modal-actions">
             <button class="secondary-btn" @click="showTaskModal = false">

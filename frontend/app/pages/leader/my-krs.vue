@@ -133,9 +133,14 @@
                       ></div>
                     </div>
                     <span class="progress-text"
-                      >{{ assign.keyResult.currentValue }} /
-                      {{ assign.keyResult.targetValue }}
-                      {{ assign.keyResult.unit }} ({{
+                      >{{
+                        formatProgressRange(
+                          assign.keyResult.currentValue,
+                          assign.keyResult.targetValue,
+                          assign.keyResult.unit,
+                        )
+                      }}
+                      ({{
                         getProgressPercent(assign.keyResult).toFixed(1)
                       }}%)</span
                     >
@@ -291,20 +296,25 @@
                           </div>
                           <div class="task-nested-meta">
                             <span class="task-nested-progress">
-                              {{ task.currentValue }} / {{ task.targetValue }}
-                              {{ task.unit || "" }}
+                              {{
+                                formatProgressRange(
+                                  task.currentValue,
+                                  task.targetValue,
+                                  task.unit,
+                                )
+                              }}
                             </span>
                             <span
-                              class="badge bg-green"
+                              class="badge bg-grey"
                               v-if="task.status === 'ON_TRACK'"
                               >{{ task.status }}</span
                             >
                             <span
-                              class="badge bg-yellow"
+                              class="badge bg-red"
                               v-else-if="task.status === 'AT_RISK'"
                               >{{ task.status }}</span
                             >
-                            <span class="badge bg-red" v-else>{{
+                            <span class="badge bg-green" v-else>{{
                               task.status
                             }}</span>
                             <button
@@ -571,15 +581,11 @@
             </div>
           </div>
 
-          <label>Target Value</label>
-          <input
-            v-model.number="form.targetValue"
-            type="number"
-            class="form-input"
+          <UnitTargetInput
+            v-model:targetValue="form.targetValue"
+            v-model:unit="form.unit"
+            :required="true"
           />
-
-          <label>Unit</label>
-          <input v-model="form.unit" class="form-input" placeholder="%" />
 
           <!-- KpiSelector -->
           <KpiSelector v-model="form.kpis" />
