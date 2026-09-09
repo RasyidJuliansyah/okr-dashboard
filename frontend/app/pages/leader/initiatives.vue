@@ -61,10 +61,12 @@
               <span class="task-name">{{ task.title }}</span>
               <div class="task-details">
                 <span class="task-target"
-                  >Target: {{ task.targetValue }} {{ task.unit || "" }}</span
+                  >Target:
+                  {{ formatTargetValue(task.targetValue, task.unit) }}</span
                 >
                 <span class="task-current"
-                  >Saat ini: {{ task.currentValue }}</span
+                  >Saat ini:
+                  {{ formatTargetValue(task.currentValue, task.unit) }}</span
                 >
                 <span class="task-pct-tag"
                   >{{ getTaskProgressPct(task) }}%</span

@@ -46,20 +46,6 @@
             Bulk Upload CSV
           </button>
           <button
-            class="secondary-btn"
-            style="
-              gap: 6px;
-              display: inline-flex;
-              align-items: center;
-              border: 1px dashed #0ea5e9;
-              color: #0ea5e9;
-              font-weight: 600;
-            "
-            @click="openHeaderAddTaskModal"
-          >
-            + Tambah Task
-          </button>
-          <button
             v-if="canCreateInitiative"
             class="primary-btn"
             @click="openAddInitiativeModal"
@@ -232,9 +218,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -478,9 +464,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -724,9 +710,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -755,8 +741,13 @@
               >
                 <span class="achieved-label">Capaian Akhir:</span>
                 <strong class="achieved-val">
-                  {{ ini.achievedValue ?? ini.currentValue }} /
-                  {{ ini.targetValue }} {{ ini.unit || "" }} ({{
+                  {{
+                    formatTargetValue(
+                      ini.achievedValue ?? ini.currentValue,
+                      ini.unit,
+                    )
+                  }}
+                  / {{ formatTargetValue(ini.targetValue, ini.unit) }} ({{
                     calculateAchievedPercent(ini)
                   }}%)
                 </strong>
@@ -1001,9 +992,9 @@
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -2297,7 +2288,7 @@ async function moveCard(id: string, newStatus: string) {
 
     if (newStatus === "DONE" && item) {
       const input = prompt(
-        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${item.targetValue} ${item.unit || ""}):`,
+        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${formatTargetValue(item.targetValue, item.unit)}):`,
         item.achievedValue !== null && item.achievedValue !== undefined
           ? String(item.achievedValue)
           : String(item.currentValue || item.targetValue),

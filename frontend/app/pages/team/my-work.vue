@@ -272,16 +272,19 @@
                   >
                     <span
                       >Target Inisiatif:
-                      <strong
-                        >{{ ini.targetValue }} {{ ini.unit || "%" }}</strong
-                      ></span
+                      <strong>{{
+                        formatTargetValue(ini.targetValue, ini.unit, "%")
+                      }}</strong></span
                     >
                     <span
                       >Realisasi:
-                      <strong
-                        >{{ ini.achievedValue ?? ini.currentValue }}
-                        {{ ini.unit || "%" }}</strong
-                      ></span
+                      <strong>{{
+                        formatTargetValue(
+                          ini.achievedValue ?? ini.currentValue,
+                          ini.unit,
+                          "%",
+                        )
+                      }}</strong></span
                     >
                   </div>
                   <div
@@ -585,15 +588,15 @@
             <div class="progress-labels">
               <span
                 >Target:
-                <strong
-                  >{{ assign.task.targetValue }} {{ assign.task.unit }}</strong
-                ></span
+                <strong>{{
+                  formatTargetValue(assign.task.targetValue, assign.task.unit)
+                }}</strong></span
               >
               <span
                 >Saat ini:
-                <strong
-                  >{{ assign.task.currentValue }} {{ assign.task.unit }}</strong
-                ></span
+                <strong>{{
+                  formatTargetValue(assign.task.currentValue, assign.task.unit)
+                }}</strong></span
               >
             </div>
             <div class="progress-bar-container">
@@ -892,16 +895,19 @@
                       >
                         <span
                           >Target:
-                          <strong
-                            >{{ ini.targetValue }} {{ ini.unit || "%" }}</strong
-                          ></span
+                          <strong>{{
+                            formatTargetValue(ini.targetValue, ini.unit, "%")
+                          }}</strong></span
                         >
                         <span
                           >Realisasi:
-                          <strong
-                            >{{ ini.achievedValue ?? ini.currentValue }}
-                            {{ ini.unit || "%" }}</strong
-                          ></span
+                          <strong>{{
+                            formatTargetValue(
+                              ini.achievedValue ?? ini.currentValue,
+                              ini.unit,
+                              "%",
+                            )
+                          }}</strong></span
                         >
                       </div>
                       <div
@@ -1314,9 +1320,13 @@
           </p>
 
           <div class="info-box mb-4">
-            Target: {{ selectedTask?.targetValue }} {{ selectedTask?.unit
+            Target:
+            {{ formatTargetValue(selectedTask?.targetValue, selectedTask?.unit)
             }}<br />
-            Saat ini: {{ selectedTask?.currentValue }} {{ selectedTask?.unit }}
+            Saat ini:
+            {{
+              formatTargetValue(selectedTask?.currentValue, selectedTask?.unit)
+            }}
           </div>
 
           <label>Nilai Baru (Kumulatif) *</label>
@@ -1451,10 +1461,22 @@
           </p>
 
           <div class="info-box mb-4">
-            Target: {{ selectedIni?.targetValue }} {{ selectedIni?.unit || "%"
+            Target:
+            {{
+              formatTargetValue(
+                selectedIni?.targetValue,
+                selectedIni?.unit,
+                "%",
+              )
             }}<br />
-            Saat ini: {{ selectedIni?.currentValue }}
-            {{ selectedIni?.unit || "%" }}<br />
+            Saat ini:
+            {{
+              formatTargetValue(
+                selectedIni?.currentValue,
+                selectedIni?.unit,
+                "%",
+              )
+            }}<br />
             Status Kanban:
             <strong>{{ selectedIni?.kanbanStatus || "TODO" }}</strong>
           </div>
@@ -2573,8 +2595,8 @@ function getGroupedInitiatives(initiatives) {
 }
 
 .task-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 .task-card {
