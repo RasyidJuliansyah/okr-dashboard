@@ -902,10 +902,10 @@ export async function createInitiative(req: AuthRequest, res: Response) {
     } = req.body;
     const { role, id: userId } = req.user!;
 
-    if (!keyResultId || !title) {
+    if (!title) {
       return res
         .status(400)
-        .json({ message: "keyResultId dan title wajib diisi" });
+        .json({ message: "title wajib diisi" });
     }
 
     const dbUser = await prisma.user.findUnique({ where: { id: userId } });
@@ -966,22 +966,24 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       teamId = firstTeam.id;
     }
 
-    const kr = await prisma.keyResult.findUnique({
-      where: { id: keyResultId },
-    });
-    if (!kr)
-      return res.status(404).json({ message: "KeyResult tidak ditemukan" });
-
-    // Auto-heal kr.month if it is null/empty to allow initiative creation
-    if (!kr.month) {
-      const now = new Date();
-      const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const krMonth = sprintMonth || defaultMonth;
-      await prisma.keyResult.update({
+    // KR lookup hanya jika keyResultId diberikan
+    if (keyResultId) {
+      const kr = await prisma.keyResult.findUnique({
         where: { id: keyResultId },
-        data: { month: krMonth },
       });
-      kr.month = krMonth;
+      if (!kr)
+        return res.status(404).json({ message: "KeyResult tidak ditemukan" });
+
+      // Auto-heal kr.month if it is null/empty to allow initiative creation
+      if (!kr.month) {
+        const now = new Date();
+        const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const krMonth = sprintMonth || defaultMonth;
+        await prisma.keyResult.update({
+          where: { id: keyResultId },
+          data: { month: krMonth },
+        });
+      }
     }
 
     const finalOwnerId = ownerId || (role === "TEAM" ? userId : null);
@@ -990,9 +992,9 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         ? parseFloat(weight)
         : 1.0;
 
-    const initiative = await prisma.initiative.create({
+    const initiative = await (prisma.initiative as any).create({
       data: {
-        keyResultId,
+        ...(keyResultId ? { keyResultId } : {}),
         teamId,
         ownerId: finalOwnerId,
         assignedLeaderId: assignedLeaderId || null,
@@ -1344,7 +1346,7 @@ export async function updateInitiativeKanbanStatus(
     });
 
     // AUTO-CASCADE: recalculate KR.currentValue
-    await cascadeInitiativeToMonthlyKr(existing.keyResultId);
+    if (existing.keyResultId) await cascadeInitiativeToMonthlyKr(existing.keyResultId);
 
     // Send notification to leader if moved by team member
     const recipientLeaderId =
@@ -2145,9 +2147,24 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
               },
             },
           }),
+          ...(Array.isArray(item.kpis) &&
+            item.kpis.length > 0 && {
+              kpis: {
+                create: item.kpis.map((k: any) => ({
+                  kpiId: k.kpiId || k.id,
+                  targetValue: parseFloat(k.targetValue) || 0,
+                  currentValue: parseFloat(k.currentValue) || 0,
+                })),
+              },
+            }),
         },
         include: {
           assignedTeamMember: { select: { id: true, name: true } },
+          kpis: {
+            include: {
+              kpi: true,
+            },
+          },
         },
       });
 
@@ -2562,7 +2579,7 @@ export async function cascadeTaskValueUpdate(
 
   if (initiative) {
     // Recalculate KR progress if needed
-    await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
+    if (initiative.keyResultId) await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
   }
 }
 
@@ -2962,7 +2979,7 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
     ]);
 
     // AUTO-CASCADE: recalculate KR.currentValue
-    await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
+    if (initiative.keyResultId) await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
 
     const recipientManagerId = initiative.assignedBy || initiative.ownerId;
     if (recipientManagerId && recipientManagerId !== userId) {
@@ -3457,7 +3474,7 @@ export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
     ]);
 
     // AUTO-CASCADE: recalculate KR.currentValue dari weighted average Initiative progress
-    await cascadeInitiativeToMonthlyKr(initiativeUpdate.initiative.keyResultId);
+    if (initiativeUpdate.initiative.keyResultId) await cascadeInitiativeToMonthlyKr(initiativeUpdate.initiative.keyResultId);
 
     if (initiativeUpdate.submittedBy !== managerId) {
       await createNotification({
