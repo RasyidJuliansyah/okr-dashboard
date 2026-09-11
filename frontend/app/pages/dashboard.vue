@@ -37,51 +37,6 @@
               </button>
             </div>
           </div>
-
-          <!-- Comparison Date Range Picker -->
-          <!-- <div class="comparison-row">
-            <span class="comparison-label">Bandingkan dengan periode:</span>
-            <div class="date-range-inputs">
-              <input
-                type="date"
-                v-model="compareFrom"
-                :max="compareTo || today"
-              />
-              <span class="date-sep">–</span>
-              <input
-                type="date"
-                v-model="compareTo"
-                :min="compareFrom"
-                :max="today"
-              />
-            </div>
-             Shortcut buttons 
-            <div class="shortcut-btns">
-              <button @click="setShortcut(7)" class="shortcut-btn">
-                7 Hari Lalu
-              </button>
-              <button @click="setShortcut(14)" class="shortcut-btn">
-                14 Hari Lalu
-              </button>
-              <button @click="setShortcut(30)" class="shortcut-btn">
-                30 Hari Lalu
-              </button>
-              <button
-                @click="clearComparison"
-                class="clear-btn"
-                v-if="compareFrom || compareTo"
-              >
-                Reset
-              </button>
-            </div>
-            <button
-              class="compare-btn"
-              @click="fetchDashboardData"
-              :disabled="!compareFrom || !compareTo"
-            >
-              Bandingkan
-            </button>
-          </div> -->
         </div>
       </section>
 
@@ -196,19 +151,145 @@
         <div v-if="myTasks.length === 0" class="empty-state">
           Belum ada Task yang di-assign ke kamu.
         </div>
-        <div v-for="task in myTasks" :key="task.id" class="task-card card">
-          <div class="task-header">
-            <span class="task-title">{{ task.title }}</span>
-            <span :class="['status-badge', task.status.toLowerCase().replace('_','-')]">{{ task.status }}</span>
+        <div v-else class="task-grid">
+          <div v-for="task in myTasks" :key="task.id" class="task-card card">
+            <div class="task-header">
+              <h3>{{ task.title }}</h3>
+              <span class="status-badge" :class="getStatusClass(task.status)">{{
+                task.status
+              }}</span>
+            </div>
+
+            <div class="task-context" v-if="task.initiative">
+              <p v-if="task.initiative?.keyResult?.title">
+                <strong>KR:</strong> {{ task.initiative.keyResult.title }}
+              </p>
+              <p v-if="task.initiative?.title">
+                <strong>Inisiatif:</strong> {{ task.initiative.title }}
+              </p>
+            </div>
+
+            <div class="task-progress-section">
+              <div class="progress-labels">
+                <span
+                  >Target:
+                  <strong>{{
+                    formatTargetValue(task.targetValue, task.unit)
+                  }}</strong></span
+                >
+                <span
+                  >Saat ini:
+                  <strong>{{
+                    formatTargetValue(task.currentValue, task.unit)
+                  }}</strong></span
+                >
+              </div>
+              <div class="progress-bar-container">
+                <div
+                  class="progress-bar"
+                  :style="{ width: getProgressPercent(task) + '%' }"
+                ></div>
+              </div>
+            </div>
+
+            <button
+              class="primary-btn small"
+              :disabled="isTaskDone(task)"
+              @click="openTaskSubmitModal(task)"
+            >
+              Submit Update
+            </button>
           </div>
-          <div class="task-progress">
-            <span>{{ task.currentValue }} / {{ task.targetValue }} {{ task.unit }}</span>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: Math.min(100, (task.currentValue / task.targetValue) * 100) + '%' }"></div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION: PERSETUJUAN TASK (LEADER & MANAGER) ─── -->
+      <section
+        v-if="
+          ['LEADER', 'MANAGER'].includes(userRole) &&
+          pendingApprovals.length > 0
+        "
+        class="role-section approvals-section"
+      >
+        <div class="section-title-row">
+          <h3 class="section-title">Persetujuan Task — Level Di Bawahnya</h3>
+          <span class="count-badge-sub"
+            >{{ pendingApprovals.length }} Menunggu Persetujuan</span
+          >
+        </div>
+
+        <div class="pending-list">
+          <div v-for="upd in pendingApprovals" :key="upd.id" class="card mb-4">
+            <div class="kr-main">
+              <div class="kr-title-row mb-2">
+                <span class="kr-title">{{ upd.initiative?.title }}</span>
+                <span
+                  class="badge"
+                  :class="upd.type === 'TASK' ? 'bg-task' : 'bg-initiative'"
+                >
+                  {{ upd.type }}
+                </span>
+                <span class="badge bg-yellow ml-2">PENDING</span>
+              </div>
+
+              <div class="text-sm text-gray mb-4">
+                <strong>Tim Pelaksana:</strong>
+                {{ upd.initiative?.team?.name || "-" }}
+              </div>
+
+              <div class="update-details">
+                <div class="detail-box">
+                  <span class="lbl">Nilai Sebelumnya:</span>
+                  <span class="val">{{ upd.oldValue }}</span>
+                </div>
+                <div class="detail-box">
+                  <span class="lbl">Nilai Diajukan:</span>
+                  <span class="val text-blue">{{ upd.newValue }}</span>
+                </div>
+                <div v-if="upd.note" class="detail-box flex-2">
+                  <span class="lbl">Catatan:</span>
+                  <span class="val italic">"{{ upd.note }}"</span>
+                </div>
+                <div v-if="upd.link" class="detail-box">
+                  <span class="lbl">Dokumentasi:</span>
+                  <span class="val">
+                    <a
+                      :href="upd.link"
+                      target="_blank"
+                      class="text-blue hover:underline font-semibold"
+                    >
+                      Link Hasil
+                    </a>
+                  </span>
+                </div>
+              </div>
+
+              <div class="actions-row mt-4">
+                <button
+                  class="primary-btn small"
+                  @click="handleApprove(upd.id)"
+                >
+                  Approve
+                </button>
+                <button class="danger-btn small" @click="openRejectModal(upd)">
+                  Reject
+                </button>
+                <button
+                  class="secondary-btn small"
+                  @click="
+                    openDetailModal(
+                      upd.initiative?.title,
+                      upd.type === 'TASK' ? 'Task' : 'Inisiatif',
+                      upd,
+                      '—',
+                    )
+                  "
+                >
+                  Lihat Detail
+                </button>
+              </div>
             </div>
           </div>
-          <div class="task-initiative">Initiative: {{ task.initiative?.title }}</div>
-          <button class="primary-btn" @click="openTaskSubmitModal(task)">Submit Update</button>
         </div>
       </section>
 
@@ -224,12 +305,16 @@
         <!-- Summary Cards Grid -->
         <div class="init-summary-grid">
           <div class="init-summary-card card">
-            <span class="summary-val">{{ initProgressData.summary?.avgProgress || 0 }}%</span>
+            <span class="summary-val"
+              >{{ initProgressData.summary?.avgProgress || 0 }}%</span
+            >
             <span class="summary-lbl">Rata-rata Progress</span>
           </div>
           <div class="init-summary-card card">
             <span class="summary-val">
-              {{ initProgressData.summary?.completedTasks || 0 }}/{{ initProgressData.summary?.totalTasks || 0 }}
+              {{ initProgressData.summary?.completedTasks || 0 }}/{{
+                initProgressData.summary?.totalTasks || 0
+              }}
             </span>
             <span class="summary-lbl">Task Selesai</span>
           </div>
@@ -248,31 +333,49 @@
         </div>
 
         <!-- Grouped by Key Result -->
-        <div v-for="group in initProgressData.byKeyResult" :key="group.keyResult?.id"
-             class="kr-group-card card">
+        <div
+          v-for="group in initProgressData.byKeyResult"
+          :key="group.keyResult?.id"
+          class="kr-group-card card"
+        >
           <div class="kr-group-header">
             <div class="kr-group-title-wrap">
-              <span class="perspective-badge" :class="group.keyResult?.bscPerspective?.toLowerCase()">
+              <span
+                class="perspective-badge"
+                :class="group.keyResult?.bscPerspective?.toLowerCase()"
+              >
                 {{ formatPerspective(group.keyResult?.bscPerspective) }}
               </span>
               <h4>{{ group.keyResult?.title }}</h4>
               <span class="kr-obj-context" v-if="group.keyResult?.objective">
-                {{ group.keyResult.objective.title }} ({{ group.keyResult.objective.year }})
+                {{ group.keyResult.objective.title }} ({{
+                  group.keyResult.objective.year
+                }})
               </span>
             </div>
             <div class="kr-group-progress-info">
               <span class="kr-progress-pct">{{ group.krProgress }}%</span>
               <div class="kr-mini-progress-track">
-                <div class="kr-mini-progress-bar" :style="{ width: group.krProgress + '%' }"></div>
+                <div
+                  class="kr-mini-progress-bar"
+                  :style="{ width: group.krProgress + '%' }"
+                ></div>
               </div>
             </div>
           </div>
 
           <!-- Initiative rows under this KR -->
-          <div v-for="init in group.initiatives" :key="init.id" class="init-progress-row">
+          <div
+            v-for="init in group.initiatives"
+            :key="init.id"
+            class="init-progress-row"
+          >
             <div class="init-row-header">
               <div class="init-row-left">
-                <span class="kanban-dot" :class="init.kanbanStatus?.toLowerCase()"></span>
+                <span
+                  class="kanban-dot"
+                  :class="init.kanbanStatus?.toLowerCase()"
+                ></span>
                 <span class="init-row-title">{{ init.title }}</span>
                 <span class="team-mini-badge">{{ init.team?.name }}</span>
               </div>
@@ -284,25 +387,38 @@
               </div>
             </div>
             <div class="init-progress-track">
-              <div class="init-progress-bar"
+              <div
+                class="init-progress-bar"
                 :class="getProgressColorClass(init.calculatedProgress)"
-                :style="{ width: init.calculatedProgress + '%' }">
-              </div>
+                :style="{ width: init.calculatedProgress + '%' }"
+              ></div>
             </div>
 
             <!-- Task detail rows -->
             <div v-if="init.tasks?.length" class="task-detail-grid">
-              <div v-for="task in init.tasks" :key="task.id" class="task-detail-row">
+              <div
+                v-for="task in init.tasks"
+                :key="task.id"
+                class="task-detail-row"
+              >
                 <span class="task-detail-name">{{ task.title }}</span>
                 <span class="task-detail-val">
-                  {{ task.currentValue }}/{{ task.targetValue }} {{ task.unit }}
+                  {{ formatTargetValue(task.currentValue, task.unit) }} /
+                  {{ formatTargetValue(task.targetValue, task.unit) }}
                 </span>
                 <div class="task-mini-track">
-                  <div class="task-mini-bar" :style="{ width: task.progressPercent + '%' }"></div>
+                  <div
+                    class="task-mini-bar"
+                    :style="{ width: task.progressPercent + '%' }"
+                  ></div>
                 </div>
                 <span class="task-mini-pct">{{ task.progressPercent }}%</span>
                 <div class="task-assignees-mini">
-                  <span v-for="a in task.assignments" :key="a.userId" class="assignee-mini">
+                  <span
+                    v-for="a in task.assignments"
+                    :key="a.userId"
+                    class="assignee-mini"
+                  >
                     {{ a.user?.name }}
                   </span>
                 </div>
@@ -316,56 +432,349 @@
         </div>
       </section>
 
-      <!-- ─── SECTION: MANAGER APPROVAL QUEUE ─── -->
-      <section v-if="userRole === 'MANAGER' && pendingApprovals.length > 0" class="role-section">
-        <h3 class="section-title">Approval Task Pending ({{ pendingApprovals.length }})</h3>
-        <div v-for="update in pendingApprovals" :key="update.id" class="approval-card card">
-          <div class="approval-info">
-            <strong>{{ update.task?.title }}</strong>
-            <span class="team-badge">{{ update.task?.initiative?.team?.name }}</span>
-          </div>
-          <div class="approval-values">
-            Nilai: <del>{{ update.oldValue }}</del> → <strong>{{ update.newValue }}</strong>
-          </div>
-          <div v-if="update.note" class="approval-note">Catatan: {{ update.note }}</div>
-          <div class="approval-actions">
-            <button class="approve-btn" @click="handleApprove(update.id)">Approve</button>
-            <button class="reject-btn" @click="openRejectModal(update)">Reject</button>
-          </div>
-        </div>
-      </section>
-
       <!-- ─── MODAL: Submit Task Update (TEAM) ─── -->
-      <div v-if="showTaskSubmitModal" class="modal-overlay" @click.self="showTaskSubmitModal = false">
+      <div
+        v-if="showTaskSubmitModal"
+        class="modal-overlay"
+        @click.self="showTaskSubmitModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
-            <h3>Submit Update Task</h3>
-            <button class="modal-close-btn" @click="showTaskSubmitModal = false">&times;</button>
+            <h3>Submit Update Progress Task</h3>
+            <button
+              class="modal-close-btn"
+              @click="showTaskSubmitModal = false"
+            >
+              &times;
+            </button>
           </div>
-          <p>{{ selectedTask?.title }}</p>
-          <label>Nilai Baru:</label>
-          <input v-model.number="submitNewValue" type="number" class="form-input" />
-          <label>Catatan (opsional):</label>
-          <textarea v-model="submitNote" class="form-input" rows="3"></textarea>
+          <p class="mb-4" style="font-size: 14px; color: #334155">
+            Task: <strong>{{ selectedTask?.title }}</strong>
+          </p>
+
+          <div class="info-box mb-4">
+            Target:
+            <strong
+              >{{ selectedTask?.targetValue }}
+              {{ selectedTask?.unit || "" }}</strong
+            ><br />
+            Saat ini:
+            <strong
+              >{{ selectedTask?.currentValue }}
+              {{ selectedTask?.unit || "" }}</strong
+            >
+          </div>
+
+          <label
+            style="
+              display: block;
+              font-size: 13px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              color: #475569;
+            "
+            >Nilai Baru (Kumulatif) *</label
+          >
+          <input
+            v-model.number="submitNewValue"
+            type="number"
+            class="form-input"
+          />
+
+          <label
+            style="
+              display: block;
+              font-size: 13px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              color: #475569;
+            "
+            >Catatan Progress</label
+          >
+          <textarea
+            v-model="submitNote"
+            class="form-input"
+            rows="3"
+            placeholder="Apa yang sudah dikerjakan?"
+          ></textarea>
+
+          <label
+            style="
+              display: block;
+              font-size: 13px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              color: #475569;
+            "
+            >Link Dokumentasi Hasil (opsional)</label
+          >
+          <input
+            v-model="submitLink"
+            type="url"
+            class="form-input"
+            placeholder="https://example.com/..."
+          />
+
+          <div
+            v-if="['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER'].includes(userRole)"
+            class="info-box info-approved mb-4"
+          >
+            Sebagai <strong>{{ userRole }}</strong
+            >, update Anda akan <strong>langsung diterapkan</strong> tanpa perlu
+            persetujuan.
+          </div>
+          <div v-else class="info-box mb-4">
+            Update akan dikirim ke Leader/Manager untuk disetujui terlebih
+            dahulu.
+          </div>
+
+          <!-- Riwayat Task updates sebelumnya jika ada -->
+          <div
+            v-if="selectedTask?.updates?.length > 0"
+            class="mini-history mb-4"
+            style="border-top: 1px solid #e2e8f0; padding-top: 12px"
+          >
+            <h5 style="margin: 0 0 8px 0; font-size: 13px; color: #475569">
+              Riwayat Update Sebelumnya:
+            </h5>
+            <div
+              style="
+                max-height: 120px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <div
+                v-for="upd in selectedTask.updates"
+                :key="upd.id"
+                style="
+                  font-size: 11px;
+                  padding: 6px;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 6px;
+                "
+              >
+                <div style="display: flex; justify-content: space-between">
+                  <span style="color: #64748b">{{
+                    new Date(upd.createdAt).toLocaleDateString("id-ID")
+                  }}</span>
+                  <span style="font-weight: 500"
+                    >Nilai: {{ upd.newValue }}</span
+                  >
+                </div>
+                <div style="margin-top: 2px">Status: {{ upd.status }}</div>
+                <div
+                  v-if="upd.note"
+                  style="color: #64748b; font-style: italic; margin-top: 2px"
+                >
+                  "{{ upd.note }}"
+                </div>
+                <div
+                  v-if="upd.reviewNote"
+                  style="color: #ef4444; margin-top: 2px; font-weight: 500"
+                >
+                  Alasan reject: "{{ upd.reviewNote }}"
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showTaskSubmitModal = false">Batal</button>
-            <button class="primary-btn" @click="submitTaskUpdate">Kirim</button>
+            <button class="secondary-btn" @click="showTaskSubmitModal = false">
+              Batal
+            </button>
+            <button class="primary-btn" @click="submitTaskUpdate">
+              Kirim Update
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Detail Hasil Kerja / Popup Hasil -->
+      <div
+        v-if="showDetailModal"
+        class="modal-overlay"
+        @click.self="showDetailModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Detail Progress & Hasil</h3>
+            <button class="modal-close-btn" @click="showDetailModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="info-box mb-4">
+            <p>
+              <strong>Item:</strong> {{ detailData.type }} -
+              {{ detailData.title }}
+            </p>
+            <p>
+              <strong>Dilaporkan Oleh:</strong> {{ detailData.submittedBy }}
+            </p>
+            <p><strong>Tanggal:</strong> {{ detailData.date }}</p>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Perubahan Progress:</span
+            >
+            <span class="val" style="font-size: 16px"
+              >Realisasi: <strong>{{ detailData.newValue }}</strong> (dari
+              {{ detailData.oldValue }})</span
+            >
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Catatan Progress:</span
+            >
+            <span
+              class="val"
+              style="
+                display: block;
+                background: #f8fafc;
+                padding: 10px;
+                border-radius: 8px;
+                font-style: italic;
+                border: 1px solid #e2e8f0;
+                white-space: pre-line;
+              "
+            >
+              {{ detailData.note }}
+            </span>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Link Dokumentasi:</span
+            >
+            <div v-if="detailData.link" style="margin-top: 8px">
+              <a
+                :href="detailData.link"
+                target="_blank"
+                class="primary-btn"
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 6px;
+                  text-decoration: none;
+                  font-size: 14px;
+                "
+              >
+                Buka Link Dokumentasi
+              </a>
+            </div>
+            <span v-else class="text-sm text-gray" style="font-style: italic"
+              >Tidak ada link dokumentasi yang dilampirkan.</span
+            >
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showDetailModal = false">
+              Tutup
+            </button>
           </div>
         </div>
       </div>
 
       <!-- ─── MODAL: Reject Task Update (MANAGER) ─── -->
-      <div v-if="showRejectModal" class="modal-overlay" @click.self="showRejectModal = false">
+      <div
+        v-if="showRejectModal"
+        class="modal-overlay"
+        @click.self="showRejectModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
             <h3>Tolak Update Task</h3>
-            <button class="modal-close-btn" @click="showRejectModal = false">&times;</button>
+            <button class="modal-close-btn" @click="showRejectModal = false">
+              &times;
+            </button>
           </div>
-          <p>Berikan alasan penolakan untuk <strong>{{ selectedApproval?.task?.title }}</strong>:</p>
-          <textarea v-model="rejectNote" class="form-input" rows="3" placeholder="Alasan penolakan (wajib diisi)..."></textarea>
+          <p>
+            Berikan alasan penolakan untuk
+            <strong>{{ selectedApproval?.task?.title }}</strong
+            >:
+          </p>
+          <textarea
+            v-model="rejectNote"
+            class="form-input"
+            rows="3"
+            placeholder="Alasan penolakan (wajib diisi)..."
+          ></textarea>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showRejectModal = false">Batal</button>
-            <button class="danger-btn" @click="handleReject">Tolak Update</button>
+            <button class="secondary-btn" @click="showRejectModal = false">
+              Batal
+            </button>
+            <button class="danger-btn" @click="handleReject">
+              Tolak Update
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MODAL: Update Monthly KR (LEADER) ─── -->
+      <div
+        v-if="showLeaderKrModal"
+        class="modal-overlay"
+        @click.self="showLeaderKrModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Update Manual Monthly Key Result</h3>
+            <button class="modal-close-btn" @click="showLeaderKrModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Key Result:</span
+            >
+            <span class="val" style="display: block; font-size: 14px">{{
+              selectedLeaderKr?.title
+            }}</span>
+          </div>
+          <div class="mb-4">
+            <label
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Nilai Baru:</label
+            >
+            <input
+              v-model.number="leaderSubmitValue"
+              type="number"
+              class="form-input"
+            />
+          </div>
+          <div class="mb-4">
+            <label
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Catatan Update (Wajib):</label
+            >
+            <textarea
+              v-model="leaderSubmitNote"
+              class="form-input"
+              rows="3"
+              placeholder="Masukkan alasan update manual..."
+            ></textarea>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showLeaderKrModal = false">
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="submitLeaderKrUpdate"
+              :disabled="!leaderSubmitNote"
+            >
+              Simpan
+            </button>
           </div>
         </div>
       </div>
@@ -471,8 +880,12 @@
                   <!-- Details -->
                   <div class="kr-details-row">
                     <span class="kr-values">
-                      Nilai: <strong>{{ kr.currentValue }}</strong> /
-                      {{ kr.targetValue }} {{ kr.unit }}
+                      Nilai:
+                      <strong>{{
+                        formatTargetValue(kr.currentValue, kr.unit)
+                      }}</strong>
+                      /
+                      {{ formatTargetValue(kr.targetValue, kr.unit) }}
                     </span>
                     <span
                       class="status-badge"
@@ -483,12 +896,26 @@
                   </div>
 
                   <!-- RACI Row -->
-                  <div v-if="(kr.assignments && kr.assignments.length > 0) || (kr.departments && kr.departments.length > 0)" class="kr-raci-row">
+                  <div
+                    v-if="
+                      (kr.assignments && kr.assignments.length > 0) ||
+                      (kr.departments && kr.departments.length > 0)
+                    "
+                    class="kr-raci-row"
+                  >
                     <!-- Accountable -->
-                    <div class="raci-mini-group" v-if="kr.assignments && kr.assignments.some(x => x.raciRole === 'ACCOUNTABLE')">
+                    <div
+                      class="raci-mini-group"
+                      v-if="
+                        kr.assignments &&
+                        kr.assignments.some((x) => x.raciRole === 'ACCOUNTABLE')
+                      "
+                    >
                       <span class="raci-mini-badge a-mini">A</span>
                       <span
-                        v-for="a in kr.assignments.filter(x => x.raciRole === 'ACCOUNTABLE')"
+                        v-for="a in kr.assignments.filter(
+                          (x) => x.raciRole === 'ACCOUNTABLE',
+                        )"
                         :key="a.id"
                         class="raci-chip accountable-chip"
                       >
@@ -496,21 +923,39 @@
                       </span>
                     </div>
                     <!-- Responsible -->
-                    <div class="raci-mini-group" v-if="kr.assignments && kr.assignments.some(x => x.raciRole === 'RESPONSIBLE')">
+                    <div
+                      class="raci-mini-group"
+                      v-if="
+                        kr.assignments &&
+                        kr.assignments.some((x) => x.raciRole === 'RESPONSIBLE')
+                      "
+                    >
                       <span class="raci-mini-badge r-mini">R</span>
                       <span
-                        v-for="a in kr.assignments.filter(x => x.raciRole === 'RESPONSIBLE')"
+                        v-for="a in kr.assignments.filter(
+                          (x) => x.raciRole === 'RESPONSIBLE',
+                        )"
                         :key="a.id"
                         class="raci-chip responsible-chip"
                       >
                         {{ a.user.name }}
-                        <span v-if="a.user.department" class="chip-dept">· {{ a.user.department }}</span>
+                        <span v-if="a.user.department" class="chip-dept"
+                          >· {{ a.user.department }}</span
+                        >
                       </span>
                     </div>
                     <!-- Departemen Terlibat -->
-                    <div class="kr-dept-row" v-if="kr.departments && kr.departments.length > 0">
+                    <div
+                      class="kr-dept-row"
+                      v-if="kr.departments && kr.departments.length > 0"
+                    >
                       <span class="dept-mini-label">Dept:</span>
-                      <span v-for="d in kr.departments" :key="d.id" class="dept-mini-tag">{{ d.department }}</span>
+                      <span
+                        v-for="d in kr.departments"
+                        :key="d.id"
+                        class="dept-mini-tag"
+                        >{{ d.department }}</span
+                      >
                     </div>
                   </div>
 
@@ -541,7 +986,7 @@ const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 // Ambil role dari auth store
-const userRole = computed(() => auth.user?.role || '');
+const userRole = computed(() => auth.user?.role || "");
 
 // State untuk data TEAM
 const myTasks = ref([]);
@@ -553,18 +998,136 @@ const pendingApprovals = ref([]);
 // State untuk data LEADER
 const leadingTeams = ref([]);
 const leaderInitiatives = ref([]);
+const leaderAssignedKrs = ref([]);
+const leaderLoadingKrs = ref(false);
+
+const showLeaderKrModal = ref(false);
+const selectedLeaderKr = ref(null);
+const leaderSubmitValue = ref(0);
+const leaderSubmitNote = ref("");
+
+async function fetchLeaderAssignedKrs() {
+  if (userRole.value !== "LEADER") return;
+  leaderLoadingKrs.value = true;
+  try {
+    const res = await $fetch(
+      `${config.public.apiBase}/key-results/my/assigned`,
+      {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      },
+    );
+    leaderAssignedKrs.value = res || [];
+  } catch (err) {
+    console.error("Error fetching leader assigned KRs:", err);
+  } finally {
+    leaderLoadingKrs.value = false;
+  }
+}
+
+function openLeaderKrUpdateModal(kr) {
+  selectedLeaderKr.value = kr;
+  leaderSubmitValue.value = kr.currentValue;
+  leaderSubmitNote.value = "";
+  showLeaderKrModal.value = true;
+}
+
+async function submitLeaderKrUpdate() {
+  if (!selectedLeaderKr.value) return;
+  if (!leaderSubmitNote.value) {
+    alert("Catatan update wajib diisi!");
+    return;
+  }
+  try {
+    const response = await $fetch(
+      `${config.public.apiBase}/key-results/${selectedLeaderKr.value.id}/progress`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: {
+          newValue: leaderSubmitValue.value,
+          note: leaderSubmitNote.value,
+        },
+      },
+    );
+
+    if (response) {
+      showLeaderKrModal.value = false;
+      await fetchLeaderAssignedKrs();
+      if (showInitiativeProgress.value) {
+        await fetchInitiativeProgress();
+      }
+      await fetchDashboardData();
+    }
+  } catch (err) {
+    console.error("Error updating leader KR progress:", err);
+    alert(err.data?.message || "Gagal mengupdate progress Key Result");
+  }
+}
+
+function formatMonthLabel(monthStr) {
+  if (!monthStr) return "";
+  const parts = monthStr.split("-");
+  if (parts.length !== 2) return monthStr;
+  const year = parts[0];
+  const monthNum = parseInt(parts[1], 10);
+  const monthNames = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+  return `${monthNames[monthNum - 1]} ${year}`;
+}
 
 // State & Computed untuk Initiative Progress (Leader, Manager, C-Level, Admin)
 const initProgressData = ref({ initiatives: [], byKeyResult: [], summary: {} });
 
 const showInitiativeProgress = computed(() => {
-  return ['LEADER', 'MANAGER', 'C_LEVEL', 'ADMIN'].includes(userRole.value);
+  return ["LEADER", "MANAGER", "C_LEVEL", "ADMIN"].includes(userRole.value);
 });
 
 function getProgressColorClass(pct) {
-  if (pct >= 80) return 'progress-high';
-  if (pct >= 50) return 'progress-mid';
-  return 'progress-low';
+  if (pct >= 80) return "progress-high";
+  if (pct >= 50) return "progress-mid";
+  return "progress-low";
+}
+
+function getStatusClass(status) {
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  if (status === "OFF_TRACK") return "bg-red";
+  return "bg-gray";
+}
+
+function isTaskDone(task) {
+  if (!task) return false;
+  const status = String(task.status || "").toUpperCase();
+  const kanbanStatus = String(task.kanbanStatus || "").toUpperCase();
+  return (
+    status === "DONE" ||
+    status === "COMPLETED" ||
+    kanbanStatus === "DONE" ||
+    kanbanStatus === "COMPLETED"
+  );
+}
+
+function getProgressPercent(task) {
+  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
+  return Math.min(
+    100,
+    Math.max(0, (task.currentValue / task.targetValue) * 100),
+  );
 }
 
 async function fetchInitiativeProgress() {
@@ -572,7 +1135,11 @@ async function fetchInitiativeProgress() {
     const res = await $fetch(`${config.public.apiBase}/initiatives/progress`, {
       headers: { Authorization: `Bearer ${auth.token}` },
     });
-    initProgressData.value = res || { initiatives: [], byKeyResult: [], summary: {} };
+    initProgressData.value = res || {
+      initiatives: [],
+      byKeyResult: [],
+      summary: {},
+    };
   } catch (err) {
     console.error("Error fetching initiative progress:", err);
   }
@@ -706,7 +1273,7 @@ function onDragEnd() {
 }
 
 const showScopeSelector = computed(() => {
-  return auth.user?.role && auth.user.role !== "EMPLOYEE";
+  return false;
 });
 
 function formatPerspective(p) {
@@ -746,15 +1313,17 @@ async function fetchDashboardData() {
         Authorization: `Bearer ${auth.token}`,
       },
     });
-    
-    if (userRole.value === 'TEAM') {
+
+    if (userRole.value === "TEAM") {
       myTasks.value = response.myTasks || [];
       myInitiatives.value = response.initiatives || [];
-    } else if (userRole.value === 'LEADER') {
+    } else if (userRole.value === "LEADER") {
       leadingTeams.value = response.leadingTeams || [];
       leaderInitiatives.value = response.initiatives || [];
-    } else if (userRole.value === 'MANAGER') {
+      await fetchPendingApprovals();
+    } else if (userRole.value === "MANAGER") {
       pendingApprovals.value = response.pendingApprovals || [];
+      await fetchPendingApprovals();
     }
 
     summaryData.value = response;
@@ -766,11 +1335,27 @@ async function fetchDashboardData() {
   }
 }
 
+async function fetchPendingApprovals() {
+  if (!["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(userRole.value))
+    return;
+  try {
+    const res = await $fetch(
+      `${config.public.apiBase}/initiatives/initiative-updates/pending`,
+      {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      },
+    );
+    pendingApprovals.value = res || [];
+  } catch (err) {
+    console.error("Error fetching pending approvals:", err);
+  }
+}
+
 onMounted(() => {
-  // Default scope for C_LEVEL / ADMIN is company, for MANAGER is team, for EMPLOYEE is self
+  // Default scope based on role: ADMIN/C_LEVEL -> company, MANAGER/LEADER -> team, others -> self
   if (auth.user?.role === "ADMIN" || auth.user?.role === "C_LEVEL") {
     currentScope.value = "company";
-  } else if (auth.user?.role === "MANAGER") {
+  } else if (auth.user?.role === "MANAGER" || auth.user?.role === "LEADER") {
     currentScope.value = "team";
   } else {
     currentScope.value = "self";
@@ -779,80 +1364,140 @@ onMounted(() => {
   if (showInitiativeProgress.value) {
     fetchInitiativeProgress();
   }
+  if (["LEADER", "MANAGER"].includes(auth.user?.role)) {
+    fetchPendingApprovals();
+  }
+  if (auth.user?.role === "LEADER") {
+    fetchLeaderAssignedKrs();
+  }
 });
 
 // ─── Task Submit Modal (TEAM) ───
 const showTaskSubmitModal = ref(false);
 const selectedTask = ref(null);
 const submitNewValue = ref(0);
-const submitNote = ref('');
+const submitNote = ref("");
+const submitLink = ref("");
+
+const showDetailModal = ref(false);
+const detailData = ref({
+  title: "",
+  type: "Task",
+  oldValue: 0,
+  newValue: 0,
+  note: "",
+  link: "",
+  date: "",
+  submittedBy: "",
+});
+
+function openDetailModal(title, type, update, submitterName) {
+  detailData.value = {
+    title,
+    type,
+    oldValue: update.oldValue,
+    newValue: update.newValue,
+    note: update.note || "Tidak ada catatan.",
+    link: update.link || "",
+    date: new Date(update.createdAt).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    submittedBy: submitterName || "Anggota Tim",
+  };
+  showDetailModal.value = true;
+}
 
 function openTaskSubmitModal(task) {
+  if (isTaskDone(task)) return;
   selectedTask.value = task;
   submitNewValue.value = task.currentValue;
-  submitNote.value = '';
+  submitNote.value = "";
+  submitLink.value = "";
   showTaskSubmitModal.value = true;
 }
 
 async function submitTaskUpdate() {
   if (!selectedTask.value) return;
-  const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ newValue: submitNewValue.value, note: submitNote.value }),
-  });
+  const token = auth.token || localStorage.getItem("token");
+  const res = await fetch(
+    `${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        newValue: submitNewValue.value,
+        note: submitNote.value,
+        link: submitLink.value,
+      }),
+    },
+  );
   if (res.ok) {
     showTaskSubmitModal.value = false;
-    alert('Update berhasil dikirim, menunggu persetujuan Manager.');
+    alert("Update berhasil dikirim, menunggu persetujuan Manager.");
     await fetchDashboardData();
   } else {
     const err = await res.json();
-    alert(err.message || 'Gagal mengirim update');
+    alert(err.message || "Gagal mengirim update");
   }
 }
 
 // ─── Approval Modal (MANAGER) ───
 const showRejectModal = ref(false);
 const selectedApproval = ref(null);
-const rejectNote = ref('');
+const rejectNote = ref("");
 
 function openRejectModal(update) {
   selectedApproval.value = update;
-  rejectNote.value = '';
+  rejectNote.value = "";
   showRejectModal.value = true;
 }
 
 async function handleApprove(updateId) {
-  if (!confirm('Setujui update ini?')) return;
-  const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/task-updates/${updateId}/approve`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  if (!confirm("Setujui update ini?")) return;
+  const token = auth.token || localStorage.getItem("token");
+  const res = await fetch(
+    `${config.public.apiBase}/initiatives/initiative-updates/${updateId}/approve`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   if (res.ok) {
     await fetchDashboardData();
   } else {
-    alert('Gagal approve');
+    alert("Gagal approve");
   }
 }
 
 async function handleReject() {
   if (!rejectNote.value.trim()) {
-    alert('Alasan penolakan wajib diisi');
+    alert("Alasan penolakan wajib diisi");
     return;
   }
-  const token = auth.token || localStorage.getItem('token');
-  const res = await fetch(`${config.public.apiBase}/initiatives/task-updates/${selectedApproval.value.id}/reject`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ reviewNote: rejectNote.value }),
-  });
+  const token = auth.token || localStorage.getItem("token");
+  const res = await fetch(
+    `${config.public.apiBase}/initiatives/initiative-updates/${selectedApproval.value.id}/reject`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reviewNote: rejectNote.value }),
+    },
+  );
   if (res.ok) {
     showRejectModal.value = false;
     await fetchDashboardData();
   } else {
-    alert('Gagal reject');
+    alert("Gagal reject");
   }
 }
 </script>
@@ -861,9 +1506,9 @@ async function handleReject() {
 @import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .dashboard-root {
-  font-family: "Inter", sans-serif;
+  font-family: "Rubik", sans-serif;
   min-height: 100vh;
-  background: var(--content-bg);
+  background: inherit;
   color: var(--text-color);
   padding: 0 0 60px 0;
 }
@@ -876,6 +1521,7 @@ async function handleReject() {
   padding: 20px 40px;
   background: var(--header-bg);
   border-bottom: 1px solid var(--header-border);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -1002,22 +1648,34 @@ async function handleReject() {
 /* Layout Container */
 .dashboard-container {
   max-width: 1200px;
-  margin: auto 0 auto;
-  padding: 30px 20px;
+  margin: 0 auto;
+  padding: 30px;
   display: flex;
   flex-direction: column;
   gap: 30px;
 }
-
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 24px;
-  backdrop-filter: blur(16px);
-  box-shadow: var(--card-shadow);
 }
-
+.primary-btn {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.primary-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
 /* Controls */
 .controls-card {
   padding: 20px 24px;
@@ -1077,23 +1735,150 @@ async function handleReject() {
   color: #0e97d6;
 }
 
-/* Task Summary Cards Grid */
+/* Task Cards Grid (matching Pekerjaan Saya / my-work.vue) */
 .task-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 768px) {
-  .task-grid {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .task-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+}
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.task-header h3 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--text-color, #0f172a);
+  flex: 1;
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.task-context {
+  background: var(--input-bg, #f8fafc);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #475569);
+  border: 1px solid var(--card-border, #e2e8f0);
+}
+
+.task-context p {
+  margin: 0 0 4px 0;
+}
+
+.task-context p:last-child {
+  margin: 0;
+}
+
+.task-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary, #475569);
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: var(--card-border, #e2e8f0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #0ea5e9;
+  transition: width 0.3s;
+}
+
+.bg-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+
+.bg-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.bg-gray {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.bg-blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.kr-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--card-border, #f1f5f9);
+}
+
+.kr-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: var(--text-color, #0f172a);
+}
+
+.kr-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--input-bg, #f1f5f9);
+  color: var(--text-secondary, #475569);
+}
+
+.kr-progress {
+  width: 220px;
+  text-align: right;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
 }
 
 .task-label {
@@ -1764,8 +2549,12 @@ async function handleReject() {
   flex-shrink: 0;
 }
 
-.a-mini { background: #7c3aed; }
-.r-mini { background: #0e97d6; }
+.a-mini {
+  background: #7c3aed;
+}
+.r-mini {
+  background: #0e97d6;
+}
 
 .raci-chip {
   display: inline-flex;
@@ -1839,46 +2628,84 @@ async function handleReject() {
 
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 .modal-box {
-  background: #1e293b;
-  color: #fff;
+  background: #ffffff;
+  color: var(--text-color, #0f172a);
   border-radius: 16px;
   padding: 24px;
   width: 100%;
   max-width: 500px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--card-border, #e2e8f0);
 }
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
-.modal-header h3 { margin: 0; }
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-color, #0f172a);
+}
 .modal-close-btn {
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: rgba(255,255,255,0.6);
+  color: #64748b;
 }
-.modal-close-btn:hover { color: #fff; }
+.modal-close-btn:hover {
+  color: #0f172a;
+}
+.info-box {
+  background: var(--input-bg, #f8fafc);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  color: var(--text-color, #334155);
+}
+.info-approved {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  font-size: 14px;
+  background: #ffffff;
+  color: var(--text-color, #0f172a);
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
 
 /* ─── INITIATIVE PROGRESS STYLES ─── */
 .count-badge-sub {
   font-size: 0.78rem;
   font-weight: 600;
   background: rgba(14, 151, 214, 0.12);
-  color: #0E97D6;
+  color: #0e97d6;
   padding: 4px 10px;
   border-radius: 20px;
 }
@@ -1908,11 +2735,15 @@ async function handleReject() {
 .summary-val {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
-.summary-val.done-val { color: #10B981; }
-.summary-val.progress-val { color: #3B82F6; }
+.summary-val.done-val {
+  color: #10b981;
+}
+.summary-val.progress-val {
+  color: #3b82f6;
+}
 
 .summary-lbl {
   font-size: 0.78rem;
@@ -1957,7 +2788,7 @@ async function handleReject() {
 .kr-progress-pct {
   font-size: 1.2rem;
   font-weight: 800;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
 .kr-mini-progress-track {
@@ -1971,7 +2802,7 @@ async function handleReject() {
 
 .kr-mini-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0E97D6, #10B981);
+  background: linear-gradient(90deg, #0e97d6, #10b981);
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -2002,10 +2833,18 @@ async function handleReject() {
   height: 8px;
   border-radius: 50%;
 }
-.kanban-dot.todo { background: #94a3b8; }
-.kanban-dot.in_progress { background: #0E97D6; }
-.kanban-dot.done { background: #10B981; }
-.kanban-dot.drop { background: #ef4444; }
+.kanban-dot.todo {
+  background: #94a3b8;
+}
+.kanban-dot.in_progress {
+  background: #0e97d6;
+}
+.kanban-dot.done {
+  background: #10b981;
+}
+.kanban-dot.drop {
+  background: #ef4444;
+}
 
 .init-row-title {
   font-weight: 600;
@@ -2031,7 +2870,7 @@ async function handleReject() {
 .init-pct {
   font-weight: 700;
   font-size: 0.9rem;
-  color: #0E97D6;
+  color: #0e97d6;
 }
 
 .task-count-mini {
@@ -2058,9 +2897,15 @@ async function handleReject() {
   transition: width 0.3s ease;
 }
 
-.init-progress-bar.progress-high { background: #10B981; }
-.init-progress-bar.progress-mid { background: #0E97D6; }
-.init-progress-bar.progress-low { background: #f59e0b; }
+.init-progress-bar.progress-high {
+  background: #10b981;
+}
+.init-progress-bar.progress-mid {
+  background: #0e97d6;
+}
+.init-progress-bar.progress-low {
+  background: #f59e0b;
+}
 
 .task-detail-grid {
   display: flex;
@@ -2107,19 +2952,13 @@ async function handleReject() {
 
 .task-mini-bar {
   height: 100%;
-  background: #0E97D6;
+  background: #0e97d6;
   border-radius: 3px;
 }
 
 .task-mini-pct {
   font-weight: 600;
-  color: #0E97D6;
-}
-
-.task-assignees-mini {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  color: #0e97d6;
 }
 
 .assignee-mini {
@@ -2128,5 +2967,264 @@ async function handleReject() {
   color: #475569;
   padding: 1px 6px;
   border-radius: 4px;
+}
+
+/* LEADER KEY RESULTS SECTION STYLES */
+.leader-krs-grid {
+  .kr-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+.kr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+.kr-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.month-badge {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+.kr-badge-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.override-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.badge-warn {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fef3c7;
+}
+.badge-info {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+.parent-annual-context {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+.context-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.parent-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.parent-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #0f172a;
+}
+.parent-status {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.parent-progress-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #64748b;
+}
+.kr-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #334155;
+}
+.kr-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* --- Pending Approvals List (matching approvals.vue) --- */
+.approvals-section {
+  margin-top: 24px;
+}
+
+.approvals-section .pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.approvals-section .card.mb-4 {
+  margin-bottom: 16px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.approvals-section .kr-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.approvals-section .kr-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-color, #1e293b);
+}
+
+.approvals-section .badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.approvals-section .bg-task {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.approvals-section .bg-initiative {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.approvals-section .bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+
+.approvals-section .text-gray {
+  color: #64748b;
+}
+
+.approvals-section .update-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--input-bg, #f8fafc);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border, #f1f5f9);
+}
+
+.approvals-section .detail-box {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.approvals-section .detail-box.flex-2 {
+  flex: 2;
+  min-width: 250px;
+}
+
+.approvals-section .detail-box .lbl {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.approvals-section .detail-box .val {
+  font-size: 14px;
+  color: var(--text-color, #334155);
+  font-weight: 600;
+}
+
+.approvals-section .text-blue {
+  color: #0e97d6 !important;
+}
+
+.approvals-section .actions-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.approvals-section .primary-btn.small {
+  background-color: #0e97d6;
+  color: white;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.approvals-section .primary-btn.small:hover {
+  background-color: #0a84be;
+}
+
+.approvals-section .danger-btn.small {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.approvals-section .danger-btn.small:hover {
+  background-color: #dc2626;
+}
+
+.approvals-section .secondary-btn.small {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.approvals-section .secondary-btn.small:hover {
+  background-color: #e2e8f0;
 }
 </style>

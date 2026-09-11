@@ -91,17 +91,6 @@
           <span v-else>Masuk</span>
         </button>
       </form>
-
-      <!-- <div class="demo-accounts">
-        <p>Akun Demo:</p>
-        <ul>
-          <li><strong>Admin:</strong> admin@company.com</li>
-          <li><strong>Manager:</strong> manager@company.com</li>
-          <li><strong>C-Level:</strong> clevel@company.com</li>
-          <li><strong>Employee:</strong> employee@company.com</li>
-          <li><strong>Password:</strong> password123</li>
-        </ul>
-      </div> -->
     </div>
   </div>
 </template>
@@ -126,8 +115,8 @@ async function handleLogin() {
   loading.value = true;
   try {
     await auth.login(email.value, password.value);
-    // Redirect based on role or to home
-    navigateTo("/");
+    // Redirect ke dashboard setelah login
+    navigateTo("/dashboard");
   } catch (err) {
     error.value =
       err.message || "Login gagal. Periksa kembali email dan password Anda.";
@@ -141,7 +130,7 @@ async function handleLogin() {
 @import url("https://fonts.google.com/share?selection.family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900|Rubik:ital,wght@0,300..900;1,300..900");
 
 .login-container {
-  font-family: "Inter", sans-serif;
+  font-family: "Rubik", sans-serif;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -159,6 +148,7 @@ async function handleLogin() {
 
 .login-card {
   background: var(--card-bg);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
   padding: 40px;

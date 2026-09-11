@@ -1,17 +1,25 @@
 <template>
   <div class="app-layout" :class="{ 'with-shell': showShell }">
     <NuxtRouteAnnouncer />
-    
+
     <!-- Sidebar backdrop overlay (mobile only) -->
-    <div 
-      v-if="showShell && isSidebarOpen" 
-      class="sidebar-overlay" 
+    <div
+      v-if="showShell && isSidebarOpen"
+      class="sidebar-overlay"
       @click="isSidebarOpen = false"
     ></div>
 
-    <AppSidebar v-if="showShell" :isOpen="isSidebarOpen" @close="isSidebarOpen = false" />
+    <AppSidebar
+      v-if="showShell"
+      :isOpen="isSidebarOpen"
+      @close="isSidebarOpen = false"
+    />
     <div :class="['main-wrapper', { 'with-sidebar': showShell }]">
-      <AppHeader v-if="showShell" :title="pageTitle" @toggle-sidebar="isSidebarOpen = !isSidebarOpen" />
+      <AppHeader
+        v-if="showShell"
+        :title="pageTitle"
+        @toggle-sidebar="isSidebarOpen = !isSidebarOpen"
+      />
       <main :class="['page-content', { 'padded-content': showShell }]">
         <NuxtPage />
       </main>
@@ -20,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch, provide } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import AppSidebar from "./components/AppSidebar.vue";
@@ -28,12 +36,75 @@ import AppHeader from "./components/AppHeader.vue";
 
 const auth = useAuthStore();
 const route = useRoute();
+const config = useRuntimeConfig();
 
 const isSidebarOpen = ref(false);
 
 const isAuthenticated = computed(() => auth.isAuthenticated);
 const isLoginPage = computed(() => route.path === "/login");
 const showShell = computed(() => isAuthenticated.value && !isLoginPage.value);
+const isManagerRole = computed(() => auth.user?.role === "MANAGER");
+
+// Filter State for Manager
+const searchQuery = ref("");
+const selectedDepartment = ref("");
+const selectedEmployeeId = ref("");
+const selectedSprintMonth = ref("");
+const allUsers = ref([]);
+
+async function fetchAllUsers() {
+  if (!auth.token) return;
+  const API = config.public?.apiBase || "http://localhost:3001/api";
+  try {
+    const res = await fetch(`${API}/users`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+    if (res.ok) allUsers.value = await res.json();
+  } catch (err) {}
+}
+
+watch(
+  () => auth.token,
+  (newToken) => {
+    if (newToken && isManagerRole.value) {
+      fetchAllUsers();
+    }
+  },
+  { immediate: true },
+);
+
+const departmentsList = computed(() => {
+  const depts = new Set();
+  allUsers.value.forEach((u) => {
+    if (u.department) depts.add(u.department);
+  });
+  return Array.from(depts).sort();
+});
+
+const employeesList = computed(() => {
+  if (!selectedDepartment.value) return allUsers.value;
+  return allUsers.value.filter(
+    (u) => u.department === selectedDepartment.value,
+  );
+});
+
+function resetFilters() {
+  searchQuery.value = "";
+  selectedDepartment.value = "";
+  selectedEmployeeId.value = "";
+  selectedSprintMonth.value = "";
+}
+
+provide("managerFilters", {
+  searchQuery,
+  selectedDepartment,
+  selectedEmployeeId,
+  selectedSprintMonth,
+  resetFilters,
+});
 
 const pageTitle = computed(() => {
   const path = route.path;
@@ -44,6 +115,7 @@ const pageTitle = computed(() => {
   if (path.startsWith("/admin/objectives")) return "OKR Builder";
   if (path.startsWith("/admin/update-progress")) return "Update Capaian";
   if (path.startsWith("/admin/employees")) return "Data Pegawai";
+  if (path.startsWith("/approvals")) return "Persetujuan (Approvals)";
   return "Profil Pengguna";
 });
 </script>
@@ -286,9 +358,16 @@ const pageTitle = computed(() => {
   box-sizing: border-box;
 }
 
-body {
+body,
+button,
+input,
+select,
+textarea {
   font-family: "Rubik", sans-serif;
-  background: var(--surface-page);
+}
+
+body {
+  background: inherit;
   color: var(--text-heading);
   margin: 0;
   overflow-x: hidden;
@@ -332,6 +411,7 @@ p {
   right: 0;
   bottom: 0;
   background-color: rgba(13, 21, 37, 0.5);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 99;
 }

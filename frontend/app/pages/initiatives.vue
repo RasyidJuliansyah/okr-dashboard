@@ -50,7 +50,7 @@
             class="primary-btn"
             @click="openAddInitiativeModal"
           >
-            + Tambah Inisiatif
+            + Tambah Card
           </button>
         </div>
       </div>
@@ -91,6 +91,19 @@
         </div>
 
         <div class="filter-controls-row">
+          <!-- Filter Manager (Admin & C-Level) -->
+          <div v-if="isAdmin || isCLevel" class="filter-item">
+            <label>Filter Manager:</label>
+            <select v-model="selectedManagerId" class="filter-select">
+              <option value="">
+                Semua Manager ({{ availableManagers.length }})
+              </option>
+              <option v-for="m in availableManagers" :key="m.id" :value="m.id">
+                {{ m.name }}
+              </option>
+            </select>
+          </div>
+
           <div class="filter-item">
             <label>Filter Tim:</label>
             <select v-model="selectedTeamId" class="filter-select">
@@ -117,8 +130,10 @@
           <div class="filter-item">
             <label>Filter Key Result:</label>
             <select v-model="selectedKrId" class="filter-select">
-              <option value="">Semua Key Result ({{ allKrs.length }})</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+              <option value="">
+                Semua Key Result ({{ availableKrs.length }})
+              </option>
+              <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
                 {{ kr.title }}
               </option>
             </select>
@@ -136,8 +151,10 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Kanban Board Container -->
+    <!-- Kanban Board Container -->
+    <div class="kanban-board-wrapper">
       <div class="kanban-board">
         <!-- COLUMN 1: TO DO -->
         <div
@@ -164,13 +181,14 @@
               v-for="ini in todoList"
               :key="ini.id"
               class="kanban-card"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
-                </span>
                 <span
                   v-if="ini.keyResult?.bscPerspective"
                   class="perspective-pill"
@@ -178,6 +196,18 @@
                 >
                   {{ ini.keyResult.bscPerspective }}
                 </span>
+                <span class="card-kr-badge" :title="ini.keyResult?.title">
+                  {{ ini.keyResult?.title || "Key Result" }}
+                </span>
+              </div>
+
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Individual</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
@@ -187,16 +217,10 @@
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -218,12 +242,86 @@
                 </span>
               </div>
 
-              <!-- Tasks summary chips -->
+              <!-- Tasks summary & Bucket list -->
               <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                <span class="task-count-tag">
-                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}
-                  selesai)
-                </span>
+                <div
+                  v-if="expandedTaskIniIds.includes(ini.id)"
+                  class="tasks-bucket-list"
+                  style="
+                    margin-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-bucket-card"
+                    style="
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      padding: 6px 8px;
+                      font-size: 11px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 4px;
+                      "
+                    >
+                      <span style="font-weight: 600; color: #1e293b; flex: 1">{{
+                        task.title
+                      }}</span>
+                      <span
+                        class="badge"
+                        :class="getTaskStatusClass(task.status)"
+                        style="
+                          font-size: 9px;
+                          padding: 1px 4px;
+                          border-radius: 4px;
+                        "
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
+
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 4px;
+                        color: #64748b;
+                        font-size: 10px;
+                      "
+                    >
+                      <span>
+                        PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                      </span>
+                      <span>
+                        {{
+                          formatProgressRange(
+                            task.currentValue,
+                            task.targetValue,
+                            task.unit,
+                          )
+                        }}
+                      </span>
+                    </div>
+
+                    <div
+                      v-if="task.sprintMonth"
+                      style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                    >
+                      Sprint: {{ task.sprintMonth }}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="card-footer-meta">
@@ -231,17 +329,6 @@
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
                     {{ ini.owner.name }}
-                    <span
-                      v-if="getMemberAchievement(ini.ownerId)"
-                      class="owner-ach-pill"
-                      :class="
-                        getAchColorClass(
-                          getMemberAchievement(ini.ownerId).achievementPct,
-                        )
-                      "
-                    >
-                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
-                    </span>
                   </span>
                 </div>
               </div>
@@ -250,7 +337,7 @@
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
                   <button
-                    v-if="canManageInitiative(ini)"
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
                     class="action-btn"
                     title="Tambah Task"
                     @click="openAddTaskModal(ini)"
@@ -312,7 +399,7 @@
                     title="Pindah ke In Progress"
                     @click="moveCard(ini.id, 'IN_PROGRESS')"
                   >
-                    Maju &rarr;
+                    Maju
                   </button>
                 </div>
               </div>
@@ -347,6 +434,10 @@
               v-for="ini in inProgressList"
               :key="ini.id"
               class="kanban-card card-in-progress"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
@@ -362,7 +453,14 @@
                   {{ ini.keyResult.bscPerspective }}
                 </span>
               </div>
-
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Individual</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
               <h4 class="card-title">{{ ini.title }}</h4>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
@@ -370,16 +468,10 @@
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -401,32 +493,92 @@
                 </span>
               </div>
 
-              <!-- Tasks summary chips -->
+              <!-- Tasks summary & Bucket list -->
               <div class="card-tasks-summary" v-if="ini.tasks?.length">
-                <span class="task-count-tag in-progress">
-                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}/{{
-                    ini.tasks.length
-                  }}
-                  selesai)
-                </span>
-              </div>
+                <div
+                  v-if="expandedTaskIniIds.includes(ini.id)"
+                  class="tasks-bucket-list"
+                  style="
+                    margin-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-bucket-card"
+                    style="
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      padding: 6px 8px;
+                      font-size: 11px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 4px;
+                      "
+                    >
+                      <span style="font-weight: 600; color: #1e293b; flex: 1">{{
+                        task.title
+                      }}</span>
+                      <span
+                        class="badge"
+                        :class="getTaskStatusClass(task.status)"
+                        style="
+                          font-size: 9px;
+                          padding: 1px 4px;
+                          border-radius: 4px;
+                        "
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
 
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 4px;
+                        color: #64748b;
+                        font-size: 10px;
+                      "
+                    >
+                      <span>
+                        PIC: <strong>{{ getTaskAssigneeName(task) }}</strong>
+                      </span>
+                      <span>
+                        {{
+                          formatProgressRange(
+                            task.currentValue,
+                            task.targetValue,
+                            task.unit,
+                          )
+                        }}
+                      </span>
+                    </div>
+
+                    <div
+                      v-if="task.sprintMonth"
+                      style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                    >
+                      Sprint: {{ task.sprintMonth }}
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="card-footer-meta">
                 <div class="card-team-owner">
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
                     {{ ini.owner.name }}
-                    <span
-                      v-if="getMemberAchievement(ini.ownerId)"
-                      class="owner-ach-pill"
-                      :class="
-                        getAchColorClass(
-                          getMemberAchievement(ini.ownerId).achievementPct,
-                        )
-                      "
-                    >
-                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
-                    </span>
                   </span>
                 </div>
               </div>
@@ -435,7 +587,7 @@
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
                   <button
-                    v-if="canManageInitiative(ini)"
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
                     class="action-btn"
                     title="Tambah Task"
                     @click="openAddTaskModal(ini)"
@@ -497,14 +649,14 @@
                     title="Kembalikan ke To Do"
                     @click="moveCard(ini.id, 'TODO')"
                   >
-                    &larr; Mundur
+                    Mundur
                   </button>
                   <button
                     class="move-btn primary"
                     title="Selesaikan ke Done"
                     @click="moveCard(ini.id, 'DONE')"
                   >
-                    Selesai &rarr;
+                    Selesai
                   </button>
                 </div>
               </div>
@@ -537,6 +689,10 @@
               v-for="ini in doneList"
               :key="ini.id"
               class="kanban-card card-done"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
@@ -547,6 +703,15 @@
                 <span class="completed-checkmark-badge">Selesai</span>
               </div>
 
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Individual</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
+
               <h4 class="card-title text-done">{{ ini.title }}</h4>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
@@ -554,16 +719,10 @@
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -592,11 +751,121 @@
               >
                 <span class="achieved-label">Capaian Akhir:</span>
                 <strong class="achieved-val">
-                  {{ ini.achievedValue ?? ini.currentValue }} /
-                  {{ ini.targetValue }} {{ ini.unit || "" }} ({{
+                  {{
+                    formatTargetValue(
+                      ini.achievedValue ?? ini.currentValue,
+                      ini.unit,
+                    )
+                  }}
+                  / {{ formatTargetValue(ini.targetValue, ini.unit) }} ({{
                     calculateAchievedPercent(ini)
                   }}%)
                 </strong>
+              </div>
+              <!-- Tasks summary & Bucket list -->
+              <div class="card-tasks-summary" v-if="ini.tasks?.length">
+                <div
+                  class="task-count-tag"
+                  @click.stop="toggleTasksExpand(ini.id)"
+                  style="
+                    cursor: pointer;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    width: 100%;
+                    font-weight: 500;
+                  "
+                  title="Klik untuk membuka/menutup daftar Task Individual"
+                >
+                  <span>
+                    {{ ini.tasks.length }} Task ({{
+                      getCompletedTasksCount(ini)
+                    }}/{{ ini.tasks.length }} selesai)
+                  </span>
+                  <span style="font-size: 10px; margin-left: 6px">
+                    {{ expandedTaskIniIds.includes(ini.id) ? "Hide" : "Show" }}
+                  </span>
+                </div>
+
+                <div
+                  v-if="expandedTaskIniIds.includes(ini.id)"
+                  class="tasks-bucket-list"
+                  style="
+                    margin-top: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    v-for="task in ini.tasks"
+                    :key="task.id"
+                    class="task-bucket-card"
+                    style="
+                      background: #f8fafc;
+                      border: 1px solid #e2e8f0;
+                      border-radius: 6px;
+                      padding: 6px 8px;
+                      font-size: 11px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        gap: 4px;
+                      "
+                    >
+                      <span style="font-weight: 600; color: #1e293b; flex: 1">{{
+                        task.title
+                      }}</span>
+                      <span
+                        class="badge"
+                        :class="getTaskStatusClass(task.status)"
+                        style="
+                          font-size: 9px;
+                          padding: 1px 4px;
+                          border-radius: 4px;
+                        "
+                      >
+                        {{ task.status }}
+                      </span>
+                    </div>
+
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-top: 4px;
+                        color: #64748b;
+                        font-size: 10px;
+                      "
+                    >
+                      <span>
+                        PIC:
+                        <strong>{{ getTaskAssigneeName(task) }}</strong>
+                      </span>
+                      <span>
+                        {{
+                          formatProgressRange(
+                            task.currentValue,
+                            task.targetValue,
+                            task.unit,
+                          )
+                        }}
+                      </span>
+                    </div>
+
+                    <div
+                      v-if="task.sprintMonth"
+                      style="margin-top: 2px; font-size: 9px; color: #0284c7"
+                    >
+                      Sprint: {{ task.sprintMonth }}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="card-footer-meta">
@@ -604,17 +873,6 @@
                   <span class="team-tag">{{ ini.team?.name }}</span>
                   <span v-if="ini.owner?.name" class="owner-tag">
                     {{ ini.owner.name }}
-                    <span
-                      v-if="getMemberAchievement(ini.ownerId)"
-                      class="owner-ach-pill"
-                      :class="
-                        getAchColorClass(
-                          getMemberAchievement(ini.ownerId).achievementPct,
-                        )
-                      "
-                    >
-                      {{ getMemberAchievement(ini.ownerId).achievementPct }}%
-                    </span>
                   </span>
                 </div>
               </div>
@@ -622,6 +880,14 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
+                  <button
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
                   <button
                     v-if="canManageInitiative(ini)"
                     class="action-btn"
@@ -677,7 +943,7 @@
                     title="Pindah ke In Progress"
                     @click="moveCard(ini.id, 'IN_PROGRESS')"
                   >
-                    &larr; Buka Kembali
+                    Buka Kembali
                   </button>
                 </div>
               </div>
@@ -710,6 +976,10 @@
               v-for="ini in dropList"
               :key="ini.id"
               class="kanban-card card-drop"
+              :class="{
+                'task-card-type': ini.isTaskCard,
+                'ini-card-type': !ini.isTaskCard,
+              }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
@@ -720,6 +990,15 @@
                 <span class="dropped-badge">Drop</span>
               </div>
 
+              <div style="margin-bottom: 12px">
+                <span v-if="ini.isTaskCard" class="card-type-pill task"
+                  >Task Individual</span
+                >
+                <span v-else class="card-type-pill initiative"
+                  >Inisiatif Leader</span
+                >
+              </div>
+
               <h4 class="card-title text-drop">{{ ini.title }}</h4>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
@@ -727,16 +1006,10 @@
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
-                  <span class="target-label">Target:</span>
-                  <strong class="target-val"
-                    >{{ ini.targetValue }} {{ ini.unit || "" }}</strong
-                  >
-                </span>
-                <span
-                  class="weight-badge-mini"
-                  title="Bobot Inisiatif terhadap KR"
-                >
-                  Bobot: <strong>{{ ini.weight || 1.0 }}%</strong>
+                  <span class="target-label">Target: </span>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -752,6 +1025,14 @@
               <!-- Card Action Buttons -->
               <div v-if="canMoveCards" class="card-hover-actions">
                 <div class="left-actions">
+                  <button
+                    v-if="!ini.isTaskCard && canManageInitiative(ini)"
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
                   <button
                     v-if="canManageInitiative(ini)"
                     class="action-btn"
@@ -807,7 +1088,7 @@
                     title="Pindah ke To Do"
                     @click="moveCard(ini.id, 'TODO')"
                   >
-                    &larr; Aktifkan Kembali
+                    Aktifkan Kembali
                   </button>
                 </div>
               </div>
@@ -815,24 +1096,41 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ─── MODAL: Add/Edit Initiative ─── -->
-      <div
-        v-if="showInitiativeModal"
-        class="modal-overlay"
-        @click.self="showInitiativeModal = false"
-      >
-        <div class="modal-box">
-          <div class="modal-header">
-            <h3>{{ editingInitiative ? "Edit" : "Tambah" }} Inisiatif</h3>
-            <button
-              class="modal-close-btn"
-              @click="showInitiativeModal = false"
+    <!-- ─── MODAL: Add/Edit Initiative ─── -->
+    <div
+      v-if="showInitiativeModal"
+      class="modal-overlay"
+      @click.self="showInitiativeModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>{{ editingInitiative ? "Edit" : "Tambah" }} Card</h3>
+          <button class="modal-close-btn" @click="showInitiativeModal = false">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body-scroll">
+          <!-- Selector Jenis Card saat Tambah Card Baru -->
+          <div v-if="!editingInitiative" style="margin-bottom: 16px">
+            <label style="font-weight: 600; color: #0f172a">Jenis Card *</label>
+            <select
+              v-model="cardType"
+              class="form-input"
+              style="
+                background: #f1f5f9;
+                border-color: #0ea5e9;
+                font-weight: 600;
+              "
             >
-              &times;
-            </button>
+              <option value="INISIATIF">Inisiatif</option>
+              <option value="TASK">Task Individual</option>
+            </select>
           </div>
-          <div class="modal-body-scroll">
+
+          <!-- FORM CARD: INISIATIF -->
+          <template v-if="cardType === 'INISIATIF'">
             <label>Judul Inisiatif *</label>
             <input
               v-model="initiativeForm.title"
@@ -840,13 +1138,10 @@
               placeholder="Contoh: Optimalisasi query database..."
             />
 
-            <!-- <label>Deskripsi</label>
-            <textarea v-model="initiativeForm.description" class="form-input" rows="2" placeholder="Catatan dan ruang lingkup inisiatif..."></textarea> -->
-
-            <label>Parent Key Result *</label>
+            <label>Parent Key Result (Opsional)</label>
             <select v-model="initiativeForm.keyResultId" class="form-input">
-              <option value="">-- Pilih Key Result --</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+              <option value="">-- Tidak terhubung KR --</option>
+              <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
                 {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
                 }}{{ kr.title }}
               </option>
@@ -871,47 +1166,45 @@
               </option>
             </select>
 
-            <label>PIC Pegawai (Penanggung Jawab)</label>
+            <label>PIC / Owner Inisiatif *</label>
             <input
               v-model="userSearch"
               type="text"
               class="form-input"
               style="margin-bottom: 6px"
-              placeholder="Cari nama pegawai..."
+              placeholder="Cari PIC / Owner..."
             />
             <select v-model="initiativeForm.ownerId" class="form-input">
-              <option value="">-- Pilih Pegawai (Opsional) --</option>
+              <option value="">-- Pilih PIC / Owner --</option>
               <option
                 v-for="user in filteredUsers"
                 :key="user.id"
                 :value="user.id"
               >
-                {{ user.name }} ({{ user.position || "Staff" }})
+                {{ user.name }} ({{ user.role }})
               </option>
             </select>
 
+            <UnitTargetInput
+              v-model:targetValue="initiativeForm.targetValue"
+              v-model:unit="initiativeForm.unit"
+              :required="true"
+            />
+
             <div class="form-row-2">
               <div>
-                <label>Target Value</label>
+                <label>Bulan / Sprint Inisiatif *</label>
                 <input
-                  v-model.number="initiativeForm.targetValue"
-                  type="number"
+                  v-model="initiativeForm.sprintMonth"
+                  type="month"
                   class="form-input"
-                />
-              </div>
-              <div>
-                <label>Unit / Satuan</label>
-                <input
-                  v-model="initiativeForm.unit"
-                  class="form-input"
-                  placeholder="%, Sesi, tasks..."
                 />
               </div>
             </div>
 
             <div class="form-row-2">
               <div>
-                <label>Tanggal Mulai Pengerjaan</label>
+                <label>Tanggal Mulai</label>
                 <input
                   v-model="initiativeForm.startDate"
                   type="date"
@@ -919,7 +1212,7 @@
                 />
               </div>
               <div>
-                <label>Target Tanggal Selesai</label>
+                <label>Target Tenggat Waktu (Due Date)</label>
                 <input
                   v-model="initiativeForm.dueDate"
                   type="date"
@@ -928,17 +1221,9 @@
               </div>
             </div>
 
-            <div class="form-row-2">
+            <div v-if="editingInitiative" class="form-row-2">
               <div>
-                <label>Bulan / Sprint</label>
-                <input
-                  v-model="initiativeForm.sprintMonth"
-                  type="month"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Hasil Capaian Akhir (Selesai)</label>
+                <label>Realisasi Saat Ini</label>
                 <input
                   v-model.number="initiativeForm.achievedValue"
                   type="number"
@@ -948,123 +1233,390 @@
               </div>
             </div>
 
-            <div class="form-row-2">
-              <div>
-                <label>Bobot Inisiatif (%) *</label>
-                <input
-                  v-model.number="initiativeForm.weight"
-                  type="number"
-                  step="1"
-                  min="0.1"
-                  max="100"
-                  class="form-input"
-                  placeholder="Contoh: 25"
-                />
-                <p
-                  v-if="weightBudgetInfo"
-                  class="weight-hint"
-                  :class="{
-                    'weight-hint-warning': weightBudgetInfo.remaining <= 0,
-                  }"
+            <div>
+              <label>Kolom Kanban (Status)</label>
+              <select v-model="initiativeForm.kanbanStatus" class="form-input">
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+                <option value="DROP">Drop</option>
+              </select>
+            </div>
+
+            <!-- KpiSelector -->
+            <KpiSelector v-model="initiativeForm.kpis" />
+          </template>
+
+          <!-- FORM CARD: TASK MASSAL -->
+          <template v-else-if="cardType === 'TASK'">
+            <label style="font-weight: 600; color: #0f172a"
+              >Pilih Inisiatif Induk *</label
+            >
+            <select
+              v-model="batchInitiativeId"
+              class="form-input mb-3"
+              style="margin-bottom: 14px"
+            >
+              <option value="">-- Pilih Inisiatif Induk --</option>
+              <option
+                v-for="ini in filteredInitiatives"
+                :key="ini.id"
+                :value="ini.id"
+              >
+                {{ ini.title }} ({{ ini.team?.name || "Tim" }})
+              </option>
+            </select>
+
+            <!-- Batch Default Settings Card -->
+            <div class="batch-defaults-card mb-4">
+              <div class="batch-defaults-title">
+                ⚡ Default Settings untuk Baris Task Baru
+              </div>
+              <div class="form-row-4">
+                <div>
+                  <label>Target Value Default</label>
+                  <input
+                    v-model.number="batchDefaults.targetValue"
+                    type="number"
+                    class="form-input"
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <label>Satuan (Unit) Default</label>
+                  <input
+                    v-model="batchDefaults.unit"
+                    class="form-input"
+                    placeholder="%, task..."
+                  />
+                </div>
+                <div>
+                  <label>Bulan Sprint</label>
+                  <input
+                    v-model="batchDefaults.sprintMonth"
+                    type="month"
+                    class="form-input"
+                  />
+                </div>
+                <div>
+                  <label>Assignee Default</label>
+                  <select
+                    v-model="batchDefaults.assignedTeamMemberId"
+                    class="form-input"
+                  >
+                    <option value="">-- Inisiator / Induk --</option>
+                    <option
+                      v-for="member in availableTeamMembers"
+                      :key="member.id"
+                      :value="member.id"
+                    >
+                      {{ member.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2 text-right">
+                <button
+                  type="button"
+                  class="btn-text-action"
+                  @click="applyDefaultsToAllRows"
                 >
-                  Terpakai {{ weightBudgetInfo.used.toFixed(1) }}% · Sisa
-                  {{ weightBudgetInfo.remaining.toFixed(1) }}% untuk sprint ini
-                </p>
-                <p v-else class="weight-hint">
-                  Pilih PIC Pegawai &amp; Bulan/Sprint untuk melihat sisa bobot
-                </p>
+                  Terapkan Default ke Semua Baris
+                </button>
+              </div>
+            </div>
+
+            <!-- Task Rows Header & List -->
+            <div class="task-rows-header">
+              <label style="font-weight: 700; color: #334155; font-size: 14px">
+                Daftar Baris Task ({{ taskRows.length }})
+              </label>
+              <button type="button" class="btn-add-row" @click="addTaskRow">
+                + Tambah Baris Task
+              </button>
+            </div>
+
+            <div class="task-rows-container">
+              <div
+                v-for="(row, idx) in taskRows"
+                :key="idx"
+                class="task-row-card"
+              >
+                <div class="task-row-num">{{ idx + 1 }}</div>
+                <div class="task-row-fields">
+                  <input
+                    v-model="row.title"
+                    class="form-input row-title"
+                    placeholder="Judul Task (Contoh: Selesaikan unit test...)..."
+                  />
+                  <input
+                    v-if="isRupiahUnit(row.unit)"
+                    :value="formatRupiahNumber(row.targetValue)"
+                    @input="onRowTargetRupiahInput($event, row)"
+                    type="text"
+                    class="form-input row-target"
+                    placeholder="Target"
+                  />
+                  <input
+                    v-else
+                    v-model.number="row.targetValue"
+                    type="number"
+                    class="form-input row-target"
+                    placeholder="Target"
+                  />
+                  <input
+                    v-model="row.unit"
+                    class="form-input row-unit"
+                    placeholder="Satuan"
+                  />
+                  <select
+                    v-model="row.assignedTeamMemberId"
+                    class="form-input row-assignee"
+                  >
+                    <option value="">-- Inisiator / Induk --</option>
+                    <option
+                      v-for="member in availableTeamMembers"
+                      :key="member.id"
+                      :value="member.id"
+                    >
+                      {{ member.name }}
+                    </option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  class="btn-remove-row"
+                  :disabled="taskRows.length <= 1"
+                  @click="removeTaskRow(idx)"
+                  title="Hapus baris"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="modal-actions">
+          <button class="secondary-btn" @click="showInitiativeModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            @click="saveCard"
+            :disabled="cardType === 'INISIATIF' && !initiativeForm.unit?.trim()"
+          >
+            Simpan Card
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MODAL: Add/Edit Task ─── -->
+    <!-- ─── MODAL: Add Tasks Batch (Massal) ─── -->
+    <div
+      v-if="showTaskModal"
+      class="modal-overlay"
+      @click.self="showTaskModal = false"
+    >
+      <div class="modal-box modal-box-large">
+        <div class="modal-header">
+          <h3>Tambah Task Massal untuk Inisiatif</h3>
+          <button class="modal-close-btn" @click="showTaskModal = false">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body-scroll">
+          <div class="mb-3">
+            <label style="font-weight: 600; color: #0f172a; font-size: 13px"
+              >Pilih Inisiatif Induk *</label
+            >
+            <select
+              v-model="batchInitiativeId"
+              class="form-input"
+              style="font-weight: 600; background: #f8fafc; margin-top: 4px"
+            >
+              <option value="">-- Pilih Inisiatif Induk --</option>
+              <option
+                v-for="ini in filteredInitiatives"
+                :key="ini.id"
+                :value="ini.id"
+              >
+                {{ ini.title }} ({{ ini.team?.name || "Tim" }})
+              </option>
+            </select>
+          </div>
+
+          <!-- Batch Default Settings Card -->
+          <div class="batch-defaults-card mb-4">
+            <div class="batch-defaults-title">
+              ⚡ Default Settings untuk Baris Task Baru
+            </div>
+            <div class="form-row-4">
+              <div>
+                <label>Target Value Default</label>
+                <input
+                  v-model.number="batchDefaults.targetValue"
+                  type="number"
+                  class="form-input"
+                  placeholder="100"
+                />
               </div>
               <div>
-                <label>Kolom Kanban (Status)</label>
+                <label>Satuan (Unit) Default</label>
+                <input
+                  v-model="batchDefaults.unit"
+                  class="form-input"
+                  placeholder="%, task..."
+                />
+              </div>
+              <div>
+                <label>Bulan Sprint</label>
+                <input
+                  v-model="batchDefaults.sprintMonth"
+                  type="month"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Assignee Default</label>
                 <select
-                  v-model="initiativeForm.kanbanStatus"
+                  v-model="batchDefaults.assignedTeamMemberId"
                   class="form-input"
                 >
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Done</option>
-                  <option value="DROP">Drop</option>
+                  <option value="">-- Inisiator / Induk --</option>
+                  <option
+                    v-for="member in availableTeamMembers"
+                    :key="member.id"
+                    :value="member.id"
+                  >
+                    {{ member.name }}
+                  </option>
                 </select>
               </div>
             </div>
-          </div>
-
-          <div class="modal-actions">
-            <button class="secondary-btn" @click="showInitiativeModal = false">
-              Batal
-            </button>
-            <button class="primary-btn" @click="saveInitiative">Simpan</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── MODAL: Add/Edit Task ─── -->
-      <div
-        v-if="showTaskModal"
-        class="modal-overlay"
-        @click.self="showTaskModal = false"
-      >
-        <div class="modal-box">
-          <div class="modal-header">
-            <h3>Tambah Task untuk: {{ selectedInitiativeForTask?.title }}</h3>
-            <button class="modal-close-btn" @click="showTaskModal = false">
-              &times;
-            </button>
-          </div>
-          <div class="modal-body-scroll">
-            <label>Judul Task *</label>
-            <input
-              v-model="taskForm.title"
-              class="form-input"
-              placeholder="Contoh: Selesaikan 10 unit test..."
-            />
-            <div class="form-row-2">
-              <div>
-                <label>Target Value *</label>
-                <input
-                  v-model.number="taskForm.targetValue"
-                  type="number"
-                  class="form-input"
-                />
-              </div>
-              <div>
-                <label>Satuan (Unit)</label>
-                <input
-                  v-model="taskForm.unit"
-                  class="form-input"
-                  placeholder="%, task, doc..."
-                />
-              </div>
+            <div class="mt-2 text-right">
+              <button
+                type="button"
+                class="btn-text-action"
+                @click="applyDefaultsToAllRows"
+              >
+                Terapkan Default ke Semua Baris
+              </button>
             </div>
           </div>
-          <div class="modal-actions">
-            <button class="secondary-btn" @click="showTaskModal = false">
-              Batal
+
+          <!-- Task Rows Header & List -->
+          <div class="task-rows-header">
+            <label style="font-weight: 700; color: #334155; font-size: 14px">
+              Daftar Baris Task ({{ taskRows.length }})
+            </label>
+            <button type="button" class="btn-add-row" @click="addTaskRow">
+              + Tambah Baris Task
             </button>
-            <button class="primary-btn" @click="saveTask">Simpan Task</button>
+          </div>
+
+          <div class="task-rows-container">
+            <div
+              v-for="(row, idx) in taskRows"
+              :key="idx"
+              class="task-row-card"
+            >
+              <div class="task-row-num">{{ idx + 1 }}</div>
+              <div class="task-row-fields">
+                <input
+                  v-model="row.title"
+                  class="form-input row-title"
+                  placeholder="Judul Task (Contoh: Selesaikan unit test...)..."
+                />
+                <input
+                  v-if="isRupiahUnit(row.unit)"
+                  :value="formatRupiahNumber(row.targetValue)"
+                  @input="onRowTargetRupiahInput($event, row)"
+                  type="text"
+                  class="form-input row-target"
+                  placeholder="Target"
+                />
+                <input
+                  v-else
+                  v-model.number="row.targetValue"
+                  type="number"
+                  class="form-input row-target"
+                  placeholder="Target"
+                />
+                <input
+                  v-model="row.unit"
+                  class="form-input row-unit"
+                  placeholder="Satuan"
+                />
+                <select
+                  v-model="row.assignedTeamMemberId"
+                  class="form-input row-assignee"
+                >
+                  <option value="">-- Inisiator / Induk --</option>
+                  <option
+                    v-for="member in availableTeamMembers"
+                    :key="member.id"
+                    :value="member.id"
+                  >
+                    {{ member.name }}
+                  </option>
+                </select>
+              </div>
+              <button
+                type="button"
+                class="btn-remove-row"
+                :disabled="taskRows.length <= 1"
+                @click="removeTaskRow(idx)"
+                title="Hapus baris"
+              >
+                &times;
+              </button>
+            </div>
           </div>
         </div>
+        <div class="modal-actions">
+          <button class="secondary-btn" @click="showTaskModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            :disabled="saving || validTaskCount === 0"
+            @click="saveTasksBatch"
+          >
+            {{ saving ? "Menyimpan..." : `Simpan (${validTaskCount} Task)` }}
+          </button>
+        </div>
       </div>
-
-      <!-- Bulk Upload Modal Component -->
-      <BulkUploadModal
-        v-if="showBulkModal"
-        type="initiative"
-        @close="showBulkModal = false"
-        @done="fetchInitiatives"
-      />
     </div>
+
+    <!-- Bulk Upload Modal Component -->
+    <BulkUploadModal
+      v-if="showBulkModal"
+      type="initiative"
+      @close="showBulkModal = false"
+      @done="fetchInitiatives"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
+import { useAssignment } from "~/composables/useAssignment";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
+import { isRupiahUnit } from "~/utils/formatters";
 
+const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
+const { fetchAvailableLeaders, fetchAvailableTeamMembers } = useAssignment();
+
+const availableLeaders = ref<any[]>([]);
+const availableTeamMembers = ref<any[]>([]);
 
 const getHeaders = () => ({
   "Content-Type": "application/json",
@@ -1078,15 +1630,11 @@ const isManager = computed(() => auth.user?.role === "MANAGER");
 const isLeader = computed(() => auth.user?.role === "LEADER");
 const isTeam = computed(() => auth.user?.role === "TEAM");
 
-const canMoveCards = computed(() => true); // All roles can move cards they are authorized to manage
+const canMoveCards = computed(() => false); // Kanban murni monitoring: kartu tidak dapat digeser dan tidak dapat diedit di Kanban
 const canCreateInitiative = computed(() => true); // All roles can create initiative
 
 function canManageInitiative(ini: any) {
-  if (isAdmin.value) return true;
-  if (isManager.value) return true;
-  if (isLeader.value) return true;
-  if (isTeam.value && ini.ownerId === auth.user?.id) return true;
-  return false;
+  return true;
 }
 
 const userRoleClass = computed(() => {
@@ -1112,7 +1660,7 @@ const scopeDescription = computed(() => {
   if (isLeader.value) {
     return "Menampilkan inisiatif Anda (P) dan seluruh anggota tim (T) di bawah pimpinan Anda.";
   }
-  return "Menampilkan seluruh inisiatif dalam departemen Anda. Anda hanya dapat memindahkan kartu milik Anda sendiri.";
+  return "Menampilkan seluruh inisiatif dalam departemen Anda.";
 });
 
 // ─── State ───
@@ -1120,10 +1668,13 @@ const initiatives = ref<any[]>([]);
 const allKrs = ref<any[]>([]);
 const allTeams = ref<any[]>([]);
 const allUsers = ref<any[]>([]);
+const allDepartments = ref<any[]>([]);
 
 const searchQuery = ref("");
+const selectedManagerId = ref("");
 const selectedTeamId = ref("");
 const selectedOwnerId = ref("");
+const selectedLeaderFilterId = ref("");
 const selectedKrId = ref("");
 const errorMessage = ref("");
 const successMessage = ref("");
@@ -1143,6 +1694,7 @@ const initiativeForm = ref({
   keyResultId: "",
   teamId: "",
   ownerId: "",
+  assignedLeaderId: "",
   targetValue: 0,
   achievedValue: null as number | null,
   unit: "",
@@ -1150,13 +1702,82 @@ const initiativeForm = ref({
   weight: 1.0,
   startDate: "",
   dueDate: "",
+  finishDate: "",
   sprintMonth: "",
+  kpis: [],
 });
 
 const teamSearch = ref("");
 const userSearch = ref("");
 
+// ─── Manager & Department Hierarchy Logic ───
+const availableManagers = computed(() => {
+  const managerMap = new Map<string, any>();
+  for (const u of allUsers.value) {
+    if (u.role === "MANAGER") {
+      managerMap.set(u.id, {
+        id: u.id,
+        name: u.name,
+        department: u.department,
+      });
+    }
+  }
+  for (const d of allDepartments.value) {
+    if (d.managerId && d.manager) {
+      if (!managerMap.has(d.managerId)) {
+        managerMap.set(d.managerId, {
+          id: d.managerId,
+          name: d.manager.name,
+          department: d.value,
+        });
+      }
+    }
+  }
+  return Array.from(managerMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+});
+
+const activeManagerId = computed(() => {
+  if (isManager.value && auth.user?.id) {
+    return auth.user.id;
+  }
+  return selectedManagerId.value || "";
+});
+
+const managedDepartmentValues = computed(() => {
+  if (!activeManagerId.value) return [];
+  const mgrId = activeManagerId.value;
+  const deptSet = new Set<string>();
+
+  for (const d of allDepartments.value) {
+    if (d.managerId === mgrId && d.value) {
+      deptSet.add(d.value.toUpperCase());
+    }
+  }
+
+  const mgrUser = allUsers.value.find((u) => u.id === mgrId);
+  if (mgrUser?.department && mgrUser.department.toUpperCase() !== "STRATEGIC") {
+    deptSet.add(mgrUser.department.toUpperCase());
+  }
+  if (auth.user?.id === mgrId && (auth.user as any)?.department) {
+    const dept = (auth.user as any).department;
+    if (dept.toUpperCase() !== "STRATEGIC") deptSet.add(dept.toUpperCase());
+  }
+
+  return Array.from(deptSet);
+});
+
 const availableTeams = computed(() => {
+  if (managedDepartmentValues.value.length > 0) {
+    const depts = managedDepartmentValues.value;
+    const mgrId = activeManagerId.value;
+    return allTeams.value.filter(
+      (t: any) =>
+        (t.department && depts.includes(t.department.toUpperCase())) ||
+        t.managerId === mgrId,
+    );
+  }
   if (isLeader.value) {
     const userTeamId = auth.user?.teamId;
     const userDept = (auth.user as any)?.department;
@@ -1191,7 +1812,7 @@ watch(
   },
 );
 
-// Subordinates list based on role
+// Subordinates list based on active Manager or role
 const availableOwners = computed(() => {
   if (isTeam.value) {
     return auth.user ? [auth.user] : [];
@@ -1203,6 +1824,15 @@ const availableOwners = computed(() => {
           (u: any) => u.teamId === auth.user?.teamId || u.id === auth.user?.id,
         );
   }
+  if (managedDepartmentValues.value.length > 0) {
+    const depts = managedDepartmentValues.value;
+    const mgrId = activeManagerId.value;
+    return allUsers.value.filter(
+      (u: any) =>
+        (u.department && depts.includes(u.department.toUpperCase())) ||
+        u.id === mgrId,
+    );
+  }
   if (isManager.value) {
     const dept = (auth.user as any)?.department;
     if (!dept) return allUsers.value;
@@ -1210,7 +1840,83 @@ const availableOwners = computed(() => {
       (u: any) => u.department === dept || u.id === auth.user?.id,
     );
   }
-  return allUsers.value; // Admin & C-Level
+  return allUsers.value; // Admin & C-Level without manager filter
+});
+
+// Available Key Results based on active Manager or role
+const availableKrs = computed(() => {
+  if (managedDepartmentValues.value.length > 0) {
+    const depts = managedDepartmentValues.value;
+    const mgrId = activeManagerId.value;
+    return allKrs.value.filter((kr: any) => {
+      const matchDept = kr.departments?.some((d: any) =>
+        depts.includes((d.department || "").toUpperCase()),
+      );
+      const matchAssign = kr.assignments?.some((a: any) => a.userId === mgrId);
+      return matchDept || matchAssign;
+    });
+  }
+  if (isLeader.value) {
+    const userDept = (auth.user as any)?.department;
+    return allKrs.value.filter((kr: any) => {
+      const matchDept =
+        userDept && kr.departments?.some((d: any) => d.department === userDept);
+      const matchAssign = kr.assignments?.some(
+        (a: any) => a.userId === auth.user?.id,
+      );
+      return matchDept || matchAssign;
+    });
+  }
+  return allKrs.value;
+});
+
+// Sync URL query with selectedManagerId
+watch(
+  () => route.query,
+  (query) => {
+    if (query.managerId) {
+      selectedManagerId.value = query.managerId as string;
+    } else if (query.manager) {
+      const qName = (query.manager as string).toLowerCase();
+      const match = availableManagers.value.find((m) =>
+        m.name.toLowerCase().includes(qName),
+      );
+      if (match) selectedManagerId.value = match.id;
+    }
+  },
+  { immediate: true },
+);
+
+// When selectedManagerId changes, update URL and reset invalid dependent filters
+watch(selectedManagerId, (newVal) => {
+  const query = { ...route.query };
+  if (newVal) {
+    query.managerId = newVal;
+    delete query.manager;
+  } else {
+    delete query.managerId;
+    delete query.manager;
+  }
+  router.replace({ query });
+
+  if (
+    selectedTeamId.value &&
+    !availableTeams.value.some((t: any) => t.id === selectedTeamId.value)
+  ) {
+    selectedTeamId.value = "";
+  }
+  if (
+    selectedOwnerId.value &&
+    !availableOwners.value.some((u: any) => u.id === selectedOwnerId.value)
+  ) {
+    selectedOwnerId.value = "";
+  }
+  if (
+    selectedKrId.value &&
+    !availableKrs.value.some((kr: any) => kr.id === selectedKrId.value)
+  ) {
+    selectedKrId.value = "";
+  }
 });
 
 const filteredTeams = computed(() => {
@@ -1284,10 +1990,41 @@ watch(
   },
 );
 
-// Task modal state
+// Task modal state & card type
+const cardType = ref<"INISIATIF" | "TASK">("INISIATIF");
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
-const taskForm = ref({ title: "", targetValue: 0, unit: "" });
+const batchInitiativeId = ref("");
+const batchDefaults = ref({
+  targetValue: 100,
+  unit: "%",
+  sprintMonth: "",
+  assignedTeamMemberId: "",
+});
+const taskRows = ref<any[]>([
+  {
+    title: "",
+    targetValue: 100,
+    unit: "%",
+    assignedTeamMemberId: "",
+    sprintMonth: "",
+  },
+]);
+const taskForm = ref<any>({
+  initiativeId: "",
+  title: "",
+  targetValue: 0,
+  unit: "",
+  assignedTeamMemberId: "",
+  sprintMonth: "",
+  startDate: "",
+  finishDate: "",
+  kpis: [],
+});
+const validTaskCount = computed(
+  () =>
+    taskRows.value.filter((r) => r.title && r.title.trim().length > 0).length,
+);
 
 // Sprint Month filter & helper functions
 const selectedSprintMonth = ref("");
@@ -1345,7 +2082,8 @@ function calculateAchievedPercent(ini: any) {
       ? ini.achievedValue
       : ini.currentValue;
   if (!ini.targetValue || ini.targetValue <= 0) return 100;
-  return Math.round((achieved / ini.targetValue) * 100);
+  const pct = Math.round((achieved / ini.targetValue) * 100);
+  return Math.min(100, Math.max(0, pct));
 }
 
 // ─── Filtered Lists per Kanban Column ───
@@ -1367,13 +2105,39 @@ const filteredInitiatives = computed(() => {
         return false;
     }
 
+    // Manager Hierarchy Filter (if active manager / manager filter selected)
+    if (managedDepartmentValues.value.length > 0) {
+      const depts = managedDepartmentValues.value;
+      const mgrId = activeManagerId.value;
+      const matchTeamDept =
+        ini.team?.department &&
+        depts.includes(ini.team.department.toUpperCase());
+      const matchOwnerDept =
+        ini.owner?.department &&
+        depts.includes(ini.owner.department.toUpperCase());
+      const matchOwner =
+        ini.ownerId === mgrId || ini.assignedLeaderId === mgrId;
+      const matchKrDept = ini.keyResult?.departments?.some((d: any) =>
+        depts.includes((d.department || "").toUpperCase()),
+      );
+      if (!matchTeamDept && !matchOwnerDept && !matchOwner && !matchKrDept)
+        return false;
+    }
+
     // Team Filter
     if (selectedTeamId.value && ini.teamId !== selectedTeamId.value)
       return false;
 
-    // Owner (PIC) Filter
-    if (selectedOwnerId.value && ini.ownerId !== selectedOwnerId.value)
-      return false;
+    // Owner (PIC) or Task Assignee Filter
+    if (selectedOwnerId.value) {
+      const isOwner = ini.ownerId === selectedOwnerId.value;
+      const isTaskAssignee = ini.tasks?.some(
+        (t: any) =>
+          t.assignedTeamMemberId === selectedOwnerId.value ||
+          t.assignments?.some((a: any) => a.userId === selectedOwnerId.value),
+      );
+      if (!isOwner && !isTaskAssignee) return false;
+    }
 
     // KR Filter
     if (selectedKrId.value && ini.keyResultId !== selectedKrId.value)
@@ -1417,6 +2181,34 @@ const dropList = computed(() => {
 function getCompletedTasksCount(ini: any) {
   if (!ini.tasks) return 0;
   return ini.tasks.filter((k: any) => k.currentValue >= k.targetValue).length;
+}
+
+const expandedTaskIniIds = ref<string[]>([]);
+
+function toggleTasksExpand(iniId: string) {
+  const idx = expandedTaskIniIds.value.indexOf(iniId);
+  if (idx === -1) {
+    expandedTaskIniIds.value.push(iniId);
+  } else {
+    expandedTaskIniIds.value.splice(idx, 1);
+  }
+}
+
+function getTaskAssigneeName(task: any): string {
+  if (task.assignedTeamMember?.name) return task.assignedTeamMember.name;
+  if (task.assignments && task.assignments.length > 0) {
+    return task.assignments
+      .map((a: any) => a.user?.name)
+      .filter(Boolean)
+      .join(", ");
+  }
+  return "Belum di-assign";
+}
+
+function getTaskStatusClass(status: string) {
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  return "bg-red";
 }
 
 // ─── Drag & Drop Handlers ───
@@ -1535,10 +2327,10 @@ async function moveCard(id: string, newStatus: string) {
 
     if (newStatus === "DONE" && item) {
       const input = prompt(
-        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${item.targetValue} ${item.unit || ""}):`,
+        `Inisiatif "${item.title}" akan ditandai DONE.\nMasukkan Nilai Capaian Riil Selesai (Target: ${formatTargetValue(item.targetValue, item.unit)}):`,
         item.achievedValue !== null && item.achievedValue !== undefined
           ? String(item.achievedValue)
-          : String(item.targetValue),
+          : String(item.currentValue || item.targetValue),
       );
       if (input !== null && input.trim() !== "") {
         const val = parseFloat(input);
@@ -1577,6 +2369,7 @@ async function moveCard(id: string, newStatus: string) {
 
 function openAddInitiativeModal() {
   editingInitiative.value = null;
+  cardType.value = "INISIATIF";
   teamSearch.value = "";
   userSearch.value = "";
   const now = new Date();
@@ -1589,6 +2382,7 @@ function openAddInitiativeModal() {
       ? auth.user?.teamId || availableTeams.value[0]?.id || ""
       : selectedTeamId.value || "",
     ownerId: isTeam.value ? auth.user?.id || "" : "",
+    assignedLeaderId: "",
     targetValue: 0,
     achievedValue: null,
     unit: "",
@@ -1596,7 +2390,20 @@ function openAddInitiativeModal() {
     weight: 1.0,
     startDate: "",
     dueDate: "",
+    finishDate: "",
     sprintMonth: defaultSprint,
+    kpis: [],
+  };
+  taskForm.value = {
+    initiativeId: filteredInitiatives.value[0]?.id || "",
+    title: "",
+    targetValue: 0,
+    unit: "",
+    assignedTeamMemberId: "",
+    sprintMonth: defaultSprint,
+    startDate: "",
+    finishDate: "",
+    kpis: [],
   };
   errorMessage.value = "";
   showInitiativeModal.value = true;
@@ -1612,6 +2419,7 @@ function openEditInitiativeModal(ini: any) {
     keyResultId: ini.keyResultId || "",
     teamId: ini.teamId || "",
     ownerId: ini.ownerId || "",
+    assignedLeaderId: ini.assignedLeaderId || "",
     targetValue: ini.targetValue || 0,
     achievedValue:
       ini.achievedValue !== undefined && ini.achievedValue !== null
@@ -1626,7 +2434,18 @@ function openEditInitiativeModal(ini: any) {
     dueDate: ini.dueDate
       ? new Date(ini.dueDate).toISOString().substring(0, 10)
       : "",
+    finishDate: ini.finishDate
+      ? new Date(ini.finishDate).toISOString().substring(0, 10)
+      : "",
     sprintMonth: ini.sprintMonth || "",
+    kpis: ini.kpis
+      ? ini.kpis.map((ik: any) => ({
+          kpiId: ik.kpiId,
+          targetValue: ik.targetValue,
+          currentValue: ik.currentValue,
+          kpi: ik.kpi,
+        }))
+      : [],
   };
   errorMessage.value = "";
   showInitiativeModal.value = true;
@@ -1637,32 +2456,10 @@ async function saveInitiative() {
     errorMessage.value = "Judul inisiatif wajib diisi";
     return;
   }
-  if (!initiativeForm.value.keyResultId) {
-    errorMessage.value = "Key Result wajib dipilih";
-    return;
-  }
-  if (
-    initiativeForm.value.weight === undefined ||
-    initiativeForm.value.weight === null ||
-    initiativeForm.value.weight <= 0 ||
-    initiativeForm.value.weight > 100
-  ) {
-    errorMessage.value =
-      "Bobot inisiatif wajib diisi, dengan nilai antara 0.1% - 100%";
-    return;
-  }
 
-  if (initiativeForm.value.ownerId && initiativeForm.value.sprintMonth) {
-    const used = computeUsedWeight(
-      initiativeForm.value.ownerId,
-      initiativeForm.value.sprintMonth,
-      editingInitiative.value?.id,
-    );
-    const total = used + initiativeForm.value.weight;
-    if (total > 100.01) {
-      errorMessage.value = `Total bobot pegawai ini pada sprint tersebut menjadi ${total.toFixed(1)}%, melebihi batas 100%. Sisa bobot tersedia: ${Math.max(0, 100 - used).toFixed(1)}%`;
-      return;
-    }
+  if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
+    errorMessage.value = "Satuan (Unit) wajib diisi";
+    return;
   }
 
   if (isTeam.value) {
@@ -1696,12 +2493,52 @@ async function saveInitiative() {
         : "Inisiatif baru berhasil dibuat";
       setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
-    } else {
-      const err = await res.json();
-      errorMessage.value = err.message || "Gagal menyimpan inisiatif";
     }
   } catch (err: any) {
     errorMessage.value = err.message;
+  }
+}
+
+async function saveCard() {
+  if (cardType.value === "INISIATIF") {
+    await saveInitiative();
+  } else {
+    if (!batchInitiativeId.value) {
+      alert("Silakan pilih Inisiatif induk untuk Task ini");
+      return;
+    }
+    const validTasks = taskRows.value.filter(
+      (r) => r.title && r.title.trim().length > 0,
+    );
+
+    if (validTasks.length === 0) {
+      alert("Setidaknya 1 baris Judul Task wajib diisi");
+      return;
+    }
+    saving.value = true;
+    try {
+      const res = await fetch(
+        `${API}/initiatives/${batchInitiativeId.value}/tasks/batch`,
+        {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ tasks: validTasks }),
+        },
+      );
+      if (res.ok) {
+        showInitiativeModal.value = false;
+        successMessage.value = `${validTasks.length} Task berhasil ditambahkan!`;
+        setTimeout(() => (successMessage.value = ""), 3000);
+        await fetchInitiatives();
+      } else {
+        const err = await res.json();
+        alert(err.message || "Gagal membuat Task massal");
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      saving.value = false;
+    }
   }
 }
 
@@ -1725,35 +2562,143 @@ async function deleteInitiative(id: string) {
   }
 }
 
-function openAddTaskModal(ini: any) {
-  selectedInitiativeForTask.value = ini;
-  taskForm.value = { title: "", targetValue: 0, unit: "" };
+function openHeaderAddTaskModal() {
+  const firstIni = filteredInitiatives.value[0] || null;
+  selectedInitiativeForTask.value = firstIni;
+  batchInitiativeId.value = firstIni?.id || "";
+  const now = new Date();
+  const defaultSprint =
+    firstIni?.sprintMonth ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
+    sprintMonth: defaultSprint,
+    assignedTeamMemberId: "",
+  };
+
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      unit: "%",
+      assignedTeamMemberId: "",
+      sprintMonth: defaultSprint,
+    },
+  ];
   showTaskModal.value = true;
 }
 
-async function saveTask() {
-  if (!taskForm.value.title.trim()) {
-    alert("Judul Task wajib diisi");
+function openAddTaskModal(ini: any) {
+  selectedInitiativeForTask.value = ini;
+  batchInitiativeId.value = ini?.id || "";
+  const now = new Date();
+  const defaultSprint =
+    ini?.sprintMonth ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
+    sprintMonth: defaultSprint,
+    assignedTeamMemberId: "",
+  };
+
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      unit: "%",
+      assignedTeamMemberId: "",
+      sprintMonth: defaultSprint,
+    },
+  ];
+  showTaskModal.value = true;
+}
+
+function addTaskRow() {
+  taskRows.value.push({
+    title: "",
+    targetValue: batchDefaults.value.targetValue || 100,
+    unit: batchDefaults.value.unit || "%",
+    assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
+    sprintMonth: batchDefaults.value.sprintMonth || "",
+  });
+}
+
+function removeTaskRow(index: number) {
+  if (taskRows.value.length > 1) {
+    taskRows.value.splice(index, 1);
+  }
+}
+
+function applyDefaultsToAllRows() {
+  taskRows.value.forEach((r) => {
+    r.targetValue = batchDefaults.value.targetValue;
+    r.unit = batchDefaults.value.unit;
+    r.sprintMonth = batchDefaults.value.sprintMonth;
+    r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
+  });
+}
+
+function formatRupiahNumber(val: any) {
+  if (val === null || val === undefined || val === "" || val === 0) {
+    return "";
+  }
+  const num = Number(val);
+  return isNaN(num) ? "" : num.toLocaleString("en-US");
+}
+
+function onRowTargetRupiahInput(e: Event, row: any) {
+  const input = e.target as HTMLInputElement;
+  const rawDigits = input.value.replace(/[^\d]/g, "");
+  if (rawDigits === "") {
+    row.targetValue = 0;
+    input.value = "";
     return;
   }
+  const num = parseInt(rawDigits, 10);
+  row.targetValue = num;
+  input.value = num.toLocaleString("en-US");
+}
+
+async function saveTasksBatch() {
+  const targetId =
+    selectedInitiativeForTask.value?.id || batchInitiativeId.value;
+  const validTasks = taskRows.value.filter(
+    (r) => r.title && r.title.trim().length > 0,
+  );
+
+  if (validTasks.length === 0) {
+    alert("Setidaknya 1 baris Judul Task wajib diisi");
+    return;
+  }
+  if (!targetId) {
+    alert("Inisiatif induk tidak ditemukan");
+    return;
+  }
+  saving.value = true;
   try {
-    const res = await fetch(
-      `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`,
-      {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(taskForm.value),
-      },
-    );
+    const res = await fetch(`${API}/initiatives/${targetId}/tasks/batch`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ tasks: validTasks }),
+    });
     if (res.ok) {
       showTaskModal.value = false;
+      showInitiativeModal.value = false;
+      successMessage.value = `${validTasks.length} Task berhasil ditambahkan!`;
+      setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      alert(err.message || "Gagal membuat Task");
+      alert(err.message || "Gagal membuat Task massal");
     }
   } catch (err: any) {
     alert(err.message);
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -1771,22 +2716,44 @@ async function fetchAllUsers() {
   } catch (err) {}
 }
 
+async function fetchAllDepartments() {
+  try {
+    const res = await fetch(`${API}/departments`, { headers: getHeaders() });
+    if (res.ok) allDepartments.value = await res.json();
+  } catch (err) {}
+}
+
 onMounted(async () => {
   await Promise.all([
     fetchInitiatives(),
     fetchAllKrs(),
     fetchAllTeams(),
     fetchAllUsers(),
+    fetchAllDepartments(),
     fetchMemberProgress(),
   ]);
+  if (isManager.value || isAdmin.value) {
+    availableLeaders.value = await fetchAvailableLeaders(
+      (auth.user as any)?.department,
+    );
+  }
+  try {
+    availableTeamMembers.value = await fetchAvailableTeamMembers(
+      (auth.user as any)?.department,
+    );
+  } catch (err) {}
 });
 </script>
 
 <style scoped>
 .admin-root {
-  padding: 1.5rem;
-  background: var(--bg-primary, #f8fafc);
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 .card {
@@ -1989,17 +2956,18 @@ onMounted(async () => {
 }
 
 /* Kanban Board Layout */
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  align-items: start;
+.kanban-board-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 12px;
 }
 
-@media (max-width: 1024px) {
-  .kanban-board {
-    grid-template-columns: 1fr;
-  }
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(270px, 1fr));
+  gap: 16px;
+  align-items: start;
+  min-width: 1100px;
 }
 
 .kanban-column {
@@ -2300,6 +3268,7 @@ onMounted(async () => {
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px dashed var(--border-color, #e2e8f0);
+  gap: 12px;
 }
 
 .left-actions,
@@ -2365,6 +3334,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   z-index: 999;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
@@ -2730,5 +3700,173 @@ onMounted(async () => {
 .achieved-val {
   color: #047857;
   font-weight: 800;
+}
+
+/* Card Type Differentiation Styles */
+.kanban-card.task-card-type {
+  background: #f0f9ff !important;
+  border-left: 4px solid #0284c7 !important;
+  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.12);
+}
+
+.kanban-card.ini-card-type {
+  background: #ffffff;
+  border-left: 4px solid #3b82f6;
+}
+
+.card-type-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.card-type-pill.task {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.card-type-pill.initiative {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Bulk Task Modal Styles */
+.modal-box-large {
+  max-width: 840px !important;
+  width: 95% !important;
+}
+
+.batch-defaults-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.batch-defaults-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+.form-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 768px) {
+  .form-row-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.btn-text-action {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-text-action:hover {
+  text-decoration: underline;
+}
+
+.task-rows-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.btn-add-row {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-add-row:hover {
+  background: #dbeafe;
+}
+
+.task-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.task-row-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.task-row-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.task-row-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.row-title {
+  flex: 3;
+  margin-bottom: 0 !important;
+}
+.row-target {
+  flex: 1;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+}
+.row-unit {
+  flex: 1;
+  min-width: 70px;
+  margin-bottom: 0 !important;
+}
+.row-assignee {
+  flex: 2;
+  min-width: 130px;
+  margin-bottom: 0 !important;
+}
+.btn-remove-row {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-remove-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-remove-row:hover:not(:disabled) {
+  background: #fee2e2;
 }
 </style>

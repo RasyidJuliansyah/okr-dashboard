@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: okr-backend
+    restart: always
+    environment:
+      - PORT=3001
+      # Point this at your managed MySQL instance, e.g.:
+      # mysql://USER:PASSWORD@HOST:3306/DATABASE_NAME
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=super-secret-key-change-me-in-production
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: okr-frontend
+    restart: always
+    environment:
+      - PORT=3000
+      - NUXT_PUBLIC_API_BASE=https://bsc.proc.skolla.online/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

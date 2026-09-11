@@ -9,26 +9,45 @@
             <span class="view-badge">Kanban Board</span>
           </div>
           <p class="section-desc">
-            Visualisasi dan kelola eksekusi inisiatif tim melalui 3 tahapan alur kerja: To Do, In Progress, dan Done.
+            Visualisasi dan kelola eksekusi inisiatif tim melalui 3 tahapan alur
+            kerja: To Do, In Progress, dan Done.
           </p>
         </div>
         <div class="header-action-group">
           <NuxtLink to="/admin/initiatives" class="secondary-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"/>
-              <line x1="8" y1="12" x2="21" y2="12"/>
-              <line x1="8" y1="18" x2="21" y2="18"/>
-              <line x1="3" y1="6" x2="3.01" y2="6"/>
-              <line x1="3" y1="12" x2="3.01" y2="12"/>
-              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
             </svg>
             Tampilan List
           </NuxtLink>
           <button class="secondary-btn" @click="showBulkModal = true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             Bulk Upload CSV
           </button>
@@ -39,16 +58,30 @@
       </div>
 
       <!-- Alert -->
-      <div v-if="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
-      <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
+      <div v-if="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
+      <div v-if="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
 
       <!-- Filters & Search Bar -->
       <div class="kanban-filter-card card">
         <div class="filter-controls-row">
           <div class="search-input-wrap">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="search-icon"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               v-model="searchQuery"
@@ -62,7 +95,9 @@
             <label>Filter Tim:</label>
             <select v-model="selectedTeamId" class="filter-select">
               <option value="">Semua Tim</option>
-              <option v-for="t in allTeams" :key="t.id" :value="t.id">{{ t.name }}</option>
+              <option v-for="t in allTeams" :key="t.id" :value="t.id">
+                {{ t.name }}
+              </option>
             </select>
           </div>
 
@@ -70,7 +105,9 @@
             <label>Filter Key Result:</label>
             <select v-model="selectedKrId" class="filter-select">
               <option value="">Semua Key Result</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">{{ kr.title }}</option>
+              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+                {{ kr.title }}
+              </option>
             </select>
           </div>
         </div>
@@ -98,7 +135,7 @@
             <div v-if="todoList.length === 0" class="kanban-empty-col">
               Belum ada inisiatif di kolom ini
             </div>
-            
+
             <div
               v-for="ini in todoList"
               :key="ini.id"
@@ -108,30 +145,36 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
-                <span v-if="ini.keyResult?.bscPerspective" class="perspective-pill" :class="ini.keyResult.bscPerspective.toLowerCase()">
+                <span
+                  v-if="ini.keyResult?.bscPerspective"
+                  class="perspective-pill"
+                  :class="ini.keyResult.bscPerspective.toLowerCase()"
+                >
                   {{ ini.keyResult.bscPerspective }}
                 </span>
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
-                </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
               <!-- Tasks summary chips -->
               <div class="card-tasks-summary" v-if="ini.tasks?.length">
                 <span class="task-count-tag">
-                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }} selesai)
+                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}
+                  selesai)
                 </span>
               </div>
 
@@ -147,13 +190,67 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Tambah Task" @click="openAddTaskModal(ini)">+ Task</button>
-                  <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
+                  <button
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
+                  <button
+                    class="action-btn"
+                    title="Edit Inisiatif"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
-                    Maju &rarr;
+                  <button
+                    class="move-btn"
+                    title="Pindah ke In Progress"
+                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+                  >
+                    Maju
                   </button>
                 </div>
               </div>
@@ -191,30 +288,37 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
-                <span v-if="ini.keyResult?.bscPerspective" class="perspective-pill" :class="ini.keyResult.bscPerspective.toLowerCase()">
+                <span
+                  v-if="ini.keyResult?.bscPerspective"
+                  class="perspective-pill"
+                  :class="ini.keyResult.bscPerspective.toLowerCase()"
+                >
                   {{ ini.keyResult.bscPerspective }}
                 </span>
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
-                </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
               <!-- Tasks summary chips -->
               <div class="card-tasks-summary" v-if="ini.tasks?.length">
                 <span class="task-count-tag in-progress">
-                  {{ ini.tasks.length }} Task ({{ getCompletedTasksCount(ini) }}/{{ ini.tasks.length }} selesai)
+                  {{ ini.tasks.length }} Task ({{
+                    getCompletedTasksCount(ini)
+                  }}/{{ ini.tasks.length }} selesai)
                 </span>
               </div>
 
@@ -230,16 +334,74 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Tambah Task" @click="openAddTaskModal(ini)">+ Task</button>
-                  <button class="action-btn" title="Edit Inisiatif" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
+                  <button
+                    class="action-btn"
+                    title="Tambah Task"
+                    @click="openAddTaskModal(ini)"
+                  >
+                    + Task
+                  </button>
+                  <button
+                    class="action-btn"
+                    title="Edit Inisiatif"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Kembalikan ke To Do" @click="moveCard(ini.id, 'TODO')">
-                    &larr; Mundur
+                  <button
+                    class="move-btn"
+                    title="Kembalikan ke To Do"
+                    @click="moveCard(ini.id, 'TODO')"
+                  >
+                    Mundur
                   </button>
-                  <button class="move-btn primary" title="Selesaikan ke Done" @click="moveCard(ini.id, 'DONE')">
-                    Selesai &rarr;
+                  <button
+                    class="move-btn primary"
+                    title="Selesaikan ke Done"
+                    @click="moveCard(ini.id, 'DONE')"
+                  >
+                    Selesai
                   </button>
                 </div>
               </div>
@@ -277,21 +439,22 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
                 <span class="completed-checkmark-badge">Selesai</span>
               </div>
 
               <h4 class="card-title text-done">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
-                </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -307,11 +470,59 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
+                  <button
+                    class="action-btn"
+                    title="Edit"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Pindah ke In Progress" @click="moveCard(ini.id, 'IN_PROGRESS')">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke In Progress"
+                    @click="moveCard(ini.id, 'IN_PROGRESS')"
+                  >
                     &larr; Buka Kembali
                   </button>
                 </div>
@@ -350,21 +561,22 @@
             >
               <div class="card-top-meta">
                 <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || 'Key Result' }}
+                  {{ ini.keyResult?.title || "Key Result" }}
                 </span>
                 <span class="dropped-badge">Drop</span>
               </div>
 
               <h4 class="card-title text-drop">{{ ini.title }}</h4>
-              <p v-if="ini.description" class="card-desc">{{ ini.description }}</p>
+              <p v-if="ini.description" class="card-desc">
+                {{ ini.description }}
+              </p>
 
               <div class="card-target-row">
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target:</span>
-                  <strong class="target-val">{{ ini.targetValue }} {{ ini.unit || '' }}</strong>
-                </span>
-                <span class="weight-badge-mini" title="Bobot Inisiatif terhadap KR">
-                  Bobot: <strong>{{ ini.weight || 1.0 }}</strong>
+                  <strong class="target-val">{{
+                    formatTargetValue(ini.targetValue, ini.unit)
+                  }}</strong>
                 </span>
               </div>
 
@@ -380,11 +592,59 @@
               <!-- Card Action Buttons -->
               <div class="card-hover-actions">
                 <div class="left-actions">
-                  <button class="action-btn" title="Edit" @click="openEditInitiativeModal(ini)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
-                  <button class="action-btn danger" title="Hapus" @click="deleteInitiative(ini.id)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg></button>
+                  <button
+                    class="action-btn"
+                    title="Edit"
+                    @click="openEditInitiativeModal(ini)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="action-btn danger"
+                    title="Hapus"
+                    @click="deleteInitiative(ini.id)"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="move-actions">
-                  <button class="move-btn" title="Pindah ke To Do" @click="moveCard(ini.id, 'TODO')">
+                  <button
+                    class="move-btn"
+                    title="Pindah ke To Do"
+                    @click="moveCard(ini.id, 'TODO')"
+                  >
                     &larr; Aktifkan Kembali
                   </button>
                 </div>
@@ -395,23 +655,43 @@
       </div>
 
       <!-- ─── MODAL: Add/Edit Initiative ─── -->
-      <div v-if="showInitiativeModal" class="modal-overlay" @click.self="showInitiativeModal = false">
+      <div
+        v-if="showInitiativeModal"
+        class="modal-overlay"
+        @click.self="showInitiativeModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
-            <h3>{{ editingInitiative ? 'Edit' : 'Tambah' }} Inisiatif</h3>
-            <button class="modal-close-btn" @click="showInitiativeModal = false">&times;</button>
+            <h3>{{ editingInitiative ? "Edit" : "Tambah" }} Inisiatif</h3>
+            <button
+              class="modal-close-btn"
+              @click="showInitiativeModal = false"
+            >
+              &times;
+            </button>
           </div>
           <div class="modal-body-scroll">
             <label>Judul Inisiatif *</label>
-            <input v-model="initiativeForm.title" class="form-input" placeholder="Contoh: Optimalisasi query database..." />
+            <input
+              v-model="initiativeForm.title"
+              class="form-input"
+              placeholder="Contoh: Optimalisasi query database..."
+            />
 
             <label>Deskripsi</label>
-            <textarea v-model="initiativeForm.description" class="form-input" rows="2" placeholder="Catatan dan ruang lingkup inisiatif..."></textarea>
+            <textarea
+              v-model="initiativeForm.description"
+              class="form-input"
+              rows="2"
+              placeholder="Catatan dan ruang lingkup inisiatif..."
+            ></textarea>
 
             <label>Parent Key Result *</label>
             <select v-model="initiativeForm.keyResultId" class="form-input">
               <option value="">-- Pilih Key Result --</option>
-              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">{{ kr.title }}</option>
+              <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
+                {{ kr.title }}
+              </option>
             </select>
 
             <label>Tim / Departemen *</label>
@@ -419,12 +699,18 @@
               v-model="teamSearch"
               type="text"
               class="form-input"
-              style="margin-bottom: 6px;"
+              style="margin-bottom: 6px"
               placeholder="Cari departemen / tim..."
             />
             <select v-model="initiativeForm.teamId" class="form-input">
               <option value="">-- Pilih Tim / Departemen --</option>
-              <option v-for="team in filteredTeams" :key="team.id" :value="team.id">{{ team.name }}</option>
+              <option
+                v-for="team in filteredTeams"
+                :key="team.id"
+                :value="team.id"
+              >
+                {{ team.name }}
+              </option>
             </select>
 
             <label>PIC Pegawai (Penanggung Jawab)</label>
@@ -432,73 +718,97 @@
               v-model="userSearch"
               type="text"
               class="form-input"
-              style="margin-bottom: 6px;"
+              style="margin-bottom: 6px"
               placeholder="Cari nama pegawai..."
             />
             <select v-model="initiativeForm.ownerId" class="form-input">
               <option value="">-- Pilih Pegawai (Opsional) --</option>
-              <option v-for="user in filteredUsers" :key="user.id" :value="user.id">{{ user.name }} ({{ user.position || 'Staff' }})</option>
+              <option
+                v-for="user in filteredUsers"
+                :key="user.id"
+                :value="user.id"
+              >
+                {{ user.name }} ({{ user.position || "Staff" }})
+              </option>
             </select>
 
-            <div class="form-row-2">
-              <div>
-                <label>Target Value</label>
-                <input v-model.number="initiativeForm.targetValue" type="number" class="form-input" />
-              </div>
-              <div>
-                <label>Unit / Satuan</label>
-                <input v-model="initiativeForm.unit" class="form-input" placeholder="%, Sesi, tasks..." />
-              </div>
-            </div>
+            <UnitTargetInput
+              v-model:targetValue="initiativeForm.targetValue"
+              v-model:unit="initiativeForm.unit"
+              :required="true"
+            />
 
-            <div class="form-row-2">
-              <div>
-                <label>Bobot Inisiatif *</label>
-                <input v-model.number="initiativeForm.weight" type="number" step="0.1" min="0.1" class="form-input" placeholder="Contoh: 1.0" />
-              </div>
-              <div>
-                <label>Kolom Kanban (Status)</label>
-                <select v-model="initiativeForm.kanbanStatus" class="form-input">
-                  <option value="TODO">To Do</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="DONE">Done</option>
-                  <option value="DROP">Drop</option>
-                </select>
-              </div>
+            <div style="margin-bottom: 12px">
+              <label
+                style="
+                  display: block;
+                  margin-bottom: 4px;
+                  font-weight: 500;
+                  font-size: 13px;
+                "
+                >Kolom Kanban (Status)</label
+              >
+              <select v-model="initiativeForm.kanbanStatus" class="form-input">
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
+                <option value="DROP">Drop</option>
+              </select>
             </div>
           </div>
 
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showInitiativeModal = false">Batal</button>
-            <button class="primary-btn" @click="saveInitiative">Simpan</button>
+            <button class="secondary-btn" @click="showInitiativeModal = false">
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="saveInitiative"
+              :disabled="!initiativeForm.unit?.trim()"
+            >
+              Simpan
+            </button>
           </div>
         </div>
       </div>
 
       <!-- ─── MODAL: Add/Edit Task ─── -->
-      <div v-if="showTaskModal" class="modal-overlay" @click.self="showTaskModal = false">
+      <div
+        v-if="showTaskModal"
+        class="modal-overlay"
+        @click.self="showTaskModal = false"
+      >
         <div class="modal-box">
           <div class="modal-header">
             <h3>Tambah Task untuk: {{ selectedInitiativeForTask?.title }}</h3>
-            <button class="modal-close-btn" @click="showTaskModal = false">&times;</button>
+            <button class="modal-close-btn" @click="showTaskModal = false">
+              &times;
+            </button>
           </div>
           <div class="modal-body-scroll">
             <label>Judul Task *</label>
-            <input v-model="taskForm.title" class="form-input" placeholder="Contoh: Selesaikan 10 unit test..." />
-            <div class="form-row-2">
-              <div>
-                <label>Target Value *</label>
-                <input v-model.number="taskForm.targetValue" type="number" class="form-input" />
-              </div>
-              <div>
-                <label>Satuan (Unit)</label>
-                <input v-model="taskForm.unit" class="form-input" placeholder="%, task, doc..." />
-              </div>
-            </div>
+            <input
+              v-model="taskForm.title"
+              class="form-input"
+              placeholder="Contoh: Selesaikan 10 unit test..."
+            />
+            <UnitTargetInput
+              v-model:targetValue="taskForm.targetValue"
+              v-model:unit="taskForm.unit"
+              :required="true"
+            />
           </div>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showTaskModal = false">Batal</button>
-            <button class="primary-btn" @click="saveTask">Simpan Task</button>
+            <button class="secondary-btn" @click="showTaskModal = false">
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="saveTask"
+              :disabled="!taskForm.unit?.trim()"
+            >
+              Simpan Task
+            </button>
           </div>
         </div>
       </div>
@@ -515,16 +825,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
-import BulkUploadModal from '~/components/BulkUploadModal.vue';
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
+import BulkUploadModal from "~/components/BulkUploadModal.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
 
 const getHeaders = () => ({
-  'Content-Type': 'application/json',
+  "Content-Type": "application/json",
   Authorization: `Bearer ${auth.token}`,
 });
 
@@ -534,11 +844,11 @@ const allKrs = ref<any[]>([]);
 const allTeams = ref<any[]>([]);
 const allUsers = ref<any[]>([]);
 
-const searchQuery = ref('');
-const selectedTeamId = ref('');
-const selectedKrId = ref('');
-const errorMessage = ref('');
-const successMessage = ref('');
+const searchQuery = ref("");
+const selectedTeamId = ref("");
+const selectedKrId = ref("");
+const errorMessage = ref("");
+const successMessage = ref("");
 
 const showBulkModal = ref(false);
 
@@ -550,36 +860,40 @@ const dragOverColumn = ref<string | null>(null);
 const showInitiativeModal = ref(false);
 const editingInitiative = ref<any>(null);
 const initiativeForm = ref({
-  title: '',
-  description: '',
-  keyResultId: '',
-  teamId: '',
-  ownerId: '',
+  title: "",
+  description: "",
+  keyResultId: "",
+  teamId: "",
+  ownerId: "",
   targetValue: 0,
-  unit: '',
-  kanbanStatus: 'TODO',
-  weight: 1.0
+  unit: "",
+  kanbanStatus: "TODO",
+  weight: 1.0,
 });
 
-const teamSearch = ref('');
-const userSearch = ref('');
+const teamSearch = ref("");
+const userSearch = ref("");
 
 const filteredTeams = computed(() => {
   if (!teamSearch.value.trim()) return allTeams.value;
   const q = teamSearch.value.toLowerCase();
-  return allTeams.value.filter((t: any) => t.name && t.name.toLowerCase().includes(q));
+  return allTeams.value.filter(
+    (t: any) => t.name && t.name.toLowerCase().includes(q),
+  );
 });
 
 const filteredUsers = computed(() => {
   if (!userSearch.value.trim()) return allUsers.value;
   const q = userSearch.value.toLowerCase();
-  return allUsers.value.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
+  return allUsers.value.filter(
+    (u: any) => u.name && u.name.toLowerCase().includes(q),
+  );
 });
 
 // Task modal state
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
-const taskForm = ref({ title: '', targetValue: 0, unit: '' });
+const taskForm = ref({ title: "", targetValue: 0, unit: "" });
 
 // ─── Filtered Lists per Kanban Column ───
 const filteredInitiatives = computed(() => {
@@ -588,18 +902,25 @@ const filteredInitiatives = computed(() => {
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase().trim();
       const matchTitle = ini.title && ini.title.toLowerCase().includes(q);
-      const matchDesc = ini.description && ini.description.toLowerCase().includes(q);
-      const matchKr = ini.keyResult?.title && ini.keyResult.title.toLowerCase().includes(q);
-      const matchTeam = ini.team?.name && ini.team.name.toLowerCase().includes(q);
-      const matchOwner = ini.owner?.name && ini.owner.name.toLowerCase().includes(q);
-      if (!matchTitle && !matchDesc && !matchKr && !matchTeam && !matchOwner) return false;
+      const matchDesc =
+        ini.description && ini.description.toLowerCase().includes(q);
+      const matchKr =
+        ini.keyResult?.title && ini.keyResult.title.toLowerCase().includes(q);
+      const matchTeam =
+        ini.team?.name && ini.team.name.toLowerCase().includes(q);
+      const matchOwner =
+        ini.owner?.name && ini.owner.name.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchKr && !matchTeam && !matchOwner)
+        return false;
     }
 
     // Team Filter
-    if (selectedTeamId.value && ini.teamId !== selectedTeamId.value) return false;
+    if (selectedTeamId.value && ini.teamId !== selectedTeamId.value)
+      return false;
 
     // KR Filter
-    if (selectedKrId.value && ini.keyResultId !== selectedKrId.value) return false;
+    if (selectedKrId.value && ini.keyResultId !== selectedKrId.value)
+      return false;
 
     return true;
   });
@@ -607,25 +928,25 @@ const filteredInitiatives = computed(() => {
 
 const todoList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => !i.kanbanStatus || i.kanbanStatus === 'TODO'
+    (i: any) => !i.kanbanStatus || i.kanbanStatus === "TODO",
   );
 });
 
 const inProgressList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === 'IN_PROGRESS'
+    (i: any) => i.kanbanStatus === "IN_PROGRESS",
   );
 });
 
 const doneList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === 'DONE'
+    (i: any) => i.kanbanStatus === "DONE",
   );
 });
 
 const dropList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === 'DROP'
+    (i: any) => i.kanbanStatus === "DROP",
   );
 });
 
@@ -656,7 +977,7 @@ async function fetchInitiatives() {
       initiatives.value = await res.json();
     }
   } catch (err: any) {
-    errorMessage.value = 'Gagal memuat data inisiatif';
+    errorMessage.value = "Gagal memuat data inisiatif";
   }
 }
 
@@ -691,14 +1012,14 @@ async function moveCard(id: string, newStatus: string) {
     if (item) item.kanbanStatus = newStatus;
 
     const res = await fetch(`${API}/initiatives/${id}/kanban-status`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: getHeaders(),
       body: JSON.stringify({ kanbanStatus: newStatus }),
     });
 
     if (!res.ok) {
       await fetchInitiatives(); // revert on error
-      errorMessage.value = 'Gagal memindahkan inisiatif';
+      errorMessage.value = "Gagal memindahkan inisiatif";
     }
   } catch (err: any) {
     await fetchInitiatives();
@@ -708,79 +1029,83 @@ async function moveCard(id: string, newStatus: string) {
 
 function openAddInitiativeModal() {
   editingInitiative.value = null;
-  teamSearch.value = '';
-  userSearch.value = '';
+  teamSearch.value = "";
+  userSearch.value = "";
   initiativeForm.value = {
-    title: '',
-    description: '',
-    keyResultId: selectedKrId.value || '',
-    teamId: selectedTeamId.value || '',
-    ownerId: '',
+    title: "",
+    description: "",
+    keyResultId: selectedKrId.value || "",
+    teamId: selectedTeamId.value || "",
+    ownerId: "",
     targetValue: 0,
-    unit: '',
-    kanbanStatus: 'TODO',
-    weight: 1.0
+    unit: "",
+    kanbanStatus: "TODO",
+    weight: 1.0,
   };
-  errorMessage.value = '';
+  errorMessage.value = "";
   showInitiativeModal.value = true;
 }
 
 function openEditInitiativeModal(ini: any) {
   editingInitiative.value = ini;
-  teamSearch.value = '';
-  userSearch.value = '';
+  teamSearch.value = "";
+  userSearch.value = "";
   initiativeForm.value = {
-    title: ini.title || '',
-    description: ini.description || '',
-    keyResultId: ini.keyResultId || '',
-    teamId: ini.teamId || '',
-    ownerId: ini.ownerId || '',
+    title: ini.title || "",
+    description: ini.description || "",
+    keyResultId: ini.keyResultId || "",
+    teamId: ini.teamId || "",
+    ownerId: ini.ownerId || "",
     targetValue: ini.targetValue || 0,
-    unit: ini.unit || '',
-    kanbanStatus: ini.kanbanStatus || 'TODO',
-    weight: ini.weight !== undefined ? ini.weight : 1.0
+    unit: ini.unit || "",
+    kanbanStatus: ini.kanbanStatus || "TODO",
+    weight: ini.weight !== undefined ? ini.weight : 1.0,
   };
-  errorMessage.value = '';
+  errorMessage.value = "";
   showInitiativeModal.value = true;
 }
 
 async function saveInitiative() {
   if (!initiativeForm.value.title.trim()) {
-    errorMessage.value = 'Judul inisiatif wajib diisi';
+    errorMessage.value = "Judul inisiatif wajib diisi";
+    return;
+  }
+  if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
+    errorMessage.value = "Satuan (Unit) wajib diisi";
     return;
   }
   if (!initiativeForm.value.keyResultId) {
-    errorMessage.value = 'Key Result wajib dipilih';
+    errorMessage.value = "Key Result wajib dipilih";
     return;
   }
   if (!initiativeForm.value.teamId) {
-    errorMessage.value = 'Tim wajib dipilih';
-    return;
-  }
-  if (initiativeForm.value.weight === undefined || initiativeForm.value.weight === null || initiativeForm.value.weight <= 0) {
-    errorMessage.value = 'Bobot inisiatif wajib diisi dan harus bernilai lebih dari 0';
+    errorMessage.value = "Tim wajib dipilih";
     return;
   }
 
   try {
     const isEdit = !!editingInitiative.value;
-    const url = isEdit ? `${API}/initiatives/${editingInitiative.value.id}` : `${API}/initiatives`;
-    const method = isEdit ? 'PUT' : 'POST';
+    const url = isEdit
+      ? `${API}/initiatives/${editingInitiative.value.id}`
+      : `${API}/initiatives`;
+    const method = isEdit ? "PUT" : "POST";
 
     const res = await fetch(url, {
       method,
       headers: getHeaders(),
-      body: JSON.stringify(initiativeForm.value)
+      body: JSON.stringify(initiativeForm.value),
     });
 
     if (res.ok) {
       showInitiativeModal.value = false;
-      successMessage.value = isEdit ? 'Inisiatif berhasil diperbarui' : 'Inisiatif baru berhasil dibuat';
-      setTimeout(() => successMessage.value = '', 3000);
+      successMessage.value = isEdit
+        ? "Inisiatif berhasil diperbarui"
+        : "Inisiatif baru berhasil dibuat";
+      setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      errorMessage.value = err.message || 'Gagal menyimpan inisiatif';
+      errorMessage.value = err.message || "Gagal menyimpan inisiatif";
     }
   } catch (err: any) {
     errorMessage.value = err.message;
@@ -788,19 +1113,19 @@ async function saveInitiative() {
 }
 
 async function deleteInitiative(id: string) {
-  if (!confirm('Hapus inisiatif ini beserta seluruh Task di dalamnya?')) return;
+  if (!confirm("Hapus inisiatif ini beserta seluruh Task di dalamnya?")) return;
   try {
     const res = await fetch(`${API}/initiatives/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders()
+      method: "DELETE",
+      headers: getHeaders(),
     });
     if (res.ok) {
-      successMessage.value = 'Inisiatif berhasil dihapus';
-      setTimeout(() => successMessage.value = '', 3000);
+      successMessage.value = "Inisiatif berhasil dihapus";
+      setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      errorMessage.value = err.message || 'Gagal menghapus';
+      errorMessage.value = err.message || "Gagal menghapus";
     }
   } catch (err: any) {
     errorMessage.value = err.message;
@@ -809,27 +1134,34 @@ async function deleteInitiative(id: string) {
 
 function openAddTaskModal(ini: any) {
   selectedInitiativeForTask.value = ini;
-  taskForm.value = { title: '', targetValue: 0, unit: '' };
+  taskForm.value = { title: "", targetValue: 0, unit: "" };
   showTaskModal.value = true;
 }
 
 async function saveTask() {
   if (!taskForm.value.title.trim()) {
-    alert('Judul Task wajib diisi');
+    alert("Judul Task wajib diisi");
+    return;
+  }
+  if (!taskForm.value.unit || !taskForm.value.unit.trim()) {
+    alert("Satuan (Unit) wajib diisi");
     return;
   }
   try {
-    const res = await fetch(`${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(taskForm.value)
-    });
+    const res = await fetch(
+      `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(taskForm.value),
+      },
+    );
     if (res.ok) {
       showTaskModal.value = false;
       await fetchInitiatives();
     } else {
       const err = await res.json();
-      alert(err.message || 'Gagal membuat Task');
+      alert(err.message || "Gagal membuat Task");
     }
   } catch (err: any) {
     alert(err.message);
@@ -884,7 +1216,7 @@ onMounted(async () => {
   font-size: 0.75rem;
   font-weight: 700;
   background: rgba(14, 151, 214, 0.12);
-  color: #0E97D6;
+  color: #0e97d6;
   padding: 3px 8px;
   border-radius: 6px;
   text-transform: uppercase;
@@ -902,7 +1234,7 @@ onMounted(async () => {
 }
 
 .primary-btn {
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
   border: none;
   padding: 8px 16px;
@@ -979,7 +1311,7 @@ onMounted(async () => {
 }
 
 .search-input:focus {
-  border-color: #0E97D6;
+  border-color: #0e97d6;
   background: #ffffff;
 }
 
@@ -1026,7 +1358,7 @@ onMounted(async () => {
 
 .kanban-column.drop-active {
   background: rgba(14, 151, 214, 0.04);
-  border: 2px dashed #0E97D6;
+  border: 2px dashed #0e97d6;
 }
 
 .column-header {
@@ -1058,10 +1390,18 @@ onMounted(async () => {
   border-radius: 50%;
 }
 
-.col-dot.todo { background: #94a3b8; }
-.col-dot.progress { background: #0E97D6; }
-.col-dot.done { background: #10B981; }
-.col-dot.drop { background: #ef4444; }
+.col-dot.todo {
+  background: #94a3b8;
+}
+.col-dot.progress {
+  background: #0e97d6;
+}
+.col-dot.done {
+  background: #10b981;
+}
+.col-dot.drop {
+  background: #ef4444;
+}
 
 .col-count-badge {
   font-size: 0.78rem;
@@ -1112,11 +1452,11 @@ onMounted(async () => {
 }
 
 .card-in-progress {
-  border-left: 4px solid #0E97D6;
+  border-left: 4px solid #0e97d6;
 }
 
 .card-done {
-  border-left: 4px solid #10B981;
+  border-left: 4px solid #10b981;
   background: #fafcfb;
 }
 
@@ -1155,15 +1495,27 @@ onMounted(async () => {
   text-transform: uppercase;
 }
 
-.perspective-pill.financial { background: #e0f2fe; color: #0284c7; }
-.perspective-pill.customer { background: #fef3c7; color: #d97706; }
-.perspective-pill.internal_process { background: #f3e8ff; color: #9333ea; }
-.perspective-pill.learning_growth { background: #d1fae5; color: #059669; }
+.perspective-pill.financial {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.perspective-pill.customer {
+  background: #fef3c7;
+  color: #d97706;
+}
+.perspective-pill.internal_process {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+.perspective-pill.learning_growth {
+  background: #d1fae5;
+  color: #059669;
+}
 
 .completed-checkmark-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #10B981;
+  color: #10b981;
 }
 
 .card-title {
@@ -1288,7 +1640,8 @@ onMounted(async () => {
   border-top: 1px dashed var(--border-color, #e2e8f0);
 }
 
-.left-actions, .move-actions {
+.left-actions,
+.move-actions {
   display: flex;
   gap: 4px;
 }
@@ -1318,8 +1671,8 @@ onMounted(async () => {
 
 .move-btn {
   background: #ffffff;
-  border: 1px solid #0E97D6;
-  color: #0E97D6;
+  border: 1px solid #0e97d6;
+  color: #0e97d6;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 3px 8px;
@@ -1333,7 +1686,7 @@ onMounted(async () => {
 }
 
 .move-btn.primary {
-  background: #0E97D6;
+  background: #0e97d6;
   color: #ffffff;
 }
 
@@ -1350,6 +1703,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   z-index: 999;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
@@ -1412,7 +1766,7 @@ onMounted(async () => {
 }
 
 .form-input:focus {
-  border-color: #0E97D6;
+  border-color: #0e97d6;
 }
 
 .form-row-2 {

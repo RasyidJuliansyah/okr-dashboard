@@ -63,7 +63,22 @@
       <!-- STEP 1: Upload & Template -->
       <div v-if="currentStep === 1" class="step-content">
         <div class="info-box">
-          <div class="info-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg></div>
+          <div class="info-icon">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </div>
           <div class="info-text">
             <template v-if="isObjective">
               <p><strong>Format Kolom CSV untuk Objective:</strong></p>
@@ -305,7 +320,7 @@
                     {{ row.title || "-" }}
                   </td>
                   <td class="col-target">
-                    {{ row.targetValue }} {{ row.unit }}
+                    {{ formatTargetValue(row.targetValue, row.unit) }}
                   </td>
                   <td>
                     <span class="perspective-chip">{{
@@ -337,7 +352,7 @@
                   </td>
                   <td>{{ row.ownerName || row.ownerId || "-" }}</td>
                   <td class="col-target">
-                    {{ row.targetValue || "0" }} {{ row.unit || "" }}
+                    {{ formatTargetValue(row.targetValue || 0, row.unit) }}
                   </td>
                   <td>
                     <span
@@ -380,7 +395,21 @@
 
       <!-- STEP 3: Results -->
       <div v-if="currentStep === 3" class="step-content result-content">
-        <div class="result-icon-celebrate"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></div>
+        <div class="result-icon-celebrate">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
         <h4>Proses Bulk Upload Selesai!</h4>
         <p class="text-muted" style="margin-bottom: 1.5rem">
           Ringkasan hasil penyimpanan data ke sistem:
@@ -806,6 +835,7 @@ function finishImport() {
   align-items: center;
   justify-content: center;
   z-index: 99999;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   padding: 1rem;
 }

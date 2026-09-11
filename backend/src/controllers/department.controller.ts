@@ -18,7 +18,7 @@ export async function getAllDepartments(req: AuthRequest, res: Response) {
       const managed = await prisma.department.findMany({ where: { managerId: userId }, select: { value: true } });
       const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { department: true } });
       const deptValues = new Set<string>(managed.map(d => d.value));
-      if (dbUser?.department) deptValues.add(dbUser.department);
+      if (dbUser?.department && dbUser.department.toUpperCase() !== 'STRATEGIC') deptValues.add(dbUser.department);
       if (deptValues.size > 0) {
         where.value = { in: Array.from(deptValues) };
       }

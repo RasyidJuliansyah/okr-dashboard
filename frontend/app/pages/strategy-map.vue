@@ -2,7 +2,23 @@
   <div class="map-root">
     <!-- Critical Disclaimer Banner (FR-USR-006) -->
     <div class="disclaimer-banner">
-      <span class="disclaimer-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg></span>
+      <span class="disclaimer-icon"
+        ><svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+          />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" /></svg
+      ></span>
       <p>
         <strong>Disclaimer:</strong> Peta ini berdasarkan asumsi manajemen
         (input manual Admin), bukan korelasi data statistik.
@@ -48,14 +64,16 @@
                   :class="data.perspective.toLowerCase()"
                 >
                   <div class="node-header">
-                    <span class="node-year">{{
-                      data.objectiveYear
-                    }}</span>
+                    <span class="node-year">{{ data.objectiveYear }}</span>
                     <span class="node-perspective">{{
                       formatPerspective(data.perspective)
                     }}</span>
                   </div>
-                  <div v-if="data.objectiveTitle" class="node-objective-label" :title="data.objectiveTitle">
+                  <div
+                    v-if="data.objectiveTitle"
+                    class="node-objective-label"
+                    :title="data.objectiveTitle"
+                  >
                     {{ data.objectiveTitle }}
                   </div>
                   <p class="node-title">{{ data.title }}</p>
@@ -103,7 +121,9 @@
               <select id="source-kr" v-model="newLink.sourceKrId" required>
                 <option value="" disabled>Pilih Key Result</option>
                 <option v-for="kr in allKeyResults" :key="kr.id" :value="kr.id">
-                  [{{ formatPerspective(kr.bscPerspective) }}] ({{ kr.objectiveTitle || 'Objective' }}) - {{ kr.title }}
+                  [{{ formatPerspective(kr.bscPerspective) }}] ({{
+                    kr.objectiveTitle || "Objective"
+                  }}) - {{ kr.title }}
                 </option>
               </select>
             </div>
@@ -115,7 +135,9 @@
               <select id="target-kr" v-model="newLink.targetKrId" required>
                 <option value="" disabled>Pilih Key Result</option>
                 <option v-for="kr in allKeyResults" :key="kr.id" :value="kr.id">
-                  [{{ formatPerspective(kr.bscPerspective) }}] ({{ kr.objectiveTitle || 'Objective' }}) - {{ kr.title }}
+                  [{{ formatPerspective(kr.bscPerspective) }}] ({{
+                    kr.objectiveTitle || "Objective"
+                  }}) - {{ kr.title }}
                 </option>
               </select>
             </div>
@@ -276,8 +298,8 @@ const auth = useAuthStore();
 
 onMounted(() => {
   const role = auth.user?.role;
-  if (role !== 'ADMIN' && role !== 'C_LEVEL') {
-    navigateTo('/dashboard');
+  if (role !== "ADMIN" && role !== "C_LEVEL") {
+    navigateTo("/dashboard");
   }
 });
 const config = useRuntimeConfig();
@@ -471,7 +493,7 @@ onMounted(async () => {
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap");
 
 .map-root {
-  font-family: "Outfit", sans-serif;
+  font-family: "Rubik", sans-serif;
   min-height: 100vh;
   background: #fafcff;
   color: white;
@@ -488,6 +510,7 @@ onMounted(async () => {
   padding: 20px 40px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -607,6 +630,7 @@ onMounted(async () => {
   border: 2px solid #f0f3f9;
   border-radius: 16px;
   padding: 24px;
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 

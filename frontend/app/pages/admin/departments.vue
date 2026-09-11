@@ -1122,6 +1122,7 @@ onMounted(async () => {
 .modal-backdrop {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.45);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   z-index: 999;

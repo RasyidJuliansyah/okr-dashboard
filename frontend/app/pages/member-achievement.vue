@@ -10,8 +10,7 @@
           </div>
           <p class="section-desc">
             Pantau dan evaluasi capaian target 100% setiap member, dihitung dari
-            bobot (%) tiap card inisiatif yang dimiliki dikali progress card
-            tersebut.
+            rata-rata progress card inisiatif yang dimiliki.
           </p>
 
           <!-- Scope Notice Badge -->
@@ -57,8 +56,8 @@
             />
           </div>
 
-          <!-- Filter Departemen (Khusus Admin & C-Level) -->
-          <div v-if="isAdmin || isCLevel" class="filter-item">
+          <!-- Filter Departemen (Khusus Admin, C-Level, & Manager) -->
+          <div v-if="isAdmin || isCLevel || isManager" class="filter-item">
             <label>Filter Departemen:</label>
             <select v-model="selectedDepartment" class="filter-select">
               <option value="">
@@ -188,36 +187,48 @@
             <!-- Tasks Summary & Expansion Footer -->
             <div class="member-card-footer">
               <div class="task-count-label">
-                <strong>{{ m.totalAssignedTasks }}</strong> Card Inisiatif
-                <span
-                  class="total-weight-tag"
-                  :class="{ 'weight-incomplete': m.totalWeight < 99.9 }"
-                  :title="
-                    m.totalWeight < 99.9
-                      ? 'Total bobot belum mencapai 100%'
-                      : 'Total bobot lengkap 100%'
-                  "
-                >
-                  Total Bobot: {{ m.totalWeight }}%
-                </span>
+                <strong>{{ m.totalAssignedTasks }}</strong> Card ({{
+                  m.totalInitiativesCount || 0
+                }}
+                Inisiatif, {{ m.totalTasksCount || 0 }} Task)
               </div>
               <button class="detail-toggle-btn" @click="toggleExpand(m.userId)">
                 {{
                   expandedUserIds.includes(m.userId)
-                    ? "Sembunyikan Rincian ▲"
-                    : "Lihat Rincian Card ▼"
+                    ? "Sembunyikan Rincian"
+                    : "Lihat Rincian Card"
                 }}
               </button>
             </div>
 
-            <!-- Expanded Initiative Card Details -->
+            <!-- Expanded Initiative & Task Card Details -->
             <div
               v-if="expandedUserIds.includes(m.userId)"
               class="expanded-tasks-list"
             >
-              <h5 class="tasks-list-title">Daftar Card Inisiatif:</h5>
+              <div
+                class="breakdown-summary mb-3"
+                style="
+                  display: flex;
+                  gap: 12px;
+                  font-size: 11px;
+                  background: #f8fafc;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                "
+              >
+                <span
+                  >Inisiatif:
+                  <strong>{{ m.initiativeAchievementPct || 0 }}%</strong></span
+                >
+                <span
+                  >Task: <strong>{{ m.taskAchievementPct || 0 }}%</strong></span
+                >
+              </div>
+              <h5 class="tasks-list-title">Daftar Card Pekerjaan & Capaian:</h5>
               <div v-if="m.initiatives?.length === 0" class="no-tasks">
-                Belum ada card inisiatif yang dimiliki.
+                Belum ada card inisiatif atau task yang dimiliki.
               </div>
               <div v-else class="task-items-wrapper">
                 <div
@@ -225,14 +236,33 @@
                   :key="ini.id"
                   class="task-detail-item"
                 >
-                  <div class="task-info">
+                  <div
+                    class="task-info"
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      align-items: flex-start;
+                      gap: 4px;
+                    "
+                  >
+                    <div>
+                      <span
+                        class="task-type-pill"
+                        :style="
+                          ini.type === 'TASK'
+                            ? 'background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #bae6fd;'
+                            : 'background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #cbd5e1;'
+                        "
+                      >
+                        {{ ini.type === "TASK" ? "TASK" : "INISIATIF" }}
+                      </span>
+                    </div>
                     <span class="task-title">{{ ini.title }}</span>
                     <span v-if="ini.sprintMonth" class="task-parent"
                       >sprint {{ formatSprintLabel(ini.sprintMonth) }}</span
                     >
                   </div>
                   <div class="task-progress-info">
-                    <span class="task-vals">Bobot {{ ini.weight }}%</span>
                     <span
                       class="task-pct-tag"
                       :class="getAchColorClass(ini.progressPct)"
@@ -413,9 +443,22 @@ onMounted(async () => {
 
 <style scoped>
 .admin-root {
-  padding: 1.5rem;
-  background: var(--bg-primary, #f8fafc);
-  min-height: calc(100vh - 70px);
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow: hidden;
+}
+
+.admin-content {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .card {
@@ -426,7 +469,6 @@ onMounted(async () => {
 
 .header-section {
   padding: 1.5rem;
-  margin-bottom: 1.25rem;
 }
 
 .title-with-badge {
@@ -490,7 +532,6 @@ onMounted(async () => {
 
 .filter-card {
   padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
 }
 
 .filter-controls-row {
@@ -562,13 +603,13 @@ onMounted(async () => {
   gap: 20px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
   .member-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .member-grid {
     grid-template-columns: 1fr;
   }
@@ -581,6 +622,8 @@ onMounted(async () => {
   gap: 16px;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  min-width: 0;
+  overflow: hidden;
   transition:
     transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -644,7 +687,7 @@ onMounted(async () => {
 }
 
 .role-pill {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 6px;
@@ -761,7 +804,7 @@ onMounted(async () => {
   border: none;
   color: #0e97d6;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   cursor: pointer;
   padding: 4px 10px;
   border-radius: 6px;
@@ -813,8 +856,10 @@ onMounted(async () => {
 
 .task-info {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .task-title {
