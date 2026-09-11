@@ -270,7 +270,13 @@
             <button class="secondary-btn" @click="showInitiativeModal = false">
               Batal
             </button>
-            <button class="primary-btn" @click="saveInitiative">Simpan</button>
+            <button
+              class="primary-btn"
+              @click="saveInitiative"
+              :disabled="!initiativeForm.unit?.trim()"
+            >
+              Simpan
+            </button>
           </div>
         </div>
       </div>
@@ -306,7 +312,13 @@
             <button class="secondary-btn" @click="showTaskModal = false">
               Batal
             </button>
-            <button class="primary-btn" @click="saveTask">Simpan</button>
+            <button
+              class="primary-btn"
+              @click="saveTask"
+              :disabled="!taskForm.unit?.trim()"
+            >
+              Simpan
+            </button>
           </div>
         </div>
       </div>
@@ -497,6 +509,10 @@ async function saveInitiative() {
     errorMessage.value = "Judul, Key Result, dan Tim wajib diisi";
     return;
   }
+  if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
+    errorMessage.value = "Satuan (Unit) wajib diisi";
+    return;
+  }
   const method = editingInitiative.value ? "PUT" : "POST";
   const url = editingInitiative.value
     ? `${API}/initiatives/${editingInitiative.value.id}`
@@ -552,6 +568,10 @@ function openEditTaskModal(task: any) {
 async function saveTask() {
   if (!taskForm.value.title || taskForm.value.targetValue === undefined) {
     errorMessage.value = "Judul dan Target Value wajib diisi";
+    return;
+  }
+  if (!taskForm.value.unit || !taskForm.value.unit.trim()) {
+    errorMessage.value = "Satuan (Unit) wajib diisi";
     return;
   }
   const method = editingTask.value ? "PUT" : "POST";

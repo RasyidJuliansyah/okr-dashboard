@@ -281,7 +281,11 @@
             >
               Batal
             </button>
-            <button class="primary-btn" @click="saveInitiative">
+            <button
+              class="primary-btn"
+              @click="saveInitiative"
+              :disabled="!initiativeForm.unit?.trim()"
+            >
               Simpan Inisiatif
             </button>
           </div>
@@ -508,6 +512,10 @@ function openAddInitiativeModal() {
 async function saveInitiative() {
   if (!initiativeForm.value.title.trim()) {
     alert("Judul Inisiatif wajib diisi");
+    return;
+  }
+  if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
+    alert("Satuan (Unit) wajib diisi");
     return;
   }
   if (!initiativeForm.value.keyResultId) {

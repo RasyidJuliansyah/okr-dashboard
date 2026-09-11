@@ -101,10 +101,22 @@
             @input="onCustomUnitInput"
             type="text"
             class="form-input"
+            :class="{ 'input-invalid': isCustomEmpty }"
             placeholder="Tulis satuan (misal: Leads, Target, Unit...)"
             style="font-size: 13px"
-            :required="required"
+            :required="required || unitCategory === 'Lainnya'"
           />
+          <small
+            v-if="isCustomEmpty"
+            style="
+              color: #ef4444;
+              font-size: 11px;
+              display: block;
+              margin-top: 4px;
+            "
+          >
+            * Satuan wajib diisi jika memilih opsi 'Lainnya'
+          </small>
         </div>
       </div>
     </div>
@@ -142,6 +154,10 @@ const emit = defineEmits<{
 const unitCategory = ref<"Rupiah" | "%" | "Lainnya">("%");
 const customUnitText = ref("");
 
+const isCustomEmpty = computed(() => {
+  return unitCategory.value === "Lainnya" && !customUnitText.value.trim();
+});
+
 function detectCategory(u?: string | null): "Rupiah" | "%" | "Lainnya" {
   if (!u) return "%";
   const trimmed = u.trim().toLowerCase();
@@ -166,6 +182,12 @@ function detectCategory(u?: string | null): "Rupiah" | "%" | "Lainnya" {
 watch(
   () => props.unit,
   (newUnit) => {
+    // If currently 'Lainnya' and newUnit is empty or matches our custom text, do not reset
+    if (unitCategory.value === "Lainnya") {
+      if (!newUnit || newUnit === customUnitText.value) {
+        return;
+      }
+    }
     const cat = detectCategory(newUnit);
     unitCategory.value = cat;
     if (cat === "Lainnya") {
@@ -185,9 +207,7 @@ function onCategoryChange() {
       emit("update:targetValue", 100);
     }
   } else {
-    const defaultCustom = customUnitText.value || "Unit";
-    customUnitText.value = defaultCustom;
-    emit("update:unit", defaultCustom);
+    emit("update:unit", customUnitText.value);
   }
 }
 
@@ -276,5 +296,14 @@ select.form-input {
 
 .form-input::placeholder {
   color: #94a3b8;
+}
+
+.form-input.input-invalid {
+  border-color: #ef4444 !important;
+}
+
+.form-input.input-invalid:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
 }
 </style>

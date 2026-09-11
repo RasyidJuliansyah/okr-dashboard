@@ -1392,7 +1392,13 @@
           <button class="secondary-btn" @click="showInitiativeModal = false">
             Batal
           </button>
-          <button class="primary-btn" @click="saveCard">Simpan Card</button>
+          <button
+            class="primary-btn"
+            @click="saveCard"
+            :disabled="cardType === 'INISIATIF' && !initiativeForm.unit?.trim()"
+          >
+            Simpan Card
+          </button>
         </div>
       </div>
     </div>
@@ -2429,6 +2435,11 @@ function openEditInitiativeModal(ini: any) {
 async function saveInitiative() {
   if (!initiativeForm.value.title.trim()) {
     errorMessage.value = "Judul inisiatif wajib diisi";
+    return;
+  }
+
+  if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
+    errorMessage.value = "Satuan (Unit) wajib diisi";
     return;
   }
 
