@@ -1350,6 +1350,15 @@
                     placeholder="Judul Task (Contoh: Selesaikan unit test...)..."
                   />
                   <input
+                    v-if="isRupiahUnit(row.unit)"
+                    :value="formatRupiahNumber(row.targetValue)"
+                    @input="onRowTargetRupiahInput($event, row)"
+                    type="text"
+                    class="form-input row-target"
+                    placeholder="Target"
+                  />
+                  <input
+                    v-else
                     v-model.number="row.targetValue"
                     type="number"
                     class="form-input row-target"
@@ -1521,6 +1530,15 @@
                   placeholder="Judul Task (Contoh: Selesaikan unit test...)..."
                 />
                 <input
+                  v-if="isRupiahUnit(row.unit)"
+                  :value="formatRupiahNumber(row.targetValue)"
+                  @input="onRowTargetRupiahInput($event, row)"
+                  type="text"
+                  class="form-input row-target"
+                  placeholder="Target"
+                />
+                <input
+                  v-else
                   v-model.number="row.targetValue"
                   type="number"
                   class="form-input row-target"
@@ -1588,6 +1606,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 import { useAssignment } from "~/composables/useAssignment";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
+import { isRupiahUnit } from "~/utils/formatters";
 
 const route = useRoute();
 const router = useRouter();
@@ -2621,6 +2640,27 @@ function applyDefaultsToAllRows() {
     r.sprintMonth = batchDefaults.value.sprintMonth;
     r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
   });
+}
+
+function formatRupiahNumber(val: any) {
+  if (val === null || val === undefined || val === "" || val === 0) {
+    return "";
+  }
+  const num = Number(val);
+  return isNaN(num) ? "" : num.toLocaleString("en-US");
+}
+
+function onRowTargetRupiahInput(e: Event, row: any) {
+  const input = e.target as HTMLInputElement;
+  const rawDigits = input.value.replace(/[^\d]/g, "");
+  if (rawDigits === "") {
+    row.targetValue = 0;
+    input.value = "";
+    return;
+  }
+  const num = parseInt(rawDigits, 10);
+  row.targetValue = num;
+  input.value = num.toLocaleString("en-US");
 }
 
 async function saveTasksBatch() {

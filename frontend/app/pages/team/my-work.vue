@@ -1667,26 +1667,29 @@
               <div class="batch-defaults-title">
                 ⚡ Default Settings untuk Baris Task Baru
               </div>
-              <div class="form-input">
+              <UnitTargetInput
+                v-model:targetValue="batchDefaults.targetValue"
+                v-model:unit="batchDefaults.unit"
+                labelTarget="Target Value Default"
+                labelUnit="Satuan (Unit) Default"
+                placeholderTarget="100"
+                :required="true"
+              />
+
+              <div
+                class="form-row-2"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+              >
                 <div>
-                  <label>Target Value Default</label>
-                  <input
-                    v-model.number="batchDefaults.targetValue"
-                    type="number"
-                    class="form-input"
-                    placeholder="100"
-                  />
-                </div>
-                <div>
-                  <label>Satuan (Unit) Default</label>
-                  <input
-                    v-model="batchDefaults.unit"
-                    class="form-input"
-                    placeholder="%, task..."
-                  />
-                </div>
-                <div>
-                  <label>Bulan Sprint</label>
+                  <label
+                    style="
+                      display: block;
+                      margin-bottom: 4px;
+                      font-weight: 500;
+                      font-size: 13px;
+                    "
+                    >Bulan Sprint</label
+                  >
                   <input
                     v-model="batchDefaults.sprintMonth"
                     type="month"
@@ -1694,7 +1697,15 @@
                   />
                 </div>
                 <div>
-                  <label>Assignee Default</label>
+                  <label
+                    style="
+                      display: block;
+                      margin-bottom: 4px;
+                      font-weight: 500;
+                      font-size: 13px;
+                    "
+                    >Assignee Default</label
+                  >
                   <select
                     v-model="batchDefaults.assignedTeamMemberId"
                     class="form-input"
@@ -1747,6 +1758,15 @@
                       placeholder="Judul Task (Contoh: Implementasi modul Auth)..."
                     />
                     <input
+                      v-if="isRupiahUnit(row.unit)"
+                      :value="formatRupiahNumber(row.targetValue)"
+                      @input="onRowTargetRupiahInput($event, row)"
+                      type="text"
+                      class="form-input row-target"
+                      placeholder="Target"
+                    />
+                    <input
+                      v-else
                       v-model.number="row.targetValue"
                       type="number"
                       class="form-input row-target"
@@ -1798,7 +1818,7 @@
               </button>
               <button
                 class="primary-btn"
-                :disabled="saving || validTaskCount === 0"
+                :disabled="saving || validTaskCount === 0 || !isBatchUnitValid"
                 @click="saveMyWorkTasksBatch"
               >
                 {{
@@ -1817,6 +1837,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "~/stores/auth";
 import { useRouter } from "vue-router";
+import { isRupiahUnit } from "~/utils/formatters";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -1862,6 +1883,14 @@ const validTaskCount = computed(
   () =>
     taskRows.value.filter((r) => r.title && r.title.trim().length > 0).length,
 );
+
+const isBatchUnitValid = computed(() => {
+  const validTasks = taskRows.value.filter(
+    (r) => r.title && r.title.trim().length > 0,
+  );
+  if (validTasks.length === 0) return true;
+  return validTasks.every((r) => r.unit && r.unit.trim().length > 0);
+});
 
 const updateForm = ref({
   newValue: 0,
@@ -2246,6 +2275,27 @@ function applyDefaultsToAllRows() {
   });
 }
 
+function formatRupiahNumber(val) {
+  if (val === null || val === undefined || val === "" || val === 0) {
+    return "";
+  }
+  const num = Number(val);
+  return isNaN(num) ? "" : num.toLocaleString("en-US");
+}
+
+function onRowTargetRupiahInput(e, row) {
+  const input = e.target;
+  const rawDigits = input.value.replace(/[^\d]/g, "");
+  if (rawDigits === "") {
+    row.targetValue = 0;
+    input.value = "";
+    return;
+  }
+  const num = parseInt(rawDigits, 10);
+  row.targetValue = num;
+  input.value = num.toLocaleString("en-US");
+}
+
 async function saveMyWorkTasksBatch() {
   const validTasks = taskRows.value.filter(
     (r) => r.title && r.title.trim().length > 0,
@@ -2253,6 +2303,10 @@ async function saveMyWorkTasksBatch() {
 
   if (validTasks.length === 0) {
     modalError.value = "Setidaknya 1 baris Judul Task wajib diisi";
+    return;
+  }
+  if (validTasks.some((r) => !r.unit || !r.unit.trim())) {
+    modalError.value = "Satuan (Unit) pada semua task wajib diisi";
     return;
   }
   if (!selectedIniForTask.value?.id) {
