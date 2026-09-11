@@ -143,6 +143,7 @@
             <button
               type="submit"
               class="primary-btn"
+              :disabled="!form.unit?.trim()"
               style="
                 padding: 0.5rem 1rem;
                 border: none;
@@ -573,6 +574,10 @@ function resetForm() {
 }
 
 async function submitAnnualKr() {
+  if (!form.value.unit || !form.value.unit.trim()) {
+    alert("Satuan (Unit) wajib diisi!");
+    return;
+  }
   try {
     const payload = { ...form.value };
     if (editingId.value) {

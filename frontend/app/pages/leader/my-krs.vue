@@ -601,7 +601,7 @@
             <button
               class="primary-btn"
               @click="saveInitiative"
-              :disabled="saving"
+              :disabled="saving || !form.unit?.trim()"
             >
               {{
                 saving
@@ -1104,6 +1104,10 @@ async function saveInitiative() {
       modalError.value = "Harap pilih Pegawai untuk di-assign";
       return;
     }
+    if (!form.value.unit || !form.value.unit.trim()) {
+      modalError.value = "Satuan (Unit) wajib diisi";
+      return;
+    }
     saving.value = true;
     modalError.value = "";
     try {
@@ -1115,7 +1119,7 @@ async function saveInitiative() {
           body: JSON.stringify({
             title: form.value.title,
             targetValue: form.value.targetValue || 0,
-            unit: form.value.unit || "%",
+            unit: form.value.unit,
             assigneeId: form.value.ownerId,
             assignedTeamMemberId: form.value.ownerId,
             sprintMonth: form.value.sprintMonth || undefined,
@@ -1149,6 +1153,10 @@ async function saveInitiative() {
       modalError.value = "Harap pilih Pegawai untuk di-assign";
       return;
     }
+    if (!form.value.unit || !form.value.unit.trim()) {
+      modalError.value = "Satuan (Unit) wajib diisi";
+      return;
+    }
     saving.value = true;
     modalError.value = "";
     try {
@@ -1161,7 +1169,7 @@ async function saveInitiative() {
           body: JSON.stringify({
             title: form.value.title,
             targetValue: form.value.targetValue || 0,
-            unit: form.value.unit || "%",
+            unit: form.value.unit,
             sprintMonth: form.value.sprintMonth || null,
           }),
         },
@@ -1202,6 +1210,10 @@ async function saveInitiative() {
 
   if (!form.value.title || !form.value.teamId || !form.value.keyResultId) {
     modalError.value = "Judul, Tim, dan KR Utama wajib diisi";
+    return;
+  }
+  if (!form.value.unit || !form.value.unit.trim()) {
+    modalError.value = "Satuan (Unit) wajib diisi";
     return;
   }
 

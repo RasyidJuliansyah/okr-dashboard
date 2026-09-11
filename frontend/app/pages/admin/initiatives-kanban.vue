@@ -761,7 +761,13 @@
             <button class="secondary-btn" @click="showInitiativeModal = false">
               Batal
             </button>
-            <button class="primary-btn" @click="saveInitiative">Simpan</button>
+            <button
+              class="primary-btn"
+              @click="saveInitiative"
+              :disabled="!initiativeForm.unit?.trim()"
+            >
+              Simpan
+            </button>
           </div>
         </div>
       </div>
@@ -796,7 +802,13 @@
             <button class="secondary-btn" @click="showTaskModal = false">
               Batal
             </button>
-            <button class="primary-btn" @click="saveTask">Simpan Task</button>
+            <button
+              class="primary-btn"
+              @click="saveTask"
+              :disabled="!taskForm.unit?.trim()"
+            >
+              Simpan Task
+            </button>
           </div>
         </div>
       </div>
@@ -1058,6 +1070,10 @@ async function saveInitiative() {
     errorMessage.value = "Judul inisiatif wajib diisi";
     return;
   }
+  if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
+    errorMessage.value = "Satuan (Unit) wajib diisi";
+    return;
+  }
   if (!initiativeForm.value.keyResultId) {
     errorMessage.value = "Key Result wajib dipilih";
     return;
@@ -1125,6 +1141,10 @@ function openAddTaskModal(ini: any) {
 async function saveTask() {
   if (!taskForm.value.title.trim()) {
     alert("Judul Task wajib diisi");
+    return;
+  }
+  if (!taskForm.value.unit || !taskForm.value.unit.trim()) {
+    alert("Satuan (Unit) wajib diisi");
     return;
   }
   try {

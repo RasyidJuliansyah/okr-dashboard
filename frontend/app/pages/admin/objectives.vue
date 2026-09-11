@@ -909,7 +909,11 @@
             >
               Batal
             </button>
-            <button type="submit" class="save-kr-btn" :disabled="savingTask">
+            <button
+              type="submit"
+              class="save-kr-btn"
+              :disabled="savingTask || !taskForm.unit?.trim()"
+            >
               {{ savingTask ? "Menyimpan..." : "Simpan Task" }}
             </button>
           </div>
@@ -1724,6 +1728,10 @@ async function saveInitiativeForKr() {
 async function saveTaskForInitiative() {
   if (!taskForm.value.title || taskForm.value.targetValue === null) {
     alert("Judul dan Target Nilai Task wajib diisi!");
+    return;
+  }
+  if (!taskForm.value.unit || !taskForm.value.unit.trim()) {
+    alert("Satuan (Unit) wajib diisi!");
     return;
   }
   savingTask.value = true;
