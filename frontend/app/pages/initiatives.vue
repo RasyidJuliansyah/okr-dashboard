@@ -1138,9 +1138,9 @@
               placeholder="Contoh: Optimalisasi query database..."
             />
 
-            <label>Parent Key Result *</label>
+            <label>Parent Key Result (Opsional)</label>
             <select v-model="initiativeForm.keyResultId" class="form-input">
-              <option value="">-- Pilih Key Result --</option>
+              <option value="">-- Tidak terhubung KR --</option>
               <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
                 {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
                 }}{{ kr.title }}
@@ -1969,6 +1969,7 @@ watch(
 const cardType = ref<"INISIATIF" | "TASK">("INISIATIF");
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
+const batchInitiativeId = ref("");
 const batchDefaults = ref({
   targetValue: 100,
   unit: "%",
@@ -1984,6 +1985,17 @@ const taskRows = ref<any[]>([
     sprintMonth: "",
   },
 ]);
+const taskForm = ref<any>({
+  initiativeId: "",
+  title: "",
+  targetValue: 0,
+  unit: "",
+  assignedTeamMemberId: "",
+  sprintMonth: "",
+  startDate: "",
+  finishDate: "",
+  kpis: [],
+});
 const validTaskCount = computed(
   () =>
     taskRows.value.filter((r) => r.title && r.title.trim().length > 0).length,
@@ -2417,10 +2429,6 @@ function openEditInitiativeModal(ini: any) {
 async function saveInitiative() {
   if (!initiativeForm.value.title.trim()) {
     errorMessage.value = "Judul inisiatif wajib diisi";
-    return;
-  }
-  if (!initiativeForm.value.keyResultId) {
-    errorMessage.value = "Key Result wajib dipilih";
     return;
   }
 

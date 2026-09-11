@@ -42,7 +42,7 @@ export async function login(req: AuthRequest, res: Response) {
         name: user.name,
       },
       JWT_SECRET,
-      { expiresIn: "24h" },
+      { expiresIn: "7d" },
     );
 
     return res.status(200).json({

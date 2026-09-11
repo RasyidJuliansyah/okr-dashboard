@@ -1737,47 +1737,55 @@
                 :key="idx"
                 class="task-row-card"
               >
-                <div class="task-row-num">{{ idx + 1 }}</div>
-                <div class="task-row-fields">
-                  <input
-                    v-model="row.title"
-                    class="form-input row-title"
-                    placeholder="Judul Task (Contoh: Implementasi modul Auth)..."
-                  />
-                  <input
-                    v-model.number="row.targetValue"
-                    type="number"
-                    class="form-input row-target"
-                    placeholder="Target"
-                  />
-                  <input
-                    v-model="row.unit"
-                    class="form-input row-unit"
-                    placeholder="Satuan"
-                  />
-                  <select
-                    v-model="row.assignedTeamMemberId"
-                    class="form-input row-assignee"
-                  >
-                    <option value="">-- Diri Sendiri --</option>
-                    <option
-                      v-for="u in availableAssignees"
-                      :key="u.id"
-                      :value="u.id"
+                <!-- Row 1: Form input task + number + delete button -->
+                <div class="task-row-main">
+                  <div class="task-row-num">{{ idx + 1 }}</div>
+                  <div class="task-row-fields">
+                    <input
+                      v-model="row.title"
+                      class="form-input row-title"
+                      placeholder="Judul Task (Contoh: Implementasi modul Auth)..."
+                    />
+                    <input
+                      v-model.number="row.targetValue"
+                      type="number"
+                      class="form-input row-target"
+                      placeholder="Target"
+                    />
+                    <input
+                      v-model="row.unit"
+                      class="form-input row-unit"
+                      placeholder="Satuan"
+                    />
+                    <select
+                      v-model="row.assignedTeamMemberId"
+                      class="form-input row-assignee"
                     >
-                      {{ u.name }}
-                    </option>
-                  </select>
+                      <option value="">-- Diri Sendiri --</option>
+                      <option
+                        v-for="u in availableAssignees"
+                        :key="u.id"
+                        :value="u.id"
+                      >
+                        {{ u.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-remove-row"
+                    :disabled="taskRows.length <= 1"
+                    @click="removeTaskRow(idx)"
+                    title="Hapus baris"
+                  >
+                    &times;
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  class="btn-remove-row"
-                  :disabled="taskRows.length <= 1"
-                  @click="removeTaskRow(idx)"
-                  title="Hapus baris"
-                >
-                  &times;
-                </button>
+
+                <!-- Row 2: CTA pilih KPI -->
+                <div class="task-row-kpi">
+                  <KpiSelector v-model="row.kpis" />
+                </div>
               </div>
             </div>
 
@@ -1838,6 +1846,7 @@ const batchDefaults = ref({
   unit: "%",
   sprintMonth: "",
   assignedTeamMemberId: "",
+  kpis: [],
 });
 const taskRows = ref([
   {
@@ -1846,6 +1855,7 @@ const taskRows = ref([
     unit: "%",
     assignedTeamMemberId: "",
     sprintMonth: "",
+    kpis: [],
   },
 ]);
 const validTaskCount = computed(
@@ -2193,6 +2203,7 @@ function openMyWorkAddTaskModal(ini) {
     unit: "%",
     sprintMonth: defaultSprint,
     assignedTeamMemberId: authStore.user?.id || "",
+    kpis: [],
   };
 
   taskRows.value = [
@@ -2202,6 +2213,7 @@ function openMyWorkAddTaskModal(ini) {
       unit: "%",
       assignedTeamMemberId: authStore.user?.id || "",
       sprintMonth: defaultSprint,
+      kpis: [],
     },
   ];
   modalError.value = "";
@@ -2215,6 +2227,7 @@ function addTaskRow() {
     unit: batchDefaults.value.unit || "%",
     assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
     sprintMonth: batchDefaults.value.sprintMonth || "",
+    kpis: [],
   });
 }
 
@@ -2309,7 +2322,18 @@ async function fetchMyWork() {
     const res = await fetch(`${API}/initiatives/my-work/all`, {
       headers: getHeaders(),
     });
-    if (!res.ok) throw new Error("Gagal memuat pekerjaan");
+    if (res.status === 401) {
+      errorMsg.value =
+        "Sesi login Anda telah berakhir. Mengalihkan ke login...";
+      setTimeout(() => authStore.logout(), 1000);
+      return;
+    }
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(
+        errData.message || `Gagal memuat pekerjaan (HTTP ${res.status})`,
+      );
+    }
     const data = await res.json();
     taskAssignments.value = data.taskAssignments || [];
     teamInitiatives.value = data.myInitiatives || [];
@@ -3127,19 +3151,26 @@ function getGroupedInitiatives(initiatives) {
 .task-rows-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 340px;
+  gap: 12px;
+  max-height: 420px;
   overflow-y: auto;
   padding-right: 4px;
 }
 .task-row-card {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+.task-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 .task-row-num {
   font-size: 13px;
@@ -3173,6 +3204,11 @@ function getGroupedInitiatives(initiatives) {
   flex: 2;
   min-width: 130px;
   margin-bottom: 0 !important;
+}
+.task-row-kpi {
+  padding-left: 30px;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 6px;
 }
 .btn-remove-row {
   background: #fef2f2;

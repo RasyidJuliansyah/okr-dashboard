@@ -168,8 +168,8 @@ model CausalLink {
 
 model Initiative {
   id                String             @id @default(uuid())
-  keyResultId       String             @map("key_result_id")
-  keyResult         KeyResult          @relation(fields: [keyResultId], references: [id], map: "Initiative_keyResultId_fkey")
+  keyResultId       String?            @map("key_result_id")
+  keyResult         KeyResult?         @relation(fields: [keyResultId], references: [id], map: "Initiative_keyResultId_fkey")
   teamId            String             @map("team_id")
   team              Team               @relation(fields: [teamId], references: [id], map: "Initiative_teamId_fkey")
   ownerId           String?            @map("owner_id")

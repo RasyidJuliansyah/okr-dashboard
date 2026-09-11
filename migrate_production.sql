@@ -96,3 +96,20 @@ ALTER TABLE `department` ADD CONSTRAINT `Department_managerId_fkey`
 -- ─────────────────────────────────────────────────────────────
 -- Tambah kolom kanban_status untuk melacak stage Kanban Task (TODO, IN_PROGRESS, DONE, DROP)
 ALTER TABLE `task` ADD COLUMN `kanban_status` VARCHAR(191) NULL DEFAULT 'TODO';
+
+
+-- ─────────────────────────────────────────────────────────────
+-- BAGIAN 6: keyResultId nullable di tabel initiative
+-- (Improvement: card inisiatif boleh tidak terhubung ke KR)
+-- ─────────────────────────────────────────────────────────────
+-- 6a. Drop FK constraint dulu
+ALTER TABLE `initiative` DROP FOREIGN KEY `Initiative_keyResultId_fkey`;
+
+-- 6b. Ubah kolom menjadi nullable
+ALTER TABLE `initiative` MODIFY COLUMN `key_result_id` VARCHAR(191) NULL;
+
+-- 6c. Tambah ulang FK dengan ON DELETE SET NULL
+ALTER TABLE `initiative` ADD CONSTRAINT `Initiative_keyResultId_fkey`
+  FOREIGN KEY (`key_result_id`) REFERENCES `key_result` (`id`)
+  ON DELETE SET NULL ON UPDATE CASCADE;
+
