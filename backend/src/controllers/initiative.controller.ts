@@ -470,10 +470,14 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
     // Group by KR untuk tampilan hierarkis
     const byKeyResult: Record<string, any> = {};
     for (const init of enriched) {
-      const krId = init.keyResultId;
+      const krId = init.keyResultId || "unassigned";
       if (!byKeyResult[krId]) {
         byKeyResult[krId] = {
-          keyResult: init.keyResult,
+          keyResult: init.keyResult || {
+            id: "unassigned",
+            title: "Inisiatif Mandiri (Tanpa Key Result)",
+            bscPerspective: null,
+          },
           initiatives: [],
           krProgress: 0,
         };
