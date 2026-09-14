@@ -118,16 +118,25 @@
         </div>
 
         <div class="picker-filter">
-          <input
-            v-model="pickerSearch"
-            type="text"
-            placeholder="Cari indikator KPI..."
-            class="picker-search-input"
-          />
-          <label class="toggle-all-label">
-            <input type="checkbox" v-model="showAllKpis" />
-            Tampilkan Semua KPI Lintas Departemen
-          </label>
+          <div class="picker-filter-row">
+            <input
+              v-model="pickerSearch"
+              type="text"
+              placeholder="Cari indikator KPI..."
+              class="picker-search-input"
+            />
+            <select v-model="pickerDept" class="picker-dept-select">
+              <option value="">Semua Departemen</option>
+              <option value="ALL">ALL (Lintas Dept)</option>
+              <option
+                v-for="dept in availableDepartments"
+                :key="dept.value"
+                :value="dept.value"
+              >
+                {{ dept.label }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div class="picker-body">
@@ -213,10 +222,11 @@ const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 const masterKpis = ref([]);
+const departments = ref([]);
 const loadingMaster = ref(false);
 const showPicker = ref(false);
 const pickerSearch = ref("");
-const showAllKpis = ref(false);
+const pickerDept = ref("");
 
 const selectedItems = ref([]);
 
@@ -260,6 +270,33 @@ async function fetchMasterKpis() {
   }
 }
 
+async function fetchDepartments() {
+  try {
+    const res = await $fetch(`${config.public.apiBase}/departments`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    departments.value = res.map((d) => ({
+      value: d.value || d.name,
+      label: d.name,
+    }));
+  } catch (err) {
+    console.error("Error fetching departments in selector:", err);
+  }
+}
+
+const availableDepartments = computed(() => {
+  const set = new Map();
+  departments.value.forEach((d) => {
+    set.set(d.value, d.label);
+  });
+  masterKpis.value.forEach((k) => {
+    if (k.department && k.department !== "ALL" && !set.has(k.department)) {
+      set.set(k.department, k.department);
+    }
+  });
+  return Array.from(set.entries()).map(([value, label]) => ({ value, label }));
+});
+
 const availableKpisForPicker = computed(() => {
   const selectedIds = selectedItems.value.map((i) => i.kpiId);
 
@@ -268,28 +305,29 @@ const availableKpisForPicker = computed(() => {
 
     const matchSearch =
       !pickerSearch.value ||
-      kpi.name.toLowerCase().includes(pickerSearch.value.toLowerCase());
+      kpi.name.toLowerCase().includes(pickerSearch.value.toLowerCase()) ||
+      (kpi.description &&
+        kpi.description.toLowerCase().includes(pickerSearch.value.toLowerCase()));
 
-    if (!showAllKpis.value) {
-      const matchDept =
-        !props.department ||
-        kpi.department === "ALL" ||
-        kpi.department === props.department;
-      const matchBsc =
-        !props.bscPerspective || kpi.bscPerspective === props.bscPerspective;
+    const matchDept =
+      !pickerDept.value ||
+      (pickerDept.value === "ALL"
+        ? kpi.department === "ALL"
+        : kpi.department === pickerDept.value || kpi.department === "ALL");
 
-      if (!matchDept && !matchBsc) return false;
-    }
-
-    return matchSearch;
+    return matchSearch && matchDept;
   });
 });
 
 function openPickerModal() {
   pickerSearch.value = "";
+  pickerDept.value = props.department || "";
   showPicker.value = true;
   if (masterKpis.value.length === 0) {
     fetchMasterKpis();
+  }
+  if (departments.value.length === 0) {
+    fetchDepartments();
   }
 }
 
@@ -365,6 +403,7 @@ function getKpiUnit(item) {
 
 onMounted(() => {
   fetchMasterKpis();
+  fetchDepartments();
 });
 </script>
 
@@ -535,7 +574,7 @@ onMounted(() => {
 }
 .picker-card {
   width: 100%;
-  max-width: 520px;
+  max-width: 550px;
   background: #ffffff;
   border-radius: 10px;
   padding: 1.25rem;
@@ -560,24 +599,36 @@ onMounted(() => {
   cursor: pointer;
 }
 .picker-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   margin-bottom: 1rem;
 }
+.picker-filter-row {
+  display: flex;
+  gap: 0.5rem;
+}
 .picker-search-input {
+  flex: 1;
   padding: 0.5rem 0.75rem;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 0.85rem;
+  outline: none;
 }
-.toggle-all-label {
-  font-size: 0.75rem;
-  color: #475569;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+.picker-search-input:focus {
+  border-color: #0284c7;
+}
+.picker-dept-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.825rem;
+  background-color: #ffffff;
+  color: #334155;
+  outline: none;
+  max-width: 180px;
   cursor: pointer;
+}
+.picker-dept-select:focus {
+  border-color: #0284c7;
 }
 .picker-body {
   max-height: 260px;

@@ -102,120 +102,114 @@
           Master KPI tidak ditemukan.
         </div>
 
-        <table v-else class="employee-table">
-          <thead>
-            <tr>
-              <th>Indikator KPI</th>
-              <th>Departemen</th>
-              <th>Aspek BSC</th>
-              <th>Satuan (Unit)</th>
-              <th>Target Standar</th>
-              <th>Status</th>
-              <th class="action-col">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="kpi in filteredKpis" :key="kpi.id">
-              <td>
-                <div class="user-info">
-                  <div
-                    class="avatar"
-                    :style="{ backgroundColor: getAvatarColor(kpi.name) }"
-                  >
-                    {{ getInitials(kpi.name) }}
-                  </div>
-                  <div>
-                    <div class="user-name">{{ kpi.name }}</div>
-                    <div v-if="kpi.description" class="user-email">
+        <div v-else class="table-responsive">
+          <table class="employee-table">
+            <thead>
+              <tr>
+                <th class="col-kpi">Indikator KPI</th>
+                <th class="col-nowrap">Departemen</th>
+                <th class="col-nowrap">Aspek BSC</th>
+                <th class="col-nowrap col-center">Satuan (Unit)</th>
+                <th class="col-nowrap col-target">Target Standar</th>
+                <th class="col-nowrap col-center">Status</th>
+                <th class="col-nowrap action-col">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="kpi in filteredKpis" :key="kpi.id">
+                <td class="col-kpi">
+                  <div class="kpi-cell">
+                    <span class="kpi-name">{{ kpi.name }}</span>
+                    <span v-if="kpi.description" class="kpi-desc">
                       {{ kpi.description }}
-                    </div>
+                    </span>
                   </div>
-                </div>
-              </td>
-              <td>
-                <span class="dept-badge">
-                  {{ getDeptLabel(kpi.department) }}
-                </span>
-              </td>
-              <td>
-                <span
-                  class="bsc-badge"
-                  :class="kpi.bscPerspective.toLowerCase()"
-                >
-                  {{ getBscLabel(kpi.bscPerspective) }}
-                </span>
-              </td>
-              <td>
-                <span class="position-badge">{{ kpi.unit }}</span>
-              </td>
-              <td>
-                <span
-                  v-if="
-                    kpi.defaultTarget !== null &&
-                    kpi.defaultTarget !== undefined
-                  "
-                  class="target-val"
-                >
-                  {{ kpi.defaultTarget }} {{ kpi.unit }}
-                </span>
-                <span v-else class="text-muted">-</span>
-              </td>
-              <td>
-                <span class="role-badge" :class="kpi.status.toLowerCase()">
-                  {{ kpi.status }}
-                </span>
-              </td>
-              <td class="action-col">
-                <button
-                  class="icon-btn edit-btn"
-                  title="Edit KPI"
-                  @click="openEditModal(kpi)"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                </td>
+                <td class="col-nowrap">
+                  <span class="dept-badge">
+                    {{ getDeptLabel(kpi.department) }}
+                  </span>
+                </td>
+                <td class="col-nowrap">
+                  <span
+                    class="bsc-badge"
+                    :class="kpi.bscPerspective.toLowerCase()"
                   >
-                    <path
-                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                    />
-                    <path
-                      d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  class="icon-btn delete-btn"
-                  title="Hapus KPI"
-                  @click="confirmDelete(kpi)"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    {{ getBscLabel(kpi.bscPerspective) }}
+                  </span>
+                </td>
+                <td class="col-nowrap col-center">
+                  <span class="position-badge">{{ kpi.unit }}</span>
+                </td>
+                <td class="col-nowrap col-target">
+                  <span
+                    v-if="
+                      kpi.defaultTarget !== null &&
+                      kpi.defaultTarget !== undefined
+                    "
+                    class="target-val"
                   >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path
-                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                    />
-                    <line x1="10" y1="11" x2="10" y2="17" />
-                    <line x1="14" y1="11" x2="14" y2="17" />
-                  </svg>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    {{ formatTargetValue(kpi.defaultTarget, kpi.unit) }}
+                  </span>
+                  <span v-else class="text-muted">-</span>
+                </td>
+                <td class="col-nowrap col-center">
+                  <span class="role-badge" :class="kpi.status.toLowerCase()">
+                    {{ kpi.status }}
+                  </span>
+                </td>
+                <td class="col-nowrap action-col">
+                  <button
+                    class="icon-btn edit-btn"
+                    title="Edit KPI"
+                    @click="openEditModal(kpi)"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    class="icon-btn delete-btn"
+                    title="Hapus KPI"
+                    @click="confirmDelete(kpi)"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -359,12 +353,22 @@
         <!-- Step 2: Preview -->
         <div v-if="importStep === 2" class="import-step">
           <div class="import-summary mb-3">
-            <span class="badge badge-success"
-              >{{ validRowCount }} baris siap di-import</span
+            <strong>Ringkasan Import:</strong>
+            <div
+              style="
+                gap: 1rem;
+                margin-top: 0.5rem;
+                display: flex;
+                flex-wrap: wrap;
+              "
             >
-            <span v-if="errorRowCount > 0" class="badge badge-danger"
-              >{{ errorRowCount }} baris eror</span
-            >
+              <span class="badge badge-success"
+                >{{ validRowCount }} baris siap di-import</span
+              >
+              <span v-if="errorRowCount > 0" class="badge badge-danger"
+                >{{ errorRowCount }} baris eror</span
+              >
+            </div>
           </div>
 
           <div class="table-scroll" style="max-height: 300px; overflow-y: auto">
@@ -443,6 +447,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "../../stores/auth";
+import { formatTargetValue } from "~/utils/formatters";
 
 const config = useRuntimeConfig();
 const auth = useAuthStore();
@@ -768,22 +773,6 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-function getAvatarColor(name) {
-  const colors = [
-    "#0E97D6",
-    "#0583C3",
-    "#00A925",
-    "#7C3AED",
-    "#DB2777",
-    "#EA580C",
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}
-
 onMounted(() => {
   fetchKpis();
   fetchDepartments();
@@ -799,7 +788,7 @@ onMounted(() => {
 }
 
 .admin-content {
-  max-width: 1100px;
+  max-width: 1360px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -810,8 +799,8 @@ onMounted(() => {
   background: #ffffff;
   border-radius: 12px;
   padding: 1.5rem;
-  border: 1px solid #f0f3f9;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .header-section {
@@ -822,17 +811,18 @@ onMounted(() => {
 }
 
 .header-title h2 {
-  font-size: 1.5rem;
-  color: #2d3643;
-  margin: 0 0 0.25rem 0;
+  font-size: 1.4rem;
+  color: #1e293b;
+  margin: 0 0 0.35rem 0;
   font-weight: 600;
 }
 
 .section-desc {
-  color: #5e718d;
-  font-size: 0.9rem;
+  color: #64748b;
+  font-size: 0.875rem;
   margin: 0;
-  max-width: 700px;
+  max-width: 750px;
+  line-height: 1.5;
 }
 
 .filter-section {
@@ -859,15 +849,15 @@ onMounted(() => {
   width: 100%;
   outline: none;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .filter-group {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #5e718d;
+  font-size: 0.875rem;
+  color: #64748b;
 }
 
 .filter-group select {
@@ -877,6 +867,8 @@ onMounted(() => {
   outline: none;
   font-family: inherit;
   background: #ffffff;
+  font-size: 0.875rem;
+  color: #334155;
 }
 
 .primary-btn {
@@ -912,136 +904,188 @@ onMounted(() => {
   overflow: hidden;
 }
 
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .employee-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  font-size: 0.875rem;
 }
 
 .employee-table th {
-  padding: 0.75rem 1rem;
-  font-size: 0.8rem;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.725rem;
   text-transform: uppercase;
-  color: #8897ae;
-  border-bottom: 2px solid #f0f3f9;
-  letter-spacing: 0.5px;
+  color: #64748b;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .employee-table td {
-  padding: 1rem;
-  border-bottom: 1px solid #f0f3f9;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  color: #334155;
 }
 
-.user-info {
+.employee-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.employee-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.employee-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.col-kpi {
+  width: auto;
+  min-width: 260px;
+}
+
+.col-nowrap {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.col-center {
+  text-align: center;
+}
+
+.col-target {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-cell {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-}
-
-.user-name {
+.kpi-name {
   font-weight: 500;
-  color: #2d3643;
+  color: #1e293b;
+  line-height: 1.4;
 }
 
-.user-email {
-  font-size: 0.8rem;
-  color: #8897ae;
+.kpi-desc {
+  font-size: 0.775rem;
+  color: #64748b;
+  line-height: 1.35;
+  max-width: 520px;
 }
 
 .position-badge {
-  background: #f1f5f9;
-  color: #334155;
-  padding: 0.25rem 0.6rem;
+  display: inline-block;
+  white-space: nowrap;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 0.25rem 0.55rem;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.775rem;
   font-weight: 500;
 }
 
 .dept-badge {
-  background: #e0f2fe;
-  color: #0369a1;
-  padding: 0.25rem 0.6rem;
+  display: inline-block;
+  white-space: nowrap;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #dbeafe;
+  padding: 0.25rem 0.65rem;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.775rem;
   font-weight: 500;
 }
 
 .bsc-badge {
+  display: inline-block;
+  white-space: nowrap;
   font-size: 0.75rem;
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 500;
+  border: 1px solid transparent;
 }
 
 .bsc-badge.financial {
-  background: #dbeafe;
+  background: #eff6ff;
   color: #1e40af;
+  border-color: #dbeafe;
 }
 
 .bsc-badge.customer {
-  background: #dcfce7;
-  color: #166534;
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
 }
 
 .bsc-badge.internal_process {
-  background: #fef3c7;
-  color: #92400e;
+  background: #fefce8;
+  color: #854d0e;
+  border-color: #fef08a;
 }
 
 .bsc-badge.learning_growth {
-  background: #f3e8ff;
-  color: #6b21a8;
+  background: #faf5ff;
+  color: #7e22ce;
+  border-color: #e9d5ff;
 }
 
 .target-val {
   font-weight: 600;
   color: #0f172a;
+  white-space: nowrap;
 }
 
 .role-badge {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .role-badge.active {
-  background: #dcfce7;
-  color: #15803d;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .role-badge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 .action-col {
   text-align: right;
-  width: 100px;
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 1.25rem;
 }
 
 .icon-btn {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.3rem;
-  border-radius: 4px;
+  padding: 0.35rem;
+  border-radius: 6px;
   color: #64748b;
-  transition: background 0.15s;
+  transition: all 0.15s ease;
 }
 
 .icon-btn:hover {
@@ -1050,10 +1094,12 @@ onMounted(() => {
 
 .icon-btn.edit-btn:hover {
   color: #0284c7;
+  background: #e0f2fe;
 }
 
 .icon-btn.delete-btn:hover {
   color: #ef4444;
+  background: #fee2e2;
 }
 
 .loading-state,
