@@ -20,6 +20,15 @@
         :title="pageTitle"
         @toggle-sidebar="isSidebarOpen = !isSidebarOpen"
       />
+      <div
+        v-if="showShell && isInactiveDeptUser"
+        class="inactive-dept-banner"
+      >
+        <div class="banner-content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><strong>Perhatian:</strong> Departemen Anda ({{ auth.user?.department }}) sedang berstatus <strong>NONAKTIF</strong>. Akses pengisian dan perubahan data dibatasi. Silakan hubungi Administrator.</span>
+        </div>
+      </div>
       <main :class="['page-content', { 'padded-content': showShell }]">
         <NuxtPage />
       </main>
@@ -44,6 +53,11 @@ const isAuthenticated = computed(() => auth.isAuthenticated);
 const isLoginPage = computed(() => route.path === "/login");
 const showShell = computed(() => isAuthenticated.value && !isLoginPage.value);
 const isManagerRole = computed(() => auth.user?.role === "MANAGER");
+const isInactiveDeptUser = computed(() => {
+  if (!auth.user) return false;
+  if (['ADMIN', 'C_LEVEL'].includes(auth.user.role)) return false;
+  return auth.user.isDepartmentActive === false;
+});
 
 // Filter State for Manager
 const searchQuery = ref("");
@@ -115,6 +129,8 @@ const pageTitle = computed(() => {
   if (path.startsWith("/admin/objectives")) return "OKR Builder";
   if (path.startsWith("/admin/update-progress")) return "Update Capaian";
   if (path.startsWith("/admin/employees")) return "Data Pegawai";
+  if (path.startsWith("/admin/departments") || path.startsWith("/departments")) return "Struktur Departemen";
+  if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
   if (path.startsWith("/approvals")) return "Persetujuan (Approvals)";
   return "Profil Pengguna";
 });
@@ -397,6 +413,28 @@ p {
   margin-left: 0;
   margin-top: 0;
   width: 100%;
+}
+
+.inactive-dept-banner {
+  background: #fff1f0;
+  border-bottom: 1px solid #ffa39e;
+  padding: 0.75rem 1.5rem;
+  color: #cf1322;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.inactive-dept-banner .banner-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.inactive-dept-banner svg {
+  flex-shrink: 0;
+  stroke: #cf1322;
 }
 
 .page-content {

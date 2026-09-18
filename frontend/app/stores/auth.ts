@@ -7,6 +7,7 @@ export interface User {
   role: string;
   teamId?: string | null;
   department?: string | null;
+  isDepartmentActive?: boolean;
   managedDepartments?: string[];
 }
 

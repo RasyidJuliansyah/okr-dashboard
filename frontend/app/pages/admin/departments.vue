@@ -10,7 +10,12 @@
             Kelola hierarki organisasi per departemen. Assign Manager, Leader, dan anggota Team serta hubungkan mereka ke Key Result, Initiative, dan Task.
           </p>
         </div>
-        <div class="header-actions" style="display: flex; gap: 1rem; align-items: center;">
+        <div class="header-actions" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <select v-model="statusFilter" class="dept-filter-select">
+            <option value="ALL">Semua Status</option>
+            <option value="ACTIVE">Hanya Aktif</option>
+            <option value="INACTIVE">Hanya Nonaktif</option>
+          </select>
           <select v-model="selectedDept" class="dept-filter-select">
             <option value="">Semua Departemen</option>
             <option v-for="d in DEPARTMENTS" :key="d.value" :value="d.value">
@@ -37,10 +42,37 @@
         >
           <!-- Dept Header -->
           <div class="dept-card-header">
-            <div class="dept-icon">{{ dept.icon }}</div>
-            <div>
-              <h3 class="dept-name">{{ dept.label }}</h3>
-              <p class="dept-member-count">{{ getMemberCount(dept.value) }} anggota</p>
+            <div class="dept-header-left">
+              <div class="dept-icon">{{ dept.icon }}</div>
+              <div>
+                <div class="dept-name-row">
+                  <h3 class="dept-name">{{ dept.label }}</h3>
+                  <span
+                    class="status-badge"
+                    :class="dept.isActive !== false ? 'status-active' : 'status-inactive'"
+                  >
+                    {{ dept.isActive !== false ? 'Aktif' : 'Nonaktif' }}
+                  </span>
+                </div>
+                <p class="dept-member-count">{{ getMemberCount(dept.value) }} anggota</p>
+              </div>
+            </div>
+            <div class="dept-header-right">
+              <button
+                class="edit-name-btn"
+                @click="openEditDeptModal(dept)"
+                title="Edit Nama Departemen"
+              >
+                Edit
+              </button>
+              <button
+                class="status-toggle-btn"
+                :class="dept.isActive !== false ? 'btn-deactivate' : 'btn-activate'"
+                @click="toggleDeptStatus(dept)"
+                :title="dept.isActive !== false ? 'Nonaktifkan Departemen' : 'Aktifkan Departemen'"
+              >
+                {{ dept.isActive !== false ? 'Nonaktifkan' : 'Aktifkan' }}
+              </button>
             </div>
           </div>
 
@@ -70,13 +102,15 @@
                     <span class="chip-name">{{ m.name }}</span>
                     <span class="chip-pos">{{ m.position || 'Manager' }}</span>
                   </div>
-                  <button class="remove-member-btn" title="Keluarkan dari Departemen" @click="removeUserFromDept(m.id)">
-                    &times;
+                </div>
+                <div class="manager-action-btns">
+                  <button class="assign-btn small" @click="openAssignRoleModal(dept.value, 'MANAGER')">
+                    Ubah
+                  </button>
+                  <button class="assign-btn small btn-danger" @click="removeManager(dept)">
+                    Hapus Manager
                   </button>
                 </div>
-                <button class="assign-btn small" @click="openAssignRoleModal(dept.value, 'MANAGER')">
-                  + Edit
-                </button>
               </div>
             </div>
           </div>
@@ -178,36 +212,86 @@
           <button class="close-btn" @click="showAddDeptModal = false">&times;</button>
         </div>
         
-        <div class="form-group">
-          <label>Nama Departemen *</label>
-          <input
-            v-model="newDeptForm.name"
-            @input="generateDeptValue"
-            type="text"
-            class="form-input"
-            placeholder="Contoh: Digital Marketing"
-          />
-        </div>
-        <div class="form-group" style="margin-top: 1rem;">
-          <label>ID/Value Departemen *</label>
-          <input
-            v-model="newDeptForm.value"
-            type="text"
-            class="form-input"
-            placeholder="Contoh: DIGITAL_MARKETING"
-            style="text-transform: uppercase;"
-          />
-          <p class="pick-meta" style="margin-top: 0.25rem;">Digunakan sebagai identifier unik dalam sistem.</p>
-        </div>
+        <form @submit.prevent="saveNewDepartment" class="modal-form">
+          <div class="form-group">
+            <label for="admin-new-dept-name">Nama Departemen *</label>
+            <input
+              id="admin-new-dept-name"
+              v-model="newDeptForm.name"
+              @input="generateDeptValue"
+              type="text"
+              class="form-input"
+              placeholder="Contoh: Digital Marketing"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="admin-new-dept-val">ID/Value Departemen *</label>
+            <input
+              id="admin-new-dept-val"
+              v-model="newDeptForm.value"
+              type="text"
+              class="form-input"
+              placeholder="Contoh: DIGITAL_MARKETING"
+              style="text-transform: uppercase;"
+              required
+            />
+            <p class="pick-meta" style="margin-top: 0.25rem; font-size: 0.8rem; color: #5e718d;">Digunakan sebagai identifier unik dalam sistem.</p>
+          </div>
 
-        <div class="modal-footer" style="margin-top: 1rem;">
-          <button class="secondary-btn" @click="showAddDeptModal = false">Batal</button>
-          <button class="primary-btn" :disabled="saving || !newDeptForm.name || !newDeptForm.value" @click="saveNewDepartment">
-            {{ saving ? 'Menyimpan...' : 'Simpan' }}
-          </button>
-        </div>
+          <div class="modal-footer">
+            <button type="button" class="secondary-btn" @click="showAddDeptModal = false">Batal</button>
+            <button type="submit" class="primary-btn" :disabled="saving || !newDeptForm.name || !newDeptForm.value">
+              {{ saving ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
+
+    <!-- ─── MODAL: Edit Nama Departemen ─── -->
+    <div v-if="showEditDeptModal" class="modal-backdrop" @click.self="showEditDeptModal = false">
+      <div class="modal-card card">
+        <div class="modal-header">
+          <h3>Edit Nama Departemen</h3>
+          <button class="close-btn" @click="showEditDeptModal = false">&times;</button>
+        </div>
+        
+        <form @submit.prevent="saveEditDepartment" class="modal-form">
+          <div class="form-group">
+            <label for="admin-edit-dept-name">Nama Departemen *</label>
+            <input
+              id="admin-edit-dept-name"
+              v-model="editDeptForm.name"
+              type="text"
+              class="form-input"
+              placeholder="Contoh: Digital Marketing"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="admin-edit-dept-val">ID / Value Departemen</label>
+            <input
+              id="admin-edit-dept-val"
+              :value="editDeptForm.value"
+              type="text"
+              class="form-input"
+              disabled
+              style="background: #f8fafc; cursor: not-allowed; text-transform: uppercase;"
+            />
+            <p class="pick-meta" style="margin-top: 0.25rem; font-size: 0.8rem; color: #5e718d;">Kode departemen bersifat permanen untuk integritas relasi sistem.</p>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="secondary-btn" @click="showEditDeptModal = false">Batal</button>
+            <button type="submit" class="primary-btn" :disabled="saving || !editDeptForm.name.trim()">
+              {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 
     <!-- ─── MODAL: Assign Role ke Departemen ─── -->
     <div v-if="showRoleModal" class="modal-backdrop" @click.self="showRoleModal = false">
@@ -505,6 +589,7 @@ const saving = ref(false);
 const errorMsg = ref('');
 const successMsg = ref('');
 const selectedDept = ref('');
+const statusFilter = ref('ALL');
 
 const allUsers = ref([]);
 const allKrs = ref([]);
@@ -528,19 +613,20 @@ const taskAssignMap = ref({}); // { [taskId]: userId[] }
 
 const showAddDeptModal = ref(false);
 const newDeptForm = ref({ name: '', value: '' });
+const showEditDeptModal = ref(false);
+const editDeptForm = ref({ id: '', name: '', value: '' });
 
 // ─── Departments Config ───
 const DEPARTMENTS = ref([]);
 
 // ─── Computed ───
-const activeDepts = computed(() => {
-  const usedDepts = new Set(allUsers.value.map(u => u.department).filter(Boolean));
-  return DEPARTMENTS.value.filter(d => usedDepts.has(d.value));
-});
-
 const filteredDepts = computed(() => {
-  if (!selectedDept.value) return activeDepts.value;
-  return activeDepts.value.filter(d => d.value === selectedDept.value);
+  return DEPARTMENTS.value.filter(d => {
+    if (selectedDept.value && d.value !== selectedDept.value) return false;
+    if (statusFilter.value === 'ACTIVE' && d.isActive === false) return false;
+    if (statusFilter.value === 'INACTIVE' && d.isActive !== false) return false;
+    return true;
+  });
 });
 
 const filteredUsersForRole = computed(() => {
@@ -597,12 +683,68 @@ async function fetchDepartments() {
       id: d.id,
       value: d.value,
       label: d.name,
+      isActive: d.isActive !== undefined ? d.isActive : true,
       managerId: d.managerId,
       manager: d.manager,
       icon: FALLBACK_ICONS[index % FALLBACK_ICONS.length],
     }));
   } catch (e) {
     console.error('Gagal memuat departemen');
+  }
+}
+
+async function toggleDeptStatus(dept) {
+  const willBeInactive = dept.isActive !== false;
+  const msg = willBeInactive
+    ? `Nonaktifkan departemen "${dept.label}"? Akses user departemen ini ke data OKR/BSC akan dibatasi.`
+    : `Aktifkan kembali departemen "${dept.label}"?`;
+  
+  if (!confirm(msg)) return;
+
+  saving.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await fetch(`${API}/departments/${dept.id}/status`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ isActive: !dept.isActive }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal mengubah status departemen');
+    }
+    successMsg.value = `Status departemen "${dept.label}" berhasil diperbarui.`;
+    await fetchDepartments();
+    setTimeout(() => (successMsg.value = ''), 4000);
+  } catch (e) {
+    errorMsg.value = e.message || 'Gagal mengubah status departemen';
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function removeManager(dept) {
+  if (!confirm(`Hapus jabatan Manager dari departemen "${dept.label}"? Jika user tidak mengelola departemen lain, role-nya akan diturunkan ke TEAM.`)) return;
+
+  saving.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await fetch(`${API}/departments/${dept.id}/manager`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ userId: null }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal menghapus manager');
+    }
+    successMsg.value = `Manager departemen "${dept.label}" berhasil dihapus.`;
+    await Promise.all([fetchDepartments(), fetchUsers()]);
+    setTimeout(() => (successMsg.value = ''), 4000);
+  } catch (e) {
+    errorMsg.value = e.message || 'Gagal menghapus manager';
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -679,6 +821,41 @@ async function saveNewDepartment() {
     saving.value = false;
   }
 }
+
+function openEditDeptModal(dept) {
+  editDeptForm.value = {
+    id: dept.id,
+    name: dept.label,
+    value: dept.value,
+  };
+  showEditDeptModal.value = true;
+}
+
+async function saveEditDepartment() {
+  if (!editDeptForm.value.name.trim()) return;
+  saving.value = true;
+  errorMsg.value = '';
+  try {
+    const res = await fetch(`${API}/departments/${editDeptForm.value.id}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ name: editDeptForm.value.name.trim() }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Gagal mengubah nama departemen');
+    }
+    successMsg.value = 'Nama departemen berhasil diperbarui!';
+    showEditDeptModal.value = false;
+    await fetchDepartments();
+    setTimeout(() => (successMsg.value = ''), 4000);
+  } catch (e) {
+    errorMsg.value = e.message || 'Gagal mengubah nama departemen';
+  } finally {
+    saving.value = false;
+  }
+}
+
 
 // ─── Assign Role ───
 function openAssignRoleModal(dept, role) {
@@ -976,9 +1153,93 @@ onMounted(async () => {
 .dept-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #f0f3f9;
+}
+.dept-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.dept-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.status-active {
+  background: #e6f4ea;
+  color: #137333;
+}
+.status-inactive {
+  background: #fce8e6;
+  color: #c5221f;
+}
+.edit-name-btn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #d0d5dd;
+  background: #ffffff;
+  color: #344054;
+  transition: all 0.15s;
+}
+.edit-name-btn:hover {
+  background: #f2f4f7;
+  border-color: #98a2b3;
+}
+
+.status-toggle-btn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.btn-deactivate {
+  background: #fff1f0;
+  color: #cf1322;
+  border-color: #ffa39e;
+}
+.btn-deactivate:hover {
+  background: #ffccc7;
+}
+.btn-activate {
+  background: #f6ffed;
+  color: #389e0d;
+  border-color: #b7eb8f;
+}
+.btn-activate:hover {
+  background: #d9f7be;
+}
+.manager-action-btns {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.btn-danger {
+  color: #cf1322 !important;
+  border-color: #ffa39e !important;
+}
+.btn-danger:hover {
+  background: #fff1f0 !important;
+  border-color: #cf1322 !important;
 }
 .dept-icon { font-size: 1.8rem; }
 .dept-name { font-size: 1.1rem; font-weight: 600; color: #2d3643; margin: 0 0 0.1rem; }
@@ -1158,6 +1419,12 @@ onMounted(async () => {
 }
 
 /* Search / Form */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .search-box input, .form-select {
   width: 100%;
   padding: 0.5rem 0.75rem;
@@ -1169,8 +1436,8 @@ onMounted(async () => {
   background: #f8fafc;
   box-sizing: border-box;
 }
-.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
-.form-group label { font-size: 0.85rem; font-weight: 500; color: #2d3643; }
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.form-group label { font-size: 0.85rem; font-weight: 500; color: #5e718d; }
 
 /* User Pick List */
 .user-pick-list {

@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
@@ -80,8 +81,35 @@ export async function createKeyResult(req: AuthRequest, res: Response) {
       const refetchedKR = await prisma.keyResult.findUnique({
         where: { id: newKR.id },
       });
+      await logAudit(prisma, {
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "KEY_RESULT",
+        entityId: newKR.id,
+        newValues: {
+          title: newKR.title,
+          targetValue: newKR.targetValue,
+          month: newKR.month,
+          bscPerspective: newKR.bscPerspective,
+        },
+        req,
+      });
       return res.status(201).json(refetchedKR || newKR);
     }
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "CREATE",
+      entityType: "KEY_RESULT",
+      entityId: newKR.id,
+      newValues: {
+        title: newKR.title,
+        targetValue: newKR.targetValue,
+        month: newKR.month,
+        bscPerspective: newKR.bscPerspective,
+      },
+      req,
+    });
 
     return res.status(201).json(newKR);
   } catch (error) {
@@ -153,6 +181,18 @@ export async function deleteKeyResult(req: AuthRequest, res: Response) {
     if (annualKeyResultId) {
       await normalizeMonthlyKrWeights(annualKeyResultId);
     }
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "DELETE",
+      entityType: "KEY_RESULT",
+      entityId: id,
+      oldValues: {
+        title: kr.title,
+        targetValue: kr.targetValue,
+      },
+      req,
+    });
 
     return res.status(200).json({ message: "Key Result deleted successfully" });
   } catch (error) {
@@ -298,6 +338,23 @@ export async function updateKeyResultProgress(req: AuthRequest, res: Response) {
     if (result[0].annualKeyResultId) {
       await cascadeMonthlyKrToAnnual(result[0].annualKeyResultId);
     }
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "KEY_RESULT",
+      entityId: id,
+      oldValues: {
+        currentValue: oldValue,
+        status: kr.status,
+      },
+      newValues: {
+        currentValue: valueNum,
+        status: newStatus,
+        note: note || null,
+      },
+      req,
+    });
 
     return res.status(200).json({
       keyResult: result[0],

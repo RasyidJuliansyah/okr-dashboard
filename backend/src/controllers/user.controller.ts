@@ -2,6 +2,7 @@ import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
@@ -98,6 +99,15 @@ export async function createEmployee(req: AuthRequest, res: Response) {
       },
     });
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "CREATE",
+      entityType: "USER",
+      entityId: newUser.id,
+      newValues: newUser,
+      req,
+    });
+
     return res.status(201).json(newUser);
   } catch (error) {
     console.error("Create employee error:", error);
@@ -147,6 +157,26 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
       },
     });
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "USER",
+      entityId: user.id,
+      oldValues: {
+        name: user.name,
+        position: user.position,
+        department: user.department,
+        role: user.role,
+      },
+      newValues: {
+        name: updated.name,
+        position: updated.position,
+        department: updated.department,
+        role: updated.role,
+      },
+      req,
+    });
+
     return res.status(200).json(updated);
   } catch (error) {
     console.error("Update employee error:", error);
@@ -177,6 +207,21 @@ export async function deleteEmployee(req: AuthRequest, res: Response) {
     }
 
     await prisma.user.delete({ where: { id } });
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "DELETE",
+      entityType: "USER",
+      entityId: user.id,
+      oldValues: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+      },
+      req,
+    });
 
     return res.status(200).json({ message: "Pegawai berhasil dihapus" });
   } catch (error) {
@@ -408,6 +453,15 @@ export async function resetUserPassword(req: AuthRequest, res: Response) {
     await prisma.user.update({
       where: { id },
       data: { password: hashedPassword },
+    });
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "RESET_PASSWORD",
+      entityType: "USER",
+      entityId: user.id,
+      oldValues: { email: user.email },
+      req,
     });
 
     return res.status(200).json({

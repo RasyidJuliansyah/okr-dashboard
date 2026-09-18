@@ -71,13 +71,23 @@
         >
           <!-- Dept Header -->
           <div class="dept-card-header">
-            <div class="dept-icon">{{ dept.icon }}</div>
-            <div>
-              <h3 class="dept-name">{{ dept.label }}</h3>
-              <p class="dept-member-count">
-                {{ getMemberCount(dept.value) }} anggota terdaftar
-              </p>
+            <div class="dept-header-left">
+              <div class="dept-icon">{{ dept.icon }}</div>
+              <div>
+                <h3 class="dept-name">{{ dept.label }}</h3>
+                <p class="dept-member-count">
+                  {{ getMemberCount(dept.value) }} anggota terdaftar
+                </p>
+              </div>
             </div>
+            <button
+              v-if="isAdmin"
+              class="edit-name-btn"
+              @click="openEditDeptModal(dept)"
+              title="Edit Nama Departemen"
+            >
+              Edit
+            </button>
           </div>
 
           <!-- Manager Row -->
@@ -308,44 +318,122 @@
           </button>
         </div>
 
-        <div class="form-group">
-          <label>Nama Departemen *</label>
-          <input
-            v-model="newDeptForm.name"
-            @input="generateDeptValue"
-            type="text"
-            class="form-input"
-            placeholder="Contoh: Digital Marketing"
-          />
-        </div>
-        <div class="form-group" style="margin-top: 1rem">
-          <label>ID/Value Departemen *</label>
-          <input
-            v-model="newDeptForm.value"
-            type="text"
-            class="form-input"
-            placeholder="Contoh: DIGITAL_MARKETING"
-            style="text-transform: uppercase"
-          />
-          <p class="pick-meta" style="margin-top: 0.25rem">
-            Digunakan sebagai identifier unik dalam sistem.
-          </p>
-        </div>
+        <form @submit.prevent="saveNewDepartment" class="modal-form">
+          <div class="form-group">
+            <label for="new-dept-name">Nama Departemen *</label>
+            <input
+              id="new-dept-name"
+              v-model="newDeptForm.name"
+              @input="generateDeptValue"
+              type="text"
+              class="form-input"
+              placeholder="Contoh: Digital Marketing"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-dept-val">ID/Value Departemen *</label>
+            <input
+              id="new-dept-val"
+              v-model="newDeptForm.value"
+              type="text"
+              class="form-input"
+              placeholder="Contoh: DIGITAL_MARKETING"
+              style="text-transform: uppercase"
+              required
+            />
+            <p
+              class="pick-meta"
+              style="margin-top: 0.25rem; font-size: 0.8rem; color: #5e718d"
+            >
+              Digunakan sebagai identifier unik dalam sistem.
+            </p>
+          </div>
 
-        <div class="modal-footer" style="margin-top: 1rem">
-          <button class="secondary-btn" @click="showAddDeptModal = false">
-            Batal
-          </button>
-          <button
-            class="primary-btn"
-            :disabled="saving || !newDeptForm.name || !newDeptForm.value"
-            @click="saveNewDepartment"
-          >
-            {{ saving ? "Menyimpan..." : "Simpan" }}
-          </button>
-        </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="secondary-btn"
+              @click="showAddDeptModal = false"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="primary-btn"
+              :disabled="saving || !newDeptForm.name || !newDeptForm.value"
+            >
+              {{ saving ? "Menyimpan..." : "Simpan" }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
+
+    <!-- ─── MODAL: Edit Nama Departemen ─── -->
+    <div
+      v-if="showEditDeptModal"
+      class="modal-backdrop"
+      @click.self="showEditDeptModal = false"
+    >
+      <div class="modal-card card">
+        <div class="modal-header">
+          <h3>Edit Nama Departemen</h3>
+          <button class="close-btn" @click="showEditDeptModal = false">
+            &times;
+          </button>
+        </div>
+
+        <form @submit.prevent="saveEditDepartment" class="modal-form">
+          <div class="form-group">
+            <label for="edit-dept-name">Nama Departemen *</label>
+            <input
+              id="edit-dept-name"
+              v-model="editDeptForm.name"
+              type="text"
+              class="form-input"
+              placeholder="Contoh: Digital Marketing"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="edit-dept-val">ID / Value Departemen</label>
+            <input
+              id="edit-dept-val"
+              :value="editDeptForm.value"
+              type="text"
+              class="form-input"
+              disabled
+              style="background: #f8fafc; cursor: not-allowed; text-transform: uppercase"
+            />
+            <p
+              class="pick-meta"
+              style="margin-top: 0.25rem; font-size: 0.8rem; color: #5e718d"
+            >
+              Kode departemen bersifat permanen untuk integritas relasi sistem.
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="secondary-btn"
+              @click="showEditDeptModal = false"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="primary-btn"
+              :disabled="saving || !editDeptForm.name.trim()"
+            >
+              {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 
     <!-- ─── MODAL: Assign Role ke Departemen ─── -->
     <div
@@ -668,6 +756,8 @@ const taskAssignMap = ref<Record<string, string[]>>({});
 
 const showAddDeptModal = ref(false);
 const newDeptForm = ref({ name: "", value: "" });
+const showEditDeptModal = ref(false);
+const editDeptForm = ref({ id: "", name: "", value: "" });
 
 // ─── Departments Config ───
 const DEPARTMENTS = ref<any[]>([]);
@@ -853,6 +943,42 @@ async function saveNewDepartment() {
     saving.value = false;
   }
 }
+
+function openEditDeptModal(dept: any) {
+  editDeptForm.value = {
+    id: dept.id,
+    name: dept.label,
+    value: dept.value,
+  };
+  showEditDeptModal.value = true;
+}
+
+async function saveEditDepartment() {
+  if (!editDeptForm.value.name.trim()) return;
+  saving.value = true;
+  errorMsg.value = "";
+  try {
+    const res = await fetch(`${API}/departments/${editDeptForm.value.id}`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify({ name: editDeptForm.value.name.trim() }),
+    });
+    if (res.ok) {
+      showEditDeptModal.value = false;
+      successMsg.value = "Nama departemen berhasil diperbarui!";
+      setTimeout(() => (successMsg.value = ""), 3000);
+      await fetchDepartments();
+    } else {
+      const err = await res.json();
+      errorMsg.value = err.message || "Gagal mengubah nama departemen";
+    }
+  } catch (e: any) {
+    errorMsg.value = e.message;
+  } finally {
+    saving.value = false;
+  }
+}
+
 
 function openAssignRoleModal(deptVal: string, role: string) {
   targetDept.value = deptVal;
@@ -1180,7 +1306,7 @@ onMounted(async () => {
   background: #0e97d6;
   color: #ffffff;
   border: none;
-  padding: 8px 16px;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.85rem;
@@ -1188,21 +1314,32 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: background 0.2s;
 }
 
 .primary-btn:hover {
-  background: #0b7bb0;
+  background: #0b82b9;
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .secondary-btn {
-  background: #ffffff;
-  color: var(--text-primary, #0f172a);
-  border: 1px solid #cbd5e1;
-  padding: 8px 14px;
+  background: #f8fafc;
+  color: #5e718d;
+  border: 1px solid #e2e8f0;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+  background: #f1f5f9;
 }
 
 /* Dept Grid */
@@ -1228,9 +1365,32 @@ onMounted(async () => {
 .dept-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--border-color, #f1f5f9);
   padding-bottom: 10px;
+}
+
+.dept-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.edit-name-btn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #d0d5dd;
+  background: #ffffff;
+  color: #344054;
+  transition: all 0.15s;
+}
+.edit-name-btn:hover {
+  background: #f2f4f7;
+  border-color: #98a2b3;
 }
 
 .dept-icon {
@@ -1425,62 +1585,82 @@ onMounted(async () => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 1000;
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
 .modal-card {
   width: 95%;
-  max-width: 540px;
+  max-width: 500px;
   max-height: 85vh;
   overflow-y: auto;
   padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.15rem;
+  color: #2d3643;
+  font-weight: 600;
 }
 
 .close-btn {
   background: transparent;
   border: none;
   font-size: 1.5rem;
-  color: #94a3b8;
+  color: #8897ae;
   cursor: pointer;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #2d3643;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.35rem;
 }
 
 .form-group label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #5e718d;
 }
 
 .form-input {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
+  padding: 0.65rem;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.85rem;
   outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  border-color: #0e97d6;
 }
 
 .user-picker-list {
