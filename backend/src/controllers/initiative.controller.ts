@@ -2,6 +2,7 @@ import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { cascadeMonthlyKrToAnnual } from "./keyresult.controller";
+import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
@@ -1057,6 +1058,20 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       });
     }
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "CREATE",
+      entityType: "INITIATIVE",
+      entityId: initiative.id,
+      newValues: {
+        title: initiative.title,
+        targetValue: initiative.targetValue,
+        teamId: initiative.teamId,
+        keyResultId: initiative.keyResultId,
+      },
+      req,
+    });
+
     return res.status(201).json(initiative);
   } catch (error) {
     console.error("Create initiative error:", error);
@@ -1171,6 +1186,26 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
         link: "/initiatives",
       });
     }
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "INITIATIVE",
+      entityId: id,
+      oldValues: {
+        title: existing.title,
+        status: existing.status,
+        targetValue: existing.targetValue,
+        kanbanStatus: existing.kanbanStatus,
+      },
+      newValues: {
+        title: updated.title,
+        status: updated.status,
+        targetValue: updated.targetValue,
+        kanbanStatus: updated.kanbanStatus,
+      },
+      req,
+    });
 
     return res.status(200).json(updated);
   } catch (error) {
@@ -2067,6 +2102,20 @@ export async function createTask(req: AuthRequest, res: Response) {
       });
     }
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "CREATE",
+      entityType: "TASK",
+      entityId: task.id,
+      newValues: {
+        title: task.title,
+        targetValue: task.targetValue,
+        initiativeId: task.initiativeId,
+        assignedTeamMemberId: task.assignedTeamMemberId,
+      },
+      req,
+    });
+
     return res.status(201).json(task);
   } catch (error) {
     console.error("Create Task error:", error);
@@ -2303,6 +2352,26 @@ export async function updateTask(req: AuthRequest, res: Response) {
         link: "/team/my-work",
       });
     }
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "TASK",
+      entityId: id,
+      oldValues: {
+        title: existing.title,
+        status: existing.status,
+        targetValue: existing.targetValue,
+        currentValue: existing.currentValue,
+      },
+      newValues: {
+        title: updated.title,
+        status: updated.status,
+        targetValue: updated.targetValue,
+        currentValue: updated.currentValue,
+      },
+      req,
+    });
 
     return res.status(200).json(updated);
   } catch (error) {

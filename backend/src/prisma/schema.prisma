@@ -25,6 +25,7 @@ model User {
   assignedInitiatives Initiative[]     @relation("InitiativeLeader") // NOTE: FK to user currently missing in DB
   assignedTasks       Task[]           @relation("TaskAssignedMember") // NOTE: FK to user currently missing in DB
   notifications       Notification[]                                  // NOTE: FK to user currently missing in DB
+  auditLogs           AuditLog[]       @relation("UserAuditLogs")
   createdAt           DateTime         @default(now()) @map("created_at")
 
   @@index([teamId], map: "User_teamId_idx")
@@ -272,12 +273,31 @@ model Department {
   id        String   @id @default(uuid())
   name      String
   value     String   @unique(map: "Department_value_key")
+  isActive  Boolean  @default(true) @map("is_active")
   managerId String?  @map("manager_id")
   manager   User?    @relation("DepartmentManager", fields: [managerId], references: [id], map: "Department_managerId_fkey")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([managerId], map: "Department_managerId_fkey")
   @@map("department")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  user       User?    @relation("UserAuditLogs", fields: [userId], references: [id], map: "AuditLog_userId_fkey")
+  action     String   @db.VarChar(50)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.VarChar(100)
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId], map: "AuditLog_entityType_entityId_idx")
+  @@index([userId], map: "AuditLog_userId_idx")
+  @@index([createdAt], map: "AuditLog_createdAt_idx")
+  @@map("audit_log")
 }
 
 model InitiativeUpdate {

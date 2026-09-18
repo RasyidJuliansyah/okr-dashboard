@@ -5,6 +5,7 @@ import {
   cascadeMonthlyKrToAnnual,
   normalizeMonthlyKrWeights,
 } from "./keyresult.controller";
+import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
@@ -152,6 +153,21 @@ export async function createAnnualKeyResult(req: AuthRequest, res: Response) {
       },
     });
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "CREATE",
+      entityType: "KEY_RESULT",
+      entityId: newAnnualKr.id,
+      newValues: {
+        title: newAnnualKr.title,
+        targetValue: newAnnualKr.targetValue,
+        unit: newAnnualKr.unit,
+        year: newAnnualKr.year,
+        bscPerspective: newAnnualKr.bscPerspective,
+      },
+      req,
+    });
+
     return res.status(201).json(newAnnualKr);
   } catch (error) {
     console.error("Create annual key result error:", error);
@@ -202,6 +218,26 @@ export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
       await cascadeMonthlyKrToAnnual(id);
     }
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "KEY_RESULT",
+      entityId: id,
+      oldValues: {
+        title: annualKr.title,
+        targetValue: annualKr.targetValue,
+        unit: annualKr.unit,
+        status: annualKr.status,
+      },
+      newValues: {
+        title: updated.title,
+        targetValue: updated.targetValue,
+        unit: updated.unit,
+        status: updated.status,
+      },
+      req,
+    });
+
     return res.status(200).json(updated);
   } catch (error) {
     console.error("Update annual key result error:", error);
@@ -213,6 +249,13 @@ export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
 export async function deleteAnnualKeyResult(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+
+    const annualKr = await prisma.annualKeyResult.findUnique({
+      where: { id },
+    });
+    if (!annualKr) {
+      return res.status(404).json({ message: "Annual Key Result not found" });
+    }
 
     const keyResultCount = await prisma.keyResult.count({
       where: { annualKeyResultId: id },
@@ -227,6 +270,17 @@ export async function deleteAnnualKeyResult(req: AuthRequest, res: Response) {
 
     await prisma.annualKeyResult.delete({
       where: { id },
+    });
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "DELETE",
+      entityType: "KEY_RESULT",
+      entityId: id,
+      oldValues: {
+        title: annualKr.title,
+      },
+      req,
     });
 
     return res

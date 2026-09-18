@@ -45,6 +45,17 @@ export async function login(req: AuthRequest, res: Response) {
       { expiresIn: "7d" },
     );
 
+    let isDepartmentActive = true;
+    if (user.department) {
+      const dept = await prisma.department.findUnique({
+        where: { value: user.department },
+        select: { isActive: true },
+      });
+      if (dept) {
+        isDepartmentActive = dept.isActive;
+      }
+    }
+
     return res.status(200).json({
       token,
       user: {
@@ -54,6 +65,7 @@ export async function login(req: AuthRequest, res: Response) {
         role: user.role,
         teamId: user.teamId,
         department: user.department,
+        isDepartmentActive,
         managedDepartments: user.managedDepartments.map((d) => d.value),
       },
     });
@@ -90,8 +102,20 @@ export async function getMe(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    let isDepartmentActive = true;
+    if (user.department) {
+      const dept = await prisma.department.findUnique({
+        where: { value: user.department },
+        select: { isActive: true },
+      });
+      if (dept) {
+        isDepartmentActive = dept.isActive;
+      }
+    }
+
     return res.status(200).json({
       ...user,
+      isDepartmentActive,
       managedDepartments: user.managedDepartments.map((d) => d.value),
     });
   } catch (error) {
