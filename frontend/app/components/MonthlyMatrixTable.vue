@@ -36,6 +36,9 @@ interface AnnualKrBreakdown {
 const props = defineProps<{
   annualKrs: AnnualKrBreakdown[];
   highlightMonth?: string;
+  monthlyHealthScores?: Record<string, number | null> | (number | null)[];
+  ytdHealthScore?: number | null;
+  overallHealthScore?: number | null;
 }>();
 
 const monthHeaders = [
@@ -52,6 +55,107 @@ const monthHeaders = [
   "Nov",
   "Des",
 ];
+
+function isMonthHighlighted(idx: number): boolean {
+  if (!props.highlightMonth) return false;
+  const monthStr = String(idx + 1).padStart(2, "0");
+  return props.highlightMonth.endsWith(monthStr);
+}
+
+function formatScore(score: number | null | undefined): string {
+  if (score === null || score === undefined) return "-";
+  return `${score}%`;
+}
+
+function getHealthCellClass(
+  score: number | null | undefined,
+  isHighlighted: boolean,
+) {
+  let cls = "matrix-cell health-cell ";
+  if (score === null || score === undefined) {
+    cls += "status-empty";
+  } else if (score >= 70) {
+    cls += "status-on-track";
+  } else if (score >= 40) {
+    cls += "status-at-risk";
+  } else {
+    cls += "status-off-track";
+  }
+  if (isHighlighted) {
+    cls += " highlight-col";
+  }
+  return cls;
+}
+
+function getHealthCellTooltip(
+  idx: number,
+  score: number | null | undefined,
+): string {
+  const mName = monthHeaders[idx];
+  if (score === null || score === undefined) {
+    return `End of Sprint ${mName}: Belum ada data evaluasi`;
+  }
+  let status = "Kritis";
+  if (score >= 70) status = "Sehat (Healthy)";
+  else if (score >= 40) status = "Perlu Perhatian";
+  return `End of Sprint ${mName} (Capaian Keseluruhan)\nSkor: ${score}%\nStatus: ${status}`;
+}
+
+const computedMonthlyHealthScores = computed(() => {
+  if (props.monthlyHealthScores) {
+    if (Array.isArray(props.monthlyHealthScores)) {
+      return props.monthlyHealthScores;
+    }
+    return monthHeaders.map((_, idx) => {
+      const monthNum = String(idx + 1).padStart(2, "0");
+      const entry = Object.entries(props.monthlyHealthScores!).find(
+        ([k]) =>
+          k.endsWith(`-${monthNum}`) ||
+          k === monthNum ||
+          k === String(idx + 1),
+      );
+      return entry ? entry[1] : null;
+    });
+  }
+  // Fallback: If not provided, calculate from props.annualKrs if available
+  if (props.annualKrs && props.annualKrs.length > 0) {
+    return monthHeaders.map((_, idx) => {
+      const validKrs = props.annualKrs.filter((akr) => {
+        const m = akr.months?.[idx];
+        return (
+          m && (m.monthWeight > 0 || m.monthTarget > 0 || m.currentValue > 0)
+        );
+      });
+      if (validKrs.length === 0) return null;
+      const sum = validKrs.reduce(
+        (acc, akr) => acc + (akr.months[idx].progressPercent || 0),
+        0,
+      );
+      return Math.round((sum / validKrs.length) * 10) / 10;
+    });
+  }
+  return monthHeaders.map(() => null);
+});
+
+const computedYtdHealthScore = computed(() => {
+  if (props.ytdHealthScore !== undefined && props.ytdHealthScore !== null) {
+    return props.ytdHealthScore;
+  }
+  if (
+    props.overallHealthScore !== undefined &&
+    props.overallHealthScore !== null
+  ) {
+    return props.overallHealthScore;
+  }
+  if (props.annualKrs && props.annualKrs.length > 0) {
+    const sum = props.annualKrs.reduce(
+      (acc, akr) => acc + (akr.aggregatedProgress || 0),
+      0,
+    );
+    return Math.round((sum / props.annualKrs.length) * 10) / 10;
+  }
+  return null;
+});
 
 function getCellClass(monthData: MonthData, isHighlighted: boolean) {
   let cls = "matrix-cell ";
@@ -128,6 +232,33 @@ function getPerspectiveLabel(perspective: string) {
           </tr>
         </thead>
         <tbody>
+          <!-- Summary Row: Company Health Score (Capaian Sprint Keseluruhan) -->
+          <tr class="summary-health-row">
+            <td class="col-title health-title-cell">
+              <div class="health-title-group">
+                <span class="health-main-title">Company Health Score</span>
+                <span class="health-sub-badge">Capaian Sprint Keseluruhan</span>
+              </div>
+            </td>
+            <td
+              v-for="(score, idx) in computedMonthlyHealthScores"
+              :key="idx"
+              :class="getHealthCellClass(score, isMonthHighlighted(idx))"
+              :title="getHealthCellTooltip(idx, score)"
+            >
+              <div class="cell-content">
+                <span class="health-pct">{{ formatScore(score) }}</span>
+              </div>
+            </td>
+            <td class="col-ytd value-ytd health-ytd-cell">
+              <span class="ytd-progress health-ytd-val">
+                {{ formatScore(computedYtdHealthScore) }}
+              </span>
+              <span class="ytd-absolute">YTD Overall</span>
+            </td>
+          </tr>
+
+          <!-- Annual KR rows -->
           <tr
             v-for="akr in annualKrs"
             :key="akr.annualKrId || akr.id"
@@ -170,7 +301,7 @@ function getPerspectiveLabel(perspective: string) {
           </tr>
           <tr v-if="annualKrs.length === 0">
             <td colspan="14" class="empty-row">
-              Tidak ada data Key Result tahunan.
+              Belum ada rincian Key Result tahunan.
             </td>
           </tr>
         </tbody>
@@ -346,5 +477,65 @@ function getPerspectiveLabel(perspective: string) {
 
 .matrix-row:hover td {
   background-color: #f8fafc;
+}
+
+.summary-health-row {
+  background-color: #f8fafc;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.summary-health-row td {
+  padding: 10px;
+}
+
+.summary-health-row:hover td {
+  background-color: #f1f5f9;
+}
+
+.health-title-cell {
+  background-color: #f8fafc;
+}
+
+.health-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.health-main-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.health-sub-badge {
+  align-self: flex-start;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  background-color: #e2e8f0;
+  color: #334155;
+  letter-spacing: 0.02em;
+}
+
+.health-cell {
+  font-weight: 600;
+}
+
+.health-pct {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.health-ytd-cell {
+  background-color: #f8fafc;
+}
+
+.health-ytd-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
 }
 </style>
