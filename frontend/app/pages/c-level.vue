@@ -328,6 +328,9 @@
         <MonthlyMatrixTable
           :annualKrs="annualKeyResults"
           :highlightMonth="selectedMonth"
+          :monthlyHealthScores="data?.monthlyHealthScores"
+          :ytdHealthScore="data?.ytdHealthScore"
+          :overallHealthScore="data?.overallHealthScore"
         />
       </section>
 

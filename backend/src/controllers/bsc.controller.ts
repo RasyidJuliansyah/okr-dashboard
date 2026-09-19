@@ -285,8 +285,70 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       (k) => k.status === "OFF_TRACK",
     ).length;
 
+    // Calculate monthly health scores across all 12 sprint months for the year
+    const targetYear = req.query.year
+      ? parseInt(String(req.query.year))
+      : month
+      ? parseInt(String(month).split("-")[0])
+      : 2026;
+
+    const allYearKrs = await prisma.keyResult.findMany({
+      where: {
+        OR: [
+          { month: { startsWith: `${targetYear}-` } },
+          { objective: { year: `${targetYear}` } },
+          { objective: { year: `Q1-${targetYear}` } },
+          { objective: { year: `Q2-${targetYear}` } },
+          { objective: { year: `Q3-${targetYear}` } },
+          { objective: { year: `Q4-${targetYear}` } },
+        ],
+      },
+      select: {
+        month: true,
+        bscPerspective: true,
+        currentValue: true,
+        targetValue: true,
+      },
+    });
+
+    const calcPerspectiveHealth = (
+      krs: { bscPerspective: string; currentValue: number; targetValue: number }[],
+    ) => {
+      const pMap: Record<string, { count: number; totalProgress: number }> = {};
+      PERSPECTIVES.forEach((p) => {
+        pMap[p] = { count: 0, totalProgress: 0 };
+      });
+      krs.forEach((kr) => {
+        const p = kr.bscPerspective;
+        if (!pMap[p]) return;
+        const progress =
+          kr.targetValue > 0
+            ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
+            : 0;
+        pMap[p].count++;
+        pMap[p].totalProgress += Math.round(progress * 10) / 10;
+      });
+      const validPerspectives = PERSPECTIVES.filter((p) => pMap[p].count > 0);
+      if (validPerspectives.length === 0) return null;
+      const avgSum = validPerspectives.reduce((sum, p) => {
+        return sum + Math.round((pMap[p].totalProgress / pMap[p].count) * 10) / 10;
+      }, 0);
+      return Math.round((avgSum / validPerspectives.length) * 10) / 10;
+    };
+
+    const monthlyHealthScores: Record<string, number | null> = {};
+    for (let m = 1; m <= 12; m++) {
+      const mStr = `${targetYear}-${String(m).padStart(2, "0")}`;
+      const monthKrs = allYearKrs.filter((k) => k.month === mStr);
+      monthlyHealthScores[mStr] = calcPerspectiveHealth(monthKrs);
+    }
+
+    const ytdHealthScore = calcPerspectiveHealth(allYearKrs) ?? 0;
+
     return res.status(200).json({
       overallHealthScore,
+      ytdHealthScore,
+      monthlyHealthScores,
       totalKRs,
       totalOnTrack,
       totalAtRisk,
