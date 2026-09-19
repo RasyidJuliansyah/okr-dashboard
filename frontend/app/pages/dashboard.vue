@@ -515,8 +515,13 @@
             v-for="init in group.initiatives"
             :key="init.id"
             class="init-progress-row"
+            :class="{ 'is-expanded': isInitExpanded(init.id) }"
           >
-            <div class="init-row-header">
+            <div
+              class="init-row-header"
+              :class="{ 'is-clickable': init.tasks?.length }"
+              @click="init.tasks?.length ? toggleInitTasks(init.id) : null"
+            >
               <div class="init-row-left">
                 <span
                   class="kanban-dot"
@@ -527,7 +532,37 @@
               </div>
               <div class="init-row-right">
                 <span class="init-pct">{{ init.calculatedProgress }}%</span>
-                <span class="task-count-mini">
+                <button
+                  v-if="init.tasks?.length"
+                  type="button"
+                  class="task-count-mini is-toggleable"
+                  @click.stop="toggleInitTasks(init.id)"
+                  :aria-expanded="isInitExpanded(init.id)"
+                  :title="
+                    isInitExpanded(init.id)
+                      ? 'Tutup rincian task'
+                      : 'Buka rincian task'
+                  "
+                >
+                  <span
+                    >{{ init.completedTasks }}/{{ init.totalTasks }} Task</span
+                  >
+                  <svg
+                    class="init-expand-icon"
+                    :class="{ 'is-expanded': isInitExpanded(init.id) }"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                <span v-else class="task-count-mini">
                   {{ init.completedTasks }}/{{ init.totalTasks }} Task
                 </span>
               </div>
@@ -541,7 +576,10 @@
             </div>
 
             <!-- Task detail rows -->
-            <div v-if="init.tasks?.length" class="task-detail-grid">
+            <div
+              v-if="init.tasks?.length && isInitExpanded(init.id)"
+              class="task-detail-grid"
+            >
               <div
                 v-for="task in init.tasks"
                 :key="task.id"
@@ -1297,6 +1335,21 @@ function formatMonthLabel(monthStr) {
 
 // State & Computed untuk Initiative Progress (Leader, Manager, C-Level, Admin)
 const initProgressData = ref({ initiatives: [], byKeyResult: [], summary: {} });
+
+// State expand / collapse per Initiative
+const expandedInitIds = ref({});
+
+function toggleInitTasks(initId) {
+  if (!initId) return;
+  expandedInitIds.value = {
+    ...expandedInitIds.value,
+    [initId]: !expandedInitIds.value[initId],
+  };
+}
+
+function isInitExpanded(initId) {
+  return !!expandedInitIds.value[initId];
+}
 
 const showInitiativeProgress = computed(() => {
   return ["LEADER", "MANAGER", "C_LEVEL", "ADMIN"].includes(userRole.value);
@@ -2110,7 +2163,7 @@ async function handleReject() {
 
 .progress-ring-placeholder {
   height: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card-border, #e2e8f0);
   border-radius: 4px;
   flex-grow: 1;
   max-width: 200px;
@@ -2120,7 +2173,7 @@ async function handleReject() {
 
 .progress-ring-fill {
   height: 100%;
-  background: #0e97d6;
+  background: linear-gradient(90deg, #3cef84, #00870b);
   border-radius: 4px;
 }
 
@@ -3008,7 +3061,7 @@ async function handleReject() {
 
 .kr-mini-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #0e97d6, #10b981);
+  background: linear-gradient(90deg, #3cef84, #00870b);
   border-radius: 4px;
   transition: width 0.4s ease;
 }
@@ -3026,6 +3079,15 @@ async function handleReject() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.init-row-header.is-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.init-row-header.is-clickable:hover .init-row-title {
+  color: #0e97d6;
 }
 
 .init-row-left {
@@ -3086,6 +3148,38 @@ async function handleReject() {
   padding: 2px 8px;
   border-radius: 10px;
   border: 1px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+button.task-count-mini {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: inherit;
+}
+
+.task-count-mini.is-toggleable {
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.init-row-header.is-clickable:hover .task-count-mini.is-toggleable,
+.task-count-mini.is-toggleable:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.init-expand-icon {
+  transition: transform 0.2s ease;
+  color: var(--text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.init-expand-icon.is-expanded {
+  transform: rotate(180deg);
 }
 
 .init-progress-track {
@@ -3095,6 +3189,10 @@ async function handleReject() {
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 10px;
+}
+
+.init-progress-row:not(.is-expanded) .init-progress-track {
+  margin-bottom: 0;
 }
 
 .init-progress-bar {

@@ -1004,7 +1004,7 @@ function getGroupedKrs(keyResults) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #ffff;
+  background-color: #f8fafc;
   padding: 32px;
 }
 .admin-content {

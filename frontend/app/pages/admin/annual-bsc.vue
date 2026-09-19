@@ -674,6 +674,7 @@ onMounted(async () => {
 <style scoped>
 .admin-root {
   padding: 1.5rem;
+  background: var(--bg-page, #f8fafc);
   font-family: inherit;
   color: #374151;
 }

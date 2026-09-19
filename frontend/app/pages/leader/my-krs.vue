@@ -1336,7 +1336,7 @@ function getGroupedAssignedKrs(assignments) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: #f8fafc;
   padding: 32px;
 }
 

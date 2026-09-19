@@ -9,6 +9,7 @@
       top: 0;
       background: #ffffff;
       border-right: 1px solid #f0f3f9;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
       display: flex;
       flex-direction: column;
       z-index: 100;
@@ -32,7 +33,7 @@
         src="/logo.png"
         alt="Skolla Logo"
         style="
-          width: 100%;
+          width: 90%;
           max-width: 100%;
           height: auto;
           object-fit: contain;
@@ -316,8 +317,8 @@
           <span>Master KPI</span>
         </NuxtLink>
         <NuxtLink
-          to="/admin/departments"
-          :style="navItemStyle('/admin/departments')"
+          to="/departments"
+          :style="navItemStyle('/departments')"
           @click="emit('close')"
         >
           <svg
@@ -351,7 +352,9 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+            />
             <polyline points="14 2 14 8 20 8" />
             <line x1="16" y1="13" x2="8" y2="13" />
             <line x1="16" y1="17" x2="8" y2="17" />

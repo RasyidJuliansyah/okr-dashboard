@@ -658,6 +658,7 @@ onMounted(async () => {
 .admin-root {
   font-family: "Rubik", sans-serif;
   min-height: 100vh;
+  background: var(--bg-page, #f8fafc);
   background-color: var(--content-bg, #0a0a0a);
   color: var(--text-color, #ffffff);
   padding: 40px;
