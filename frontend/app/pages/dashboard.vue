@@ -413,8 +413,8 @@
               <span v-if="task.assignedTeamMember?.name" class="meta-sub">
                 Assignee: <strong>{{ task.assignedTeamMember.name }}</strong>
               </span>
-              <span v-if="task.dueDate" class="meta-sub">
-                Due: <strong>{{ formatDate(task.dueDate) }}</strong>
+              <span v-if="task.dueDate || task.finishDate" class="meta-sub">
+                Tenggat: <strong>{{ formatDate(task.finishDate || task.dueDate) }}</strong>
               </span>
             </div>
 
@@ -424,16 +424,8 @@
                 class="btn-open-cross-thread"
                 @click="openCrossDeptModal(task.id)"
               >
-                💬 Buka Diskusi & Lifecycle
+                🔍 Detail & Diskusi
               </button>
-              <a
-                v-if="task.link"
-                :href="task.link"
-                target="_blank"
-                class="btn-external-link"
-              >
-                Dokumen ↗
-              </a>
             </div>
           </div>
         </div>
@@ -1204,7 +1196,29 @@ async function fetchCrossDeptTasks() {
       },
     });
     if (res.ok) {
-      crossDeptData.value = await res.json();
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const myDept = auth.user?.department || "";
+        const myId = auth.user?.id;
+        const inc = data.filter(
+          (t) =>
+            (myDept && t.targetDept === myDept) ||
+            t.assignedTeamMemberId === myId ||
+            t.assignments?.some((a) => a.userId === myId)
+        );
+        const out = data.filter(
+          (t) =>
+            (myDept && t.creatorDept === myDept) ||
+            t.creatorId === myId
+        );
+        crossDeptData.value = { incoming: inc, outgoing: out, all: data };
+      } else {
+        crossDeptData.value = {
+          incoming: data.incoming || [],
+          outgoing: data.outgoing || [],
+          all: data.all || [],
+        };
+      }
     }
   } catch (err) {
     console.error("Fetch cross dept tasks error:", err);
@@ -1376,6 +1390,7 @@ function isTaskDone(task) {
     status === "DONE" ||
     status === "COMPLETED" ||
     kanbanStatus === "DONE" ||
+    kanbanStatus === "CLOSED" ||
     kanbanStatus === "COMPLETED"
   );
 }

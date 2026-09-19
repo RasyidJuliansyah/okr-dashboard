@@ -193,6 +193,9 @@ watch(
     if (cat === "Lainnya") {
       customUnitText.value = newUnit || "";
     }
+    if (!newUnit && cat === "%") {
+      emit("update:unit", "%");
+    }
   },
   { immediate: true },
 );

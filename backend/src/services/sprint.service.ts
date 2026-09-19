@@ -115,6 +115,139 @@ export async function getActiveSprint() {
   return byDate || null;
 }
 
+/**
+ * Non-strict sprint resolver for Initiatives and Tasks.
+ * Finds matching Sprint by id, date range, or sprintMonth string, falling back to ACTIVE sprint if enabled.
+ * Never throws error if not matched.
+ */
+export async function resolveSprint(options: {
+  sprintId?: string | null;
+  date?: Date | string | null;
+  sprintMonth?: string | null;
+  fallbackToActive?: boolean;
+}): Promise<any | null> {
+  const { sprintId, date, sprintMonth, fallbackToActive = true } = options;
+
+  // 1. Direct sprintId match
+  if (sprintId) {
+    const sp = await prisma.sprint.findUnique({ where: { id: sprintId } });
+    if (sp) return sp;
+  }
+
+  // 2. Resolve by date range
+  if (date) {
+    const d = new Date(date);
+    if (!isNaN(d.getTime())) {
+      const sp = await prisma.sprint.findFirst({
+        where: {
+          startDate: { lte: d },
+          endDate: { gte: d },
+        },
+        orderBy: { startDate: "desc" },
+      });
+      if (sp) return sp;
+    }
+  }
+
+  // 3. Resolve by sprintMonth string (e.g. "2026-10", "Sprint Oktober 2026")
+  if (sprintMonth) {
+    const trimmed = sprintMonth.trim();
+    let sp = await prisma.sprint.findFirst({
+      where: { name: trimmed },
+    });
+    if (sp) return sp;
+
+    const matchYm = trimmed.match(/^(\d{4})-(\d{1,2})$/);
+    if (matchYm) {
+      const year = matchYm[1];
+      const mIdx = parseInt(matchYm[2], 10) - 1;
+      if (mIdx >= 0 && mIdx < 12) {
+        sp = await prisma.sprint.findFirst({
+          where: {
+            name: { contains: MONTH_NAMES_ID[mIdx] },
+            year,
+          },
+        });
+        if (sp) return sp;
+      }
+    }
+
+    sp = await prisma.sprint.findFirst({
+      where: { name: { contains: trimmed } },
+    });
+    if (sp) return sp;
+  }
+
+  // 4. Fallback to active sprint
+  if (fallbackToActive) {
+    return getActiveSprint();
+  }
+
+  return null;
+}
+
+/**
+ * Backfill existing initiatives and tasks that have null sprintId
+ */
+export async function backfillSprintRelations(): Promise<{ updatedInitiatives: number; updatedTasks: number }> {
+  const initiatives = await prisma.initiative.findMany({
+    where: { sprintId: null },
+    select: { id: true, sprintMonth: true, startDate: true, dueDate: true },
+  });
+
+  let updatedInitiatives = 0;
+  for (const ini of initiatives) {
+    const sp = await resolveSprint({
+      date: ini.startDate || ini.dueDate,
+      sprintMonth: ini.sprintMonth,
+      fallbackToActive: true,
+    });
+    if (sp) {
+      await prisma.initiative.update({
+        where: { id: ini.id },
+        data: { sprintId: sp.id },
+      });
+      updatedInitiatives++;
+    }
+  }
+
+  const tasks = await prisma.task.findMany({
+    where: { sprintId: null },
+    select: {
+      id: true,
+      sprintMonth: true,
+      startDate: true,
+      finishDate: true,
+      initiative: { select: { sprintId: true, sprintMonth: true, startDate: true, dueDate: true } },
+    },
+  });
+
+  let updatedTasks = 0;
+  for (const t of tasks) {
+    let sp = null;
+    if (t.initiative?.sprintId) {
+      sp = await prisma.sprint.findUnique({ where: { id: t.initiative.sprintId } });
+    }
+    if (!sp) {
+      sp = await resolveSprint({
+        date: t.startDate || t.finishDate || t.initiative?.startDate || t.initiative?.dueDate,
+        sprintMonth: t.sprintMonth || t.initiative?.sprintMonth,
+        fallbackToActive: true,
+      });
+    }
+    if (sp) {
+      await prisma.task.update({
+        where: { id: t.id },
+        data: { sprintId: sp.id },
+      });
+      updatedTasks++;
+    }
+  }
+
+  return { updatedInitiatives, updatedTasks };
+}
+
+
 export async function updateSprint(
   id: string,
   data: { startDate?: string | Date; endDate?: string | Date; name?: string },
@@ -209,11 +342,21 @@ export async function closeAndRolloverSprint(
     const userTasks = await prisma.task.findMany({
       where: {
         sprintId,
-        OR: [
-          { assignedTeamMemberId: user.id },
-          { assignments: { some: { userId: user.id } } },
+        kanbanStatus: { not: "DROP" },
+        AND: [
+          {
+            OR: [
+              { assignedTeamMemberId: user.id },
+              { assignments: { some: { userId: user.id } } },
+            ],
+          },
+          {
+            OR: [
+              { initiativeId: null },
+              { initiative: { kanbanStatus: { not: "DROP" } } },
+            ],
+          },
         ],
-        initiative: { kanbanStatus: { not: "DROP" } },
       },
       select: {
         id: true,
@@ -222,6 +365,8 @@ export async function closeAndRolloverSprint(
         currentValue: true,
         baselineValue: true,
         status: true,
+        kanbanStatus: true,
+        isCrossDept: true,
       },
     });
 
@@ -241,7 +386,12 @@ export async function closeAndRolloverSprint(
       const target = t.targetValue || 0;
       const baseline = t.baselineValue || 0;
       let pct = 0;
-      if (t.status === "ON_TRACK" && t.currentValue >= target) {
+      if (
+        t.status === "DONE" ||
+        t.kanbanStatus === "DONE" ||
+        t.kanbanStatus === "CLOSED" ||
+        (t.status === "ON_TRACK" && target > 0 && t.currentValue >= target)
+      ) {
         pct = 100;
       } else if (target > baseline) {
         pct = ((t.currentValue - baseline) / (target - baseline)) * 100;
@@ -257,7 +407,13 @@ export async function closeAndRolloverSprint(
 
     const totalWeight = iniTotalWeight + taskTotalWeight;
     const totalScore = totalWeight > 0 ? Math.round(((iniWeightedSum + taskWeightedSum) / totalWeight) * 10) / 10 : 0;
-    const completedTasks = userTasks.filter((t) => t.status === "ON_TRACK" && t.currentValue >= (t.targetValue || 1)).length;
+    const completedTasks = userTasks.filter(
+      (t) =>
+        t.status === "DONE" ||
+        t.kanbanStatus === "DONE" ||
+        t.kanbanStatus === "CLOSED" ||
+        (t.status === "ON_TRACK" && t.currentValue >= (t.targetValue || 1)),
+    ).length;
 
     const detailsJson = {
       initiativeCount: userInitiatives.length,

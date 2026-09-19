@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { resolveSprint, getActiveSprint } from "../services/sprint.service";
 import { cascadeMonthlyKrToAnnual } from "./keyresult.controller";
 import { logAudit } from "../utils/auditLogger";
 
@@ -270,14 +271,24 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           },
         });
 
-        // Tasks (Di-assign ke user ini oleh leader / role atas) - Bobot = 1
+        // Tasks (Di-assign ke user ini oleh leader / role atas atau Cross-Dept) - Bobot = 1
         const assignedTasks = await prisma.task.findMany({
           where: {
-            OR: [
-              { assignedTeamMemberId: user.id },
-              { assignments: { some: { userId: user.id } } },
+            kanbanStatus: { not: "DROP" },
+            AND: [
+              {
+                OR: [
+                  { assignedTeamMemberId: user.id },
+                  { assignments: { some: { userId: user.id } } },
+                ],
+              },
+              {
+                OR: [
+                  { initiativeId: null },
+                  { initiative: { kanbanStatus: { not: "DROP" } } },
+                ],
+              },
             ],
-            initiative: { kanbanStatus: { not: "DROP" } },
           },
           select: {
             id: true,
@@ -286,8 +297,14 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             currentValue: true,
             baselineValue: true,
             status: true,
+            kanbanStatus: true,
             sprintMonth: true,
             sprintId: true,
+            finishDate: true,
+            createdAt: true,
+            isCrossDept: true,
+            creatorDept: true,
+            targetDept: true,
             initiative: {
               select: {
                 title: true,
@@ -321,7 +338,13 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           if (sprintId) {
             return (
               t.sprintId === sprintId ||
-              (targetSprint && (t.sprintMonth === targetSprint.name || t.initiative?.sprintMonth === targetSprint.name))
+              (targetSprint && (
+                t.sprintMonth === targetSprint.name ||
+                t.initiative?.sprintMonth === targetSprint.name ||
+                (t.finishDate && targetSprint.startDate && targetSprint.endDate &&
+                  new Date(t.finishDate) >= new Date(targetSprint.startDate) &&
+                  new Date(t.finishDate) <= new Date(targetSprint.endDate))
+              ))
             );
           }
           const taskSprint = t.sprintMonth || t.initiative?.sprintMonth;
@@ -374,7 +397,12 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           const targetVal = t.targetValue || 0;
           const baselineVal = t.baselineValue || 0;
 
-          if (t.status === "ON_TRACK" && t.currentValue >= targetVal) {
+          if (
+            t.status === "DONE" ||
+            t.kanbanStatus === "DONE" ||
+            t.kanbanStatus === "CLOSED" ||
+            (t.status === "ON_TRACK" && targetVal > 0 && t.currentValue >= targetVal)
+          ) {
             progressPct = 100;
           } else if (targetVal > baselineVal) {
             progressPct = Math.min(
@@ -407,10 +435,17 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             baselineValue: t.baselineValue,
             targetValue: t.targetValue,
             currentValue: t.currentValue,
-            kanbanStatus: t.status,
+            kanbanStatus: t.kanbanStatus || t.status,
             progressPct: roundedPct,
-            parentTitle: t.initiative?.title || "",
-            krTitle: t.initiative?.keyResult?.title || "",
+            parentTitle:
+              t.initiative?.title ||
+              (t.isCrossDept
+                ? `Lintas Dept (${t.creatorDept || "?"} → ${t.targetDept || "?"})`
+                : ""),
+            krTitle:
+              t.initiative?.keyResult?.title ||
+              (t.isCrossDept ? "Tugas Lintas Departemen" : ""),
+            isCrossDept: t.isCrossDept || false,
           };
         });
 
@@ -630,14 +665,21 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
 // GET /api/initiatives?krId=xxx&kanbanStatus=xxx&teamId=xxx&ownerId=xxx&sprintMonth=xxx — list initiatives
 export async function getInitiatives(req: AuthRequest, res: Response) {
   try {
-    const { krId, kanbanStatus, teamId, ownerId, sprintMonth, managerId } =
+    const { krId, kanbanStatus, teamId, ownerId, sprintMonth, sprintId, managerId } =
       req.query;
     const { role, id: userId } = req.user!;
 
     let where: any = {};
     if (krId) where.keyResultId = krId as string;
     if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
-    if (sprintMonth) where.sprintMonth = sprintMonth as string;
+    if (sprintId) {
+      where.sprintId = sprintId as string;
+    } else if (sprintMonth) {
+      where.OR = [
+        { sprintMonth: sprintMonth as string },
+        { sprint: { name: sprintMonth as string } },
+      ];
+    }
 
     // 1. TEAM (T): hanya melihat inisiatif milik sendiri + inisiatif yang di-assign khusus padanya (bukan inisiatif induk Leader)
     if (role === "TEAM") {
@@ -773,9 +815,15 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         assignedLeader: {
           select: { id: true, name: true, position: true },
         },
+        sprint: {
+          select: { id: true, name: true, startDate: true, endDate: true, status: true },
+        },
         tasks: {
           include: {
             assignedTeamMember: {
+              select: { id: true, name: true },
+            },
+            sprint: {
               select: { id: true, name: true },
             },
             assignments: {
@@ -789,10 +837,17 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
 
     // Query Task cards for Kanban (Task Individual)
     let taskWhere: any = {};
-    if (sprintMonth) {
+    if (sprintId) {
+      taskWhere.OR = [
+        { sprintId: sprintId as string },
+        { initiative: { sprintId: sprintId as string } },
+      ];
+    } else if (sprintMonth) {
       taskWhere.OR = [
         { sprintMonth: sprintMonth as string },
         { initiative: { sprintMonth: sprintMonth as string } },
+        { sprint: { name: sprintMonth as string } },
+        { initiative: { sprint: { name: sprintMonth as string } } },
       ];
     }
     if (krId) {
@@ -802,10 +857,15 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       };
     }
     if (teamId) {
-      taskWhere.initiative = {
-        ...(taskWhere.initiative || {}),
-        teamId: teamId as string,
-      };
+      taskWhere.AND = [
+        ...(taskWhere.AND || []),
+        {
+          OR: [
+            { initiative: { teamId: teamId as string } },
+            { isCrossDept: true, assignedTeamMember: { teamId: teamId as string } },
+          ],
+        },
+      ];
     }
 
     if (ownerId) {
@@ -927,6 +987,9 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         assignedTeamMember: {
           select: { id: true, name: true, department: true, role: true },
         },
+        sprint: {
+          select: { id: true, name: true },
+        },
         assignments: {
           include: { user: { select: { id: true, name: true } } },
         },
@@ -989,6 +1052,8 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         weight: t.weight || 1.0,
         status: t.status,
         kanbanStatus: taskKanbanStatus,
+        sprintId: t.sprintId || t.initiative?.sprintId || null,
+        sprint: t.sprint || t.initiative?.sprint || null,
         sprintMonth: t.sprintMonth || t.initiative?.sprintMonth || null,
         startDate: t.startDate || t.initiative?.startDate || null,
         dueDate: t.finishDate || t.initiative?.dueDate || null,
@@ -1047,9 +1112,23 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         .json({ message: "title wajib diisi" });
     }
 
-    const finalSprintId = req.body.sprintId || null;
-    if (finalSprintId && role !== "ADMIN") {
-      const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+    let finalSprintId = req.body.sprintId || null;
+    if (!finalSprintId) {
+      const matchedSprint = await resolveSprint({
+        date: startDate || dueDate || null,
+        sprintMonth,
+        fallbackToActive: true,
+      });
+      if (matchedSprint) {
+        finalSprintId = matchedSprint.id;
+        if (!sprintMonth) {
+          sprintMonth = matchedSprint.name;
+        }
+      }
+    }
+
+    if (req.body.sprintId && role !== "ADMIN") {
+      const sp = await prisma.sprint.findUnique({ where: { id: req.body.sprintId } });
       if (sp?.isLocked) {
         return res.status(403).json({ message: "Sprint sudah ditutup dan terkunci. Hanya Admin yang dapat menambah inisiatif." });
       }
@@ -1133,7 +1212,12 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       }
     }
 
-    const finalOwnerId = ownerId || (role === "TEAM" ? userId : null);
+    const finalOwnerId =
+      (ownerId && String(ownerId).trim()) || (role === "TEAM" ? userId : null);
+    const finalAssignedLeaderId =
+      (assignedLeaderId && String(assignedLeaderId).trim()) || null;
+    const finalKeyResultId =
+      (keyResultId && String(keyResultId).trim()) || null;
     const parsedWeight =
       weight !== undefined && weight !== null && !isNaN(parseFloat(weight))
         ? parseFloat(weight)
@@ -1141,10 +1225,10 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 
     const initiative = await (prisma.initiative as any).create({
       data: {
-        ...(keyResultId ? { keyResultId } : {}),
+        ...(finalKeyResultId ? { keyResultId: finalKeyResultId } : {}),
         teamId,
         ownerId: finalOwnerId,
-        assignedLeaderId: assignedLeaderId || null,
+        assignedLeaderId: finalAssignedLeaderId,
         assignedBy: userId,
         ...(finalSprintId ? { sprintId: finalSprintId } : {}),
         title,
@@ -1259,11 +1343,27 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
 
     // Non-restricted initiative editing
     const effectiveOwnerId =
-      ownerId !== undefined ? ownerId || null : existing.ownerId;
+      ownerId !== undefined
+        ? (ownerId && String(ownerId).trim()) || null
+        : existing.ownerId;
+    const effectiveAssignedLeaderId =
+      assignedLeaderId !== undefined
+        ? (assignedLeaderId && String(assignedLeaderId).trim()) || null
+        : existing.assignedLeaderId;
     const effectiveSprintMonth =
-      sprintMonth !== undefined ? sprintMonth || null : existing.sprintMonth;
+      sprintMonth !== undefined ? (sprintMonth && String(sprintMonth).trim()) || null : existing.sprintMonth;
     const effectiveWeight =
       weight !== undefined ? parseFloat(weight) : existing.weight;
+
+    let targetSprintId = req.body.sprintId !== undefined ? (req.body.sprintId || null) : existing.sprintId;
+    if (!targetSprintId && (effectiveSprintMonth || startDate || dueDate || existing.startDate || existing.dueDate)) {
+      const sp = await resolveSprint({
+        date: startDate || dueDate || existing.startDate || existing.dueDate,
+        sprintMonth: effectiveSprintMonth,
+        fallbackToActive: false,
+      });
+      if (sp) targetSprintId = sp.id;
+    }
 
     const updated = await prisma.initiative.update({
       where: { id },
@@ -1271,9 +1371,9 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
         ...(ownerId !== undefined &&
-          role !== "TEAM" && { ownerId: ownerId || null }),
+          role !== "TEAM" && { ownerId: effectiveOwnerId }),
         ...(assignedLeaderId !== undefined &&
-          role !== "TEAM" && { assignedLeaderId: assignedLeaderId || null }),
+          role !== "TEAM" && { assignedLeaderId: effectiveAssignedLeaderId }),
         ...(targetValue !== undefined && {
           targetValue: parseFloat(targetValue),
         }),
@@ -1297,7 +1397,7 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
           finishDate: finishDate ? new Date(finishDate) : null,
         }),
         ...(sprintMonth !== undefined && { sprintMonth: sprintMonth || null }),
-        ...(req.body.sprintId !== undefined && { sprintId: req.body.sprintId || null }),
+        ...(targetSprintId !== undefined && { sprintId: targetSprintId }),
       },
       include: {
         team: true,
@@ -1474,8 +1574,12 @@ export async function updateInitiativeKanbanStatus(
       const updatedTask = await prisma.task.update({
         where: { id: taskId },
         data: {
-          kanbanStatus,
+          kanbanStatus:
+            task.isCrossDept && kanbanStatus === "DONE" ? "CLOSED" : kanbanStatus,
           status: newStatus,
+          ...(kanbanStatus === "DONE"
+            ? { currentValue: task.targetValue || 1 }
+            : {}),
         },
       });
 
@@ -2201,7 +2305,10 @@ export async function createTask(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: err.message });
     }
 
-    const targetMemberId = assignedTeamMemberId || assigneeId;
+    const targetMemberId =
+      (assignedTeamMemberId && String(assignedTeamMemberId).trim()) ||
+      (assigneeId && String(assigneeId).trim()) ||
+      null;
 
     if (targetMemberId && (role === "LEADER" || role === "TEAM")) {
       const leaderUser = await prisma.user.findUnique({
@@ -2231,15 +2338,27 @@ export async function createTask(req: AuthRequest, res: Response) {
 
     const targetAssigneeId =
       targetMemberId ||
-      initiative.assignedLeaderId ||
-      initiative.ownerId ||
+      (initiative.assignedLeaderId && String(initiative.assignedLeaderId).trim()) ||
+      (initiative.ownerId && String(initiative.ownerId).trim()) ||
       userId;
     const finalSprintMonth = sprintMonth || initiative.sprintMonth || null;
-    const finalSprintId = req.body.sprintId || initiative.sprintId || null;
+    let finalSprintId = req.body.sprintId || null;
+    if (!finalSprintId) {
+      const matchedSprint = await resolveSprint({
+        date: startDate || finishDate || null,
+        sprintMonth: finalSprintMonth,
+        fallbackToActive: false,
+      });
+      if (matchedSprint) {
+        finalSprintId = matchedSprint.id;
+      } else {
+        finalSprintId = initiative.sprintId || (await getActiveSprint())?.id || null;
+      }
+    }
     const finalBaselineValue = req.body.baselineValue !== undefined ? parseFloat(req.body.baselineValue) : 0;
 
-    if (finalSprintId && role !== "ADMIN") {
-      const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+    if (req.body.sprintId && role !== "ADMIN") {
+      const sp = await prisma.sprint.findUnique({ where: { id: req.body.sprintId } });
       if (sp?.isLocked) {
         return res.status(403).json({ message: "Sprint sudah ditutup dan terkunci. Hanya Admin yang dapat menambah task." });
       }
@@ -2372,15 +2491,27 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
 
     for (const item of validTaskItems) {
       const targetAssigneeId =
-        item.assignedTeamMemberId ||
-        item.assignedMemberId ||
-        initiative.assignedLeaderId ||
-        initiative.ownerId ||
+        (item.assignedTeamMemberId && String(item.assignedTeamMemberId).trim()) ||
+        (item.assignedMemberId && String(item.assignedMemberId).trim()) ||
+        (initiative.assignedLeaderId && String(initiative.assignedLeaderId).trim()) ||
+        (initiative.ownerId && String(initiative.ownerId).trim()) ||
         userId;
 
       const finalSprintMonth =
         item.sprintMonth || initiative.sprintMonth || null;
-      const finalSprintId = item.sprintId || initiative.sprintId || null;
+      let finalSprintId = item.sprintId || null;
+      if (!finalSprintId) {
+        const matchedSprint = await resolveSprint({
+          date: item.startDate || item.finishDate || null,
+          sprintMonth: finalSprintMonth,
+          fallbackToActive: false,
+        });
+        if (matchedSprint) {
+          finalSprintId = matchedSprint.id;
+        } else {
+          finalSprintId = initiative.sprintId || (await getActiveSprint())?.id || null;
+        }
+      }
       const finalBaselineValue = item.baselineValue !== undefined ? parseFloat(item.baselineValue) : 0;
       const targetVal = parseFloat(item.targetValue) || 1;
 
@@ -2516,6 +2647,16 @@ export async function updateTask(req: AuthRequest, res: Response) {
       }
     }
 
+    let targetSprintId = req.body.sprintId !== undefined ? req.body.sprintId : existing.sprintId;
+    if (!targetSprintId && (sprintMonth || startDate || finishDate || existing.startDate || existing.finishDate)) {
+      const sp = await resolveSprint({
+        date: startDate || finishDate || existing.startDate || existing.finishDate,
+        sprintMonth: sprintMonth || existing.sprintMonth,
+        fallbackToActive: false,
+      });
+      if (sp) targetSprintId = sp.id;
+    }
+
     const updated = await prisma.task.update({
       where: { id },
       data: {
@@ -2530,7 +2671,7 @@ export async function updateTask(req: AuthRequest, res: Response) {
         ...(status !== undefined && { status }),
         ...(assignedTeamMemberId !== undefined && { assignedTeamMemberId }),
         ...(sprintMonth !== undefined && { sprintMonth }),
-        ...(req.body.sprintId !== undefined && { sprintId: req.body.sprintId }),
+        ...(targetSprintId !== undefined && { sprintId: targetSprintId }),
         ...(startDate !== undefined && {
           startDate: startDate ? new Date(startDate) : null,
         }),
