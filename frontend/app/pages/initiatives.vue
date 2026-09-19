@@ -241,14 +241,15 @@
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
-              <button
-                v-if="ini.isCrossDept"
-                type="button"
-                class="cross-dept-thread-btn"
-                @click.stop="openCrossDeptModal(ini.taskId)"
-              >
-                💬 Diskusi & Lifecycle
-              </button>
+              <div v-if="ini.isCrossDept" class="cross-dept-cta-row">
+                <button
+                  type="button"
+                  class="cross-dept-thread-btn"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  🔍 Detail & Diskusi
+                </button>
+              </div>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -265,10 +266,10 @@
               <!-- Date Range & Sprint Meta Row -->
               <div
                 class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint"
               >
-                <span v-if="ini.sprintMonth" class="sprint-pill">
-                  {{ formatSprintLabel(ini.sprintMonth) }}
+                <span v-if="ini.sprint?.name || ini.sprintMonth" class="sprint-pill">
+                  {{ ini.sprint?.name || formatSprintLabel(ini.sprintMonth) }}
                 </span>
                 <span
                   v-if="ini.startDate || ini.dueDate"
@@ -353,10 +354,10 @@
                     </div>
 
                     <div
-                      v-if="task.sprintMonth"
+                      v-if="task.sprint?.name || task.sprintMonth"
                       style="margin-top: 2px; font-size: 9px; color: #0284c7"
                     >
-                      Sprint: {{ task.sprintMonth }}
+                      Sprint: {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
                     </div>
                   </div>
                 </div>
@@ -523,14 +524,15 @@
                 </span>
               </div>
               <h4 class="card-title">{{ ini.title }}</h4>
-              <button
-                v-if="ini.isCrossDept"
-                type="button"
-                class="cross-dept-thread-btn"
-                @click.stop="openCrossDeptModal(ini.taskId)"
-              >
-                💬 Diskusi & Lifecycle
-              </button>
+              <div v-if="ini.isCrossDept" class="cross-dept-cta-row">
+                <button
+                  type="button"
+                  class="cross-dept-thread-btn"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  🔍 Detail & Diskusi
+                </button>
+              </div>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -547,10 +549,10 @@
               <!-- Date Range & Sprint Meta Row -->
               <div
                 class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint"
               >
-                <span v-if="ini.sprintMonth" class="sprint-pill">
-                  {{ formatSprintLabel(ini.sprintMonth) }}
+                <span v-if="ini.sprint?.name || ini.sprintMonth" class="sprint-pill">
+                  {{ ini.sprint?.name || formatSprintLabel(ini.sprintMonth) }}
                 </span>
                 <span
                   v-if="ini.startDate || ini.dueDate"
@@ -635,10 +637,10 @@
                     </div>
 
                     <div
-                      v-if="task.sprintMonth"
+                      v-if="task.sprint?.name || task.sprintMonth"
                       style="margin-top: 2px; font-size: 9px; color: #0284c7"
                     >
-                      Sprint: {{ task.sprintMonth }}
+                      Sprint: {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
                     </div>
                   </div>
                 </div>
@@ -799,14 +801,15 @@
               </div>
 
               <h4 class="card-title text-done">{{ ini.title }}</h4>
-              <button
-                v-if="ini.isCrossDept"
-                type="button"
-                class="cross-dept-thread-btn"
-                @click.stop="openCrossDeptModal(ini.taskId)"
-              >
-                💬 Diskusi & Lifecycle
-              </button>
+              <div v-if="ini.isCrossDept" class="cross-dept-cta-row">
+                <button
+                  type="button"
+                  class="cross-dept-thread-btn"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  🔍 Detail & Diskusi
+                </button>
+              </div>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -823,10 +826,10 @@
               <!-- Date Range & Sprint Meta Row -->
               <div
                 class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth"
+                v-if="ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint"
               >
-                <span v-if="ini.sprintMonth" class="sprint-pill">
-                  {{ formatSprintLabel(ini.sprintMonth) }}
+                <span v-if="ini.sprint?.name || ini.sprintMonth" class="sprint-pill">
+                  {{ ini.sprint?.name || formatSprintLabel(ini.sprintMonth) }}
                 </span>
                 <span
                   v-if="ini.startDate || ini.dueDate"
@@ -953,10 +956,10 @@
                     </div>
 
                     <div
-                      v-if="task.sprintMonth"
+                      v-if="task.sprint?.name || task.sprintMonth"
                       style="margin-top: 2px; font-size: 9px; color: #0284c7"
                     >
-                      Sprint: {{ task.sprintMonth }}
+                      Sprint: {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
                     </div>
                   </div>
                 </div>
@@ -1111,14 +1114,15 @@
               </div>
 
               <h4 class="card-title text-drop">{{ ini.title }}</h4>
-              <button
-                v-if="ini.isCrossDept"
-                type="button"
-                class="cross-dept-thread-btn"
-                @click.stop="openCrossDeptModal(ini.taskId)"
-              >
-                💬 Diskusi & Lifecycle
-              </button>
+              <div v-if="ini.isCrossDept" class="cross-dept-cta-row">
+                <button
+                  type="button"
+                  class="cross-dept-thread-btn"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  🔍 Detail & Diskusi
+                </button>
+              </div>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -1231,6 +1235,22 @@
           </button>
         </div>
         <div class="modal-body-scroll">
+          <div
+            v-if="errorMessage"
+            class="alert alert-error"
+            style="
+              background: #fee2e2;
+              border: 1px solid #fca5a5;
+              color: #991b1b;
+              padding: 10px 14px;
+              border-radius: 6px;
+              font-size: 13px;
+              margin-bottom: 14px;
+            "
+          >
+            {{ errorMessage }}
+          </div>
+
           <!-- Selector Jenis Card saat Tambah Card Baru -->
           <div v-if="!editingInitiative" style="margin-bottom: 16px">
             <label style="font-weight: 600; color: #0f172a">Jenis Card *</label>
@@ -1246,7 +1266,7 @@
               <option value="INISIATIF">Inisiatif</option>
               <option value="TASK">Task Individual</option>
               <option value="CROSS_DEPT">
-                ⚡ Task Lintas Departemen (Cross-Dept)
+                Task Lintas Departemen (Cross-Dept)
               </option>
             </select>
           </div>
@@ -1314,12 +1334,30 @@
             />
 
             <div class="form-row-2">
+              <div v-if="availableSprints.length > 0">
+                <label>Siklus Sprint</label>
+                <select
+                  v-model="initiativeForm.sprintId"
+                  class="form-input"
+                  @change="onInitiativeSprintChange"
+                >
+                  <option value="">-- Otomatis (Sesuai Tanggal / Sprint Berjalan) --</option>
+                  <option
+                    v-for="s in availableSprints"
+                    :key="s.id"
+                    :value="s.id"
+                  >
+                    {{ s.name }} ({{ formatDateShort(s.startDate) }} - {{ formatDateShort(s.endDate) }}) {{ s.status === 'ACTIVE' ? '★ Berjalan' : '' }}
+                  </option>
+                </select>
+              </div>
               <div>
-                <label>Bulan / Sprint Inisiatif *</label>
+                <label>Bulan / Label Sprint</label>
                 <input
                   v-model="initiativeForm.sprintMonth"
-                  type="month"
+                  type="text"
                   class="form-input"
+                  placeholder="Contoh: 2026-10 atau Sprint Oktober 2026"
                 />
               </div>
             </div>
@@ -1416,8 +1454,9 @@
                   <label>Bulan Sprint</label>
                   <input
                     v-model="batchDefaults.sprintMonth"
-                    type="month"
+                    type="text"
                     class="form-input"
+                    placeholder="Contoh: 2026-10 atau Nama Sprint"
                   />
                 </div>
                 <div>
@@ -1532,7 +1571,7 @@
                 color: #92400e;
               "
             >
-              ⚡ <strong>Task Lintas Departemen:</strong> Penugasan kerja lintas
+              <strong>Task Lintas Departemen:</strong> Penugasan kerja lintas
               divisi/departemen dengan alur lifecycle status terintegrasi (TODO
               &rarr; IN_PROGRESS &rarr; NEED_INFO &rarr; RESOLVED &rarr;
               CLOSED).
@@ -1549,9 +1588,18 @@
             <label>Deskripsi Kebutuhan (Opsional)</label>
             <textarea
               v-model="crossDeptForm.description"
-              class="form-input"
               rows="3"
-              style="margin-bottom: 12px; resize: vertical"
+              style="
+                width: 100%;
+                min-height: 80px;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                font-size: 0.85rem;
+                outline: none;
+                margin-bottom: 12px;
+                resize: vertical;
+                padding: 16px;
+              "
               placeholder="Jelaskan detail kebutuhan dan spesifikasi output..."
             ></textarea>
 
@@ -1656,9 +1704,9 @@
           <button
             class="primary-btn"
             @click="saveCard"
-            :disabled="cardType === 'INISIATIF' && !initiativeForm.unit?.trim()"
+            :disabled="saving || (cardType === 'INISIATIF' && !initiativeForm.unit?.trim())"
           >
-            Simpan Card
+            {{ saving ? "Menyimpan..." : "Simpan Card" }}
           </button>
         </div>
       </div>
@@ -1726,8 +1774,9 @@
                 <label>Bulan Sprint</label>
                 <input
                   v-model="batchDefaults.sprintMonth"
-                  type="month"
+                  type="text"
                   class="form-input"
+                  placeholder="Contoh: 2026-10 atau Nama Sprint"
                 />
               </div>
               <div>
@@ -1939,6 +1988,7 @@ const selectedLeaderFilterId = ref("");
 const selectedKrId = ref("");
 const errorMessage = ref("");
 const successMessage = ref("");
+const saving = ref(false);
 
 const showBulkModal = ref(false);
 
@@ -1956,15 +2006,16 @@ const initiativeForm = ref({
   teamId: "",
   ownerId: "",
   assignedLeaderId: "",
-  targetValue: 0,
+  targetValue: 100,
   achievedValue: null as number | null,
-  unit: "",
+  unit: "%",
   kanbanStatus: "TODO",
   weight: 1.0,
   startDate: "",
   dueDate: "",
   finishDate: "",
   sprintMonth: "",
+  sprintId: "",
   kpis: [],
 });
 
@@ -2327,16 +2378,55 @@ const validTaskCount = computed(
 
 // Sprint Month filter & helper functions
 const selectedSprintMonth = ref("");
+const availableSprints = ref<any[]>([]);
+const activeSprint = ref<any>(null);
+
+async function fetchSprints() {
+  try {
+    const res = await fetch(`${API}/sprints`, { headers: getHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      availableSprints.value = data.sprints || [];
+      activeSprint.value = data.activeSprint || null;
+    }
+  } catch (err) {
+    console.error("Error fetching sprints:", err);
+  }
+}
+
+function onInitiativeSprintChange() {
+  if (!initiativeForm.value.sprintId) return;
+  const found = availableSprints.value.find(
+    (s: any) => s.id === initiativeForm.value.sprintId,
+  );
+  if (found) {
+    initiativeForm.value.sprintMonth = found.name;
+    if (found.startDate) {
+      initiativeForm.value.startDate = new Date(found.startDate)
+        .toISOString()
+        .substring(0, 10);
+    }
+    if (found.endDate) {
+      initiativeForm.value.dueDate = new Date(found.endDate)
+        .toISOString()
+        .substring(0, 10);
+    }
+  }
+}
 
 const availableSprintMonths = computed(() => {
   const months = new Set<string>();
+  for (const s of availableSprints.value) {
+    if (s.name) months.add(s.name);
+  }
   for (const ini of initiatives.value) {
+    if (ini.sprint?.name) months.add(ini.sprint.name);
     if (ini.sprintMonth) months.add(ini.sprintMonth);
   }
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   months.add(currentMonth);
-  return Array.from(months).sort().reverse();
+  return Array.from(months);
 });
 
 function formatDateShort(dateStr: string | null | undefined) {
@@ -2445,7 +2535,9 @@ const filteredInitiatives = computed(() => {
     // Sprint / Month Filter
     if (
       selectedSprintMonth.value &&
-      ini.sprintMonth !== selectedSprintMonth.value
+      ini.sprintMonth !== selectedSprintMonth.value &&
+      ini.sprint?.name !== selectedSprintMonth.value &&
+      ini.sprintId !== selectedSprintMonth.value
     )
       return false;
 
@@ -2455,19 +2547,23 @@ const filteredInitiatives = computed(() => {
 
 const todoList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => !i.kanbanStatus || i.kanbanStatus === "TODO",
+    (i: any) =>
+      !i.kanbanStatus ||
+      i.kanbanStatus === "TODO" ||
+      i.kanbanStatus === "NEED_INFO",
   );
 });
 
 const inProgressList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === "IN_PROGRESS",
+    (i: any) =>
+      i.kanbanStatus === "IN_PROGRESS" || i.kanbanStatus === "RESOLVED",
   );
 });
 
 const doneList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === "DONE",
+    (i: any) => i.kanbanStatus === "DONE" || i.kanbanStatus === "CLOSED",
   );
 });
 
@@ -2673,33 +2769,60 @@ function openAddInitiativeModal() {
   userSearch.value = "";
   const now = new Date();
   const defaultSprint = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultSprintId = activeSprint.value?.id || "";
+  const defaultSprintMonth = activeSprint.value?.name || defaultSprint;
   initiativeForm.value = {
+    sprintId: defaultSprintId,
     title: "",
     description: "",
     keyResultId: selectedKrId.value || "",
     teamId: isTeam.value
       ? auth.user?.teamId || availableTeams.value[0]?.id || ""
-      : selectedTeamId.value || "",
-    ownerId: isTeam.value ? auth.user?.id || "" : "",
+      : selectedTeamId.value || availableTeams.value[0]?.id || "",
+    ownerId: isTeam.value ? auth.user?.id || "" : (auth.user?.id || ""),
     assignedLeaderId: "",
-    targetValue: 0,
+    targetValue: 100,
     achievedValue: null,
-    unit: "",
+    unit: "%",
     kanbanStatus: "TODO",
     weight: 1.0,
-    startDate: "",
-    dueDate: "",
+    startDate: activeSprint.value?.startDate
+      ? new Date(activeSprint.value.startDate).toISOString().substring(0, 10)
+      : "",
+    dueDate: activeSprint.value?.endDate
+      ? new Date(activeSprint.value.endDate).toISOString().substring(0, 10)
+      : "",
     finishDate: "",
-    sprintMonth: defaultSprint,
+    sprintMonth: defaultSprintMonth,
     kpis: [],
   };
+  const firstIni = filteredInitiatives.value[0] || null;
+  batchInitiativeId.value = firstIni?.id || "";
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
+    sprintMonth: defaultSprintMonth,
+    sprintId: defaultSprintId,
+    assignedTeamMemberId: auth.user?.id || "",
+  };
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      unit: "%",
+      assignedTeamMemberId: auth.user?.id || "",
+      sprintMonth: defaultSprintMonth,
+      sprintId: defaultSprintId,
+    },
+  ];
   taskForm.value = {
-    initiativeId: filteredInitiatives.value[0]?.id || "",
+    initiativeId: firstIni?.id || "",
     title: "",
-    targetValue: 0,
-    unit: "",
-    assignedTeamMemberId: "",
-    sprintMonth: defaultSprint,
+    targetValue: 100,
+    unit: "%",
+    assignedTeamMemberId: auth.user?.id || "",
+    sprintId: defaultSprintId,
+    sprintMonth: defaultSprintMonth,
     startDate: "",
     finishDate: "",
     kpis: [],
@@ -2710,21 +2833,26 @@ function openAddInitiativeModal() {
 
 function openEditInitiativeModal(ini: any) {
   editingInitiative.value = ini;
+  cardType.value = "INISIATIF";
   teamSearch.value = "";
   userSearch.value = "";
   initiativeForm.value = {
+    sprintId: ini.sprintId || ini.sprint?.id || "",
     title: ini.title || "",
     description: ini.description || "",
     keyResultId: ini.keyResultId || "",
     teamId: ini.teamId || "",
     ownerId: ini.ownerId || "",
     assignedLeaderId: ini.assignedLeaderId || "",
-    targetValue: ini.targetValue || 0,
+    targetValue:
+      ini.targetValue !== undefined && ini.targetValue !== null
+        ? ini.targetValue
+        : 100,
     achievedValue:
       ini.achievedValue !== undefined && ini.achievedValue !== null
         ? ini.achievedValue
         : null,
-    unit: ini.unit || "",
+    unit: ini.unit || "%",
     kanbanStatus: ini.kanbanStatus || "TODO",
     weight: ini.weight !== undefined ? ini.weight : 1.0,
     startDate: ini.startDate
@@ -2736,7 +2864,7 @@ function openEditInitiativeModal(ini: any) {
     finishDate: ini.finishDate
       ? new Date(ini.finishDate).toISOString().substring(0, 10)
       : "",
-    sprintMonth: ini.sprintMonth || "",
+    sprintMonth: ini.sprintMonth || ini.sprint?.name || "",
     kpis: ini.kpis
       ? ini.kpis.map((ik: any) => ({
           kpiId: ik.kpiId,
@@ -2772,6 +2900,7 @@ async function saveInitiative() {
     initiativeForm.value.teamId = availableTeams.value[0].id;
   }
 
+  saving.value = true;
   try {
     const isEdit = !!editingInitiative.value;
     const url = isEdit
@@ -2792,22 +2921,32 @@ async function saveInitiative() {
         : "Inisiatif baru berhasil dibuat";
       setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
+    } else {
+      const err = await res.json().catch(() => ({ message: "Gagal menyimpan inisiatif" }));
+      errorMessage.value = err.message || "Gagal menyimpan inisiatif";
+      alert(errorMessage.value);
     }
   } catch (err: any) {
-    errorMessage.value = err.message;
+    errorMessage.value = err.message || "Terjadi kesalahan jaringan";
+    alert(errorMessage.value);
+  } finally {
+    saving.value = false;
   }
 }
 
 async function saveCard() {
+  errorMessage.value = "";
   if (cardType.value === "INISIATIF") {
     await saveInitiative();
   } else if (cardType.value === "CROSS_DEPT") {
     if (!crossDeptForm.value.title.trim()) {
-      alert("Judul Task Lintas Departemen wajib diisi");
+      errorMessage.value = "Judul Task Lintas Departemen wajib diisi";
+      alert(errorMessage.value);
       return;
     }
     if (!crossDeptForm.value.targetDept) {
-      alert("Departemen Tujuan wajib dipilih");
+      errorMessage.value = "Departemen Tujuan wajib dipilih";
+      alert(errorMessage.value);
       return;
     }
     saving.value = true;
@@ -2847,17 +2986,20 @@ async function saveCard() {
         };
         await fetchInitiatives();
       } else {
-        const err = await res.json();
-        alert(err.message || "Gagal membuat Task Lintas Departemen");
+        const err = await res.json().catch(() => ({ message: "Gagal membuat Task Lintas Departemen" }));
+        errorMessage.value = err.message || "Gagal membuat Task Lintas Departemen";
+        alert(errorMessage.value);
       }
     } catch (err: any) {
-      alert(err.message);
+      errorMessage.value = err.message || "Terjadi kesalahan jaringan";
+      alert(errorMessage.value);
     } finally {
       saving.value = false;
     }
   } else {
     if (!batchInitiativeId.value) {
-      alert("Silakan pilih Inisiatif induk untuk Task ini");
+      errorMessage.value = "Silakan pilih Inisiatif induk untuk Task ini";
+      alert(errorMessage.value);
       return;
     }
     const validTasks = taskRows.value.filter(
@@ -2865,7 +3007,8 @@ async function saveCard() {
     );
 
     if (validTasks.length === 0) {
-      alert("Setidaknya 1 baris Judul Task wajib diisi");
+      errorMessage.value = "Setidaknya 1 baris Judul Task wajib diisi";
+      alert(errorMessage.value);
       return;
     }
     saving.value = true;
@@ -2884,11 +3027,13 @@ async function saveCard() {
         setTimeout(() => (successMessage.value = ""), 3000);
         await fetchInitiatives();
       } else {
-        const err = await res.json();
-        alert(err.message || "Gagal membuat Task massal");
+        const err = await res.json().catch(() => ({ message: "Gagal membuat Task massal" }));
+        errorMessage.value = err.message || "Gagal membuat Task massal";
+        alert(errorMessage.value);
       }
     } catch (err: any) {
-      alert(err.message);
+      errorMessage.value = err.message || "Terjadi kesalahan jaringan";
+      alert(errorMessage.value);
     } finally {
       saving.value = false;
     }
@@ -2921,13 +3066,18 @@ function openHeaderAddTaskModal() {
   batchInitiativeId.value = firstIni?.id || "";
   const now = new Date();
   const defaultSprint =
+    firstIni?.sprint?.name ||
     firstIni?.sprintMonth ||
+    activeSprint.value?.name ||
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultSprintId =
+    firstIni?.sprintId || firstIni?.sprint?.id || activeSprint.value?.id || "";
 
   batchDefaults.value = {
     targetValue: 100,
     unit: "%",
     sprintMonth: defaultSprint,
+    sprintId: defaultSprintId,
     assignedTeamMemberId: "",
   };
 
@@ -2938,6 +3088,7 @@ function openHeaderAddTaskModal() {
       unit: "%",
       assignedTeamMemberId: "",
       sprintMonth: defaultSprint,
+      sprintId: defaultSprintId,
     },
   ];
   showTaskModal.value = true;
@@ -2948,13 +3099,18 @@ function openAddTaskModal(ini: any) {
   batchInitiativeId.value = ini?.id || "";
   const now = new Date();
   const defaultSprint =
+    ini?.sprint?.name ||
     ini?.sprintMonth ||
+    activeSprint.value?.name ||
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const defaultSprintId =
+    ini?.sprintId || ini?.sprint?.id || activeSprint.value?.id || "";
 
   batchDefaults.value = {
     targetValue: 100,
     unit: "%",
     sprintMonth: defaultSprint,
+    sprintId: defaultSprintId,
     assignedTeamMemberId: "",
   };
 
@@ -2965,6 +3121,7 @@ function openAddTaskModal(ini: any) {
       unit: "%",
       assignedTeamMemberId: "",
       sprintMonth: defaultSprint,
+      sprintId: defaultSprintId,
     },
   ];
   showTaskModal.value = true;
@@ -3088,6 +3245,7 @@ onMounted(async () => {
     fetchAllUsers(),
     fetchAllDepartments(),
     fetchMemberProgress(),
+    fetchSprints(),
   ]);
   if (isManager.value || isAdmin.value) {
     availableLeaders.value = await fetchAvailableLeaders(
@@ -4118,6 +4276,14 @@ onMounted(async () => {
   font-weight: 800;
 }
 
+.cross-dept-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 8px 0;
+}
+
 .cross-dept-thread-btn {
   background: #fffbeb;
   color: #b45309;
@@ -4126,7 +4292,6 @@ onMounted(async () => {
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 6px;
-  margin: 6px 0 8px 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -4135,6 +4300,24 @@ onMounted(async () => {
 }
 .cross-dept-thread-btn:hover {
   background: #fef3c7;
+}
+
+.cross-dept-link-btn {
+  background: #f1f5f9;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+.cross-dept-link-btn:hover {
+  background: #e2e8f0;
 }
 
 .amber-outline-btn {

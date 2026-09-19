@@ -566,9 +566,15 @@
             <div class="task-header">
               <h3>{{ assign.task.title }}</h3>
             </div>
+            <p v-if="assign.task.isCrossDept && assign.task.description" class="cross-dept-card-desc">
+              {{ assign.task.description }}
+            </p>
+            <div v-if="assign.task.isCrossDept && (assign.task.finishDate || assign.task.dueDate)" class="cross-dept-deadline-tag">
+              📅 Tenggat: <strong>{{ formatDate(assign.task.finishDate || assign.task.dueDate) }}</strong>
+            </div>
             <!-- Selector Stage Kanban Task -->
             <select
-              :value="assign.task.kanbanStatus || 'TODO'"
+              :value="assign.task.kanbanStatus === 'CLOSED' ? 'DONE' : (assign.task.kanbanStatus || 'TODO')"
               style="
                 font-size: 14px;
                 padding: 12px;
@@ -758,15 +764,15 @@
 
           <div
             v-if="assign.task.isCrossDept"
-            class="card-actions"
-            style="margin-top: 8px"
+            class="card-actions cross-dept-actions-row"
+            style="margin-top: 8px; display: flex; gap: 8px; align-items: center;"
           >
             <button
               type="button"
               class="cross-dept-work-btn full-width"
               @click="openCrossDeptModal(assign.task.id)"
             >
-              💬 Diskusi & Lifecycle Status
+              🔍 Detail & Diskusi
             </button>
           </div>
         </div>
@@ -1150,9 +1156,15 @@
                       >{{ assign.task.status }}</span
                     >
                   </div>
+                  <p v-if="assign.task.isCrossDept && assign.task.description" class="cross-dept-card-desc">
+                    {{ assign.task.description }}
+                  </p>
+                  <div v-if="assign.task.isCrossDept && (assign.task.finishDate || assign.task.dueDate)" class="cross-dept-deadline-tag">
+                    📅 Tenggat: <strong>{{ formatDate(assign.task.finishDate || assign.task.dueDate) }}</strong>
+                  </div>
                   <!-- Selector Stage Kanban Task -->
                   <select
-                    :value="assign.task.kanbanStatus || 'TODO'"
+                    :value="assign.task.kanbanStatus === 'CLOSED' ? 'DONE' : (assign.task.kanbanStatus || 'TODO')"
                     style="
                       font-size: 14px;
                       padding: 2px 8px;
@@ -1189,15 +1201,19 @@
                     </p>
                   </div>
 
-                  <button
+                  <div
                     v-if="assign.task.isCrossDept"
-                    type="button"
-                    class="cross-dept-work-btn"
-                    style="margin-top: 8px"
-                    @click="openCrossDeptModal(assign.task.id)"
+                    class="cross-dept-actions-row"
+                    style="margin-top: 8px; display: flex; gap: 8px; align-items: center;"
                   >
-                    💬 Diskusi & Lifecycle Status
-                  </button>
+                    <button
+                      type="button"
+                      class="cross-dept-work-btn"
+                      @click="openCrossDeptModal(assign.task.id)"
+                    >
+                      🔍 Detail & Diskusi
+                    </button>
+                  </div>
 
                   <div class="task-progress-section">
                     <div class="progress-labels">
@@ -2431,6 +2447,15 @@ function toggleIniHistory(id) {
   else expandedIniIds.value.splice(idx, 1);
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function formatDateTime(dateStr) {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
@@ -2811,6 +2836,40 @@ function getGroupedInitiatives(initiatives) {
 .cross-dept-work-btn:hover {
   background: #fef3c7;
   border-color: #f59e0b;
+}
+.cross-dept-link-btn {
+  background: #f1f5f9;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.cross-dept-link-btn:hover {
+  background: #e2e8f0;
+}
+.cross-dept-card-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+.cross-dept-deadline-tag {
+  font-size: 11px;
+  color: #92400e;
+  background: #fef3c7;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 4px 0;
+  width: fit-content;
 }
 .title-wrapper {
   display: grid;

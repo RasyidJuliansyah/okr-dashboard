@@ -9,6 +9,7 @@ import {
   closeSprint,
   getSprintMemberScores,
   upsertKrSprintTarget,
+  backfillSprints,
 } from "../controllers/sprint.controller";
 
 const router = Router();
@@ -24,5 +25,7 @@ router.put("/:id", authMiddleware, roleGuard(["ADMIN"]), updateSprint);
 router.post("/:id/toggle-lock", authMiddleware, roleGuard(["ADMIN"]), toggleLock);
 router.post("/:id/close", authMiddleware, roleGuard(["ADMIN"]), closeSprint);
 router.post("/kr-target", authMiddleware, roleGuard(["ADMIN", "MANAGER"]), upsertKrSprintTarget);
+router.post("/backfill", authMiddleware, roleGuard(["ADMIN"]), backfillSprints);
+
 
 export default router;

@@ -18,7 +18,11 @@
         <div class="task-title-section">
           <h2 class="task-modal-title">{{ task.title }}</h2>
           <p v-if="task.description" class="task-modal-desc">{{ task.description }}</p>
-          <a v-if="task.link" :href="task.link.startsWith('http') ? task.link : `https://${task.link}`" target="_blank" rel="noopener noreferrer" class="task-external-link">🔗 Tautan Dokumen</a>
+          <div v-if="task.link" style="margin-top: 8px;">
+            <a :href="task.link.startsWith('http') ? task.link : `https://${task.link}`" target="_blank" rel="noopener noreferrer" class="task-external-link">
+              🔗 Tautan Dokumen Pendukung ↗
+            </a>
+          </div>
         </div>
 
         <div class="task-meta-grid">
@@ -35,8 +39,8 @@
             <span class="meta-val">{{ task.assignedTeamMember?.name || "Belum didisposisikan" }}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">Tenggat:</span>
-            <span class="meta-val">{{ formatDate(task.finishDate) }}</span>
+            <span class="meta-label">Tenggat Waktu:</span>
+            <span class="meta-val">{{ formatDate(task.finishDate || task.dueDate) }}</span>
           </div>
         </div>
 
@@ -58,12 +62,23 @@
             <div class="step-item" :class="{ current: task.kanbanStatus === 'CLOSED' }">CLOSED</div>
           </div>
 
-          <div class="status-actions-row">
-            <button v-if="task.kanbanStatus !== 'NEED_INFO' && task.kanbanStatus !== 'CLOSED'" class="btn-lifecycle need-info" :disabled="updatingStatus" @click="changeStatus('NEED_INFO')">❓ Klarifikasi</button>
-            <button v-if="task.kanbanStatus === 'NEED_INFO' || task.kanbanStatus === 'TODO'" class="btn-lifecycle in-progress" :disabled="updatingStatus" @click="changeStatus('IN_PROGRESS')">⚡ Kerjakan</button>
-            <button v-if="task.kanbanStatus !== 'RESOLVED' && task.kanbanStatus !== 'CLOSED'" class="btn-lifecycle resolved" :disabled="updatingStatus" @click="changeStatus('RESOLVED')">✅ Selesai</button>
-            <button v-if="canCloseOrReopen && task.kanbanStatus !== 'CLOSED'" class="btn-lifecycle close-btn" :disabled="updatingStatus" @click="changeStatus('CLOSED')">🔒 Close</button>
-            <button v-if="canCloseOrReopen && (task.kanbanStatus === 'CLOSED' || task.kanbanStatus === 'RESOLVED')" class="btn-lifecycle reopen-btn" :disabled="updatingStatus" @click="changeStatus('IN_PROGRESS')">🔄 Reopen</button>
+          <div class="status-dropdown-wrap">
+            <label class="status-dropdown-label">Ubah Status:</label>
+            <div class="status-dropdown-control">
+              <select
+                :value="task.kanbanStatus || 'TODO'"
+                class="status-select-dropdown"
+                :disabled="updatingStatus"
+                @change="changeStatus(($event.target as HTMLSelectElement).value)"
+              >
+                <option value="TODO">TO DO</option>
+                <option value="IN_PROGRESS">IN PROGRESS</option>
+                <option value="NEED_INFO">NEED INFO</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option v-if="canCloseOrReopen || task.kanbanStatus === 'CLOSED'" value="CLOSED">CLOSED</option>
+              </select>
+              <span v-if="updatingStatus" class="status-updating-spin">Menyimpan...</span>
+            </div>
           </div>
           <div v-if="statusError" class="status-error-msg">{{ statusError }}</div>
         </div>
@@ -128,6 +143,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useRuntimeConfig } from "#app";
+import { useAuthStore } from "~/stores/auth";
 
 const props = defineProps<{
   isOpen: boolean;
@@ -139,9 +155,15 @@ const emit = defineEmits(["close", "task-updated", "comment-added"]);
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
+const auth = useAuthStore();
 
 function getHeaders() {
-  const token = localStorage.getItem("token") || "";
+  const token =
+    auth.token ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "") ||
+    "";
   return {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
@@ -161,9 +183,27 @@ const newCommentMessage = ref("");
 const newCommentAttachment = ref("");
 const selectedAssigneeId = ref("");
 
-const currentUserId = computed(() => props.currentUser?.id || localStorage.getItem("userId") || "");
-const currentUserRole = computed(() => props.currentUser?.role || localStorage.getItem("userRole") || "");
-const currentUserDept = computed(() => props.currentUser?.department || localStorage.getItem("userDept") || "");
+const currentUserId = computed(
+  () =>
+    props.currentUser?.id ||
+    auth.user?.id ||
+    (typeof window !== "undefined" ? localStorage.getItem("userId") : "") ||
+    ""
+);
+const currentUserRole = computed(
+  () =>
+    props.currentUser?.role ||
+    auth.user?.role ||
+    (typeof window !== "undefined" ? localStorage.getItem("userRole") : "") ||
+    ""
+);
+const currentUserDept = computed(
+  () =>
+    props.currentUser?.department ||
+    auth.user?.department ||
+    (typeof window !== "undefined" ? localStorage.getItem("userDept") : "") ||
+    ""
+);
 
 const canCloseOrReopen = computed(() => {
   if (!task.value) return false;
@@ -180,11 +220,13 @@ const canReassign = computed(() => {
   if (!task.value) return false;
   const isAdmin = currentUserRole.value === "ADMIN";
   const isCreator = task.value.creatorId === currentUserId.value;
+  const isAssignee = task.value.assignedTeamMemberId === currentUserId.value;
+  const isLeader = currentUserRole.value === "LEADER";
   const isTargetMP =
     ["MANAGER", "LEADER"].includes(currentUserRole.value) &&
     task.value.targetDept &&
     currentUserDept.value === task.value.targetDept;
-  return isAdmin || isCreator || isTargetMP;
+  return isAdmin || isCreator || isTargetMP || (isLeader && isAssignee) || isLeader;
 });
 
 async function fetchTaskDetails() {
@@ -210,10 +252,52 @@ async function fetchTaskDetails() {
 
 async function fetchTargetDeptUsers(dept: string) {
   try {
-    const res = await fetch(`${API}/users?department=${dept}`, { headers: getHeaders() });
-    if (res.ok) {
-      targetDeptUsers.value = await res.json();
+    const list: any[] = [];
+    const seen = new Set<string>();
+
+    if (dept) {
+      const res = await fetch(`${API}/users?department=${dept}`, { headers: getHeaders() });
+      if (res.ok) {
+        const users = await res.json();
+        for (const u of users) {
+          if (!seen.has(u.id)) {
+            seen.add(u.id);
+            list.push(u);
+          }
+        }
+      }
     }
+
+    if (["LEADER", "MANAGER", "ADMIN"].includes(currentUserRole.value)) {
+      try {
+        const teamsRes = await fetch(`${API}/users/teams`, { headers: getHeaders() });
+        if (teamsRes.ok) {
+          const teams = await teamsRes.json();
+          for (const t of teams) {
+            if (
+              t.leaderId === currentUserId.value ||
+              currentUserRole.value === "ADMIN" ||
+              currentUserRole.value === "MANAGER"
+            ) {
+              const memRes = await fetch(`${API}/users/teams/${t.id}/members`, { headers: getHeaders() });
+              if (memRes.ok) {
+                const members = await memRes.json();
+                for (const m of members) {
+                  if (!seen.has(m.id)) {
+                    seen.add(m.id);
+                    list.push(m);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (tErr) {
+        console.error("Fetch team members error:", tErr);
+      }
+    }
+
+    targetDeptUsers.value = list;
   } catch (err) {
     console.error("Fetch target dept users error:", err);
   }
@@ -371,13 +455,12 @@ watch(
 .step-item { padding: 3px 8px; border-radius: 6px; background: #f1f5f9; color: #94a3b8; font-size: 10px; font-weight: 700; white-space: nowrap; }
 .step-item.current { background: #f59e0b; color: #fff; }
 .step-arrow { color: #cbd5e1; font-size: 11px; }
-.status-actions-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.btn-lifecycle { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; }
-.btn-lifecycle.need-info { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
-.btn-lifecycle.in-progress { background: #e0f2fe; color: #0369a1; }
-.btn-lifecycle.resolved { background: #dcfce7; color: #166534; }
-.btn-lifecycle.close-btn { background: #1e293b; color: #fff; }
-.btn-lifecycle.reopen-btn { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; }
+.status-dropdown-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0 2px 0; }
+.status-dropdown-label { font-size: 12px; font-weight: 700; color: #475569; }
+.status-dropdown-control { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+.status-select-dropdown { font-size: 13px; font-weight: 600; color: #1e293b; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; cursor: pointer; max-width: 220px; width: 100%; outline: none; }
+.status-select-dropdown:disabled { opacity: 0.6; cursor: not-allowed; }
+.status-updating-spin { font-size: 11px; color: #d97706; font-weight: 600; }
 .reassign-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
 .reassign-title { font-size: 12px; font-weight: 700; color: #334155; }
 .reassign-row { display: flex; gap: 8px; }

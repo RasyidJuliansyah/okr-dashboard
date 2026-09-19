@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { resolveSprint } from "../services/sprint.service";
 
 const prisma = new PrismaClient();
 
@@ -29,10 +30,13 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
       assignedTeamMemberId,
       startDate,
       finishDate,
+      dueDate,
       link,
       targetValue,
       unit,
     } = req.body;
+
+    const finalFinishDate = finishDate || dueDate || null;
 
     const { id: userId, name: userName } = req.user!;
     const dbUser = await prisma.user.findUnique({
@@ -48,6 +52,15 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: "Departemen tujuan wajib dipilih" });
     }
 
+    const matchedSprint = await resolveSprint({
+      sprintId: req.body.sprintId || null,
+      date: startDate || finalFinishDate || null,
+      sprintMonth: req.body.sprintMonth || null,
+      fallbackToActive: true,
+    });
+    const finalSprintId = req.body.sprintId || matchedSprint?.id || null;
+    const finalSprintMonth = req.body.sprintMonth || matchedSprint?.name || null;
+
     const task = await prisma.task.create({
       data: {
         title: title.trim(),
@@ -58,8 +71,10 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
         isCrossDept: true,
         initiativeId: initiativeId || null,
         assignedTeamMemberId: assignedTeamMemberId || null,
+        sprintId: finalSprintId,
+        sprintMonth: finalSprintMonth,
         startDate: startDate ? new Date(startDate) : null,
-        finishDate: finishDate ? new Date(finishDate) : null,
+        finishDate: finalFinishDate ? new Date(finalFinishDate) : null,
         link: link ? link.trim() : null,
         targetValue: targetValue !== undefined && targetValue !== null ? parseFloat(targetValue) : 1,
         currentValue: 0,
@@ -95,6 +110,18 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
       },
     });
 
+    // Notify directly assigned team member if provided
+    if (assignedTeamMemberId && assignedTeamMemberId !== userId) {
+      await createNotification({
+        recipientId: assignedTeamMemberId,
+        type: "CROSS_DEPT_TASK_ASSIGNED",
+        title: "Tugas Lintas Departemen Ditugaskan ke Anda",
+        body: `${userName || "Seseorang"} (${userDept || "Lintas Dept"}) menugaskan: "${title.trim()}"`,
+        link: "/team/my-work",
+      });
+    }
+
+    // Broadcast notification to leaders & managers of target department
     const targetDeptUsers = await prisma.user.findMany({
       where: {
         OR: [
@@ -109,11 +136,8 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
       select: { id: true },
     });
 
-    const notifiedUserIds = new Set<string>();
-
     for (const u of targetDeptUsers) {
-      if (u.id !== userId) {
-        notifiedUserIds.add(u.id);
+      if (u.id !== userId && u.id !== assignedTeamMemberId) {
         await createNotification({
           recipientId: u.id,
           type: "CROSS_DEPT_TASK_CREATED",
@@ -122,16 +146,6 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
           link: "/team/my-work",
         });
       }
-    }
-
-    if (assignedTeamMemberId && assignedTeamMemberId !== userId && !notifiedUserIds.has(assignedTeamMemberId)) {
-      await createNotification({
-        recipientId: assignedTeamMemberId,
-        type: "CROSS_DEPT_TASK_ASSIGNED",
-        title: "Tugas Lintas Departemen Ditugaskan ke Anda",
-        body: `${userName || "Seseorang"} (${userDept || "Lintas Dept"}) menugaskan: "${title.trim()}"`,
-        link: "/team/my-work",
-      });
     }
 
     return res.status(201).json(task);
@@ -228,7 +242,35 @@ export async function getCrossDeptTasks(req: AuthRequest, res: Response) {
       orderBy: { createdAt: "desc" },
     });
 
-    return res.status(200).json(tasks);
+    if (type === "incoming" || type === "outgoing") {
+      return res.status(200).json(tasks);
+    }
+
+    // Default or 'all': Return categorized structure expected by Dashboard
+    const incoming = tasks.filter((t) => {
+      if (isAdminOrCLevel && dept) return t.targetDept === dept;
+      if (isAdminOrCLevel && !dept) return true;
+      return (
+        (userDept && t.targetDept === userDept) ||
+        t.assignedTeamMemberId === userId ||
+        t.assignments?.some((a: any) => a.userId === userId)
+      );
+    });
+
+    const outgoing = tasks.filter((t) => {
+      if (isAdminOrCLevel && dept) return t.creatorDept === dept;
+      if (isAdminOrCLevel && !dept) return true;
+      return (
+        t.creatorId === userId ||
+        (userDept && t.creatorDept === userDept)
+      );
+    });
+
+    return res.status(200).json({
+      incoming,
+      outgoing,
+      all: tasks,
+    });
   } catch (error) {
     console.error("Get cross dept tasks error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -346,6 +388,9 @@ export async function updateCrossDeptStatus(req: AuthRequest, res: Response) {
       data: {
         kanbanStatus: targetStatus,
         status: generalStatus,
+        ...(targetStatus === "CLOSED"
+          ? { currentValue: task.targetValue || 1 }
+          : {}),
       },
       include: {
         creator: {
@@ -421,6 +466,7 @@ export async function reassignCrossDeptTask(req: AuthRequest, res: Response) {
 
     const isCreator = task.creatorId === userId;
     const isAdmin = role === "ADMIN";
+    const isCurrentAssignee = task.assignedTeamMemberId === userId;
     const isTargetDeptLeaderOrManager =
       ["MANAGER", "LEADER"].includes(role) &&
       task.targetDept &&
@@ -434,7 +480,22 @@ export async function reassignCrossDeptTask(req: AuthRequest, res: Response) {
       if (managedDept) isTargetDeptManager = true;
     }
 
-    if (!isAdmin && !isCreator && !isTargetDeptLeaderOrManager && !isTargetDeptManager) {
+    let isLeaderWithTeam = false;
+    if (role === "LEADER") {
+      const team = await prisma.team.findFirst({
+        where: { leaderId: userId },
+      });
+      if (team) isLeaderWithTeam = true;
+    }
+
+    if (
+      !isAdmin &&
+      !isCreator &&
+      !isTargetDeptLeaderOrManager &&
+      !isTargetDeptManager &&
+      !isCurrentAssignee &&
+      !isLeaderWithTeam
+    ) {
       return res.status(403).json({
         message:
           "Hanya Leader/Manager departemen target atau Admin yang berhak mendisposisikan (Reassign) tugas ini",

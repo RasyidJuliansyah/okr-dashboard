@@ -136,3 +136,13 @@ export async function upsertKrSprintTarget(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message || "Failed to upsert KR sprint target" });
   }
 }
+
+export async function backfillSprints(req: AuthRequest, res: Response) {
+  try {
+    const result = await sprintService.backfillSprintRelations();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to backfill sprint relations" });
+  }
+}
+

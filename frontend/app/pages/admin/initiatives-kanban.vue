@@ -928,19 +928,23 @@ const filteredInitiatives = computed(() => {
 
 const todoList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => !i.kanbanStatus || i.kanbanStatus === "TODO",
+    (i: any) =>
+      !i.kanbanStatus ||
+      i.kanbanStatus === "TODO" ||
+      i.kanbanStatus === "NEED_INFO",
   );
 });
 
 const inProgressList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === "IN_PROGRESS",
+    (i: any) =>
+      i.kanbanStatus === "IN_PROGRESS" || i.kanbanStatus === "RESOLVED",
   );
 });
 
 const doneList = computed(() => {
   return filteredInitiatives.value.filter(
-    (i: any) => i.kanbanStatus === "DONE",
+    (i: any) => i.kanbanStatus === "DONE" || i.kanbanStatus === "CLOSED",
   );
 });
 
