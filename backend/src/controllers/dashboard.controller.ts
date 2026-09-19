@@ -284,8 +284,10 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         initiativeId: t.task.initiativeId,
         initiative: {
           id: t.task.initiativeId,
-          title: `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`,
-          team: t.task.initiative.team,
+          title: t.task.initiative
+            ? `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`
+            : `[TASK] ${t.task.title}`,
+          team: t.task.initiative?.team || null,
         },
         oldValue: t.oldValue,
         newValue: t.newValue,

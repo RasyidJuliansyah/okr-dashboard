@@ -10,7 +10,9 @@ export async function getAllDepartments(req: AuthRequest, res: Response) {
     const { role, id: userId } = req.user!;
     let where: any = {};
 
-    if (role === 'TEAM' || role === 'LEADER') {
+    if (req.query.all === 'true') {
+      where.isActive = true;
+    } else if (role === 'TEAM' || role === 'LEADER') {
       where.isActive = true;
       const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { department: true } });
       if (dbUser?.department) {

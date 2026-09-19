@@ -28,6 +28,9 @@
       <div v-if="errorMessage" class="alert alert-error">
         {{ errorMessage }}
       </div>
+      <div v-if="isSnapshotArchive" class="alert" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; margin-bottom: 1rem;">
+        🔒 <strong>Arsip Sprint Terkunci:</strong> Nilai capaian pada sprint ini telah ditutup & dibekukan. Data historis tidak akan berubah meskipun task/inisiatif diperbarui di kemudian hari.
+      </div>
 
       <!-- Filters & Controls Card -->
       <div class="filter-card card">
@@ -75,8 +78,24 @@
 
           <!-- Filter Sprint / Bulan -->
           <div class="filter-item">
-            <label>Bulan / Sprint:</label>
+            <label>Siklus Sprint:</label>
             <select
+              v-if="availableSprints.length > 0"
+              v-model="selectedSprintId"
+              class="filter-select"
+              @change="onSprintChange"
+            >
+              <option value="">Semua Sprint (Kumulatif)</option>
+              <option
+                v-for="sprint in availableSprints"
+                :key="sprint.id"
+                :value="sprint.id"
+              >
+                {{ sprint.name }} ({{ sprint.status }})
+              </option>
+            </select>
+            <select
+              v-else
               v-model="selectedSprintMonth"
               class="filter-select"
               @change="fetchMemberProgress"
@@ -281,8 +300,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 
+const route = useRoute();
 const auth = useAuthStore();
 const API = useRuntimeConfig().public.apiBase || "http://localhost:3001/api";
 
@@ -333,7 +354,15 @@ const selectedDepartment = ref("");
 const selectedSort = ref("highest"); // 'highest', 'lowest', 'name_asc'
 const expandedUserIds = ref<string[]>([]);
 const selectedSprintMonth = ref("");
+const selectedSprintId = ref(route.query.sprintId ? String(route.query.sprintId) : "");
 const availableSprintMonths = ref<string[]>([]);
+const availableSprints = ref<any[]>([]);
+const isSnapshotArchive = ref(false);
+
+function onSprintChange() {
+  selectedSprintMonth.value = "";
+  fetchMemberProgress();
+}
 
 function formatSprintLabel(sprint: string | null | undefined) {
   if (!sprint) return "";
@@ -416,9 +445,13 @@ async function fetchMemberProgress() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    const query = selectedSprintMonth.value
-      ? `?sprintMonth=${encodeURIComponent(selectedSprintMonth.value)}`
-      : "";
+    let query = "";
+    if (selectedSprintId.value) {
+      query = `?sprintId=${encodeURIComponent(selectedSprintId.value)}`;
+    } else if (selectedSprintMonth.value) {
+      query = `?sprintMonth=${encodeURIComponent(selectedSprintMonth.value)}`;
+    }
+
     const res = await fetch(`${API}/initiatives/member-progress${query}`, {
       headers: getHeaders(),
     });
@@ -426,6 +459,8 @@ async function fetchMemberProgress() {
       const data = await res.json();
       memberProgressList.value = data.members || [];
       availableSprintMonths.value = data.availableSprintMonths || [];
+      availableSprints.value = data.availableSprints || [];
+      isSnapshotArchive.value = Boolean(data.members?.[0]?.isSnapshot);
     } else {
       errorMessage.value = "Gagal memuat data capaian member";
     }

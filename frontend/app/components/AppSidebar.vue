@@ -359,6 +359,26 @@
           </svg>
           <span>Audit Logs</span>
         </NuxtLink>
+        <NuxtLink
+          to="/admin/sprints"
+          :style="navItemStyle('/admin/sprints')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span>Siklus Sprint</span>
+        </NuxtLink>
       </div>
 
       <!-- Manager menu -->

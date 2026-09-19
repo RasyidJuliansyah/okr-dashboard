@@ -15,6 +15,9 @@ import annualKeyResultRoutes from "./routes/annualKeyResult.routes";
 import notificationRoutes from "./routes/notification.routes";
 import kpiRoutes from "./routes/kpi.routes";
 import auditLogRoutes from "./routes/auditLog.routes";
+import taskRoutes from "./routes/task.routes";
+import sprintRoutes from "./routes/sprint.routes";
+import { checkAndAutoRollover } from "./services/sprint.service";
 
 dotenv.config();
 
@@ -46,6 +49,8 @@ app.use("/api/annual-key-results", annualKeyResultRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/kpis", kpiRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/sprints", sprintRoutes);
 
 // Base route for sanity check
 app.get("/", (req, res) => {
@@ -54,4 +59,9 @@ app.get("/", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  // Check sprint expiration at startup and every 1 hour
+  checkAndAutoRollover().catch((err) => console.error("Auto rollover check failed:", err));
+  setInterval(() => {
+    checkAndAutoRollover().catch((err) => console.error("Auto rollover check failed:", err));
+  }, 60 * 60 * 1000);
 });

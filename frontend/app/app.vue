@@ -131,6 +131,7 @@ const pageTitle = computed(() => {
   if (path.startsWith("/admin/employees")) return "Data Pegawai";
   if (path.startsWith("/admin/departments") || path.startsWith("/departments")) return "Struktur Departemen";
   if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
+  if (path.startsWith("/admin/sprints")) return "Siklus Sprint";
   if (path.startsWith("/approvals")) return "Persetujuan (Approvals)";
   return "Profil Pengguna";
 });

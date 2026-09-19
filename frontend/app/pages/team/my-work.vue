@@ -540,8 +540,20 @@
           v-for="assign in filteredTaskAssignments"
           :key="assign.id"
           class="task-card card"
+          :class="{ 'cross-dept-task-card': assign.task.isCrossDept }"
         >
           <div class="title-wrapper">
+            <div v-if="assign.task.isCrossDept" class="cross-dept-tag-row">
+              <span
+                class="cross-dept-badge"
+                @click.stop="openCrossDeptModal(assign.task.id)"
+              >
+                ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} → {{ assign.task.targetDept || "?" }}
+              </span>
+              <span v-if="assign.task.status === 'NEED_INFO'" class="badge-need-info">
+                ⚠️ NEED INFO
+              </span>
+            </div>
             <span
               class="status-badge"
               :class="getStatusClass(assign.task.status)"
@@ -737,6 +749,16 @@
               @click="openUpdateModal(assign.task)"
             >
               Submit Update Progress
+            </button>
+          </div>
+
+          <div v-if="assign.task.isCrossDept" class="card-actions" style="margin-top: 8px">
+            <button
+              type="button"
+              class="cross-dept-work-btn full-width"
+              @click="openCrossDeptModal(assign.task.id)"
+            >
+              💬 Diskusi & Lifecycle Status
             </button>
           </div>
         </div>
@@ -1088,9 +1110,22 @@
                 v-for="assign in filteredTeamMembersTasks"
                 :key="'team_task_' + assign.id"
                 class="task-card card"
+                :class="{ 'cross-dept-task-card': assign.task.isCrossDept }"
               >
                 <div class="title-wrapper">
                   <div class="member-badge">{{ assign.user?.name }}</div>
+
+                  <div v-if="assign.task.isCrossDept" class="cross-dept-tag-row">
+                    <span
+                      class="cross-dept-badge"
+                      @click.stop="openCrossDeptModal(assign.task.id)"
+                    >
+                      ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} → {{ assign.task.targetDept || "?" }}
+                    </span>
+                    <span v-if="assign.task.status === 'NEED_INFO'" class="badge-need-info">
+                      ⚠️ NEED INFO
+                    </span>
+                  </div>
 
                   <div class="task-header">
                     <h3>{{ assign.task.title }}</h3>
@@ -1138,6 +1173,16 @@
                       {{ assign.task.initiative?.title }}
                     </p>
                   </div>
+
+                  <button
+                    v-if="assign.task.isCrossDept"
+                    type="button"
+                    class="cross-dept-work-btn"
+                    style="margin-top: 8px"
+                    @click="openCrossDeptModal(assign.task.id)"
+                  >
+                    💬 Diskusi & Lifecycle Status
+                  </button>
 
                   <div class="task-progress-section">
                     <div class="progress-labels">
@@ -1830,6 +1875,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Cross Department Discussion & Lifecycle Modal -->
+    <CrossDeptCommentModal
+      :task-id="activeCrossDeptTaskId"
+      :is-open="showCrossDeptModal"
+      @close="showCrossDeptModal = false"
+      @task-updated="fetchMyWork"
+    />
   </div>
 </template>
 
@@ -1838,6 +1891,7 @@ import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "~/stores/auth";
 import { useRouter } from "vue-router";
 import { isRupiahUnit } from "~/utils/formatters";
+import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -1858,6 +1912,16 @@ const modalError = ref("");
 const successMsg = ref("");
 const selectedTask = ref(null);
 const selectedIni = ref(null);
+
+// Cross Department Task Modal
+const showCrossDeptModal = ref(false);
+const activeCrossDeptTaskId = ref("");
+
+function openCrossDeptModal(taskId) {
+  if (!taskId) return;
+  activeCrossDeptTaskId.value = taskId;
+  showCrossDeptModal.value = true;
+}
 
 // Modal Tambah Task Massal di Pekerjaan Saya
 const showMyWorkTaskModal = ref(false);
@@ -2681,6 +2745,56 @@ function getGroupedInitiatives(initiatives) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+.task-card.cross-dept-task-card {
+  background: #fffdf5 !important;
+  border: 2px solid #fde68a !important;
+  border-left: 5px solid #f59e0b !important;
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1) !important;
+}
+.cross-dept-tag-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.cross-dept-badge {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.cross-dept-badge:hover {
+  background: #fde68a;
+}
+.badge-need-info {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cross-dept-work-btn {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cross-dept-work-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
 }
 .title-wrapper {
   display: grid;

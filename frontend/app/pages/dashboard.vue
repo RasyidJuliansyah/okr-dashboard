@@ -293,6 +293,152 @@
         </div>
       </section>
 
+      <!-- ─── SECTION: TASK LINTAS DEPARTEMEN (CROSS-DEPARTMENT) ─── -->
+      <section
+        v-if="
+          ['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER', 'TEAM'].includes(userRole)
+        "
+        class="role-section cross-dept-section"
+      >
+        <div class="section-title-row">
+          <div>
+            <div class="cross-dept-title-wrap">
+              <h3 class="section-title">Task Lintas Departemen (Cross-Dept)</h3>
+              <span class="count-badge-amber">
+                {{
+                  (crossDeptData.incoming?.length || 0) +
+                  (crossDeptData.outgoing?.length || 0)
+                }}
+                Task Aktif
+              </span>
+            </div>
+            <p class="section-sub-desc">
+              Koordinasi penugasan antar divisi dengan alur lifecycle status
+              terintegrasi & thread diskusi.
+            </p>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="cross-dept-summary-grid mb-4">
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-blue">
+              {{ crossDeptData.incoming?.length || 0 }}
+            </span>
+            <span class="cross-summary-lbl">Masuk (Target Dept Saya)</span>
+          </div>
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-amber">
+              {{ crossDeptData.outgoing?.length || 0 }}
+            </span>
+            <span class="cross-summary-lbl">Keluar (Dibuat Dept Saya)</span>
+          </div>
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-red">
+              {{ crossDeptNeedInfoCount }}
+            </span>
+            <span class="cross-summary-lbl">Butuh Info (Need Info)</span>
+          </div>
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-green">
+              {{ crossDeptResolvedCount }}
+            </span>
+            <span class="cross-summary-lbl">Terselesaikan / Closed</span>
+          </div>
+        </div>
+
+        <!-- Tab Controls -->
+        <div class="cross-dept-tabs-nav mb-4">
+          <button
+            type="button"
+            class="cross-dept-tab-btn"
+            :class="{ active: activeCrossDeptTab === 'incoming' }"
+            @click="activeCrossDeptTab = 'incoming'"
+          >
+            Masuk ke Departemen Saya ({{ crossDeptData.incoming?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="cross-dept-tab-btn"
+            :class="{ active: activeCrossDeptTab === 'outgoing' }"
+            @click="activeCrossDeptTab = 'outgoing'"
+          >
+            Dibuat oleh Departemen Saya ({{
+              crossDeptData.outgoing?.length || 0
+            }})
+          </button>
+        </div>
+
+        <!-- Tasks Content -->
+        <div v-if="loadingCrossDept" class="cross-dept-empty-card card">
+          Memuat data task lintas departemen...
+        </div>
+        <div
+          v-else-if="currentCrossDeptList.length === 0"
+          class="cross-dept-empty-card card"
+        >
+          {{
+            activeCrossDeptTab === "incoming"
+              ? "Tidak ada task lintas departemen yang masuk ke departemen Anda saat ini."
+              : "Departemen Anda belum membuat permintaan task ke departemen lain."
+          }}
+        </div>
+        <div v-else class="cross-dept-grid">
+          <div
+            v-for="task in currentCrossDeptList"
+            :key="task.id"
+            class="cross-dept-item-card card"
+          >
+            <div class="cross-dept-item-top">
+              <span class="cross-dept-route-badge">
+                {{ task.creatorDept || "?" }} → {{ task.targetDept || "?" }}
+              </span>
+              <span
+                class="cross-dept-status-pill"
+                :class="task.status.toLowerCase()"
+              >
+                {{ task.status }}
+              </span>
+            </div>
+
+            <h4 class="cross-dept-item-title">{{ task.title }}</h4>
+            <p v-if="task.description" class="cross-dept-item-desc">
+              {{ task.description }}
+            </p>
+
+            <div class="cross-dept-meta-row">
+              <span v-if="task.creator?.name" class="meta-sub">
+                Pemohon: <strong>{{ task.creator.name }}</strong>
+              </span>
+              <span v-if="task.assignedTeamMember?.name" class="meta-sub">
+                Assignee: <strong>{{ task.assignedTeamMember.name }}</strong>
+              </span>
+              <span v-if="task.dueDate" class="meta-sub">
+                Due: <strong>{{ formatDate(task.dueDate) }}</strong>
+              </span>
+            </div>
+
+            <div class="cross-dept-item-actions">
+              <button
+                type="button"
+                class="btn-open-cross-thread"
+                @click="openCrossDeptModal(task.id)"
+              >
+                💬 Buka Diskusi & Lifecycle
+              </button>
+              <a
+                v-if="task.link"
+                :href="task.link"
+                target="_blank"
+                class="btn-external-link"
+              >
+                Dokumen ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ─── SECTION: INITIATIVE PROGRESS (Leader, Manager, C-Level, Admin) ─── -->
       <section v-if="showInitiativeProgress" class="role-section">
         <div class="section-title-row">
@@ -974,6 +1120,14 @@
           </div>
         </div>
       </section>
+
+      <!-- Cross Department Discussion & Lifecycle Modal -->
+      <CrossDeptCommentModal
+        :task-id="activeCrossDeptTaskId"
+        :is-open="showCrossDeptModal"
+        @close="showCrossDeptModal = false"
+        @task-updated="fetchCrossDeptTasks"
+      />
     </div>
   </div>
 </template>
@@ -981,12 +1135,63 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "../stores/auth";
+import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
 // Ambil role dari auth store
 const userRole = computed(() => auth.user?.role || "");
+
+// State Cross Department
+const crossDeptData = ref({ incoming: [], outgoing: [], all: [] });
+const activeCrossDeptTab = ref("incoming");
+const loadingCrossDept = ref(false);
+const showCrossDeptModal = ref(false);
+const activeCrossDeptTaskId = ref("");
+
+function openCrossDeptModal(taskId) {
+  if (!taskId) return;
+  activeCrossDeptTaskId.value = taskId;
+  showCrossDeptModal.value = true;
+}
+
+async function fetchCrossDeptTasks() {
+  loadingCrossDept.value = true;
+  try {
+    const res = await fetch(`${config.public.apiBase}/tasks/cross-dept`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+    if (res.ok) {
+      crossDeptData.value = await res.json();
+    }
+  } catch (err) {
+    console.error("Fetch cross dept tasks error:", err);
+  } finally {
+    loadingCrossDept.value = false;
+  }
+}
+
+const currentCrossDeptList = computed(() => {
+  if (activeCrossDeptTab.value === "incoming") {
+    return crossDeptData.value?.incoming || [];
+  }
+  return crossDeptData.value?.outgoing || [];
+});
+
+const crossDeptNeedInfoCount = computed(() => {
+  const all = crossDeptData.value?.all || [];
+  return all.filter((t) => t.status === "NEED_INFO").length;
+});
+
+const crossDeptResolvedCount = computed(() => {
+  const all = crossDeptData.value?.all || [];
+  return all.filter((t) => t.status === "RESOLVED" || t.status === "CLOSED")
+    .length;
+});
 
 // State untuk data TEAM
 const myTasks = ref([]);
@@ -1370,6 +1575,7 @@ onMounted(() => {
   if (auth.user?.role === "LEADER") {
     fetchLeaderAssignedKrs();
   }
+  fetchCrossDeptTasks();
 });
 
 // ─── Task Submit Modal (TEAM) ───
@@ -3226,5 +3432,197 @@ async function handleReject() {
 
 .approvals-section .secondary-btn.small:hover {
   background-color: #e2e8f0;
+}
+
+/* Cross Department Dashboard Widget Styles */
+.cross-dept-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.amber-lightning {
+  font-size: 18px;
+}
+.count-badge-amber {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+.section-sub-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+.cross-dept-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.cross-summary-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cross-summary-val {
+  font-size: 22px;
+  font-weight: 800;
+}
+.cross-summary-val.text-amber {
+  color: #d97706;
+}
+.cross-summary-val.text-blue {
+  color: #2563eb;
+}
+.cross-summary-val.text-red {
+  color: #dc2626;
+}
+.cross-summary-val.text-green {
+  color: #16a34a;
+}
+.cross-summary-lbl {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+}
+.cross-dept-tabs-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+  margin-top: 24px;
+}
+.cross-dept-tab-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.15s;
+}
+.cross-dept-tab-btn.active {
+  color: #d97706;
+  border-bottom: 3px solid #f59e0b;
+  font-weight: 700;
+}
+.cross-dept-empty-card {
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+  font-style: italic;
+}
+.cross-dept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.cross-dept-item-card {
+  background: #fffdf5;
+  border: 1px solid #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cross-dept-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cross-dept-route-badge {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cross-dept-status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.cross-dept-status-pill.todo {
+  background: #f1f5f9;
+  color: #475569;
+}
+.cross-dept-status-pill.in_progress {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.cross-dept-status-pill.need_info {
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 800;
+}
+.cross-dept-status-pill.resolved {
+  background: #dcfce7;
+  color: #15803d;
+}
+.cross-dept-status-pill.closed {
+  background: #e2e8f0;
+  color: #334155;
+}
+.cross-dept-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+.cross-dept-item-desc {
+  font-size: 12px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.4;
+}
+.cross-dept-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #64748b;
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #fef08a;
+}
+.cross-dept-item-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+.btn-open-cross-thread {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 1;
+}
+.btn-open-cross-thread:hover {
+  background: #fef3c7;
+}
+.btn-external-link {
+  font-size: 11px;
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 8px;
 }
 </style>

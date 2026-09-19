@@ -4,7 +4,7 @@ import { Request } from "express";
 export interface LogAuditParams {
   userId?: string | null;
   action: string;
-  entityType: "USER" | "DEPARTMENT" | "TASK" | "INITIATIVE" | "KEY_RESULT";
+  entityType: "USER" | "DEPARTMENT" | "TASK" | "INITIATIVE" | "KEY_RESULT" | "SPRINT";
   entityId?: string | null;
   oldValues?: any;
   newValues?: any;
@@ -25,9 +25,18 @@ export async function logAudit(prisma: PrismaClient, params: LogAuditParams) {
       }
     }
 
+    let validUserId = params.userId || null;
+    if (validUserId) {
+      const userExists = await prisma.user.findUnique({
+        where: { id: validUserId },
+        select: { id: true },
+      });
+      if (!userExists) validUserId = null;
+    }
+
     await prisma.auditLog.create({
       data: {
-        userId: params.userId || null,
+        userId: validUserId,
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId || null,

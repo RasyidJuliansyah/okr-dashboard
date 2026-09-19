@@ -46,6 +46,13 @@
             Bulk Upload CSV
           </button>
           <button
+            class="secondary-btn amber-outline-btn"
+            title="Buat Task Lintas Departemen"
+            @click="openCrossDeptCreateModal"
+          >
+            + Task Lintas Dept
+          </button>
+          <button
             v-if="canCreateInitiative"
             class="primary-btn"
             @click="openAddInitiativeModal"
@@ -182,8 +189,9 @@
               :key="ini.id"
               class="kanban-card"
               :class="{
-                'task-card-type': ini.isTaskCard,
+                'task-card-type': ini.isTaskCard && !ini.isCrossDept,
                 'ini-card-type': !ini.isTaskCard,
+                'cross-dept-card-type': ini.isCrossDept,
               }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
@@ -201,16 +209,46 @@
                 </span>
               </div>
 
-              <div style="margin-bottom: 12px">
-                <span v-if="ini.isTaskCard" class="card-type-pill task"
+              <div
+                style="
+                  margin-bottom: 12px;
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 4px;
+                  align-items: center;
+                "
+              >
+                <span
+                  v-if="ini.isCrossDept"
+                  class="card-type-pill cross-dept"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  ⚡ Lintas Dept: {{ ini.creatorDept || "?" }} →
+                  {{ ini.targetDept || "?" }}
+                </span>
+                <span v-else-if="ini.isTaskCard" class="card-type-pill task"
                   >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
                   >Inisiatif Leader</span
                 >
+                <span
+                  v-if="ini.isCrossDept && ini.status === 'NEED_INFO'"
+                  class="card-type-pill need-info"
+                >
+                  ⚠️ NEED INFO
+                </span>
               </div>
 
               <h4 class="card-title">{{ ini.title }}</h4>
+              <button
+                v-if="ini.isCrossDept"
+                type="button"
+                class="cross-dept-thread-btn"
+                @click.stop="openCrossDeptModal(ini.taskId)"
+              >
+                💬 Diskusi & Lifecycle
+              </button>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -435,8 +473,9 @@
               :key="ini.id"
               class="kanban-card card-in-progress"
               :class="{
-                'task-card-type': ini.isTaskCard,
+                'task-card-type': ini.isTaskCard && !ini.isCrossDept,
                 'ini-card-type': !ini.isTaskCard,
+                'cross-dept-card-type': ini.isCrossDept,
               }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
@@ -453,15 +492,45 @@
                   {{ ini.keyResult.bscPerspective }}
                 </span>
               </div>
-              <div style="margin-bottom: 12px">
-                <span v-if="ini.isTaskCard" class="card-type-pill task"
+              <div
+                style="
+                  margin-bottom: 12px;
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 4px;
+                  align-items: center;
+                "
+              >
+                <span
+                  v-if="ini.isCrossDept"
+                  class="card-type-pill cross-dept"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  ⚡ Lintas Dept: {{ ini.creatorDept || "?" }} →
+                  {{ ini.targetDept || "?" }}
+                </span>
+                <span v-else-if="ini.isTaskCard" class="card-type-pill task"
                   >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
                   >Inisiatif Leader</span
                 >
+                <span
+                  v-if="ini.isCrossDept && ini.status === 'NEED_INFO'"
+                  class="card-type-pill need-info"
+                >
+                  ⚠️ NEED INFO
+                </span>
               </div>
               <h4 class="card-title">{{ ini.title }}</h4>
+              <button
+                v-if="ini.isCrossDept"
+                type="button"
+                class="cross-dept-thread-btn"
+                @click.stop="openCrossDeptModal(ini.taskId)"
+              >
+                💬 Diskusi & Lifecycle
+              </button>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -690,8 +759,9 @@
               :key="ini.id"
               class="kanban-card card-done"
               :class="{
-                'task-card-type': ini.isTaskCard,
+                'task-card-type': ini.isTaskCard && !ini.isCrossDept,
                 'ini-card-type': !ini.isTaskCard,
+                'cross-dept-card-type': ini.isCrossDept,
               }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
@@ -703,8 +773,24 @@
                 <span class="completed-checkmark-badge">Selesai</span>
               </div>
 
-              <div style="margin-bottom: 12px">
-                <span v-if="ini.isTaskCard" class="card-type-pill task"
+              <div
+                style="
+                  margin-bottom: 12px;
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 4px;
+                  align-items: center;
+                "
+              >
+                <span
+                  v-if="ini.isCrossDept"
+                  class="card-type-pill cross-dept"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  ⚡ Lintas Dept: {{ ini.creatorDept || "?" }} →
+                  {{ ini.targetDept || "?" }}
+                </span>
+                <span v-else-if="ini.isTaskCard" class="card-type-pill task"
                   >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
@@ -713,6 +799,14 @@
               </div>
 
               <h4 class="card-title text-done">{{ ini.title }}</h4>
+              <button
+                v-if="ini.isCrossDept"
+                type="button"
+                class="cross-dept-thread-btn"
+                @click.stop="openCrossDeptModal(ini.taskId)"
+              >
+                💬 Diskusi & Lifecycle
+              </button>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -977,8 +1071,9 @@
               :key="ini.id"
               class="kanban-card card-drop"
               :class="{
-                'task-card-type': ini.isTaskCard,
+                'task-card-type': ini.isTaskCard && !ini.isCrossDept,
                 'ini-card-type': !ini.isTaskCard,
+                'cross-dept-card-type': ini.isCrossDept,
               }"
               :draggable="canMoveCards"
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
@@ -990,8 +1085,24 @@
                 <span class="dropped-badge">Drop</span>
               </div>
 
-              <div style="margin-bottom: 12px">
-                <span v-if="ini.isTaskCard" class="card-type-pill task"
+              <div
+                style="
+                  margin-bottom: 12px;
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 4px;
+                  align-items: center;
+                "
+              >
+                <span
+                  v-if="ini.isCrossDept"
+                  class="card-type-pill cross-dept"
+                  @click.stop="openCrossDeptModal(ini.taskId)"
+                >
+                  ⚡ Lintas Dept: {{ ini.creatorDept || "?" }} →
+                  {{ ini.targetDept || "?" }}
+                </span>
+                <span v-else-if="ini.isTaskCard" class="card-type-pill task"
                   >Task Individual</span
                 >
                 <span v-else class="card-type-pill initiative"
@@ -1000,6 +1111,14 @@
               </div>
 
               <h4 class="card-title text-drop">{{ ini.title }}</h4>
+              <button
+                v-if="ini.isCrossDept"
+                type="button"
+                class="cross-dept-thread-btn"
+                @click.stop="openCrossDeptModal(ini.taskId)"
+              >
+                💬 Diskusi & Lifecycle
+              </button>
               <p v-if="ini.description" class="card-desc">
                 {{ ini.description }}
               </p>
@@ -1126,6 +1245,9 @@
             >
               <option value="INISIATIF">Inisiatif</option>
               <option value="TASK">Task Individual</option>
+              <option value="CROSS_DEPT">
+                ⚡ Task Lintas Departemen (Cross-Dept)
+              </option>
             </select>
           </div>
 
@@ -1395,6 +1517,136 @@
               </div>
             </div>
           </template>
+
+          <!-- FORM CARD: CROSS-DEPARTMENT TASK -->
+          <template v-else-if="cardType === 'CROSS_DEPT'">
+            <div
+              class="cross-dept-form-banner"
+              style="
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 8px;
+                padding: 10px 14px;
+                margin-bottom: 14px;
+                font-size: 12px;
+                color: #92400e;
+              "
+            >
+              ⚡ <strong>Task Lintas Departemen:</strong> Penugasan kerja lintas
+              divisi/departemen dengan alur lifecycle status terintegrasi (TODO
+              &rarr; IN_PROGRESS &rarr; NEED_INFO &rarr; RESOLVED &rarr;
+              CLOSED).
+            </div>
+
+            <label>Judul Task *</label>
+            <input
+              v-model="crossDeptForm.title"
+              class="form-input"
+              style="margin-bottom: 12px"
+              placeholder="Contoh: Permintaan data leads B2B Q3..."
+            />
+
+            <label>Deskripsi Kebutuhan (Opsional)</label>
+            <textarea
+              v-model="crossDeptForm.description"
+              class="form-input"
+              rows="3"
+              style="margin-bottom: 12px; resize: vertical"
+              placeholder="Jelaskan detail kebutuhan dan spesifikasi output..."
+            ></textarea>
+
+            <div class="form-row-2" style="margin-bottom: 12px">
+              <div>
+                <label>Departemen Tujuan *</label>
+                <select v-model="crossDeptForm.targetDept" class="form-input">
+                  <option value="">-- Pilih Departemen Tujuan --</option>
+                  <option
+                    v-for="dept in allAvailableDepartments"
+                    :key="dept.value"
+                    :value="dept.value"
+                  >
+                    {{ dept.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label>PIC Assignee Tujuan (Opsional)</label>
+                <select
+                  v-model="crossDeptForm.assignedTeamMemberId"
+                  class="form-input"
+                >
+                  <option value="">-- Delegasikan Nanti (Unassigned) --</option>
+                  <option
+                    v-for="u in targetDeptUsers"
+                    :key="u.id"
+                    :value="u.id"
+                  >
+                    {{ u.name }} ({{ u.role }})
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2" style="margin-bottom: 12px">
+              <div>
+                <label>Tautkan ke Inisiatif Saya (Opsional)</label>
+                <select v-model="crossDeptForm.initiativeId" class="form-input">
+                  <option value="">-- Standalone (Tanpa Induk) --</option>
+                  <option
+                    v-for="ini in filteredInitiatives"
+                    :key="ini.id"
+                    :value="ini.id"
+                  >
+                    {{ ini.title }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label>Tautan / URL Dokumen (Opsional)</label>
+                <input
+                  v-model="crossDeptForm.link"
+                  class="form-input"
+                  placeholder="https://docs.google.com/..."
+                />
+              </div>
+            </div>
+
+            <div class="form-row-4" style="margin-bottom: 12px">
+              <div>
+                <label>Target Nilai</label>
+                <input
+                  v-model.number="crossDeptForm.targetValue"
+                  type="number"
+                  class="form-input"
+                  placeholder="100"
+                />
+              </div>
+              <div>
+                <label>Satuan (Unit)</label>
+                <input
+                  v-model="crossDeptForm.unit"
+                  class="form-input"
+                  placeholder="Task, data, dll"
+                />
+              </div>
+              <div>
+                <label>Bulan Sprint</label>
+                <input
+                  v-model="crossDeptForm.sprintMonth"
+                  type="month"
+                  class="form-input"
+                />
+              </div>
+              <div>
+                <label>Tenggat Waktu</label>
+                <input
+                  v-model="crossDeptForm.dueDate"
+                  type="date"
+                  class="form-input"
+                />
+              </div>
+            </div>
+          </template>
         </div>
 
         <div class="modal-actions">
@@ -1597,6 +1849,14 @@
       @close="showBulkModal = false"
       @done="fetchInitiatives"
     />
+
+    <!-- Cross-Dept Comment & Lifecycle Modal -->
+    <CrossDeptCommentModal
+      :task-id="activeCrossDeptTaskId"
+      :is-open="showCrossDeptModal"
+      @close="showCrossDeptModal = false"
+      @task-updated="fetchInitiatives"
+    />
   </div>
 </template>
 
@@ -1606,6 +1866,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "~/stores/auth";
 import { useAssignment } from "~/composables/useAssignment";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
+import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
 import { isRupiahUnit } from "~/utils/formatters";
 
 const route = useRoute();
@@ -1991,9 +2252,47 @@ watch(
 );
 
 // Task modal state & card type
-const cardType = ref<"INISIATIF" | "TASK">("INISIATIF");
+const cardType = ref<"INISIATIF" | "TASK" | "CROSS_DEPT">("INISIATIF");
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
+
+// Cross Department Task State & Modal
+const showCrossDeptModal = ref(false);
+const activeCrossDeptTaskId = ref("");
+
+function openCrossDeptModal(taskId: string) {
+  if (!taskId) return;
+  activeCrossDeptTaskId.value = taskId;
+  showCrossDeptModal.value = true;
+}
+
+function openCrossDeptCreateModal() {
+  editingInitiative.value = null;
+  cardType.value = "CROSS_DEPT";
+  showInitiativeModal.value = true;
+}
+
+const crossDeptForm = ref({
+  title: "",
+  description: "",
+  targetDept: "",
+  assignedTeamMemberId: "",
+  initiativeId: "",
+  link: "",
+  targetValue: 100,
+  unit: "Task",
+  sprintMonth: new Date().toISOString().slice(0, 7),
+  dueDate: "",
+});
+
+const allAvailableDepartments = ref<any[]>([]);
+
+const targetDeptUsers = computed(() => {
+  if (!crossDeptForm.value.targetDept) return allUsers.value;
+  return allUsers.value.filter(
+    (u: any) => u.department === crossDeptForm.value.targetDept,
+  );
+});
 const batchInitiativeId = ref("");
 const batchDefaults = ref({
   targetValue: 100,
@@ -2502,6 +2801,60 @@ async function saveInitiative() {
 async function saveCard() {
   if (cardType.value === "INISIATIF") {
     await saveInitiative();
+  } else if (cardType.value === "CROSS_DEPT") {
+    if (!crossDeptForm.value.title.trim()) {
+      alert("Judul Task Lintas Departemen wajib diisi");
+      return;
+    }
+    if (!crossDeptForm.value.targetDept) {
+      alert("Departemen Tujuan wajib dipilih");
+      return;
+    }
+    saving.value = true;
+    try {
+      const res = await fetch(`${API}/tasks/cross-dept`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          title: crossDeptForm.value.title.trim(),
+          description: crossDeptForm.value.description.trim() || undefined,
+          targetDept: crossDeptForm.value.targetDept,
+          assignedTeamMemberId:
+            crossDeptForm.value.assignedTeamMemberId || undefined,
+          initiativeId: crossDeptForm.value.initiativeId || undefined,
+          link: crossDeptForm.value.link.trim() || undefined,
+          targetValue: crossDeptForm.value.targetValue || undefined,
+          unit: crossDeptForm.value.unit || undefined,
+          sprintMonth: crossDeptForm.value.sprintMonth || undefined,
+          dueDate: crossDeptForm.value.dueDate || undefined,
+        }),
+      });
+      if (res.ok) {
+        showInitiativeModal.value = false;
+        successMessage.value = "Task Lintas Departemen berhasil dibuat!";
+        setTimeout(() => (successMessage.value = ""), 3000);
+        crossDeptForm.value = {
+          title: "",
+          description: "",
+          targetDept: "",
+          assignedTeamMemberId: "",
+          initiativeId: "",
+          link: "",
+          targetValue: 100,
+          unit: "Task",
+          sprintMonth: new Date().toISOString().slice(0, 7),
+          dueDate: "",
+        };
+        await fetchInitiatives();
+      } else {
+        const err = await res.json();
+        alert(err.message || "Gagal membuat Task Lintas Departemen");
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      saving.value = false;
+    }
   } else {
     if (!batchInitiativeId.value) {
       alert("Silakan pilih Inisiatif induk untuk Task ini");
@@ -2718,8 +3071,12 @@ async function fetchAllUsers() {
 
 async function fetchAllDepartments() {
   try {
-    const res = await fetch(`${API}/departments`, { headers: getHeaders() });
-    if (res.ok) allDepartments.value = await res.json();
+    const [scopedRes, allRes] = await Promise.all([
+      fetch(`${API}/departments`, { headers: getHeaders() }),
+      fetch(`${API}/departments?all=true`, { headers: getHeaders() }),
+    ]);
+    if (scopedRes.ok) allDepartments.value = await scopedRes.json();
+    if (allRes.ok) allAvailableDepartments.value = await allRes.json();
   } catch (err) {}
 }
 
@@ -3734,6 +4091,59 @@ onMounted(async () => {
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #cbd5e1;
+}
+
+/* Cross-Department Amber Styling */
+.kanban-card.cross-dept-card-type {
+  background: #fffdf5 !important;
+  border-left: 4px solid #f59e0b !important;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15) !important;
+}
+
+.card-type-pill.cross-dept {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  cursor: pointer;
+}
+.card-type-pill.cross-dept:hover {
+  background: #fde68a;
+}
+
+.card-type-pill.need-info {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  font-weight: 800;
+}
+
+.cross-dept-thread-btn {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin: 6px 0 8px 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s ease;
+}
+.cross-dept-thread-btn:hover {
+  background: #fef3c7;
+}
+
+.amber-outline-btn {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fcd34d !important;
+  font-weight: 700 !important;
+}
+.amber-outline-btn:hover {
+  background: #fef3c7 !important;
 }
 
 /* Bulk Task Modal Styles */

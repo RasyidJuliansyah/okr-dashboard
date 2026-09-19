@@ -25,7 +25,10 @@ model User {
   assignedInitiatives Initiative[]     @relation("InitiativeLeader") // NOTE: FK to user currently missing in DB
   assignedTasks       Task[]           @relation("TaskAssignedMember") // NOTE: FK to user currently missing in DB
   notifications       Notification[]                                  // NOTE: FK to user currently missing in DB
+  createdCrossDeptTasks Task[]         @relation("CrossDeptTaskCreator")
+  taskComments        TaskComment[]
   auditLogs           AuditLog[]       @relation("UserAuditLogs")
+  sprintProgress      MemberSprintProgress[]
   createdAt           DateTime         @default(now()) @map("created_at")
 
   @@index([teamId], map: "User_teamId_idx")
@@ -99,6 +102,7 @@ model KeyResult {
   departments       KrDepartment[]
   updates           KrUpdate[]
   initiatives       Initiative[]
+  sprintTargets     KrSprintTarget[]
   sourceLinksA      CausalLink[]     @relation("SourceKR")
   sourceLinksB      CausalLink[]     @relation("TargetKR")
   createdAt         DateTime         @default(now()) @map("created_at")
@@ -191,6 +195,8 @@ model Initiative {
   dueDate           DateTime?          @map("due_date")
   finishDate        DateTime?          @map("finish_date")
   sprintMonth       String?            @map("sprint_month")
+  sprintId          String?            @map("sprint_id")
+  sprint            Sprint?            @relation(fields: [sprintId], references: [id])
   documentationLink String?            @map("documentation_link")
   tasks             Task[]
   kpis              InitiativeKpi[]                                    // NOTE: FK missing in DB
@@ -198,6 +204,7 @@ model Initiative {
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
 
+  @@index([sprintId], map: "Initiative_sprintId_idx")
   @@index([sprintMonth], map: "Initiative_sprintMonth_idx")
   @@index([assignedLeaderId], map: "Initiative_assignedLeaderId_idx")
   @@index([keyResultId], map: "Initiative_keyResultId_idx")
@@ -208,32 +215,61 @@ model Initiative {
 
 model Task {
   id                   String           @id @default(uuid())
-  initiativeId         String           @map("initiative_id")
-  initiative           Initiative       @relation(fields: [initiativeId], references: [id], map: "Kpi_initiativeId_fkey")
+  initiativeId         String?          @map("initiative_id")
+  initiative           Initiative?      @relation(fields: [initiativeId], references: [id], map: "Kpi_initiativeId_fkey")
   assignedTeamMemberId String?          @map("assigned_team_member_id")
   assignedTeamMember   User?            @relation("TaskAssignedMember", fields: [assignedTeamMemberId], references: [id]) // NOTE: FK missing in DB
   assignedBy           String?          @map("assigned_by")
   sprintMonth          String?          @map("sprint_month")
+  sprintId             String?          @map("sprint_id")
+  sprint               Sprint?          @relation(fields: [sprintId], references: [id])
   startDate            DateTime?        @map("start_date")
   finishDate           DateTime?        @map("finish_date")
   title                String
-  targetValue          Float            @map("target_value")
+  targetValue          Float?           @default(0) @map("target_value")
   currentValue         Float            @default(0) @map("current_value")
+  baselineValue        Float            @default(0) @map("baseline_value")
   weight               Float            @default(1.0)
   unit                 String?
   status               String           @default("ON_TRACK")
   kanbanStatus         String?          @default("TODO") @map("kanban_status")
   documentationLink    String?          @map("documentation_link")
+  isCrossDept          Boolean          @default(false) @map("is_cross_dept")
+  creatorId            String?          @map("creator_id")
+  creator              User?            @relation("CrossDeptTaskCreator", fields: [creatorId], references: [id])
+  creatorDept          String?          @map("creator_dept")
+  targetDept           String?          @map("target_dept")
+  description          String?          @db.Text
+  link                 String?
   assignments          TaskAssignment[]
   updates              TaskUpdate[]
   kpis                 TaskKpi[]                                          // NOTE: FK missing in DB
+  comments             TaskComment[]
   createdAt            DateTime         @default(now()) @map("created_at")
   updatedAt            DateTime         @updatedAt @map("updated_at")
 
   @@index([initiativeId], map: "Kpi_initiativeId_idx")
   @@index([assignedTeamMemberId], map: "Task_assignedTeamMemberId_idx")
+  @@index([creatorId], map: "Task_creatorId_idx")
+  @@index([targetDept], map: "Task_targetDept_idx")
   @@index([sprintMonth], map: "Task_sprintMonth_idx")
+  @@index([sprintId], map: "Task_sprintId_idx")
   @@map("task")
+}
+
+model TaskComment {
+  id             String   @id @default(uuid())
+  taskId         String   @map("task_id")
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id])
+  message        String   @db.Text
+  attachmentLink String?  @map("attachment_link")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_comment")
 }
 
 model TaskAssignment {
@@ -386,4 +422,61 @@ model TaskKpi {
   @@index([taskId], map: "TaskKpi_taskId_idx")
   @@index([kpiId], map: "TaskKpi_kpiId_idx")
   @@map("task_kpi")
+}
+
+model Sprint {
+  id            String                 @id @default(uuid())
+  name          String
+  startDate     DateTime               @map("start_date")
+  endDate       DateTime               @map("end_date")
+  status        String                 @default("UPCOMING") // UPCOMING, ACTIVE, CLOSED
+  isLocked      Boolean                @default(false) @map("is_locked")
+  year          String                 @default("2026")
+  orderIndex    Int                    @default(1) @map("order_index")
+  initiatives   Initiative[]
+  tasks         Task[]
+  krTargets     KrSprintTarget[]
+  memberScores  MemberSprintProgress[]
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  @@index([status], map: "Sprint_status_idx")
+  @@index([startDate, endDate], map: "Sprint_startDate_endDate_idx")
+  @@map("sprint")
+}
+
+model KrSprintTarget {
+  id              String    @id @default(uuid())
+  keyResultId     String    @map("key_result_id")
+  keyResult       KeyResult @relation(fields: [keyResultId], references: [id], onDelete: Cascade)
+  sprintId        String    @map("sprint_id")
+  sprint          Sprint    @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  baselineValue   Float     @default(0) @map("baseline_value")
+  targetValue     Float     @default(0) @map("target_value")
+  currentValue    Float     @default(0) @map("current_value")
+  aggregationType String    @default("SUM") @map("aggregation_type") // SUM, AVERAGE, LAST_VALUE
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@unique([keyResultId, sprintId], map: "KrSprintTarget_keyResultId_sprintId_key")
+  @@index([sprintId], map: "KrSprintTarget_sprintId_idx")
+  @@map("kr_sprint_target")
+}
+
+model MemberSprintProgress {
+  id             String   @id @default(uuid())
+  sprintId       String   @map("sprint_id")
+  sprint         Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalScore     Float    @map("total_score") // Capaian 0 - 100%
+  taskCount      Int      @default(0) @map("task_count")
+  completedCount Int      @default(0) @map("completed_count")
+  detailsJson    Json?    @map("details_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([sprintId, userId], map: "MemberSprintProgress_sprintId_userId_key")
+  @@index([userId], map: "MemberSprintProgress_userId_idx")
+  @@map("member_sprint_progress")
 }
