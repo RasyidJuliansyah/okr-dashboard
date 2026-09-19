@@ -3107,6 +3107,7 @@ onMounted(async () => {
   min-height: 100vh;
   max-width: 1200px;
   margin: 0 auto;
+  background: var(--bg-page, #f8fafc);
   padding: 30px;
   display: flex;
   flex-direction: column;

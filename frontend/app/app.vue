@@ -20,13 +20,28 @@
         :title="pageTitle"
         @toggle-sidebar="isSidebarOpen = !isSidebarOpen"
       />
-      <div
-        v-if="showShell && isInactiveDeptUser"
-        class="inactive-dept-banner"
-      >
+      <div v-if="showShell && isInactiveDeptUser" class="inactive-dept-banner">
         <div class="banner-content">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span><strong>Perhatian:</strong> Departemen Anda ({{ auth.user?.department }}) sedang berstatus <strong>NONAKTIF</strong>. Akses pengisian dan perubahan data dibatasi. Silakan hubungi Administrator.</span>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span
+            ><strong>Perhatian:</strong> Departemen Anda ({{
+              auth.user?.department
+            }}) sedang berstatus <strong>NONAKTIF</strong>. Akses pengisian dan
+            perubahan data dibatasi. Silakan hubungi Administrator.</span
+          >
         </div>
       </div>
       <main :class="['page-content', { 'padded-content': showShell }]">
@@ -55,7 +70,7 @@ const showShell = computed(() => isAuthenticated.value && !isLoginPage.value);
 const isManagerRole = computed(() => auth.user?.role === "MANAGER");
 const isInactiveDeptUser = computed(() => {
   if (!auth.user) return false;
-  if (['ADMIN', 'C_LEVEL'].includes(auth.user.role)) return false;
+  if (["ADMIN", "C_LEVEL"].includes(auth.user.role)) return false;
   return auth.user.isDepartmentActive === false;
 });
 
@@ -129,7 +144,8 @@ const pageTitle = computed(() => {
   if (path.startsWith("/admin/objectives")) return "OKR Builder";
   if (path.startsWith("/admin/update-progress")) return "Update Capaian";
   if (path.startsWith("/admin/employees")) return "Data Pegawai";
-  if (path.startsWith("/admin/departments") || path.startsWith("/departments")) return "Struktur Departemen";
+  if (path.startsWith("/admin/departments") || path.startsWith("/departments"))
+    return "Struktur Departemen";
   if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
   if (path.startsWith("/admin/sprints")) return "Siklus Sprint";
   if (path.startsWith("/approvals")) return "Persetujuan (Approvals)";
@@ -400,6 +416,7 @@ p {
   flex-direction: row;
   min-height: 100vh;
   width: 100%;
+  box-shadow: 0 20px 20px #009c29;
 }
 
 .main-wrapper {
@@ -441,6 +458,7 @@ p {
 .page-content {
   flex: 1;
   width: 100%;
+  background: var(--bg-page, #f8fafc);
 }
 
 .sidebar-overlay {

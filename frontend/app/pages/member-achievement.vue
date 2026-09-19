@@ -28,8 +28,19 @@
       <div v-if="errorMessage" class="alert alert-error">
         {{ errorMessage }}
       </div>
-      <div v-if="isSnapshotArchive" class="alert" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; margin-bottom: 1rem;">
-        🔒 <strong>Arsip Sprint Terkunci:</strong> Nilai capaian pada sprint ini telah ditutup & dibekukan. Data historis tidak akan berubah meskipun task/inisiatif diperbarui di kemudian hari.
+      <div
+        v-if="isSnapshotArchive"
+        class="alert"
+        style="
+          background: #eff6ff;
+          color: #1e40af;
+          border: 1px solid #bfdbfe;
+          margin-bottom: 1rem;
+        "
+      >
+        🔒 <strong>Arsip Sprint Terkunci:</strong> Nilai capaian pada sprint ini
+        telah ditutup & dibekukan. Data historis tidak akan berubah meskipun
+        task/inisiatif diperbarui di kemudian hari.
       </div>
 
       <!-- Filters & Controls Card -->
@@ -354,7 +365,9 @@ const selectedDepartment = ref("");
 const selectedSort = ref("highest"); // 'highest', 'lowest', 'name_asc'
 const expandedUserIds = ref<string[]>([]);
 const selectedSprintMonth = ref("");
-const selectedSprintId = ref(route.query.sprintId ? String(route.query.sprintId) : "");
+const selectedSprintId = ref(
+  route.query.sprintId ? String(route.query.sprintId) : "",
+);
 const availableSprintMonths = ref<string[]>([]);
 const availableSprints = ref<any[]>([]);
 const isSnapshotArchive = ref(false);
@@ -483,6 +496,7 @@ onMounted(async () => {
   margin: 0 auto;
   padding: 30px;
   display: flex;
+  background: var(--bg-page, #f8fafc);
   flex-direction: column;
   gap: 30px;
   overflow: hidden;

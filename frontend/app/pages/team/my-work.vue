@@ -548,9 +548,13 @@
                 class="cross-dept-badge"
                 @click.stop="openCrossDeptModal(assign.task.id)"
               >
-                ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} → {{ assign.task.targetDept || "?" }}
+                ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} →
+                {{ assign.task.targetDept || "?" }}
               </span>
-              <span v-if="assign.task.status === 'NEED_INFO'" class="badge-need-info">
+              <span
+                v-if="assign.task.status === 'NEED_INFO'"
+                class="badge-need-info"
+              >
                 ⚠️ NEED INFO
               </span>
             </div>
@@ -752,7 +756,11 @@
             </button>
           </div>
 
-          <div v-if="assign.task.isCrossDept" class="card-actions" style="margin-top: 8px">
+          <div
+            v-if="assign.task.isCrossDept"
+            class="card-actions"
+            style="margin-top: 8px"
+          >
             <button
               type="button"
               class="cross-dept-work-btn full-width"
@@ -1115,14 +1123,21 @@
                 <div class="title-wrapper">
                   <div class="member-badge">{{ assign.user?.name }}</div>
 
-                  <div v-if="assign.task.isCrossDept" class="cross-dept-tag-row">
+                  <div
+                    v-if="assign.task.isCrossDept"
+                    class="cross-dept-tag-row"
+                  >
                     <span
                       class="cross-dept-badge"
                       @click.stop="openCrossDeptModal(assign.task.id)"
                     >
-                      ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} → {{ assign.task.targetDept || "?" }}
+                      ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} →
+                      {{ assign.task.targetDept || "?" }}
                     </span>
-                    <span v-if="assign.task.status === 'NEED_INFO'" class="badge-need-info">
+                    <span
+                      v-if="assign.task.status === 'NEED_INFO'"
+                      class="badge-need-info"
+                    >
                       ⚠️ NEED INFO
                     </span>
                   </div>
@@ -2705,6 +2720,7 @@ function getGroupedInitiatives(initiatives) {
 .admin-root {
   min-height: 100vh;
   padding: 32px;
+  background: var(--bg-color, #f8fafc);
 }
 .admin-content {
   max-width: 1000px;

@@ -1,7 +1,6 @@
 <template>
   <div class="sprint-root">
     <div class="sprint-content">
-
       <!-- Header Section -->
       <div class="page-header card">
         <div class="header-title">
@@ -10,15 +9,25 @@
             <span class="view-badge">Cadence 21st - 20th</span>
           </div>
           <p class="section-desc">
-            Kelola siklus sprint 30 hari (tanggal 21 hingga 20). Kunci sprint yang sudah selesai untuk membekukan capaian member, dan lakukan rollover otomatis maupun manual.
+            Kelola siklus sprint 30 hari (tanggal 21 hingga 20). Kunci sprint
+            yang sudah selesai untuk membekukan capaian member, dan lakukan
+            rollover otomatis maupun manual.
           </p>
         </div>
         <div class="header-actions">
-          <button class="secondary-btn" :disabled="loading" @click="fetchSprints">
+          <button
+            class="secondary-btn"
+            :disabled="loading"
+            @click="fetchSprints"
+          >
             Refresh
           </button>
-          <button class="primary-btn" :disabled="generating" @click="handleGenerateYearly">
-            {{ generating ? 'Membuat...' : '+ Generate 12-Bulan Sprint' }}
+          <button
+            class="primary-btn"
+            :disabled="generating"
+            @click="handleGenerateYearly"
+          >
+            {{ generating ? "Membuat..." : "+ Generate 12-Bulan Sprint" }}
           </button>
         </div>
       </div>
@@ -33,11 +42,16 @@
           <div class="active-pill">SPRINT AKTIF SAAT INI</div>
           <h3 class="active-title">{{ activeSprint.name }}</h3>
           <p class="active-dates">
-            Periode: <strong>{{ formatDate(activeSprint.startDate) }}</strong> s/d <strong>{{ formatDate(activeSprint.endDate) }}</strong>
+            Periode:
+            <strong>{{ formatDate(activeSprint.startDate) }}</strong> s/d
+            <strong>{{ formatDate(activeSprint.endDate) }}</strong>
           </p>
           <div class="active-status-meta">
-            <span class="lock-indicator" :class="activeSprint.isLocked ? 'locked' : 'unlocked'">
-              {{ activeSprint.isLocked ? '🔒 Terkunci' : '🔓 Terbuka' }}
+            <span
+              class="lock-indicator"
+              :class="activeSprint.isLocked ? 'locked' : 'unlocked'"
+            >
+              {{ activeSprint.isLocked ? "Terkunci" : "Terbuka" }}
             </span>
             <span class="days-remaining">
               {{ getRemainingDays(activeSprint.endDate) }}
@@ -50,7 +64,11 @@
             :disabled="closingSprintId === activeSprint.id"
             @click="confirmCloseSprint(activeSprint)"
           >
-            {{ closingSprintId === activeSprint.id ? 'Memproses...' : 'Tutup & Rollover Sprint' }}
+            {{
+              closingSprintId === activeSprint.id
+                ? "Memproses..."
+                : "Tutup & Rollover Sprint"
+            }}
           </button>
         </div>
       </div>
@@ -64,7 +82,8 @@
         <div v-if="loading" class="loading-state">Memuat data sprint...</div>
 
         <div v-else-if="sprints.length === 0" class="empty-state">
-          Belum ada sprint yang dibuat. Klik tombol "+ Generate 12-Bulan Sprint" di atas.
+          Belum ada sprint yang dibuat. Klik tombol "+ Generate 12-Bulan Sprint"
+          di atas.
         </div>
 
         <div v-else class="table-responsive">
@@ -82,15 +101,24 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="sprint in sprints" :key="sprint.id" :class="{ 'row-active': sprint.status === 'ACTIVE' }">
+              <tr
+                v-for="sprint in sprints"
+                :key="sprint.id"
+                :class="{ 'row-active': sprint.status === 'ACTIVE' }"
+              >
                 <td class="font-bold">
                   {{ sprint.name }}
-                  <span v-if="sprint.status === 'ACTIVE'" class="active-tag">Aktif</span>
+                  <span v-if="sprint.status === 'ACTIVE'" class="active-tag"
+                    >Aktif</span
+                  >
                 </td>
                 <td>{{ formatDate(sprint.startDate) }}</td>
                 <td>{{ formatDate(sprint.endDate) }}</td>
                 <td>
-                  <span class="status-badge" :class="'badge-' + sprint.status.toLowerCase()">
+                  <span
+                    class="status-badge"
+                    :class="'badge-' + sprint.status.toLowerCase()"
+                  >
                     {{ sprint.status }}
                   </span>
                 </td>
@@ -100,21 +128,30 @@
                     :class="sprint.isLocked ? 'btn-locked' : 'btn-unlocked'"
                     @click="handleToggleLock(sprint)"
                   >
-                    {{ sprint.isLocked ? '🔒 Terkunci' : '🔓 Terbuka' }}
+                    {{ sprint.isLocked ? "Terkunci" : "Terbuka" }}
                   </button>
                 </td>
                 <td>
-                  {{ sprint._count?.initiatives || 0 }} / {{ sprint._count?.tasks || 0 }}
+                  {{ sprint._count?.initiatives || 0 }} /
+                  {{ sprint._count?.tasks || 0 }}
                 </td>
                 <td>
-                  <span v-if="sprint._count?.memberScores > 0" class="archive-count">
+                  <span
+                    v-if="sprint._count?.memberScores > 0"
+                    class="archive-count"
+                  >
                     ✓ {{ sprint._count.memberScores }}
                   </span>
                   <span v-else class="text-muted">-</span>
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <button class="action-btn edit-btn" @click="openEditModal(sprint)">Edit</button>
+                    <button
+                      class="action-btn edit-btn"
+                      @click="openEditModal(sprint)"
+                    >
+                      Edit
+                    </button>
                     <button
                       v-if="sprint.status === 'ACTIVE'"
                       class="action-btn close-btn"
@@ -122,7 +159,10 @@
                     >
                       Tutup
                     </button>
-                    <NuxtLink :to="`/member-achievement?sprintId=${sprint.id}`" class="action-btn view-btn">
+                    <NuxtLink
+                      :to="`/member-achievement?sprintId=${sprint.id}`"
+                      class="action-btn view-btn"
+                    >
                       Lihat
                     </NuxtLink>
                   </div>
@@ -132,7 +172,6 @@
           </table>
         </div>
       </div>
-
 
       <!-- Edit Modal -->
       <div v-if="showEditModal" class="modal-backdrop">
@@ -144,36 +183,45 @@
           </div>
           <div class="form-group">
             <label>Tanggal Mulai (00:00:00):</label>
-            <input v-model="editForm.startDate" type="date" class="form-input" />
+            <input
+              v-model="editForm.startDate"
+              type="date"
+              class="form-input"
+            />
           </div>
           <div class="form-group">
             <label>Tanggal Selesai (23:59:59):</label>
             <input v-model="editForm.endDate" type="date" class="form-input" />
           </div>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showEditModal = false">Batal</button>
-            <button class="primary-btn" :disabled="saving" @click="handleSaveEdit">
-              {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            <button class="secondary-btn" @click="showEditModal = false">
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              :disabled="saving"
+              @click="handleSaveEdit"
+            >
+              {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
             </button>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useAuthStore } from '~/stores/auth';
+import { ref, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
-const API = config.public.apiBase || 'http://localhost:3001/api';
+const API = config.public.apiBase || "http://localhost:3001/api";
 
 function getHeaders() {
   return {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     Authorization: `Bearer ${auth.token}`,
   };
 }
@@ -182,67 +230,68 @@ const loading = ref(true);
 const generating = ref(false);
 const saving = ref(false);
 const closingSprintId = ref<string | null>(null);
-const errorMsg = ref('');
-const successMsg = ref('');
+const errorMsg = ref("");
+const successMsg = ref("");
 
 const sprints = ref<any[]>([]);
 const activeSprint = ref<any>(null);
 
 const showEditModal = ref(false);
 const editForm = ref({
-  id: '',
-  name: '',
-  startDate: '',
-  endDate: '',
+  id: "",
+  name: "",
+  startDate: "",
+  endDate: "",
 });
 
 function formatDate(isoStr: string) {
-  if (!isoStr) return '-';
+  if (!isoStr) return "-";
   const d = new Date(isoStr);
-  return d.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
 function getRemainingDays(endDateIso: string) {
   const diff = new Date(endDateIso).getTime() - new Date().getTime();
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  if (days < 0) return 'Telah melewati tenggat waktu';
-  if (days === 0) return 'Hari terakhir sprint!';
+  if (days < 0) return "Telah melewati tenggat waktu";
+  if (days === 0) return "Hari terakhir sprint!";
   return `Tersisa ${days} hari lagi`;
 }
 
 async function fetchSprints() {
   loading.value = true;
-  errorMsg.value = '';
+  errorMsg.value = "";
   try {
     const res = await $fetch<any>(`${API}/sprints`, { headers: getHeaders() });
     sprints.value = res.sprints || [];
     activeSprint.value = res.activeSprint || null;
   } catch (err: any) {
-    errorMsg.value = err?.data?.error || err.message || 'Gagal memuat data sprint';
+    errorMsg.value =
+      err?.data?.error || err.message || "Gagal memuat data sprint";
   } finally {
     loading.value = false;
   }
 }
 
 async function handleGenerateYearly() {
-  if (!confirm('Buat 12 sprint cadence (21 ke 20) otomatis?')) return;
+  if (!confirm("Buat 12 sprint cadence (21 ke 20) otomatis?")) return;
   generating.value = true;
-  errorMsg.value = '';
-  successMsg.value = '';
+  errorMsg.value = "";
+  successMsg.value = "";
   try {
     const res = await $fetch<any>(`${API}/sprints/generate-yearly`, {
-      method: 'POST',
+      method: "POST",
       body: { baseYear: 2026 },
       headers: getHeaders(),
     });
     successMsg.value = `Berhasil! Dibuat ${res.createdCount} sprint baru (${res.existingCount} sudah ada).`;
     await fetchSprints();
   } catch (err: any) {
-    errorMsg.value = err?.data?.error || err.message || 'Gagal membuat sprint';
+    errorMsg.value = err?.data?.error || err.message || "Gagal membuat sprint";
   } finally {
     generating.value = false;
   }
@@ -250,39 +299,40 @@ async function handleGenerateYearly() {
 
 async function handleToggleLock(sprint: any) {
   const newLock = !sprint.isLocked;
-  errorMsg.value = '';
+  errorMsg.value = "";
   try {
     await $fetch<any>(`${API}/sprints/${sprint.id}/toggle-lock`, {
-      method: 'POST',
+      method: "POST",
       body: { isLocked: newLock },
       headers: getHeaders(),
     });
     sprint.isLocked = newLock;
-    successMsg.value = `Sprint ${sprint.name} berhasil ${newLock ? 'dikunci' : 'dibuka kuncinya'}.`;
+    successMsg.value = `Sprint ${sprint.name} berhasil ${newLock ? "dikunci" : "dibuka kuncinya"}.`;
   } catch (err: any) {
-    errorMsg.value = err?.data?.error || err.message || 'Gagal mengubah status kunci sprint';
+    errorMsg.value =
+      err?.data?.error || err.message || "Gagal mengubah status kunci sprint";
   }
 }
 
 async function confirmCloseSprint(sprint: any) {
   const ok = confirm(
     `Apakah Anda yakin ingin menutup "${sprint.name}"?\n\n` +
-    `Semua capaian member akan dibekukan ke arsip, target KR diakumulasikan, dan sprint berikutnya akan diaktifkan.`
+      `Semua capaian member akan dibekukan ke arsip, target KR diakumulasikan, dan sprint berikutnya akan diaktifkan.`,
   );
   if (!ok) return;
 
   closingSprintId.value = sprint.id;
-  errorMsg.value = '';
-  successMsg.value = '';
+  errorMsg.value = "";
+  successMsg.value = "";
   try {
     await $fetch<any>(`${API}/sprints/${sprint.id}/close`, {
-      method: 'POST',
+      method: "POST",
       headers: getHeaders(),
     });
     successMsg.value = `Sprint ${sprint.name} berhasil ditutup dan capaian member telah di-snapshot!`;
     await fetchSprints();
   } catch (err: any) {
-    errorMsg.value = err?.data?.error || err.message || 'Gagal menutup sprint';
+    errorMsg.value = err?.data?.error || err.message || "Gagal menutup sprint";
   } finally {
     closingSprintId.value = null;
   }
@@ -292,22 +342,22 @@ function openEditModal(sprint: any) {
   editForm.value = {
     id: sprint.id,
     name: sprint.name,
-    startDate: sprint.startDate ? sprint.startDate.substring(0, 10) : '',
-    endDate: sprint.endDate ? sprint.endDate.substring(0, 10) : '',
+    startDate: sprint.startDate ? sprint.startDate.substring(0, 10) : "",
+    endDate: sprint.endDate ? sprint.endDate.substring(0, 10) : "",
   };
   showEditModal.value = true;
 }
 
 async function handleSaveEdit() {
   if (!editForm.value.startDate || !editForm.value.endDate) {
-    alert('Tanggal mulai dan selesai wajib diisi');
+    alert("Tanggal mulai dan selesai wajib diisi");
     return;
   }
   saving.value = true;
-  errorMsg.value = '';
+  errorMsg.value = "";
   try {
     await $fetch<any>(`${API}/sprints/${editForm.value.id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: {
         name: editForm.value.name,
         startDate: editForm.value.startDate,
@@ -316,10 +366,11 @@ async function handleSaveEdit() {
       headers: getHeaders(),
     });
     showEditModal.value = false;
-    successMsg.value = 'Periode sprint berhasil diperbarui.';
+    successMsg.value = "Periode sprint berhasil diperbarui.";
     await fetchSprints();
   } catch (err: any) {
-    errorMsg.value = err?.data?.error || err.message || 'Gagal memperbarui sprint';
+    errorMsg.value =
+      err?.data?.error || err.message || "Gagal memperbarui sprint";
   } finally {
     saving.value = false;
   }
@@ -329,7 +380,6 @@ onMounted(() => {
   fetchSprints();
 });
 </script>
-
 
 <style scoped>
 .sprint-root {
@@ -441,7 +491,7 @@ onMounted(() => {
   border: 1px solid #bbf7d0;
 }
 .active-sprint-banner {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #00548d 0%, #13a4e4 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -606,7 +656,8 @@ onMounted(() => {
   color: #0369a1;
   border-color: #bae6fd;
 }
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
   padding: 2.5rem;
   text-align: center;
   color: #64748b;
@@ -663,4 +714,3 @@ onMounted(() => {
   margin-top: 1.5rem;
 }
 </style>
-

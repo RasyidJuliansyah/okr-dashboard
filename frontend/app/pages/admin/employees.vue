@@ -1020,6 +1020,7 @@ onMounted(async () => {
 .admin-root {
   min-height: 100vh;
   background-color: #f8fafc;
+  background: var(--bg-page, #f8fafc);
   padding: 2rem;
   font-family: "Rubik", sans-serif;
 }
