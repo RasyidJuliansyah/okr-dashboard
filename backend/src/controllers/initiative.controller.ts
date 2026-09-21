@@ -1746,15 +1746,22 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
         .json({ message: "Forbidden: Role tidak diizinkan" });
     }
 
+    // Hapus InitiativeKpi (join table antara Initiative dan Master KPI)
+    await prisma.initiativeKpi.deleteMany({ where: { initiativeId: id } });
+
     // Hapus InitiativeUpdate (riwayat progress inisiatif)
     await prisma.initiativeUpdate.deleteMany({ where: { initiativeId: id } });
 
-    // Hapus TaskUpdate & TaskAssignment dari semua Task child
+    // Hapus TaskKpi & TaskComment dari semua Task child (sebelum delete Task)
     const tasks = await prisma.task.findMany({
       where: { initiativeId: id },
       select: { id: true },
     });
     const taskIds = tasks.map((k) => k.id);
+    await prisma.taskKpi.deleteMany({ where: { taskId: { in: taskIds } } });
+    await prisma.taskComment.deleteMany({ where: { taskId: { in: taskIds } } });
+
+    // Hapus TaskUpdate & TaskAssignment dari semua Task child
     await prisma.taskUpdate.deleteMany({ where: { taskId: { in: taskIds } } });
     await prisma.taskAssignment.deleteMany({
       where: { taskId: { in: taskIds } },
@@ -2022,7 +2029,13 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       });
       teamIds.push(...leadingTeams.map((t) => t.id));
     }
-    if (role === "MANAGER" || role === "ADMIN") {
+    if (role === "ADMIN" || role === "C_LEVEL") {
+      // Admin & C-Level: lihat semua tim di seluruh departemen
+      const allTeams = await prisma.team.findMany({
+        select: { id: true },
+      });
+      teamIds.push(...allTeams.map((t) => t.id));
+    } else if (role === "MANAGER") {
       const managedDepts = await prisma.department.findMany({
         where: { managerId: userId },
         select: { value: true },

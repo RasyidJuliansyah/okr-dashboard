@@ -46,6 +46,31 @@
     <nav :style="navContainerStyle">
       <div :style="navGroupStyle">
         <p :style="navGroupLabelStyle">MENU UTAMA</p>
+        <!-- C-Level menu -->
+        <div v-if="isCLevel || isAdmin" :style="navGroupStyle">
+          <NuxtLink
+            to="/c-level"
+            :style="navItemStyle('/c-level')"
+            @click="emit('close')"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.667"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 20V10" />
+              <path d="M12 20V4" />
+              <path d="M6 20v-6" />
+            </svg>
+            <span>Executive Dashboard</span>
+          </NuxtLink>
+        </div>
+
         <NuxtLink
           to="/dashboard"
           :style="navItemStyle('/dashboard')"
@@ -68,7 +93,7 @@
           </svg>
           <span>Dashboard</span>
         </NuxtLink>
-        <NuxtLink
+        <!-- <NuxtLink
           v-if="isCLevel || isAdmin"
           to="/bsc-view"
           :style="navItemStyle('/bsc-view')"
@@ -90,8 +115,8 @@
             />
           </svg>
           <span>Strategic Mapping</span>
-        </NuxtLink>
-        <NuxtLink
+        </NuxtLink> -->
+        <!-- <NuxtLink
           v-if="isCLevel || isAdmin"
           to="/strategy-map"
           :style="navItemStyle('/strategy-map')"
@@ -115,7 +140,7 @@
             <line x1="12" y1="12" x2="19" y2="12" />
           </svg>
           <span>Causal Map</span>
-        </NuxtLink>
+        </NuxtLink> -->
         <NuxtLink
           to="/initiatives"
           :style="navItemStyle('/initiatives')"
@@ -178,32 +203,6 @@
             <rect x="16" y="11" width="6" height="10" rx="1" />
           </svg>
           <span>Struktur Departemen</span>
-        </NuxtLink>
-      </div>
-
-      <!-- C-Level menu -->
-      <div v-if="isCLevel || isAdmin" :style="navGroupStyle">
-        <p :style="navGroupLabelStyle">C-LEVEL</p>
-        <NuxtLink
-          to="/c-level"
-          :style="navItemStyle('/c-level')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M18 20V10" />
-            <path d="M12 20V4" />
-            <path d="M6 20v-6" />
-          </svg>
-          <span>Executive Dashboard</span>
         </NuxtLink>
       </div>
 

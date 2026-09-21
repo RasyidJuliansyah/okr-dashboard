@@ -147,6 +147,13 @@ export async function toggleDepartmentStatus(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "Department not found" });
     }
 
+    console.log("toggleDepartmentStatus debug:", {
+      id,
+      bodyIsActive: req.body.isActive,
+      deptIsActive: dept.isActive,
+      nextStatus: typeof req.body.isActive === "boolean" ? req.body.isActive : !dept.isActive,
+    });
+
     const nextStatus = typeof req.body.isActive === "boolean" ? req.body.isActive : !dept.isActive;
 
     const updated = await prisma.department.update({
