@@ -414,7 +414,10 @@
                 Assignee: <strong>{{ task.assignedTeamMember.name }}</strong>
               </span>
               <span v-if="task.dueDate || task.finishDate" class="meta-sub">
-                Tenggat: <strong>{{ formatDate(task.finishDate || task.dueDate) }}</strong>
+                Tenggat:
+                <strong>{{
+                  formatDate(task.finishDate || task.dueDate)
+                }}</strong>
               </span>
             </div>
 
@@ -954,41 +957,31 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Objectives & Key Results List -->
-      <section class="objectives-section">
-        <div class="section-title-row">
-          <h2>Daftar Target (Objectives)</h2>
-          <span class="count-badge"
-            >{{ summaryData.objectives?.length || 0 }} Objectives</span
-          >
-        </div>
-
-        <div v-if="loading" class="skeleton-grid">
-          <div class="skeleton-card card" v-for="i in 2" :key="i">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line desc"></div>
-            <div class="skeleton-line progress"></div>
-            <div class="skeleton-krs">
-              <div class="skeleton-kr-item" v-for="j in 2" :key="j">
-                <div class="skeleton-line title-sm"></div>
-                <div class="skeleton-line bar"></div>
-              </div>
-            </div>
+    <div v-if="loading" class="skeleton-grid">
+      <div class="skeleton-card card" v-for="i in 2" :key="i">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line desc"></div>
+        <div class="skeleton-line progress"></div>
+        <div class="skeleton-krs">
+          <div class="skeleton-kr-item" v-for="j in 2" :key="j">
+            <div class="skeleton-line title-sm"></div>
+            <div class="skeleton-line bar"></div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div
-          v-else-if="
-            !summaryData.objectives || summaryData.objectives.length === 0
-          "
-          class="empty-state"
-        >
-          Belum ada OKR yang terdaftar pada lingkup ini.
-        </div>
+    <div
+      v-else-if="!summaryData.objectives || summaryData.objectives.length === 0"
+      class="empty-state"
+    >
+      Belum ada OKR yang terdaftar pada lingkup ini.
+    </div>
 
-        <div v-else class="objectives-grid">
-          <!-- Objective Card -->
+    <div v-else class="objectives-grid">
+      <!-- Objective Card 
           <div
             v-for="(obj, index) in summaryData.objectives"
             :key="obj.id"
@@ -1016,7 +1009,7 @@
               </div>
             </div>
 
-            <!-- Objective Progress Bar -->
+            <!-- Objective Progress Bar
             <div class="obj-progress-track">
               <div
                 class="obj-progress-bar"
@@ -1024,7 +1017,7 @@
               ></div>
             </div>
 
-            <!-- Key Results nested list -->
+            Key Results nested list 
             <div class="krs-section">
               <h4>Key Results (Indikator Capaian):</h4>
               <div class="krs-list">
@@ -1039,7 +1032,7 @@
                     </span>
                   </div>
 
-                  <!-- KR Progress Bar -->
+                  <!-- KR Progress Bar
                   <div class="kr-progress-container">
                     <div class="kr-progress-track">
                       <div
@@ -1053,7 +1046,7 @@
                     >
                   </div>
 
-                  <!-- Details -->
+                  <!-- Details
                   <div class="kr-details-row">
                     <span class="kr-values">
                       Nilai:
@@ -1071,7 +1064,7 @@
                     </span>
                   </div>
 
-                  <!-- RACI Row -->
+                  <!-- RACI Row
                   <div
                     v-if="
                       (kr.assignments && kr.assignments.length > 0) ||
@@ -1079,7 +1072,7 @@
                     "
                     class="kr-raci-row"
                   >
-                    <!-- Accountable -->
+                    <!-- Accountable 
                     <div
                       class="raci-mini-group"
                       v-if="
@@ -1098,7 +1091,7 @@
                         {{ a.user.name }}
                       </span>
                     </div>
-                    <!-- Responsible -->
+                    <!-- Responsible 
                     <div
                       class="raci-mini-group"
                       v-if="
@@ -1120,7 +1113,7 @@
                         >
                       </span>
                     </div>
-                    <!-- Departemen Terlibat -->
+                    <!-- Departemen Terlibat 
                     <div
                       class="kr-dept-row"
                       v-if="kr.departments && kr.departments.length > 0"
@@ -1135,7 +1128,7 @@
                     </div>
                   </div>
 
-                  <!-- KR History Link -->
+                  <!-- KR History Link
                   <div class="kr-history-link">
                     <NuxtLink
                       :to="`/kr-history?krId=${kr.id}&krTitle=${encodeURIComponent(kr.title)}&krTarget=${kr.targetValue}&krUnit=${encodeURIComponent(kr.unit)}`"
@@ -1149,7 +1142,7 @@
             </div>
           </div>
         </div>
-      </section>
+      </section> -->
 
       <!-- Cross Department Discussion & Lifecycle Modal -->
       <CrossDeptCommentModal
@@ -1204,12 +1197,10 @@ async function fetchCrossDeptTasks() {
           (t) =>
             (myDept && t.targetDept === myDept) ||
             t.assignedTeamMemberId === myId ||
-            t.assignments?.some((a) => a.userId === myId)
+            t.assignments?.some((a) => a.userId === myId),
         );
         const out = data.filter(
-          (t) =>
-            (myDept && t.creatorDept === myDept) ||
-            t.creatorId === myId
+          (t) => (myDept && t.creatorDept === myDept) || t.creatorId === myId,
         );
         crossDeptData.value = { incoming: inc, outgoing: out, all: data };
       } else {
@@ -3569,7 +3560,7 @@ button.task-count-mini {
 .section-sub-desc {
   font-size: 13px;
   color: #64748b;
-  margin: 4px 0 0 0;
+  margin: 4px 0 8px 0;
 }
 .cross-dept-summary-grid {
   display: grid;
@@ -3606,9 +3597,8 @@ button.task-count-mini {
 .cross-dept-tabs-nav {
   display: flex;
   gap: 8px;
-  border-bottom: 2px solid #e2e8f0;
   padding-bottom: 2px;
-  margin-top: 24px;
+  margin: 24px 0 12px 0;
 }
 .cross-dept-tab-btn {
   background: none;

@@ -432,10 +432,12 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "../stores/auth";
+import { useRuntimeConfig } from "#app";
 
 useHead({ title: "Executive BSC Dashboard — C-Level" });
 
 const auth = useAuthStore();
+const config = useRuntimeConfig();
 const loading = ref(true);
 const data = ref(null);
 
@@ -460,7 +462,7 @@ async function fetchAnnualKeyResults() {
   try {
     const token = auth.token || localStorage.getItem("auth_token");
     const res = await fetch(
-      `http://localhost:3001/api/annual-key-results?year=2026`,
+      `${config.public.apiBase}/annual-key-results?year=2026`,
       {
         headers: { Authorization: `Bearer ${token}` },
       },
@@ -471,7 +473,7 @@ async function fetchAnnualKeyResults() {
         krs.map(async (akr) => {
           try {
             const detailRes = await fetch(
-              `http://localhost:3001/api/annual-key-results/${akr.id}/monthly-breakdown`,
+              `${config.public.apiBase}/annual-key-results/${akr.id}/monthly-breakdown`,
               {
                 headers: { Authorization: `Bearer ${token}` },
               },
@@ -584,7 +586,7 @@ async function fetchData() {
   loading.value = true;
   try {
     const token = auth.token || localStorage.getItem("auth_token");
-    let url = "http://localhost:3001/api/bsc/c-level-dashboard";
+    let url = `${config.public.apiBase}/bsc/c-level-dashboard`;
     if (selectedMonth.value) {
       url += `?month=${selectedMonth.value}`;
     }
