@@ -6,11 +6,22 @@
         <div class="header-left-title">
           <div class="title-with-badge">
             <h2>Papan Inisiatif Tim</h2>
-            <span class="view-badge">Kanban Board</span>
+            <span class="view-badge">{{
+              activeView === 'kanban'
+                ? 'Kanban Board'
+                : activeView === 'list'
+                  ? 'List View'
+                  : 'Gantt Chart'
+            }}</span>
           </div>
           <p class="section-desc">
-            Pantau dan kelola eksekusi seluruh inisiatif kerja melalui 3 tahapan
-            alur: To Do, In Progress, dan Done.
+            {{
+              activeView === 'kanban'
+                ? 'Pantau dan kelola eksekusi seluruh inisiatif kerja melalui 3 tahapan alur: To Do, In Progress, dan Done.'
+                : activeView === 'list'
+                  ? 'Tampilan daftar seluruh inisiatif dalam format tabel lengkap.'
+                  : 'Visualisasi timeline seluruh inisiatif berdasarkan tanggal mulai dan tenggat waktu.'
+            }}
           </p>
 
           <!-- Scope Notice Badge -->
@@ -158,10 +169,45 @@
           </div>
         </div>
       </div>
+
+      <!-- View Switcher -->
+      <div class="view-switcher-bar">
+        <button
+          :class="['view-switch-btn', { active: activeView === 'kanban' }]"
+          @click="activeView = 'kanban'"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+          </svg>
+          Kanban
+        </button>
+        <button
+          :class="['view-switch-btn', { active: activeView === 'list' }]"
+          @click="activeView = 'list'"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          List
+        </button>
+        <button
+          :class="['view-switch-btn', { active: activeView === 'gantt' }]"
+          @click="activeView = 'gantt'"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="16" y2="6" /><line x1="8" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="12" y2="18" />
+          </svg>
+          Gantt Chart
+        </button>
+      </div>
     </div>
 
     <!-- Kanban Board Container -->
-    <div class="kanban-board-wrapper">
+    <div v-if="activeView === 'kanban'" class="kanban-board-wrapper">
       <div class="kanban-board">
         <!-- COLUMN 1: TO DO -->
         <div
@@ -1224,6 +1270,17 @@
       </div>
     </div>
 
+    <!-- Alternative Views -->
+    <InitiativesList
+      v-else-if="activeView === 'list'"
+      :initiatives="filteredInitiatives"
+    />
+
+    <InitiativesGantt
+      v-else-if="activeView === 'gantt'"
+      :initiatives="filteredInitiatives"
+    />
+
     <!-- ─── MODAL: Add/Edit Initiative ─── -->
     <div
       v-if="showInitiativeModal"
@@ -1368,19 +1425,21 @@
 
             <div class="form-row-2">
               <div>
-                <label>Tanggal Mulai</label>
+                <label>Tanggal Mulai *</label>
                 <input
                   v-model="initiativeForm.startDate"
                   type="date"
                   class="form-input"
+                  required
                 />
               </div>
               <div>
-                <label>Target Tenggat Waktu (Due Date)</label>
+                <label>Target Tenggat Waktu (Due Date) *</label>
                 <input
                   v-model="initiativeForm.dueDate"
                   type="date"
                   class="form-input"
+                  required
                 />
               </div>
             </div>
@@ -1940,6 +1999,8 @@ import { useAuthStore } from "~/stores/auth";
 import { useAssignment } from "~/composables/useAssignment";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
 import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
+import InitiativesList from "~/components/InitiativesList.vue";
+import InitiativesGantt from "~/components/InitiativesGantt.vue";
 import { isRupiahUnit } from "~/utils/formatters";
 
 const route = useRoute();
@@ -1948,6 +2009,20 @@ const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
 const { fetchAvailableLeaders, fetchAvailableTeamMembers } = useAssignment();
+
+// ─── View Mode (synced with query param ?view=kanban|list|gantt) ───
+type ViewMode = "kanban" | "list" | "gantt";
+const VALID_VIEWS: ViewMode[] = ["kanban", "list", "gantt"];
+
+const activeView = computed<ViewMode>({
+  get() {
+    const v = route.query.view as string;
+    return VALID_VIEWS.includes(v as ViewMode) ? (v as ViewMode) : "kanban";
+  },
+  set(val: ViewMode) {
+    router.replace({ query: { ...route.query, view: val } });
+  },
+});
 
 const availableLeaders = ref<any[]>([]);
 const availableTeamMembers = ref<any[]>([]);
@@ -2917,6 +2992,16 @@ async function saveInitiative() {
     return;
   }
 
+  if (!initiativeForm.value.startDate) {
+    errorMessage.value = "Tanggal Mulai wajib diisi";
+    return;
+  }
+
+  if (!initiativeForm.value.dueDate) {
+    errorMessage.value = "Target Tenggat Waktu (Due Date) wajib diisi";
+    return;
+  }
+
   if (isTeam.value) {
     initiativeForm.value.ownerId = auth.user?.id || "";
     if (!initiativeForm.value.teamId && auth.user?.teamId) {
@@ -3433,7 +3518,50 @@ onMounted(async () => {
 /* Filter Card */
 .kanban-filter-card {
   padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* View Switcher */
+.view-switcher-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  background: var(--bg-input, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.view-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.view-switch-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary, #0f172a);
+}
+
+.view-switch-btn.active {
+  background: #0e97d6;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(14, 151, 214, 0.3);
+}
+
+.view-switch-btn.active svg {
+  stroke: #ffffff;
 }
 
 .search-controls-row {

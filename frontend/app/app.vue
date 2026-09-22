@@ -12,13 +12,15 @@
     <AppSidebar
       v-if="showShell"
       :isOpen="isSidebarOpen"
-      @close="isSidebarOpen = false"
+      @toggle="toggleSidebar"
+      @close="handleSidebarClose"
     />
     <div :class="['main-wrapper', { 'with-sidebar': showShell }]">
       <AppHeader
         v-if="showShell"
         :title="pageTitle"
-        @toggle-sidebar="isSidebarOpen = !isSidebarOpen"
+        :isSidebarOpen="isSidebarOpen"
+        @toggle-sidebar="toggleSidebar"
       />
       <div v-if="showShell && isInactiveDeptUser" class="inactive-dept-banner">
         <div class="banner-content">
@@ -52,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, provide } from "vue";
+import { ref, computed, watch, provide, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import AppSidebar from "./components/AppSidebar.vue";
@@ -62,7 +64,31 @@ const auth = useAuthStore();
 const route = useRoute();
 const config = useRuntimeConfig();
 
-const isSidebarOpen = ref(false);
+const isSidebarOpen = ref(true);
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("sidebar_open");
+    if (saved !== null) {
+      isSidebarOpen.value = saved === "true";
+    } else if (window.innerWidth <= 1024) {
+      isSidebarOpen.value = false;
+    }
+  }
+});
+
+function toggleSidebar() {
+  isSidebarOpen.value = !isSidebarOpen.value;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("sidebar_open", String(isSidebarOpen.value));
+  }
+}
+
+function handleSidebarClose() {
+  if (typeof window !== "undefined" && window.innerWidth <= 1024) {
+    isSidebarOpen.value = false;
+  }
+}
 
 const isAuthenticated = computed(() => auth.isAuthenticated);
 const isLoginPage = computed(() => route.path === "/login");
@@ -471,5 +497,11 @@ p {
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 99;
+}
+
+@media (min-width: 1025px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
 }
 </style>

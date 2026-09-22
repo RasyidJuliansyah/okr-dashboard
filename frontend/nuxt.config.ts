@@ -6,6 +6,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: "Skolla BSC & OKR Suite", // <--- Tulis nama tab baru di sini
+      link: [
+        { rel: "stylesheet", href: "/vendor/frappe-gantt.css" }
+      ],
+      script: [
+        { src: "/vendor/frappe-gantt.umd.js", defer: true }
+      ]
     },
   },
   runtimeConfig: {
@@ -24,3 +30,5 @@ export default defineNuxtConfig({
     inlineStyles: false,
   },
 });
+
+

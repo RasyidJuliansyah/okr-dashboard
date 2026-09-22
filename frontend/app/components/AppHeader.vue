@@ -1,14 +1,15 @@
 <template>
   <header class="app-header">
     <div class="header-left">
-      <button
+      <!-- <button
         class="hamburger-btn"
         @click="emit('toggle-sidebar')"
+        :title="isSidebarOpen ? 'Sembunyikan menu' : 'Tampilkan menu'"
         aria-label="Toggle Sidebar"
-      >
+      <!-- > 
         <svg
-          width="24"
-          height="24"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -20,7 +21,7 @@
           <line x1="4" x2="20" y1="6" y2="6" />
           <line x1="4" x2="20" y1="18" y2="18" />
         </svg>
-      </button>
+      </button> -->
       <h1 class="header-title">{{ title }}</h1>
     </div>
     <div class="header-right">
@@ -178,6 +179,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  isSidebarOpen: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const showNotifDropdown = ref(false);
@@ -243,26 +248,26 @@ onUnmounted(() => {
 }
 
 .hamburger-btn {
-  display: none;
+  display: flex;
   background: transparent;
-  border: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   color: #5e718d;
   cursor: pointer;
   padding: 6px;
-  border-radius: 8px;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .hamburger-btn:hover {
   background-color: #f8fafc;
+  color: #0e97d6;
+  border-color: #cbd5e1;
 }
 
 @media (max-width: 1024px) {
-  .hamburger-btn {
-    display: flex;
-  }
   .app-header {
     padding: 0 16px;
   }
