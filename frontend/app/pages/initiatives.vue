@@ -3467,22 +3467,22 @@ function onRowUnitCategoryChange(row: any) {
       row.unit = "";
     }
   }
+}
 
-  function onBatchDefaultsUnitCategoryChange() {
-    if (batchDefaults.value._unitCategory === "Rupiah") {
-      batchDefaults.value.unit = "Rupiah (Rp)";
-    } else if (batchDefaults.value._unitCategory === "%") {
-      batchDefaults.value.unit = "%";
-      if (batchDefaults.value.targetValue > 100) {
-        batchDefaults.value.targetValue = 100;
-      }
-    } else {
-      if (
-        batchDefaults.value.unit === "Rupiah (Rp)" ||
-        batchDefaults.value.unit === "%"
-      ) {
-        batchDefaults.value.unit = "";
-      }
+function onBatchDefaultsUnitCategoryChange() {
+  if (batchDefaults.value._unitCategory === "Rupiah") {
+    batchDefaults.value.unit = "Rupiah (Rp)";
+  } else if (batchDefaults.value._unitCategory === "%") {
+    batchDefaults.value.unit = "%";
+    if (batchDefaults.value.targetValue > 100) {
+      batchDefaults.value.targetValue = 100;
+    }
+  } else {
+    if (
+      batchDefaults.value.unit === "Rupiah (Rp)" ||
+      batchDefaults.value.unit === "%"
+    ) {
+      batchDefaults.value.unit = "";
     }
   }
 }
@@ -4689,8 +4689,8 @@ onMounted(async () => {
 
 /* Bulk Task Modal Styles */
 .modal-box-large {
-  max-width: 840px !important;
-  width: 95% !important;
+  max-width: 960px !important;
+  width: 96% !important;
 }
 
 .batch-defaults-card {
@@ -4778,43 +4778,47 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 .row-title {
   flex: 3;
+  min-width: 140px;
   margin-bottom: 0 !important;
 }
 .row-target {
   flex: 1;
-  min-width: 80px;
+  min-width: 75px;
+  margin-bottom: 0 !important;
+}
+.row-type {
+  width: 60px;
+  min-width: 55px;
+  flex-shrink: 0;
   margin-bottom: 0 !important;
 }
 .row-unit-group {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1.2;
-  min-width: 90px;
+  flex: 1.5;
+  min-width: 160px;
+  flex-shrink: 0;
 }
 .row-unit-select {
   flex: 1;
-  min-width: 65px;
-  margin-bottom: 0 !important;
-  padding: 6px 8px;
-}
-.row-unit-custom {
-  flex: 1.2;
-  min-width: 75px;
-  margin-bottom: 0 !important;
-  padding: 6px 8px;
-}
-.row-unit {
-  flex: 1;
   min-width: 70px;
   margin-bottom: 0 !important;
+  padding: 6px 6px;
+}
+.row-unit-custom {
+  flex: 1.3;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+  padding: 6px 8px;
 }
 .row-assignee {
   flex: 2;
-  min-width: 130px;
+  min-width: 120px;
   margin-bottom: 0 !important;
 }
 .btn-remove-row {
