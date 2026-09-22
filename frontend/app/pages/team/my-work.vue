@@ -577,7 +577,10 @@
                 {{ assign.task.targetDept || "?" }}
               </span>
               <span
-                v-if="(assign.task.kanbanStatus || assign.task.status) === 'NEED_INFO'"
+                v-if="
+                  (assign.task.kanbanStatus || assign.task.status) ===
+                  'NEED_INFO'
+                "
                 class="badge-need-info"
               >
                 ⚠️ NEED INFO
@@ -591,15 +594,31 @@
             <div class="task-header">
               <h3>{{ assign.task.title }}</h3>
             </div>
-            <p v-if="assign.task.isCrossDept && assign.task.description" class="cross-dept-card-desc">
+            <p
+              v-if="assign.task.isCrossDept && assign.task.description"
+              class="cross-dept-card-desc"
+            >
               {{ assign.task.description }}
             </p>
-            <div v-if="assign.task.isCrossDept && (assign.task.finishDate || assign.task.dueDate)" class="cross-dept-deadline-tag">
-              📅 Tenggat: <strong>{{ formatDate(assign.task.finishDate || assign.task.dueDate) }}</strong>
+            <div
+              v-if="
+                assign.task.isCrossDept &&
+                (assign.task.finishDate || assign.task.dueDate)
+              "
+              class="cross-dept-deadline-tag"
+            >
+              📅 Tenggat:
+              <strong>{{
+                formatDate(assign.task.finishDate || assign.task.dueDate)
+              }}</strong>
             </div>
             <!-- Selector Stage Kanban Task -->
             <select
-              :value="assign.task.kanbanStatus === 'CLOSED' ? 'DONE' : (assign.task.kanbanStatus || 'TODO')"
+              :value="
+                assign.task.kanbanStatus === 'CLOSED'
+                  ? 'DONE'
+                  : assign.task.kanbanStatus || 'TODO'
+              "
               style="
                 font-size: 14px;
                 padding: 12px;
@@ -790,7 +809,12 @@
           <div
             v-if="assign.task.isCrossDept"
             class="card-actions cross-dept-actions-row"
-            style="margin-top: 8px; display: flex; gap: 8px; align-items: center;"
+            style="
+              margin-top: 8px;
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            "
           >
             <button
               type="button"
@@ -939,7 +963,11 @@
                           v-if="isAdmin"
                           class="action-btn danger"
                           title="Hapus"
-                          style="padding: 2px 6px; font-size: 11px; cursor: pointer"
+                          style="
+                            padding: 2px 6px;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
                           @click="deleteInitiative(ini.id)"
                         >
                           <svg
@@ -1191,7 +1219,10 @@
                       {{ assign.task.targetDept || "?" }}
                     </span>
                     <span
-                      v-if="(assign.task.kanbanStatus || assign.task.status) === 'NEED_INFO'"
+                      v-if="
+                        (assign.task.kanbanStatus || assign.task.status) ===
+                        'NEED_INFO'
+                      "
                       class="badge-need-info"
                     >
                       ⚠️ NEED INFO
@@ -1206,15 +1237,31 @@
                       >{{ assign.task.status }}</span
                     >
                   </div>
-                  <p v-if="assign.task.isCrossDept && assign.task.description" class="cross-dept-card-desc">
+                  <p
+                    v-if="assign.task.isCrossDept && assign.task.description"
+                    class="cross-dept-card-desc"
+                  >
                     {{ assign.task.description }}
                   </p>
-                  <div v-if="assign.task.isCrossDept && (assign.task.finishDate || assign.task.dueDate)" class="cross-dept-deadline-tag">
-                    📅 Tenggat: <strong>{{ formatDate(assign.task.finishDate || assign.task.dueDate) }}</strong>
+                  <div
+                    v-if="
+                      assign.task.isCrossDept &&
+                      (assign.task.finishDate || assign.task.dueDate)
+                    "
+                    class="cross-dept-deadline-tag"
+                  >
+                    📅 Tenggat:
+                    <strong>{{
+                      formatDate(assign.task.finishDate || assign.task.dueDate)
+                    }}</strong>
                   </div>
                   <!-- Selector Stage Kanban Task -->
                   <select
-                    :value="assign.task.kanbanStatus === 'CLOSED' ? 'DONE' : (assign.task.kanbanStatus || 'TODO')"
+                    :value="
+                      assign.task.kanbanStatus === 'CLOSED'
+                        ? 'DONE'
+                        : assign.task.kanbanStatus || 'TODO'
+                    "
                     style="
                       font-size: 14px;
                       padding: 2px 8px;
@@ -1254,7 +1301,12 @@
                   <div
                     v-if="assign.task.isCrossDept"
                     class="cross-dept-actions-row"
-                    style="margin-top: 8px; display: flex; gap: 8px; align-items: center;"
+                    style="
+                      margin-top: 8px;
+                      display: flex;
+                      gap: 8px;
+                      align-items: center;
+                    "
                   >
                     <button
                       type="button"
@@ -2597,7 +2649,12 @@ function getProgressPercent(task) {
     task.achievedValue !== null && task.achievedValue !== undefined
       ? task.achievedValue
       : task.currentValue || 0;
-  return calculateProgressPercent(val, task.targetValue, task.targetType, task.baselineValue);
+  return calculateProgressPercent(
+    val,
+    task.targetValue,
+    task.targetType,
+    task.baselineValue,
+  );
 }
 
 function getStatusClass(status) {
@@ -3149,7 +3206,6 @@ function getGroupedInitiatives(initiatives) {
   padding: 8px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  margin-bottom: 16px;
   box-sizing: border-box;
 }
 .modal-actions {
