@@ -1961,11 +1961,23 @@
                       <option value="AT_MOST">≤</option>
                       <option value="EXACT">=</option>
                     </select>
-                    <input
-                      v-model="row.unit"
-                      class="form-input row-unit"
-                      placeholder="Satuan"
-                    />
+                    <div class="row-unit-group">
+                      <select
+                        v-model="row._unitCategory"
+                        class="form-input row-unit-select"
+                        @change="onRowUnitCategoryChange(row)"
+                      >
+                        <option value="%">%</option>
+                        <option value="Rupiah">Rp</option>
+                        <option value="Lainnya">Lainnya</option>
+                      </select>
+                      <input
+                        v-if="getRowUnitCategory(row) === 'Lainnya'"
+                        v-model="row.unit"
+                        class="form-input row-unit-custom"
+                        placeholder="Satuan..."
+                      />
+                    </div>
                     <select
                       v-model="row.assignedTeamMemberId"
                       class="form-input row-assignee"
@@ -2034,7 +2046,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "~/stores/auth";
 import { useRouter } from "vue-router";
-import { isRupiahUnit } from "~/utils/formatters";
+import { isRupiahUnit, detectUnitCategory } from "~/utils/formatters";
 import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
 
 const authStore = useAuthStore();
@@ -2084,6 +2096,7 @@ const taskRows = ref([
     targetValue: 100,
     targetType: "AT_LEAST",
     unit: "%",
+    _unitCategory: "%",
     assignedTeamMemberId: "",
     sprintMonth: "",
     kpis: [],
@@ -2482,11 +2495,13 @@ function openMyWorkAddTaskModal(ini) {
 }
 
 function addTaskRow() {
+  const cat = detectUnitCategory(batchDefaults.value.unit);
   taskRows.value.push({
     title: "",
     targetValue: batchDefaults.value.targetValue || 100,
     targetType: batchDefaults.value.targetType || "AT_LEAST",
     unit: batchDefaults.value.unit || "%",
+    _unitCategory: cat,
     assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
     sprintMonth: batchDefaults.value.sprintMonth || "",
     kpis: [],
@@ -2503,6 +2518,7 @@ function applyDefaultsToAllRows() {
   taskRows.value.forEach((r) => {
     r.targetValue = batchDefaults.value.targetValue;
     r.unit = batchDefaults.value.unit;
+    r._unitCategory = detectUnitCategory(batchDefaults.value.unit);
     r.sprintMonth = batchDefaults.value.sprintMonth;
     r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
   });
@@ -2527,6 +2543,29 @@ function onRowTargetRupiahInput(e, row) {
   const num = parseInt(rawDigits, 10);
   row.targetValue = num;
   input.value = num.toLocaleString("en-US");
+}
+
+function getRowUnitCategory(row) {
+  if (!row._unitCategory) {
+    row._unitCategory = detectUnitCategory(row.unit);
+  }
+  return row._unitCategory;
+}
+
+function onRowUnitCategoryChange(row) {
+  if (row._unitCategory === "Rupiah") {
+    row.unit = "Rupiah (Rp)";
+  } else if (row._unitCategory === "%") {
+    row.unit = "%";
+    const num = Number(row.targetValue) || 0;
+    if (num > 100) {
+      row.targetValue = 100;
+    }
+  } else {
+    if (row.unit === "Rupiah (Rp)" || row.unit === "%") {
+      row.unit = "";
+    }
+  }
 }
 
 async function saveMyWorkTasksBatch() {
@@ -3469,8 +3508,8 @@ function getGroupedInitiatives(initiatives) {
 
 /* Bulk Task Modal Styles */
 .modal-box-large {
-  max-width: 840px !important;
-  width: 95% !important;
+  max-width: 960px !important;
+  width: 96% !important;
 }
 
 .batch-defaults-card {
@@ -3570,24 +3609,47 @@ function getGroupedInitiatives(initiatives) {
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
 }
 .row-title {
   flex: 3;
+  min-width: 140px;
   margin-bottom: 0 !important;
 }
 .row-target {
   flex: 1;
-  min-width: 80px;
+  min-width: 75px;
   margin-bottom: 0 !important;
 }
-.row-unit {
+.row-type {
+  width: 60px;
+  min-width: 55px;
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+}
+.row-unit-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1.5;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+.row-unit-select {
   flex: 1;
   min-width: 70px;
   margin-bottom: 0 !important;
+  padding: 6px 6px;
+}
+.row-unit-custom {
+  flex: 1.3;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+  padding: 6px 8px;
 }
 .row-assignee {
   flex: 2;
-  min-width: 130px;
+  min-width: 120px;
   margin-bottom: 0 !important;
 }
 .task-row-kpi {
