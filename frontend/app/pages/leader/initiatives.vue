@@ -271,6 +271,7 @@
           <UnitTargetInput
             v-model:targetValue="initiativeForm.targetValue"
             v-model:unit="initiativeForm.unit"
+            v-model:targetType="initiativeForm.targetType"
             :required="true"
           />
 
@@ -328,6 +329,7 @@ const initiativeForm = ref({
   keyResultId: "",
   teamId: "",
   targetValue: 0,
+  targetType: "AT_LEAST",
   unit: "",
   weight: 1.0,
 });
@@ -417,21 +419,17 @@ async function fetchKrsDropdown() {
 }
 
 function getTaskProgressPct(task) {
-  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
-  const pct = (task.currentValue / task.targetValue) * 100;
-  return Math.min(100, Math.round(pct * 10) / 10);
+  if (!task) return 0;
+  return calculateProgressPercent(task.currentValue, task.targetValue, task.targetType, task.baselineValue);
 }
 
 function getInitiativeProgressPct(init) {
-  if (!init || !init.targetValue || init.targetValue <= 0) return 0;
+  if (!init) return 0;
   const val =
     init.achievedValue !== null && init.achievedValue !== undefined
       ? init.achievedValue
       : init.currentValue || 0;
-  return Math.min(
-    100,
-    Math.max(0, Math.round((val / init.targetValue) * 100 * 10) / 10),
-  );
+  return calculateProgressPercent(val, init.targetValue, init.targetType);
 }
 
 async function openReviewModal(task) {

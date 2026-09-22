@@ -35,6 +35,7 @@ export async function createObjective(req: AuthRequest, res: Response) {
           unit: kr.unit || "%",
           bscPerspective: kr.bscPerspective,
           status: kr.status || "ON_TRACK",
+          targetType: kr.targetType || "AT_LEAST",
         });
       }
     }

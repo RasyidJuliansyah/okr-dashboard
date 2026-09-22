@@ -2,7 +2,11 @@
   <div class="unit-target-wrapper" style="margin-bottom: 12px">
     <div
       class="form-row-2"
-      style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+      :style="{
+        display: 'grid',
+        gridTemplateColumns: shouldShowTargetType ? '1.2fr 1fr 1fr' : '1fr 1fr',
+        gap: '12px',
+      }"
     >
       <div>
         <label
@@ -119,6 +123,38 @@
           </small>
         </div>
       </div>
+
+      <div v-if="shouldShowTargetType">
+        <label
+          style="
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            font-size: 13px;
+          "
+        >
+          Tipe Target
+        </label>
+        <select
+          :value="targetType || 'AT_LEAST'"
+          @change="$emit('update:targetType', ($event.target as HTMLSelectElement).value)"
+          class="form-input"
+        >
+          <option value="AT_LEAST">Minimal (≥)</option>
+          <option value="AT_MOST">Maksimal (≤)</option>
+          <option value="EXACT">Tepat (=)</option>
+        </select>
+        <small
+          style="
+            color: #64748b;
+            font-size: 11px;
+            display: block;
+            margin-top: 4px;
+          "
+        >
+          {{ targetType === "AT_MOST" ? "Budget / Cost" : targetType === "EXACT" ? "Presisi" : "Makin tinggi makin baik" }}
+        </small>
+      </div>
     </div>
   </div>
 </template>
@@ -131,6 +167,8 @@ const props = withDefaults(
   defineProps<{
     targetValue?: number | string | null;
     unit?: string | null;
+    targetType?: string | null;
+    showTargetType?: boolean;
     labelTarget?: string;
     labelUnit?: string;
     required?: boolean;
@@ -139,6 +177,8 @@ const props = withDefaults(
   {
     targetValue: 0,
     unit: "%",
+    targetType: "AT_LEAST",
+    showTargetType: false,
     labelTarget: "Target Value",
     labelUnit: "Satuan (Unit)",
     required: false,
@@ -149,7 +189,12 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:targetValue", val: number): void;
   (e: "update:unit", val: string): void;
+  (e: "update:targetType", val: string): void;
 }>();
+
+const shouldShowTargetType = computed(() => {
+  return props.showTargetType || (props.targetType !== undefined && props.targetType !== null);
+});
 
 const unitCategory = ref<"Rupiah" | "%" | "Lainnya">("%");
 const customUnitText = ref("");

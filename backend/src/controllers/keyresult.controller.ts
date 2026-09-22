@@ -2,6 +2,7 @@ import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { logAudit } from "../utils/auditLogger";
+import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
 
 const prisma = new PrismaClient();
 
@@ -24,6 +25,7 @@ export async function createKeyResult(req: AuthRequest, res: Response) {
       month,
       monthWeight,
       annualKeyResultId,
+      targetType,
     } = req.body;
 
     if (
@@ -60,16 +62,21 @@ export async function createKeyResult(req: AuthRequest, res: Response) {
 
     const now = new Date();
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const targetTypeVal = targetType || "AT_LEAST";
+    const currVal = currentValue !== undefined ? parseFloat(currentValue) : 0;
+    const tgtVal = parseFloat(targetValue);
+    const initialStatus = calculateAutoStatus(calculateProgressPercent(currVal, tgtVal, targetTypeVal));
 
     const newKR = await prisma.keyResult.create({
       data: {
         objectiveId,
         title,
-        targetValue: parseFloat(targetValue),
-        currentValue: currentValue !== undefined ? parseFloat(currentValue) : 0,
+        targetValue: tgtVal,
+        currentValue: currVal,
         unit: unit || "%",
         bscPerspective,
-        status: "ON_TRACK",
+        status: initialStatus,
+        targetType: targetTypeVal,
         month: month || defaultMonth,
         monthWeight: monthWeight !== undefined ? parseFloat(monthWeight) : 1.0,
         annualKeyResultId: annualKeyResultId || null,
@@ -307,13 +314,8 @@ export async function updateKeyResultProgress(req: AuthRequest, res: Response) {
     }
 
     const oldValue = kr.currentValue;
-    const progress = valueNum / kr.targetValue;
-    let newStatus = "ON_TRACK";
-    if (progress < 0.5) {
-      newStatus = "OFF_TRACK";
-    } else if (progress < 0.8) {
-      newStatus = "AT_RISK";
-    }
+    const progressPct = calculateProgressPercent(valueNum, kr.targetValue, kr.targetType);
+    const newStatus = calculateAutoStatus(progressPct);
 
     const result = await prisma.$transaction([
       prisma.keyResult.update({
@@ -395,6 +397,7 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
       month,
       monthWeight,
       annualKeyResultId,
+      targetType,
     } = req.body;
 
     if (!title || targetValue === undefined || !bscPerspective) {
@@ -423,14 +426,9 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "Key Result not found" });
     }
 
-    // Calculate new status based on current progress
-    const progress = kr.currentValue / parseFloat(targetValue);
-    let newStatus = "ON_TRACK";
-    if (progress < 0.5) {
-      newStatus = "OFF_TRACK";
-    } else if (progress < 0.8) {
-      newStatus = "AT_RISK";
-    }
+    const targetTypeVal = targetType || kr.targetType || "AT_LEAST";
+    const progressPct = calculateProgressPercent(kr.currentValue, parseFloat(targetValue), targetTypeVal);
+    const newStatus = calculateAutoStatus(progressPct);
 
     const originalAnnualId = kr.annualKeyResultId;
 
@@ -442,6 +440,7 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
         unit: unit || "%",
         bscPerspective,
         status: newStatus,
+        targetType: targetTypeVal,
         ...(month !== undefined && { month: month || null }),
         ...(monthWeight !== undefined && {
           monthWeight: parseFloat(monthWeight),
@@ -811,15 +810,14 @@ export async function cascadeMonthlyKrToAnnual(
   const divisor = totalWeight || 1;
   const weightedPercent =
     monthlyKrs.reduce((sum, kr) => {
-      const pct = kr.targetValue > 0 ? kr.currentValue / kr.targetValue : 0;
+      const pct = calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType) / 100;
       return sum + pct * (kr.monthWeight || 0);
     }, 0) / divisor;
 
   const newAnnualValue =
     Math.round(weightedPercent * annualKr.targetValue * 100) / 100;
-  const progress = newAnnualValue / annualKr.targetValue;
-  const newStatus =
-    progress < 0.5 ? "OFF_TRACK" : progress < 0.8 ? "AT_RISK" : "ON_TRACK";
+  const progressPct = calculateProgressPercent(newAnnualValue, annualKr.targetValue, annualKr.targetType);
+  const newStatus = calculateAutoStatus(progressPct);
 
   await prisma.annualKeyResult.update({
     where: { id: annualKeyResultId },

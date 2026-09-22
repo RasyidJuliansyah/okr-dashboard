@@ -1,6 +1,8 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { getDepartmentLeaderInfo } from "./initiative.controller";
+import { calculateProgressPercent } from "../utils/progress";
 
 const prisma = new PrismaClient();
 
@@ -59,15 +61,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         offTrackCount = 0;
 
       [...initiatives, ...myTasks].forEach((item: any) => {
-        const pct =
-          item.targetValue > 0
-            ? Math.min(
-                100,
-                Math.max(0, (item.currentValue / item.targetValue) * 100),
-              )
-            : item.currentValue > 0
-              ? 100
-              : 0;
+        const val = item.achievedValue !== null && item.achievedValue !== undefined ? item.achievedValue : item.currentValue;
+        const pct = calculateProgressPercent(val, item.targetValue, item.targetType, item.baselineValue || 0);
         sumProgress += pct;
         totalCount++;
         if (item.status === "ON_TRACK") onTrackCount++;
@@ -135,15 +130,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         offTrackCount = 0;
 
       initiatives.forEach((ini: any) => {
-        const pct =
-          ini.targetValue > 0
-            ? Math.min(
-                100,
-                Math.max(0, (ini.currentValue / ini.targetValue) * 100),
-              )
-            : ini.currentValue > 0
-              ? 100
-              : 0;
+        const val = ini.achievedValue !== null && ini.achievedValue !== undefined ? ini.achievedValue : ini.currentValue;
+        const pct = calculateProgressPercent(val, ini.targetValue, ini.targetType);
         sumProgress += pct;
         totalCount++;
         if (ini.status === "ON_TRACK") onTrackCount++;
@@ -221,56 +209,86 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         });
       }
 
-      const leadersInDept = await prisma.user.findMany({
-        where: {
-          department: { in: deptValues },
-          role: "LEADER",
-        },
-        select: { id: true },
-      });
-      const leaderUserIds = leadersInDept.map((u) => u.id);
+      const leaderInfo = await getDepartmentLeaderInfo(deptValues);
+      const deptsWithLeaderArr = Array.from(leaderInfo.deptsWithLeader);
+      const deptsWithoutLeaderArr = Array.from(leaderInfo.deptsWithoutLeader);
+
+      const initiativeOrConditions: any[] = [];
+      const taskOrConditions: any[] = [];
+
+      if (deptsWithLeaderArr.length > 0 && leaderInfo.leaderUserIds.length > 0) {
+        initiativeOrConditions.push({
+          initiative: {
+            team: { department: { in: deptsWithLeaderArr } },
+          },
+          submittedBy: { in: leaderInfo.leaderUserIds },
+        });
+
+        taskOrConditions.push({
+          task: {
+            OR: [
+              { initiative: { team: { department: { in: deptsWithLeaderArr } } } },
+              { targetDept: { in: deptsWithLeaderArr } },
+              { creatorDept: { in: deptsWithLeaderArr } },
+            ],
+          },
+          submittedBy: { in: leaderInfo.leaderUserIds },
+        });
+      }
+
+      if (deptsWithoutLeaderArr.length > 0) {
+        initiativeOrConditions.push({
+          initiative: {
+            team: { department: { in: deptsWithoutLeaderArr } },
+          },
+        });
+
+        taskOrConditions.push({
+          task: {
+            OR: [
+              { initiative: { team: { department: { in: deptsWithoutLeaderArr } } } },
+              { targetDept: { in: deptsWithoutLeaderArr } },
+              { creatorDept: { in: deptsWithoutLeaderArr } },
+            ],
+          },
+        });
+      }
 
       // Approval queue: InitiativeUpdate PENDING dari team di dept ini
-      const pendingInitiativeApprovals = await prisma.initiativeUpdate.findMany(
-        {
-          where: {
-            status: "PENDING_APPROVAL",
-            submittedBy: { in: leaderUserIds },
-            initiative: {
-              team: { department: { in: deptValues } },
+      const pendingInitiativeApprovals = initiativeOrConditions.length > 0
+        ? await prisma.initiativeUpdate.findMany({
+            where: {
+              status: "PENDING_APPROVAL",
+              OR: initiativeOrConditions,
             },
-          },
-          include: {
-            initiative: {
-              include: { team: { select: { id: true, name: true } } },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        },
-      );
-
-      // TaskUpdate PENDING dari team di dept ini
-      const pendingTaskApprovals = await prisma.taskUpdate.findMany({
-        where: {
-          status: "PENDING_APPROVAL",
-          submittedBy: { in: leaderUserIds },
-          task: {
-            initiative: {
-              team: { department: { in: deptValues } },
-            },
-          },
-        },
-        include: {
-          task: {
             include: {
               initiative: {
                 include: { team: { select: { id: true, name: true } } },
               },
             },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
+
+      // TaskUpdate PENDING dari team di dept ini
+      const pendingTaskApprovals = taskOrConditions.length > 0
+        ? await prisma.taskUpdate.findMany({
+            where: {
+              status: "PENDING_APPROVAL",
+              OR: taskOrConditions,
+            },
+            include: {
+              task: {
+                include: {
+                  initiative: {
+                    include: { team: { select: { id: true, name: true } } },
+                  },
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
 
       const mappedPendingInitiativeApprovals = pendingInitiativeApprovals.map(
         (u: any) => ({
@@ -314,10 +332,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           totalKRs++;
           const progressPercent =
             kr.targetValue > 0
-              ? Math.min(
-                  100,
-                  Math.max(0, (kr.currentValue / kr.targetValue) * 100),
-                )
+              ? calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType)
               : 0;
           sumProgress += progressPercent;
           if (kr.status === "ON_TRACK") onTrackCount++;
@@ -392,10 +407,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         totalKRs++;
         const progressPercent =
           kr.targetValue > 0
-            ? Math.min(
-                100,
-                Math.max(0, (kr.currentValue / kr.targetValue) * 100),
-              )
+            ? calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType)
             : 0;
         sumProgress += progressPercent;
         if (kr.status === "ON_TRACK") onTrackCount++;

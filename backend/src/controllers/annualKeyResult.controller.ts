@@ -6,6 +6,7 @@ import {
   normalizeMonthlyKrWeights,
 } from "./keyresult.controller";
 import { logAudit } from "../utils/auditLogger";
+import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
 
 const prisma = new PrismaClient();
 
@@ -115,6 +116,7 @@ export async function createAnnualKeyResult(req: AuthRequest, res: Response) {
       unit,
       bscPerspective,
       year,
+      targetType,
     } = req.body;
 
     if (
@@ -140,6 +142,7 @@ export async function createAnnualKeyResult(req: AuthRequest, res: Response) {
         .json({ message: "targetValue must be a valid number greater than 0" });
     }
 
+    const targetTypeVal = targetType || "AT_LEAST";
     const newAnnualKr = await prisma.annualKeyResult.create({
       data: {
         objectiveId,
@@ -150,6 +153,7 @@ export async function createAnnualKeyResult(req: AuthRequest, res: Response) {
         bscPerspective,
         year,
         status: "ON_TRACK",
+        targetType: targetTypeVal,
       },
     });
 
@@ -179,7 +183,7 @@ export async function createAnnualKeyResult(req: AuthRequest, res: Response) {
 export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { title, description, targetValue, unit, bscPerspective, status } =
+    const { title, description, targetValue, unit, bscPerspective, status, targetType } =
       req.body;
 
     const annualKr = await prisma.annualKeyResult.findUnique({
@@ -195,6 +199,7 @@ export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
     if (description !== undefined) data.description = description;
     if (unit !== undefined) data.unit = unit;
     if (bscPerspective !== undefined) data.bscPerspective = bscPerspective;
+    if (targetType !== undefined) data.targetType = targetType;
     if (status !== undefined) data.status = status;
     if (targetValue !== undefined) {
       const valNum = parseFloat(targetValue);
@@ -213,8 +218,8 @@ export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
       data,
     });
 
-    // Recalculate values if targetValue was changed
-    if (targetValue !== undefined) {
+    // Recalculate values if targetValue or targetType was changed
+    if (targetValue !== undefined || targetType !== undefined) {
       await cascadeMonthlyKrToAnnual(id);
     }
 
@@ -398,7 +403,7 @@ export async function getMonthlyBreakdown(req: AuthRequest, res: Response) {
       totalWeight > 0
         ? annualKr.keyResults.reduce((s, kr) => {
             const pct =
-              kr.targetValue > 0 ? kr.currentValue / kr.targetValue : 0;
+              kr.targetValue > 0 ? (calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType) / 100) : 0;
             return s + pct * (kr.monthWeight || 0);
           }, 0) / totalWeight
         : 0;
@@ -423,12 +428,8 @@ export async function getMonthlyBreakdown(req: AuthRequest, res: Response) {
         );
         const isManualOverride = krsForMonth.some((k) => k.isManualOverride);
 
-        const progressPercent =
-          totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
-
-        let status = "ON_TRACK";
-        if (progressPercent < 50) status = "OFF_TRACK";
-        else if (progressPercent < 80) status = "AT_RISK";
+        const progressPercent = calculateProgressPercent(totalCurrent, totalTarget, annualKr.targetType);
+        const status = calculateAutoStatus(progressPercent);
 
         const leaderAssignees = krsForMonth.flatMap((k) =>
           k.assignments.map((a) => ({
@@ -561,12 +562,8 @@ export async function getAnnualKrsByMonth(req: AuthRequest, res: Response) {
       );
       const isManualOverride = krsForMonth.some((k) => k.isManualOverride);
 
-      const progressPercent =
-        totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
-
-      let status = "ON_TRACK";
-      if (progressPercent < 50) status = "OFF_TRACK";
-      else if (progressPercent < 80) status = "AT_RISK";
+      const progressPercent = calculateProgressPercent(totalCurrent, totalTarget, akr.targetType);
+      const status = calculateAutoStatus(progressPercent);
 
       const leaderAssignees = krsForMonth.flatMap((k) =>
         k.assignments.map((a) => ({

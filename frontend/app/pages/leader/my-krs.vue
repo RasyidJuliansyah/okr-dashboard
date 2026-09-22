@@ -138,11 +138,12 @@
                           assign.keyResult.currentValue,
                           assign.keyResult.targetValue,
                           assign.keyResult.unit,
+                          assign.keyResult.targetType,
                         )
                       }}
                       ({{
                         getProgressPercent(assign.keyResult).toFixed(1)
-                      }}%)</span
+                      }}%)</span>
                     >
                   </div>
                 </div>
@@ -301,6 +302,7 @@
                                   task.currentValue,
                                   task.targetValue,
                                   task.unit,
+                                  task.targetType,
                                 )
                               }}
                             </span>
@@ -584,6 +586,7 @@
           <UnitTargetInput
             v-model:targetValue="form.targetValue"
             v-model:unit="form.unit"
+            v-model:targetType="form.targetType"
             :required="true"
           />
 
@@ -802,6 +805,7 @@ const form = ref({
   ownerId: "",
   sprintMonth: "",
   targetValue: 0,
+  targetType: "AT_LEAST",
   unit: "%",
   kpis: [],
 });
@@ -933,7 +937,7 @@ async function fetchMyTeams() {
 
 function getProgressPercent(kr) {
   if (!kr || !kr.targetValue) return 0;
-  return Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100));
+  return calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType);
 }
 
 function getStatusClass(status) {

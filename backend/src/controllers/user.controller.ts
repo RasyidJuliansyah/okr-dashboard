@@ -30,7 +30,14 @@ const VALID_ROLES = ["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"];
 // GET /api/users
 export async function getAllUsers(req: AuthRequest, res: Response) {
   try {
+    const { department, role, teamId } = req.query;
+    const where: any = {};
+    if (department) where.department = department as string;
+    if (role) where.role = role as string;
+    if (teamId) where.teamId = teamId as string;
+
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         name: true,

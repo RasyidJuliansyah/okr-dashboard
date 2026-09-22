@@ -577,7 +577,7 @@
                 {{ assign.task.targetDept || "?" }}
               </span>
               <span
-                v-if="assign.task.status === 'NEED_INFO'"
+                v-if="(assign.task.kanbanStatus || assign.task.status) === 'NEED_INFO'"
                 class="badge-need-info"
               >
                 ⚠️ NEED INFO
@@ -1191,7 +1191,7 @@
                       {{ assign.task.targetDept || "?" }}
                     </span>
                     <span
-                      v-if="assign.task.status === 'NEED_INFO'"
+                      v-if="(assign.task.kanbanStatus || assign.task.status) === 'NEED_INFO'"
                       class="badge-need-info"
                     >
                       ⚠️ NEED INFO
@@ -1796,6 +1796,7 @@
               <UnitTargetInput
                 v-model:targetValue="batchDefaults.targetValue"
                 v-model:unit="batchDefaults.unit"
+                v-model:targetType="batchDefaults.targetType"
                 labelTarget="Target Value Default"
                 labelUnit="Satuan (Unit) Default"
                 placeholderTarget="100"
@@ -1898,6 +1899,16 @@
                       class="form-input row-target"
                       placeholder="Target"
                     />
+                    <select
+                      v-model="row.targetType"
+                      class="form-input row-type"
+                      style="width: 65px; flex-shrink: 0"
+                      title="Tipe Target: ≥ (Minimal), ≤ (Maksimal), = (Tepat)"
+                    >
+                      <option value="AT_LEAST">≥</option>
+                      <option value="AT_MOST">≤</option>
+                      <option value="EXACT">=</option>
+                    </select>
                     <input
                       v-model="row.unit"
                       class="form-input row-unit"
@@ -2009,6 +2020,7 @@ const showMyWorkTaskModal = ref(false);
 const selectedIniForTask = ref(null);
 const batchDefaults = ref({
   targetValue: 100,
+  targetType: "AT_LEAST",
   unit: "%",
   sprintMonth: "",
   assignedTeamMemberId: "",
@@ -2018,6 +2030,7 @@ const taskRows = ref([
   {
     title: "",
     targetValue: 100,
+    targetType: "AT_LEAST",
     unit: "%",
     assignedTeamMemberId: "",
     sprintMonth: "",
@@ -2405,6 +2418,7 @@ function openMyWorkAddTaskModal(ini) {
     {
       title: "",
       targetValue: 100,
+      targetType: "AT_LEAST",
       unit: "%",
       assignedTeamMemberId: authStore.user?.id || "",
       sprintMonth: defaultSprint,
@@ -2419,6 +2433,7 @@ function addTaskRow() {
   taskRows.value.push({
     title: "",
     targetValue: batchDefaults.value.targetValue || 100,
+    targetType: batchDefaults.value.targetType || "AT_LEAST",
     unit: batchDefaults.value.unit || "%",
     assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
     sprintMonth: batchDefaults.value.sprintMonth || "",
@@ -2577,12 +2592,12 @@ async function fetchMyWork() {
 }
 
 function getProgressPercent(task) {
-  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
+  if (!task) return 0;
   const val =
     task.achievedValue !== null && task.achievedValue !== undefined
       ? task.achievedValue
       : task.currentValue || 0;
-  return Math.min(100, Math.max(0, (val / task.targetValue) * 100));
+  return calculateProgressPercent(val, task.targetValue, task.targetType, task.baselineValue);
 }
 
 function getStatusClass(status) {
