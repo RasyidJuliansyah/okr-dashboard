@@ -4,6 +4,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import { resolveSprint, getActiveSprint } from "../services/sprint.service";
 import { cascadeMonthlyKrToAnnual } from "./keyresult.controller";
 import { logAudit } from "../utils/auditLogger";
+import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
 
 const prisma = new PrismaClient();
 
@@ -106,6 +107,131 @@ async function getLeaderTeamIds(userId: string): Promise<string[]> {
     deptTeams.forEach((t) => teamIdSet.add(t.id));
   }
   return Array.from(teamIdSet);
+}
+
+export interface DepartmentLeaderInfo {
+  leaderUserIds: string[];
+  deptsWithLeader: Set<string>;
+  deptsWithoutLeader: Set<string>;
+  leaderUserIdsByDept: Map<string, string[]>;
+}
+
+export async function getDepartmentLeaderInfo(
+  deptValues: string[],
+): Promise<DepartmentLeaderInfo> {
+  const cleanDepts = deptValues.filter(Boolean);
+  if (cleanDepts.length === 0) {
+    return {
+      leaderUserIds: [],
+      deptsWithLeader: new Set<string>(),
+      deptsWithoutLeader: new Set<string>(),
+      leaderUserIdsByDept: new Map<string, string[]>(),
+    };
+  }
+
+  const [leadersInDept, teamsInDept] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        department: { in: cleanDepts },
+        role: "LEADER",
+      },
+      select: { id: true, department: true },
+    }),
+    prisma.team.findMany({
+      where: {
+        department: { in: cleanDepts },
+        leaderId: { not: null },
+      },
+      select: { department: true, leaderId: true },
+    }),
+  ]);
+
+  const allLeaderIds = new Set<string>();
+  const deptsWithLeader = new Set<string>();
+  const leaderUserIdsByDept = new Map<string, string[]>();
+
+  for (const dept of cleanDepts) {
+    leaderUserIdsByDept.set(dept, []);
+  }
+
+  leadersInDept.forEach((u) => {
+    allLeaderIds.add(u.id);
+    if (u.department && leaderUserIdsByDept.has(u.department)) {
+      deptsWithLeader.add(u.department);
+      const list = leaderUserIdsByDept.get(u.department)!;
+      if (!list.includes(u.id)) list.push(u.id);
+    }
+  });
+
+  teamsInDept.forEach((t) => {
+    if (t.leaderId) {
+      allLeaderIds.add(t.leaderId);
+      if (t.department && leaderUserIdsByDept.has(t.department)) {
+        deptsWithLeader.add(t.department);
+        const list = leaderUserIdsByDept.get(t.department)!;
+        if (!list.includes(t.leaderId)) list.push(t.leaderId);
+      }
+    }
+  });
+
+  const deptsWithoutLeader = new Set<string>(
+    cleanDepts.filter((dept) => !deptsWithLeader.has(dept)),
+  );
+
+  return {
+    leaderUserIds: Array.from(allLeaderIds),
+    deptsWithLeader,
+    deptsWithoutLeader,
+    leaderUserIdsByDept,
+  };
+}
+
+export async function getTaskApprovalRecipientId(
+  task: any,
+  submitterId: string,
+): Promise<string | null> {
+  const taskDept =
+    task.initiative?.team?.department ||
+    task.targetDept ||
+    task.creatorDept;
+
+  if (taskDept) {
+    const leaderInfo = await getDepartmentLeaderInfo([taskDept]);
+    const hasLeader = leaderInfo.deptsWithLeader.has(taskDept);
+
+    if (hasLeader) {
+      const leaderCandidate =
+        task.initiative?.team?.leaderId ||
+        task.initiative?.assignedLeaderId;
+      if (leaderCandidate && leaderCandidate !== submitterId) {
+        return leaderCandidate;
+      }
+      const deptLeaders = leaderInfo.leaderUserIdsByDept.get(taskDept) || [];
+      const validLeader = deptLeaders.find((id) => id !== submitterId);
+      if (validLeader) return validLeader;
+    } else {
+      // Fallback ke MANAGER jika departemen tanpa Leader
+      const dept = await prisma.department.findUnique({
+        where: { value: taskDept },
+        select: { managerId: true },
+      });
+      const managerId =
+        dept?.managerId ||
+        task.initiative?.team?.managerId;
+      if (managerId && managerId !== submitterId) {
+        return managerId;
+      }
+    }
+  }
+
+  const defaultRecipient =
+    task.assignedBy ||
+    task.initiative?.assignedLeaderId ||
+    task.initiative?.ownerId ||
+    task.creatorId;
+  return defaultRecipient && defaultRecipient !== submitterId
+    ? defaultRecipient
+    : null;
 }
 
 // GET /api/initiatives/member-progress — Capaian 100% per member dengan strict role-based visibility
@@ -262,6 +388,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             weight: true,
             kanbanStatus: true,
             targetValue: true,
+            targetType: true,
             currentValue: true,
             achievedValue: true,
             sprintMonth: true,
@@ -294,6 +421,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             id: true,
             title: true,
             targetValue: true,
+            targetType: true,
             currentValue: true,
             baselineValue: true,
             status: true,
@@ -361,10 +489,10 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             init.achievedValue !== null && init.achievedValue !== undefined
               ? init.achievedValue
               : init.currentValue || 0;
-          if (init.targetValue > 0) {
-            progressPct = Math.min(100, (val / init.targetValue) * 100);
-          } else if (init.kanbanStatus === "DONE") {
+          if (init.kanbanStatus === "DONE") {
             progressPct = 100;
+          } else if (init.targetValue > 0) {
+            progressPct = calculateProgressPercent(val, init.targetValue, init.targetType);
           } else {
             progressPct = 0;
           }
@@ -400,20 +528,11 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           if (
             t.status === "DONE" ||
             t.kanbanStatus === "DONE" ||
-            t.kanbanStatus === "CLOSED" ||
-            (t.status === "ON_TRACK" && targetVal > 0 && t.currentValue >= targetVal)
+            t.kanbanStatus === "CLOSED"
           ) {
             progressPct = 100;
-          } else if (targetVal > baselineVal) {
-            progressPct = Math.min(
-              100,
-              Math.max(0, ((t.currentValue - baselineVal) / (targetVal - baselineVal)) * 100),
-            );
           } else if (targetVal > 0) {
-            progressPct = Math.min(
-              100,
-              Math.max(0, (t.currentValue / targetVal) * 100),
-            );
+            progressPct = calculateProgressPercent(t.currentValue, targetVal, t.targetType, baselineVal);
           } else {
             progressPct = t.currentValue > 0 ? 100 : 0;
           }
@@ -567,10 +686,7 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
         const tVal = task.targetValue || 0;
         const pct =
           tVal > 0
-            ? Math.min(
-                100,
-                Math.max(0, (task.currentValue / tVal) * 100),
-              )
+            ? calculateProgressPercent(task.currentValue, tVal, task.targetType, task.baselineValue || 0)
             : 0;
         return { ...task, progressPercent: Math.round(pct * 10) / 10 };
       });
@@ -581,7 +697,7 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
           : init.currentValue || 0;
       const avgProgress =
         init.targetValue > 0
-          ? Math.min(100, Math.max(0, (val / init.targetValue) * 100))
+          ? calculateProgressPercent(val, init.targetValue, init.targetType)
           : 0;
 
       const completedTasks = taskProgress.filter(
@@ -1241,7 +1357,16 @@ export async function createInitiative(req: AuthRequest, res: Response) {
             ? parseFloat(achievedValue)
             : null,
         unit: unit || null,
-        status: "ON_TRACK",
+        status: calculateAutoStatus(
+          calculateProgressPercent(
+            achievedValue !== undefined && achievedValue !== null && achievedValue !== ""
+              ? parseFloat(achievedValue)
+              : 0,
+            targetValue ? parseFloat(targetValue) : 0,
+            req.body.targetType || "AT_LEAST"
+          )
+        ),
+        targetType: req.body.targetType || "AT_LEAST",
         kanbanStatus: kanbanStatus || "TODO",
         weight: parsedWeight,
         startDate: startDate ? new Date(startDate) : null,
@@ -1365,6 +1490,12 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
       if (sp) targetSprintId = sp.id;
     }
 
+    const targetTypeVal = req.body.targetType !== undefined ? req.body.targetType : existing.targetType;
+    const finalTgt = targetValue !== undefined ? parseFloat(targetValue) : existing.targetValue;
+    const finalAchieved = achievedValue !== undefined ? (achievedValue !== null && achievedValue !== "" ? parseFloat(achievedValue) : null) : existing.achievedValue;
+    const valForStatus = finalAchieved !== null && finalAchieved !== undefined ? finalAchieved : existing.currentValue;
+    const autoStatus = calculateAutoStatus(calculateProgressPercent(valForStatus, finalTgt, targetTypeVal));
+
     const updated = await prisma.initiative.update({
       where: { id },
       data: {
@@ -1384,7 +1515,8 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
               : null,
         }),
         ...(unit !== undefined && { unit }),
-        ...(status !== undefined && { status }),
+        ...(req.body.targetType !== undefined && { targetType: req.body.targetType }),
+        ...(status !== undefined ? { status } : { status: autoStatus }),
         ...(kanbanStatus !== undefined && { kanbanStatus }),
         ...(weight !== undefined && { weight: parseFloat(weight) }),
         ...(startDate !== undefined && {
@@ -1586,13 +1718,9 @@ export async function updateInitiativeKanbanStatus(
       // Auto-cascade Task → Initiative → KR
       await cascadeTaskValueUpdate(taskId, task.initiativeId);
 
-      // Send notification to leader if moved by team member
-      const recipientLeaderId =
-        task.assignedBy ||
-        task.initiative?.assignedLeaderId ||
-        task.initiative?.ownerId ||
-        task.creatorId;
-      if (recipientLeaderId && recipientLeaderId !== userId) {
+      // Send notification to leader (or fallback to manager if dept has no leader) if moved by team member
+      const recipientLeaderId = await getTaskApprovalRecipientId(task, userId);
+      if (recipientLeaderId) {
         await createNotification({
           recipientId: recipientLeaderId,
           type: "TASK_UPDATE_PENDING",
@@ -1644,9 +1772,21 @@ export async function updateInitiativeKanbanStatus(
     // AUTO-CASCADE: recalculate KR.currentValue
     if (existing.keyResultId) await cascadeInitiativeToMonthlyKr(existing.keyResultId);
 
-    // Send notification to leader if moved by team member
-    const recipientLeaderId =
+    // Send notification to leader (or fallback to manager if dept has no leader) if moved by team member
+    let recipientLeaderId =
       existing.assignedLeaderId || existing.assignedBy || existing.ownerId;
+    if (existing.team?.department) {
+      const leaderInfo = await getDepartmentLeaderInfo([existing.team.department]);
+      if (!leaderInfo.deptsWithLeader.has(existing.team.department)) {
+        const dept = await prisma.department.findUnique({
+          where: { value: existing.team.department },
+          select: { managerId: true },
+        });
+        if (dept?.managerId) {
+          recipientLeaderId = dept.managerId;
+        }
+      }
+    }
     if (recipientLeaderId && recipientLeaderId !== userId) {
       await createNotification({
         recipientId: recipientLeaderId,
@@ -2377,6 +2517,11 @@ export async function createTask(req: AuthRequest, res: Response) {
       }
     }
 
+    const targetTypeVal = req.body.targetType || "AT_LEAST";
+    const initialStatus = calculateAutoStatus(
+      calculateProgressPercent(0, parseFloat(targetValue), targetTypeVal, finalBaselineValue)
+    );
+
     const task = await prisma.task.create({
       data: {
         initiativeId,
@@ -2384,7 +2529,8 @@ export async function createTask(req: AuthRequest, res: Response) {
         targetValue: parseFloat(targetValue),
         baselineValue: finalBaselineValue,
         unit: unit || null,
-        status: "ON_TRACK",
+        status: initialStatus,
+        targetType: targetTypeVal,
         assignedTeamMemberId: targetAssigneeId,
         assignedBy: userId,
         sprintMonth: finalSprintMonth,
@@ -2527,6 +2673,10 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
       }
       const finalBaselineValue = item.baselineValue !== undefined ? parseFloat(item.baselineValue) : 0;
       const targetVal = parseFloat(item.targetValue) || 1;
+      const itemTargetType = item.targetType || "AT_LEAST";
+      const initialStatus = calculateAutoStatus(
+        calculateProgressPercent(0, targetVal, itemTargetType, finalBaselineValue)
+      );
 
       const created = await prisma.task.create({
         data: {
@@ -2535,7 +2685,8 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
           targetValue: targetVal,
           baselineValue: finalBaselineValue,
           unit: item.unit || null,
-          status: "ON_TRACK",
+          status: initialStatus,
+          targetType: itemTargetType,
           kanbanStatus: "TODO",
           assignedTeamMemberId: targetAssigneeId,
           assignedBy: userId,
@@ -2670,6 +2821,11 @@ export async function updateTask(req: AuthRequest, res: Response) {
       if (sp) targetSprintId = sp.id;
     }
 
+    const targetTypeVal = req.body.targetType !== undefined ? req.body.targetType : existing.targetType;
+    const finalTgt = targetValue !== undefined ? parseFloat(targetValue) : (existing.targetValue || 0);
+    const finalBase = req.body.baselineValue !== undefined ? parseFloat(req.body.baselineValue) : (existing.baselineValue || 0);
+    const autoStatus = calculateAutoStatus(calculateProgressPercent(existing.currentValue, finalTgt, targetTypeVal, finalBase));
+
     const updated = await prisma.task.update({
       where: { id },
       data: {
@@ -2681,7 +2837,8 @@ export async function updateTask(req: AuthRequest, res: Response) {
           baselineValue: parseFloat(req.body.baselineValue),
         }),
         ...(unit !== undefined && { unit }),
-        ...(status !== undefined && { status }),
+        ...(req.body.targetType !== undefined && { targetType: req.body.targetType }),
+        ...(status !== undefined ? { status } : { status: autoStatus }),
         ...(assignedTeamMemberId !== undefined && { assignedTeamMemberId }),
         ...(sprintMonth !== undefined && { sprintMonth }),
         ...(targetSprintId !== undefined && { sprintId: targetSprintId }),
@@ -2976,20 +3133,12 @@ export async function cascadeInitiativeToMonthlyKr(
     const avgPercent =
       allInitiatives.reduce((sum, init) => {
         let initProgress = 0;
-        if (
-          init.achievedValue !== null &&
-          init.achievedValue !== undefined &&
-          init.targetValue > 0
-        ) {
-          initProgress = Math.min(
-            1,
-            Math.max(0, init.achievedValue / init.targetValue),
-          );
-        } else if (init.targetValue > 0) {
-          initProgress = Math.min(
-            1,
-            Math.max(0, (init.currentValue || 0) / init.targetValue),
-          );
+        const val =
+          init.achievedValue !== null && init.achievedValue !== undefined
+            ? init.achievedValue
+            : (init.currentValue || 0);
+        if (init.targetValue > 0) {
+          initProgress = calculateProgressPercent(val, init.targetValue, init.targetType) / 100;
         }
         return sum + initProgress;
       }, 0) / allInitiatives.length;
@@ -3009,10 +3158,8 @@ export async function cascadeInitiativeToMonthlyKr(
     newKrValue = Math.round(sumInitiativeValues * 100) / 100;
   }
 
-  const krProgress = newKrValue / kr.targetValue;
-  let newStatus = "ON_TRACK";
-  if (krProgress < 0.5) newStatus = "OFF_TRACK";
-  else if (krProgress < 0.8) newStatus = "AT_RISK";
+  const krProgress = calculateProgressPercent(newKrValue, kr.targetValue, kr.targetType);
+  const newStatus = calculateAutoStatus(krProgress);
 
   const updatedKr = await prisma.keyResult.update({
     where: { id: keyResultId },
@@ -3056,7 +3203,7 @@ export async function submitTaskUpdate(req: AuthRequest, res: Response) {
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { initiative: true },
+      include: { initiative: { include: { team: true } } },
     });
     if (!task) return res.status(404).json({ message: "Task tidak ditemukan" });
 
@@ -3091,18 +3238,21 @@ export async function submitTaskUpdate(req: AuthRequest, res: Response) {
     });
 
     if (isAutoApprove) {
+      const taskStatus = calculateAutoStatus(
+        calculateProgressPercent(parseFloat(newValue), task.targetValue || 0, task.targetType, task.baselineValue || 0)
+      );
       await prisma.task.update({
         where: { id: taskId },
         data: {
           currentValue: parseFloat(newValue),
+          status: taskStatus,
           documentationLink: link || null,
         },
       });
       await cascadeTaskValueUpdate(taskId, task.initiativeId);
     } else {
-      const recipientLeaderId =
-        task.assignedBy || task.initiative?.ownerId || task.creatorId;
-      if (recipientLeaderId && recipientLeaderId !== userId) {
+      const recipientLeaderId = await getTaskApprovalRecipientId(task, userId);
+      if (recipientLeaderId) {
         await createNotification({
           recipientId: recipientLeaderId,
           type: "TASK_UPDATE_PENDING",
@@ -3185,6 +3335,23 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
             "Forbidden: Manajer hanya berwenang menyetujui update di departemen yang dikelola",
         });
       }
+
+      // Cek apakah departemen memiliki Leader aktif
+      const leaderInfo = await getDepartmentLeaderInfo([taskDept]);
+      const hasLeader = leaderInfo.deptsWithLeader.has(taskDept);
+
+      if (hasLeader) {
+        const submitter = await prisma.user.findUnique({
+          where: { id: taskUpdate.submittedBy },
+          select: { role: true },
+        });
+        if (submitter?.role !== "LEADER") {
+          return res.status(403).json({
+            message:
+              "Forbidden: Departemen memiliki Leader, update dari anggota tim harus disetujui oleh Leader",
+          });
+        }
+      }
     } else if (role === "LEADER") {
       const leaderTeamIds = await getLeaderTeamIds(managerId);
       const dbUser = await prisma.user.findUnique({
@@ -3210,6 +3377,15 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
       }
     }
 
+    const taskStatus = calculateAutoStatus(
+      calculateProgressPercent(
+        taskUpdate.newValue,
+        taskUpdate.task.targetValue || 0,
+        taskUpdate.task.targetType,
+        taskUpdate.task.baselineValue || 0
+      )
+    );
+
     // Update TaskUpdate status + update currentValue di Task
     const [approved] = await prisma.$transaction([
       prisma.taskUpdate.update({
@@ -3224,6 +3400,7 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
         where: { id: taskUpdate.taskId },
         data: {
           currentValue: taskUpdate.newValue,
+          status: taskStatus,
           documentationLink: taskUpdate.link || null,
         },
       }),
@@ -3303,6 +3480,23 @@ export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
           message:
             "Forbidden: Manajer hanya berwenang menolak update di departemen yang dikelola",
         });
+      }
+
+      // Cek apakah departemen memiliki Leader aktif
+      const leaderInfo = await getDepartmentLeaderInfo([taskDept]);
+      const hasLeader = leaderInfo.deptsWithLeader.has(taskDept);
+
+      if (hasLeader) {
+        const submitter = await prisma.user.findUnique({
+          where: { id: taskUpdate.submittedBy },
+          select: { role: true },
+        });
+        if (submitter?.role !== "LEADER") {
+          return res.status(403).json({
+            message:
+              "Forbidden: Departemen memiliki Leader, penolakan update dari anggota tim dilakukan oleh Leader",
+          });
+        }
       }
     } else if (role === "LEADER") {
       const leaderTeamIds = await getLeaderTeamIds(managerId);
@@ -3426,6 +3620,9 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
       finalKanbanStatus = "DONE";
     }
 
+    const initProgress = calculateProgressPercent(finalNewValue, initiative.targetValue, initiative.targetType);
+    const initStatus = calculateAutoStatus(initProgress);
+
     const [update] = await prisma.$transaction([
       prisma.initiativeUpdate.create({
         data: {
@@ -3445,6 +3642,7 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
         where: { id: initiativeId },
         data: {
           currentValue: finalNewValue,
+          status: initStatus,
           ...(finalKanbanStatus ? { kanbanStatus: finalKanbanStatus } : {}),
           ...(link !== undefined && { documentationLink: link || null }),
         },
@@ -3510,6 +3708,7 @@ export async function getPendingInitiativeUpdates(
     let leadingTeamIds: string[] = [];
 
     let whereClause: any = { status: "PENDING_APPROVAL" };
+    let taskWhereClause: any = { status: "PENDING_APPROVAL" };
 
     if (role === "MANAGER") {
       const managedDepts = await prisma.department.findMany({
@@ -3525,19 +3724,62 @@ export async function getPendingInitiativeUpdates(
         deptValues.push(dbUser.department);
       }
 
-      const leadersInDept = await prisma.user.findMany({
-        where: {
-          department: { in: deptValues },
-          role: "LEADER",
-        },
-        select: { id: true },
-      });
-      const leaderUserIds = leadersInDept.map((u) => u.id);
+      const leaderInfo = await getDepartmentLeaderInfo(deptValues);
+      const deptsWithLeaderArr = Array.from(leaderInfo.deptsWithLeader);
+      const deptsWithoutLeaderArr = Array.from(leaderInfo.deptsWithoutLeader);
 
-      whereClause.initiative = {
-        team: { department: { in: deptValues } },
-      };
-      whereClause.submittedBy = { in: leaderUserIds };
+      const initiativeOrConditions: any[] = [];
+      const taskOrConditions: any[] = [];
+
+      if (deptsWithLeaderArr.length > 0 && leaderInfo.leaderUserIds.length > 0) {
+        initiativeOrConditions.push({
+          initiative: {
+            team: { department: { in: deptsWithLeaderArr } },
+          },
+          submittedBy: { in: leaderInfo.leaderUserIds },
+        });
+
+        taskOrConditions.push({
+          task: {
+            OR: [
+              { initiative: { team: { department: { in: deptsWithLeaderArr } } } },
+              { targetDept: { in: deptsWithLeaderArr } },
+              { creatorDept: { in: deptsWithLeaderArr } },
+            ],
+          },
+          submittedBy: { in: leaderInfo.leaderUserIds },
+        });
+      }
+
+      if (deptsWithoutLeaderArr.length > 0) {
+        initiativeOrConditions.push({
+          initiative: {
+            team: { department: { in: deptsWithoutLeaderArr } },
+          },
+        });
+
+        taskOrConditions.push({
+          task: {
+            OR: [
+              { initiative: { team: { department: { in: deptsWithoutLeaderArr } } } },
+              { targetDept: { in: deptsWithoutLeaderArr } },
+              { creatorDept: { in: deptsWithoutLeaderArr } },
+            ],
+          },
+        });
+      }
+
+      if (initiativeOrConditions.length > 0) {
+        whereClause.OR = initiativeOrConditions;
+      } else {
+        whereClause.id = "__none__";
+      }
+
+      if (taskOrConditions.length > 0) {
+        taskWhereClause.OR = taskOrConditions;
+      } else {
+        taskWhereClause.id = "__none__";
+      }
     } else if (role === "LEADER") {
       leadingTeamIds = await getLeaderTeamIds(userId);
 
@@ -3554,6 +3796,13 @@ export async function getPendingInitiativeUpdates(
         teamId: { in: leadingTeamIds },
       };
       whereClause.submittedBy = { in: teamMemberIds };
+
+      taskWhereClause.task = {
+        initiative: {
+          teamId: { in: leadingTeamIds },
+        },
+      };
+      taskWhereClause.submittedBy = { in: teamMemberIds };
     } else if (role !== "ADMIN" && role !== "C_LEVEL") {
       return res.status(200).json([]);
     }
@@ -3567,42 +3816,6 @@ export async function getPendingInitiativeUpdates(
       },
       orderBy: { createdAt: "desc" },
     });
-
-    // Query pending task updates matching the same team/department access filter
-    let taskWhereClause: any = { status: "PENDING_APPROVAL" };
-    if (role === "MANAGER") {
-      const leadersInDept = await prisma.user.findMany({
-        where: {
-          department: { in: deptValues },
-          role: "LEADER",
-        },
-        select: { id: true },
-      });
-      const leaderUserIds = leadersInDept.map((u) => u.id);
-
-      taskWhereClause.task = {
-        initiative: {
-          team: { department: { in: deptValues } },
-        },
-      };
-      taskWhereClause.submittedBy = { in: leaderUserIds };
-    } else if (role === "LEADER") {
-      const teamMembers = await prisma.user.findMany({
-        where: {
-          teamId: { in: leadingTeamIds },
-          role: "TEAM",
-        },
-        select: { id: true },
-      });
-      const teamMemberIds = teamMembers.map((u) => u.id);
-
-      taskWhereClause.task = {
-        initiative: {
-          teamId: { in: leadingTeamIds },
-        },
-      };
-      taskWhereClause.submittedBy = { in: teamMemberIds };
-    }
 
     const taskUpdates = await prisma.taskUpdate.findMany({
       where: taskWhereClause,
@@ -3862,23 +4075,6 @@ export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
 
     // Filter akses berdasarkan role
     if (role === "MANAGER") {
-      if (submitterRole !== "LEADER") {
-        return res.status(403).json({
-          message:
-            "Forbidden: Manajer hanya berwenang menyetujui update tingkat Leader saja.",
-        });
-      }
-
-      if (
-        initiativeUpdate.initiative.assignedBy &&
-        initiativeUpdate.initiative.assignedBy !== managerId
-      ) {
-        return res.status(403).json({
-          message:
-            "Forbidden: Hanya Manager yang meng-assign Initiative ini yang dapat menyetujui update-nya",
-        });
-      }
-
       const managedDepts = await prisma.department.findMany({
         where: { managerId },
         select: { value: true },
@@ -3895,13 +4091,35 @@ export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
       ) {
         deptValues.push(dbUser.department);
       }
+      const initiativeDept = initiativeUpdate.initiative.team?.department;
       if (
-        !initiativeUpdate.initiative.team?.department ||
-        !deptValues.includes(initiativeUpdate.initiative.team.department)
+        !initiativeDept ||
+        !deptValues.includes(initiativeDept)
       ) {
         return res.status(403).json({
           message:
             "Forbidden: Anda tidak memiliki akses untuk menyetujui update di departemen ini",
+        });
+      }
+
+      if (
+        initiativeUpdate.initiative.assignedBy &&
+        initiativeUpdate.initiative.assignedBy !== managerId
+      ) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Hanya Manager yang meng-assign Initiative ini yang dapat menyetujui update-nya",
+        });
+      }
+
+      // Cek apakah departemen memiliki Leader aktif
+      const leaderInfo = await getDepartmentLeaderInfo([initiativeDept]);
+      const hasLeader = leaderInfo.deptsWithLeader.has(initiativeDept);
+
+      if (hasLeader && submitterRole !== "LEADER") {
+        return res.status(403).json({
+          message:
+            "Forbidden: Departemen memiliki Leader, update dari anggota tim harus disetujui oleh Leader.",
         });
       }
     } else if (role === "LEADER") {
@@ -3929,6 +4147,13 @@ export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
       });
     }
 
+    const initProgress = calculateProgressPercent(
+      initiativeUpdate.newValue,
+      initiativeUpdate.initiative.targetValue,
+      initiativeUpdate.initiative.targetType
+    );
+    const initStatus = calculateAutoStatus(initProgress);
+
     const [approved] = await prisma.$transaction([
       prisma.initiativeUpdate.update({
         where: { id: updateId },
@@ -3942,6 +4167,7 @@ export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
         where: { id: initiativeUpdate.initiativeId },
         data: {
           currentValue: initiativeUpdate.newValue,
+          status: initStatus,
           ...(initiativeUpdate.kanbanStatus
             ? { kanbanStatus: initiativeUpdate.kanbanStatus }
             : {}),
@@ -4006,13 +4232,6 @@ export async function rejectInitiativeUpdate(req: AuthRequest, res: Response) {
 
     // Filter akses berdasarkan role
     if (role === "MANAGER") {
-      if (submitterRole !== "LEADER") {
-        return res.status(403).json({
-          message:
-            "Forbidden: Manajer hanya berwenang menolak update tingkat Leader saja.",
-        });
-      }
-
       const managedDepts = await prisma.department.findMany({
         where: { managerId },
         select: { value: true },
@@ -4029,13 +4248,25 @@ export async function rejectInitiativeUpdate(req: AuthRequest, res: Response) {
       ) {
         deptValues.push(dbUser.department);
       }
+      const initiativeDept = initiativeUpdate.initiative.team?.department;
       if (
-        !initiativeUpdate.initiative.team?.department ||
-        !deptValues.includes(initiativeUpdate.initiative.team.department)
+        !initiativeDept ||
+        !deptValues.includes(initiativeDept)
       ) {
         return res.status(403).json({
           message:
             "Forbidden: Anda tidak memiliki akses untuk menolak update di departemen ini",
+        });
+      }
+
+      // Cek apakah departemen memiliki Leader aktif
+      const leaderInfo = await getDepartmentLeaderInfo([initiativeDept]);
+      const hasLeader = leaderInfo.deptsWithLeader.has(initiativeDept);
+
+      if (hasLeader && submitterRole !== "LEADER") {
+        return res.status(403).json({
+          message:
+            "Forbidden: Departemen memiliki Leader, penolakan update dari anggota tim dilakukan oleh Leader.",
         });
       }
     } else if (role === "LEADER") {

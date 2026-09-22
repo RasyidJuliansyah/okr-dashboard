@@ -75,6 +75,7 @@ model AnnualKeyResult {
   bscPerspective String      @map("bsc_perspective")
   year           String
   status         String      @default("ON_TRACK")
+  targetType     String      @default("AT_LEAST") @map("target_type")
   keyResults     KeyResult[]
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
@@ -97,6 +98,7 @@ model KeyResult {
   unit              String
   bscPerspective    String           @map("bsc_perspective")
   status            String           @default("ON_TRACK")
+  targetType        String           @default("AT_LEAST") @map("target_type")
   isManualOverride  Boolean          @default(false) @map("is_manual_override")
   assignments       KrAssignment[]
   departments       KrDepartment[]
@@ -189,6 +191,7 @@ model Initiative {
   achievedValue     Float?             @map("achieved_value")
   unit              String?
   status            String             @default("ON_TRACK")
+  targetType        String             @default("AT_LEAST") @map("target_type")
   kanbanStatus      String             @default("TODO") @map("kanban_status")
   weight            Float              @default(1.0)
   startDate         DateTime?          @map("start_date")
@@ -232,6 +235,7 @@ model Task {
   weight               Float            @default(1.0)
   unit                 String?
   status               String           @default("ON_TRACK")
+  targetType           String           @default("AT_LEAST") @map("target_type")
   kanbanStatus         String?          @default("TODO") @map("kanban_status")
   documentationLink    String?          @map("documentation_link")
   isCrossDept          Boolean          @default(false) @map("is_cross_dept")

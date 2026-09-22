@@ -919,10 +919,11 @@ async function confirmReject(id) {
 
 function getProgressPercent(item) {
   if (!item || !item.targetValue) return 0;
-  return Math.min(
-    100,
-    Math.max(0, (item.currentValue / item.targetValue) * 100),
-  );
+  const val =
+    item.achievedValue !== null && item.achievedValue !== undefined
+      ? item.achievedValue
+      : item.currentValue;
+  return calculateProgressPercent(val, item.targetValue, item.targetType, item.baselineValue);
 }
 
 function getStatusClass(status) {

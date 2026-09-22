@@ -258,7 +258,7 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit)
+                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
                   }}</strong>
                 </span>
               </div>
@@ -348,6 +348,7 @@
                             task.currentValue,
                             task.targetValue,
                             task.unit,
+                            task.targetType,
                           )
                         }}
                       </span>
@@ -541,7 +542,7 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit)
+                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
                   }}</strong>
                 </span>
               </div>
@@ -631,6 +632,7 @@
                             task.currentValue,
                             task.targetValue,
                             task.unit,
+                            task.targetType,
                           )
                         }}
                       </span>
@@ -818,7 +820,7 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit)
+                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
                   }}</strong>
                 </span>
               </div>
@@ -854,7 +856,7 @@
                       ini.unit,
                     )
                   }}
-                  / {{ formatTargetValue(ini.targetValue, ini.unit) }} ({{
+                  / {{ formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType) }} ({{
                     calculateAchievedPercent(ini)
                   }}%)
                 </strong>
@@ -950,6 +952,7 @@
                             task.currentValue,
                             task.targetValue,
                             task.unit,
+                            task.targetType,
                           )
                         }}
                       </span>
@@ -1131,7 +1134,7 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit)
+                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
                   }}</strong>
                 </span>
               </div>
@@ -1330,6 +1333,7 @@
             <UnitTargetInput
               v-model:targetValue="initiativeForm.targetValue"
               v-model:unit="initiativeForm.unit"
+              v-model:targetType="initiativeForm.targetType"
               :required="true"
             />
 
@@ -1525,6 +1529,16 @@
                     class="form-input row-target"
                     placeholder="Target"
                   />
+                  <select
+                    v-model="row.targetType"
+                    class="form-input row-type"
+                    style="width: 65px; flex-shrink: 0"
+                    title="Tipe Target: ≥ (Minimal), ≤ (Maksimal), = (Tepat)"
+                  >
+                    <option value="AT_LEAST">≥</option>
+                    <option value="AT_MOST">≤</option>
+                    <option value="EXACT">=</option>
+                  </select>
                   <input
                     v-model="row.unit"
                     class="form-input row-unit"
@@ -1845,6 +1859,16 @@
                   class="form-input row-target"
                   placeholder="Target"
                 />
+                <select
+                  v-model="row.targetType"
+                  class="form-input row-type"
+                  style="width: 65px; flex-shrink: 0"
+                  title="Tipe Target: ≥ (Minimal), ≤ (Maksimal), = (Tepat)"
+                >
+                  <option value="AT_LEAST">≥</option>
+                  <option value="AT_MOST">≤</option>
+                  <option value="EXACT">=</option>
+                </select>
                 <input
                   v-model="row.unit"
                   class="form-input row-unit"
@@ -2007,6 +2031,7 @@ const initiativeForm = ref({
   ownerId: "",
   assignedLeaderId: "",
   targetValue: 100,
+  targetType: "AT_LEAST",
   achievedValue: null as number | null,
   unit: "%",
   kanbanStatus: "TODO",
@@ -2347,6 +2372,7 @@ const targetDeptUsers = computed(() => {
 const batchInitiativeId = ref("");
 const batchDefaults = ref({
   targetValue: 100,
+  targetType: "AT_LEAST",
   unit: "%",
   sprintMonth: "",
   assignedTeamMemberId: "",
@@ -2355,6 +2381,7 @@ const taskRows = ref<any[]>([
   {
     title: "",
     targetValue: 100,
+    targetType: "AT_LEAST",
     unit: "%",
     assignedTeamMemberId: "",
     sprintMonth: "",
@@ -2364,6 +2391,7 @@ const taskForm = ref<any>({
   initiativeId: "",
   title: "",
   targetValue: 0,
+  targetType: "AT_LEAST",
   unit: "",
   assignedTeamMemberId: "",
   sprintMonth: "",
@@ -2470,9 +2498,7 @@ function calculateAchievedPercent(ini: any) {
     ini.achievedValue !== null && ini.achievedValue !== undefined
       ? ini.achievedValue
       : ini.currentValue;
-  if (!ini.targetValue || ini.targetValue <= 0) return 100;
-  const pct = Math.round((achieved / ini.targetValue) * 100);
-  return Math.min(100, Math.max(0, pct));
+  return calculateProgressPercent(achieved, ini.targetValue, ini.targetType);
 }
 
 // ─── Filtered Lists per Kanban Column ───
@@ -2782,6 +2808,7 @@ function openAddInitiativeModal() {
     ownerId: isTeam.value ? auth.user?.id || "" : (auth.user?.id || ""),
     assignedLeaderId: "",
     targetValue: 100,
+    targetType: "AT_LEAST",
     achievedValue: null,
     unit: "%",
     kanbanStatus: "TODO",
@@ -2848,6 +2875,7 @@ function openEditInitiativeModal(ini: any) {
       ini.targetValue !== undefined && ini.targetValue !== null
         ? ini.targetValue
         : 100,
+    targetType: ini.targetType || "AT_LEAST",
     achievedValue:
       ini.achievedValue !== undefined && ini.achievedValue !== null
         ? ini.achievedValue
@@ -3131,6 +3159,7 @@ function addTaskRow() {
   taskRows.value.push({
     title: "",
     targetValue: batchDefaults.value.targetValue || 100,
+    targetType: batchDefaults.value.targetType || "AT_LEAST",
     unit: batchDefaults.value.unit || "%",
     assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
     sprintMonth: batchDefaults.value.sprintMonth || "",

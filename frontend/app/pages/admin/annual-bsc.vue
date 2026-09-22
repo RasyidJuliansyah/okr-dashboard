@@ -93,6 +93,7 @@
           <UnitTargetInput
             v-model:targetValue="form.targetValue"
             v-model:unit="form.unit"
+            v-model:targetType="form.targetType"
             :required="true"
           />
 
@@ -502,6 +503,7 @@ const form = ref({
   title: "",
   description: "",
   targetValue: 100,
+  targetType: "AT_LEAST",
   unit: "%",
   bscPerspective: "",
   year: "2026",
@@ -566,6 +568,7 @@ function resetForm() {
     title: "",
     description: "",
     targetValue: 100,
+    targetType: "AT_LEAST",
     unit: "%",
     bscPerspective: "",
     year: "2026",
@@ -619,6 +622,7 @@ function editAnnualKr(item) {
     title: item.title,
     description: item.description || "",
     targetValue: item.targetValue,
+    targetType: item.targetType || "AT_LEAST",
     unit: item.unit,
     bscPerspective: item.bscPerspective,
     year: item.year,

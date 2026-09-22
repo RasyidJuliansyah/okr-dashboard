@@ -183,7 +183,7 @@
             </div>
 
             <div class="form-row">
-              <div class="form-group third">
+              <div class="form-group quarter">
                 <label :for="'kr-target-' + index">Target Nilai *</label>
                 <input
                   :id="'kr-target-' + index"
@@ -195,7 +195,18 @@
                   required
                 />
               </div>
-              <div class="form-group third">
+              <div class="form-group quarter">
+                <label :for="'kr-type-' + index">Tipe Target</label>
+                <select
+                  :id="'kr-type-' + index"
+                  v-model="kr.targetType"
+                >
+                  <option value="AT_LEAST">Minimal (≥)</option>
+                  <option value="AT_MOST">Maksimal (≤)</option>
+                  <option value="EXACT">Tepat (=)</option>
+                </select>
+              </div>
+              <div class="form-group quarter">
                 <label :for="'kr-unit-' + index">Satuan *</label>
                 <input
                   :id="'kr-unit-' + index"
@@ -205,7 +216,7 @@
                   required
                 />
               </div>
-              <div class="form-group third">
+              <div class="form-group quarter">
                 <label :for="'kr-bsc-' + index">Perspektif BSC *</label>
                 <select
                   :id="'kr-bsc-' + index"
@@ -478,7 +489,7 @@
                       <div class="kr-stats">
                         Target:
                         <strong>{{
-                          formatTargetValue(kr.targetValue, kr.unit)
+                          formatTargetValue(kr.targetValue, kr.unit, "", kr.targetType)
                         }}</strong>
                         <span
                           class="status-badge"
@@ -632,7 +643,7 @@
             />
           </div>
           <div class="form-row">
-            <div class="form-group half">
+            <div class="form-group third">
               <label>Target Nilai *</label>
               <input
                 v-model.number="editKrData.targetValue"
@@ -642,7 +653,15 @@
                 required
               />
             </div>
-            <div class="form-group half">
+            <div class="form-group third">
+              <label>Tipe Target</label>
+              <select v-model="editKrData.targetType">
+                <option value="AT_LEAST">Minimal (≥)</option>
+                <option value="AT_MOST">Maksimal (≤)</option>
+                <option value="EXACT">Tepat (=)</option>
+              </select>
+            </div>
+            <div class="form-group third">
               <label>Satuan *</label>
               <input
                 v-model="editKrData.unit"
@@ -899,6 +918,7 @@
           <UnitTargetInput
             v-model:targetValue="taskForm.targetValue"
             v-model:unit="taskForm.unit"
+            v-model:targetType="taskForm.targetType"
             :required="true"
           />
           <div class="modal-actions">
@@ -1064,6 +1084,7 @@ const newObjective = ref({
     {
       title: "",
       targetValue: null,
+      targetType: "AT_LEAST",
       unit: "%",
       bscPerspective: "",
       raciAssignments: [],
@@ -1076,6 +1097,7 @@ function addKrRow() {
   newObjective.value.keyResults.push({
     title: "",
     targetValue: null,
+    targetType: "AT_LEAST",
     unit: "%",
     bscPerspective: "",
     raciAssignments: [],
@@ -1262,6 +1284,7 @@ async function submitObjective() {
             objectiveId: selectedObjectiveId.value,
             title: kr.title,
             targetValue: kr.targetValue,
+            targetType: kr.targetType || "AT_LEAST",
             unit: kr.unit,
             bscPerspective: kr.bscPerspective,
           },
@@ -1329,6 +1352,7 @@ async function submitObjective() {
         {
           title: "",
           targetValue: null,
+          targetType: "AT_LEAST",
           unit: "%",
           bscPerspective: "",
           raciAssignments: [],
@@ -1379,6 +1403,7 @@ const editKrData = ref({
   id: "",
   title: "",
   targetValue: null,
+  targetType: "AT_LEAST",
   unit: "",
   bscPerspective: "",
 });
@@ -1391,6 +1416,7 @@ function startEditKr(kr) {
     id: kr.id,
     title: kr.title,
     targetValue: kr.targetValue,
+    targetType: kr.targetType || "AT_LEAST",
     unit: kr.unit,
     bscPerspective: kr.bscPerspective,
   };
@@ -1438,6 +1464,7 @@ async function submitEditKr() {
         body: {
           title: editKrData.value.title,
           targetValue: editKrData.value.targetValue,
+          targetType: editKrData.value.targetType || "AT_LEAST",
           unit: editKrData.value.unit,
           bscPerspective: editKrData.value.bscPerspective,
         },
@@ -1588,7 +1615,7 @@ const filteredTeamsForDropdown = computed(() => {
 
 const showTaskModal = ref(false);
 const selectedIniForTask = ref(null);
-const taskForm = ref({ title: "", targetValue: null, unit: "%" });
+const taskForm = ref({ title: "", targetValue: null, unit: "%", targetType: "AT_LEAST" });
 const savingTask = ref(false);
 
 function toggleInitiatives(krId) {
@@ -1748,6 +1775,7 @@ async function saveTaskForInitiative() {
       },
     );
     showTaskModal.value = false;
+    taskForm.value = { title: "", targetValue: null, unit: "%", targetType: "AT_LEAST" };
     fetchObjectives(); // Reload
   } catch (err) {
     console.error("Save Task error:", err);

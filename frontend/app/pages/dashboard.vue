@@ -394,10 +394,12 @@
                 {{ task.creatorDept || "?" }} → {{ task.targetDept || "?" }}
               </span>
               <span
-                class="cross-dept-status-pill"
-                :class="task.status.toLowerCase()"
+                class="cross-dept-status-pill current-status-pill"
+                :class="
+                  (task.kanbanStatus || task.status || 'todo').toLowerCase()
+                "
               >
-                {{ task.status }}
+                {{ formatCrossDeptStatus(task.kanbanStatus || task.status) }}
               </span>
             </div>
 
@@ -427,7 +429,7 @@
                 class="btn-open-cross-thread"
                 @click="openCrossDeptModal(task.id)"
               >
-                🔍 Detail & Diskusi
+                Detail & Diskusi
               </button>
             </div>
           </div>
@@ -1207,7 +1209,7 @@ async function fetchCrossDeptTasks() {
         crossDeptData.value = {
           incoming: data.incoming || [],
           outgoing: data.outgoing || [],
-          all: data.all || [],
+          all: data.all || [...(data.incoming || []), ...(data.outgoing || [])],
         };
       }
     }
@@ -1216,6 +1218,17 @@ async function fetchCrossDeptTasks() {
   } finally {
     loadingCrossDept.value = false;
   }
+}
+
+function formatCrossDeptStatus(st) {
+  if (!st) return "TO DO";
+  const s = String(st).toUpperCase();
+  if (s === "TODO") return "TO DO";
+  if (s === "IN_PROGRESS") return "IN PROGRESS";
+  if (s === "NEED_INFO") return "NEED INFO";
+  if (s === "RESOLVED") return "RESOLVED";
+  if (s === "CLOSED") return "CLOSED";
+  return s.replace(/_/g, " ");
 }
 
 const currentCrossDeptList = computed(() => {
@@ -1227,13 +1240,25 @@ const currentCrossDeptList = computed(() => {
 
 const crossDeptNeedInfoCount = computed(() => {
   const all = crossDeptData.value?.all || [];
-  return all.filter((t) => t.status === "NEED_INFO").length;
+  return all.filter((t) => {
+    const k = (t.kanbanStatus || t.status || "").toUpperCase();
+    return k === "NEED_INFO";
+  }).length;
 });
 
 const crossDeptResolvedCount = computed(() => {
   const all = crossDeptData.value?.all || [];
-  return all.filter((t) => t.status === "RESOLVED" || t.status === "CLOSED")
-    .length;
+  return all.filter((t) => {
+    const k = (t.kanbanStatus || "").toUpperCase();
+    const s = (t.status || "").toUpperCase();
+    return (
+      k === "RESOLVED" ||
+      k === "CLOSED" ||
+      s === "RESOLVED" ||
+      s === "CLOSED" ||
+      s === "DONE"
+    );
+  }).length;
 });
 
 // State untuk data TEAM
@@ -1388,10 +1413,11 @@ function isTaskDone(task) {
 
 function getProgressPercent(task) {
   if (!task || !task.targetValue || task.targetValue <= 0) return 0;
-  return Math.min(
-    100,
-    Math.max(0, (task.currentValue / task.targetValue) * 100),
-  );
+  const val =
+    task.achievedValue !== null && task.achievedValue !== undefined
+      ? task.achievedValue
+      : task.currentValue;
+  return calculateProgressPercent(val, task.targetValue, task.targetType, task.baselineValue);
 }
 
 async function fetchInitiativeProgress() {
@@ -3650,31 +3676,39 @@ button.task-count-mini {
   padding: 2px 6px;
   border-radius: 4px;
 }
-.cross-dept-status-pill {
+.cross-dept-status-pill,
+.current-status-pill {
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
 }
-.cross-dept-status-pill.todo {
+.cross-dept-status-pill.todo,
+.current-status-pill.todo {
   background: #f1f5f9;
   color: #475569;
 }
-.cross-dept-status-pill.in_progress {
+.cross-dept-status-pill.in_progress,
+.current-status-pill.in_progress {
   background: #e0f2fe;
   color: #0284c7;
 }
-.cross-dept-status-pill.need_info {
+.cross-dept-status-pill.need_info,
+.current-status-pill.need_info {
   background: #fee2e2;
   color: #dc2626;
   font-weight: 800;
 }
-.cross-dept-status-pill.resolved {
+.cross-dept-status-pill.resolved,
+.current-status-pill.resolved {
   background: #dcfce7;
   color: #15803d;
 }
-.cross-dept-status-pill.closed {
+.cross-dept-status-pill.closed,
+.current-status-pill.closed,
+.cross-dept-status-pill.done,
+.current-status-pill.done {
   background: #e2e8f0;
   color: #334155;
 }

@@ -19,6 +19,36 @@ async function createNotification(params: {
   }
 }
 
+const assignedTeamMemberSelect = {
+  id: true,
+  name: true,
+  department: true,
+  role: true,
+  position: true,
+  teamId: true,
+  team: {
+    select: {
+      id: true,
+      name: true,
+      leaderId: true,
+      users: {
+        select: { id: true, name: true, role: true, position: true, department: true },
+        orderBy: { name: "asc" as const },
+      },
+    },
+  },
+  leadingTeams: {
+    select: {
+      id: true,
+      name: true,
+      users: {
+        select: { id: true, name: true, role: true, position: true, department: true },
+        orderBy: { name: "asc" as const },
+      },
+    },
+  },
+};
+
 // POST /api/tasks/cross-dept — Buat Task Lintas Departemen
 export async function createCrossDeptTask(req: AuthRequest, res: Response) {
   try {
@@ -96,7 +126,7 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
           select: { id: true, name: true, department: true, role: true },
         },
         assignedTeamMember: {
-          select: { id: true, name: true, department: true, role: true },
+          select: assignedTeamMemberSelect,
         },
         assignments: {
           include: { user: { select: { id: true, name: true } } },
@@ -224,7 +254,7 @@ export async function getCrossDeptTasks(req: AuthRequest, res: Response) {
           select: { id: true, name: true, department: true, role: true },
         },
         assignedTeamMember: {
-          select: { id: true, name: true, department: true, role: true },
+          select: assignedTeamMemberSelect,
         },
         assignments: {
           include: { user: { select: { id: true, name: true } } },
@@ -288,7 +318,7 @@ export async function getTaskById(req: AuthRequest, res: Response) {
           select: { id: true, name: true, department: true, role: true },
         },
         assignedTeamMember: {
-          select: { id: true, name: true, department: true, role: true },
+          select: assignedTeamMemberSelect,
         },
         assignments: {
           include: { user: { select: { id: true, name: true } } },
@@ -397,7 +427,7 @@ export async function updateCrossDeptStatus(req: AuthRequest, res: Response) {
           select: { id: true, name: true, department: true, role: true },
         },
         assignedTeamMember: {
-          select: { id: true, name: true, department: true, role: true },
+          select: assignedTeamMemberSelect,
         },
         comments: {
           include: { user: { select: { id: true, name: true, role: true } } },
@@ -534,7 +564,7 @@ export async function reassignCrossDeptTask(req: AuthRequest, res: Response) {
           select: { id: true, name: true, department: true, role: true },
         },
         assignedTeamMember: {
-          select: { id: true, name: true, department: true, role: true },
+          select: assignedTeamMemberSelect,
         },
         assignments: {
           include: { user: { select: { id: true, name: true } } },
