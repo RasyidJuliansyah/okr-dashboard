@@ -7,20 +7,20 @@
           <div class="title-with-badge">
             <h2>Papan Inisiatif Tim</h2>
             <span class="view-badge">{{
-              activeView === 'kanban'
-                ? 'Kanban Board'
-                : activeView === 'list'
-                  ? 'List View'
-                  : 'Gantt Chart'
+              activeView === "kanban"
+                ? "Kanban Board"
+                : activeView === "list"
+                  ? "List View"
+                  : "Gantt Chart"
             }}</span>
           </div>
           <p class="section-desc">
             {{
-              activeView === 'kanban'
-                ? 'Pantau dan kelola eksekusi seluruh inisiatif kerja melalui 3 tahapan alur: To Do, In Progress, dan Done.'
-                : activeView === 'list'
-                  ? 'Tampilan daftar seluruh inisiatif dalam format tabel lengkap.'
-                  : 'Visualisasi timeline seluruh inisiatif berdasarkan tanggal mulai dan tenggat waktu.'
+              activeView === "kanban"
+                ? "Pantau dan kelola eksekusi seluruh inisiatif kerja melalui 3 tahapan alur: To Do, In Progress, dan Done."
+                : activeView === "list"
+                  ? "Tampilan daftar seluruh inisiatif dalam format tabel lengkap."
+                  : "Visualisasi timeline seluruh inisiatif berdasarkan tanggal mulai dan tenggat waktu."
             }}
           </p>
 
@@ -176,9 +176,20 @@
           :class="['view-switch-btn', { active: activeView === 'kanban' }]"
           @click="activeView = 'kanban'"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
           </svg>
           Kanban
         </button>
@@ -186,10 +197,22 @@
           :class="['view-switch-btn', { active: activeView === 'list' }]"
           @click="activeView = 'list'"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
-            <line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" />
-            <line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
           </svg>
           List
         </button>
@@ -197,8 +220,18 @@
           :class="['view-switch-btn', { active: activeView === 'gantt' }]"
           @click="activeView = 'gantt'"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="6" x2="16" y2="6" /><line x1="8" y1="12" x2="20" y2="12" />
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="4" y1="6" x2="16" y2="6" />
+            <line x1="8" y1="12" x2="20" y2="12" />
             <line x1="4" y1="18" x2="12" y2="18" />
           </svg>
           Gantt Chart
@@ -304,7 +337,12 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
+                    formatTargetValue(
+                      ini.targetValue,
+                      ini.unit,
+                      "",
+                      ini.targetType,
+                    )
                   }}</strong>
                 </span>
               </div>
@@ -312,9 +350,14 @@
               <!-- Date Range & Sprint Meta Row -->
               <div
                 class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint"
+                v-if="
+                  ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint
+                "
               >
-                <span v-if="ini.sprint?.name || ini.sprintMonth" class="sprint-pill">
+                <span
+                  v-if="ini.sprint?.name || ini.sprintMonth"
+                  class="sprint-pill"
+                >
                   {{ ini.sprint?.name || formatSprintLabel(ini.sprintMonth) }}
                 </span>
                 <span
@@ -404,7 +447,10 @@
                       v-if="task.sprint?.name || task.sprintMonth"
                       style="margin-top: 2px; font-size: 9px; color: #0284c7"
                     >
-                      Sprint: {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
+                      Sprint:
+                      {{
+                        task.sprint?.name || formatSprintLabel(task.sprintMonth)
+                      }}
                     </div>
                   </div>
                 </div>
@@ -588,7 +634,12 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
+                    formatTargetValue(
+                      ini.targetValue,
+                      ini.unit,
+                      "",
+                      ini.targetType,
+                    )
                   }}</strong>
                 </span>
               </div>
@@ -596,9 +647,14 @@
               <!-- Date Range & Sprint Meta Row -->
               <div
                 class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint"
+                v-if="
+                  ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint
+                "
               >
-                <span v-if="ini.sprint?.name || ini.sprintMonth" class="sprint-pill">
+                <span
+                  v-if="ini.sprint?.name || ini.sprintMonth"
+                  class="sprint-pill"
+                >
                   {{ ini.sprint?.name || formatSprintLabel(ini.sprintMonth) }}
                 </span>
                 <span
@@ -688,7 +744,10 @@
                       v-if="task.sprint?.name || task.sprintMonth"
                       style="margin-top: 2px; font-size: 9px; color: #0284c7"
                     >
-                      Sprint: {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
+                      Sprint:
+                      {{
+                        task.sprint?.name || formatSprintLabel(task.sprintMonth)
+                      }}
                     </div>
                   </div>
                 </div>
@@ -866,7 +925,12 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
+                    formatTargetValue(
+                      ini.targetValue,
+                      ini.unit,
+                      "",
+                      ini.targetType,
+                    )
                   }}</strong>
                 </span>
               </div>
@@ -874,9 +938,14 @@
               <!-- Date Range & Sprint Meta Row -->
               <div
                 class="card-dates-sprint-row"
-                v-if="ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint"
+                v-if="
+                  ini.startDate || ini.dueDate || ini.sprintMonth || ini.sprint
+                "
               >
-                <span v-if="ini.sprint?.name || ini.sprintMonth" class="sprint-pill">
+                <span
+                  v-if="ini.sprint?.name || ini.sprintMonth"
+                  class="sprint-pill"
+                >
                   {{ ini.sprint?.name || formatSprintLabel(ini.sprintMonth) }}
                 </span>
                 <span
@@ -902,9 +971,16 @@
                       ini.unit,
                     )
                   }}
-                  / {{ formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType) }} ({{
-                    calculateAchievedPercent(ini)
-                  }}%)
+                  /
+                  {{
+                    formatTargetValue(
+                      ini.targetValue,
+                      ini.unit,
+                      "",
+                      ini.targetType,
+                    )
+                  }}
+                  ({{ calculateAchievedPercent(ini) }}%)
                 </strong>
               </div>
               <!-- Tasks summary & Bucket list -->
@@ -1008,7 +1084,10 @@
                       v-if="task.sprint?.name || task.sprintMonth"
                       style="margin-top: 2px; font-size: 9px; color: #0284c7"
                     >
-                      Sprint: {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
+                      Sprint:
+                      {{
+                        task.sprint?.name || formatSprintLabel(task.sprintMonth)
+                      }}
                     </div>
                   </div>
                 </div>
@@ -1180,7 +1259,12 @@
                 <span v-if="ini.targetValue">
                   <span class="target-label">Target: </span>
                   <strong class="target-val">{{
-                    formatTargetValue(ini.targetValue, ini.unit, "", ini.targetType)
+                    formatTargetValue(
+                      ini.targetValue,
+                      ini.unit,
+                      "",
+                      ini.targetType,
+                    )
                   }}</strong>
                 </span>
               </div>
@@ -1402,13 +1486,17 @@
                   class="form-input"
                   @change="onInitiativeSprintChange"
                 >
-                  <option value="">-- Otomatis (Sesuai Tanggal / Sprint Berjalan) --</option>
+                  <option value="">
+                    -- Otomatis (Sesuai Tanggal / Sprint Berjalan) --
+                  </option>
                   <option
                     v-for="s in availableSprints"
                     :key="s.id"
                     :value="s.id"
                   >
-                    {{ s.name }} ({{ formatDateShort(s.startDate) }} - {{ formatDateShort(s.endDate) }}) {{ s.status === 'ACTIVE' ? '★ Berjalan' : '' }}
+                    {{ s.name }} ({{ formatDateShort(s.startDate) }} -
+                    {{ formatDateShort(s.endDate) }})
+                    {{ s.status === "ACTIVE" ? "★ Berjalan" : "" }}
                   </option>
                 </select>
               </div>
@@ -1507,11 +1595,25 @@
                 </div>
                 <div>
                   <label>Satuan (Unit) Default</label>
-                  <input
-                    v-model="batchDefaults.unit"
-                    class="form-input"
-                    placeholder="%, task..."
-                  />
+                  <div style="display: flex; gap: 4px">
+                    <select
+                      v-model="batchDefaults._unitCategory"
+                      class="form-input"
+                      style="flex: 1; min-width: 70px"
+                      @change="onBatchDefaultsUnitCategoryChange"
+                    >
+                      <option value="%">% (Persen)</option>
+                      <option value="Rupiah">Rupiah (Rp)</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                    <input
+                      v-if="batchDefaults._unitCategory === 'Lainnya'"
+                      v-model="batchDefaults.unit"
+                      class="form-input"
+                      placeholder="Satuan..."
+                      style="flex: 1.2"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label>Bulan Sprint</label>
@@ -1588,7 +1690,7 @@
                     class="form-input row-target"
                     placeholder="Target"
                   />
-                  <select
+                  <!-- <select
                     v-model="row.targetType"
                     class="form-input row-type"
                     style="width: 65px; flex-shrink: 0"
@@ -1597,12 +1699,24 @@
                     <option value="AT_LEAST">≥</option>
                     <option value="AT_MOST">≤</option>
                     <option value="EXACT">=</option>
-                  </select>
-                  <input
-                    v-model="row.unit"
-                    class="form-input row-unit"
-                    placeholder="Satuan"
-                  />
+                  </select> -->
+                  <div class="row-unit-group">
+                    <select
+                      v-model="row._unitCategory"
+                      class="form-input row-unit-select"
+                      @change="onRowUnitCategoryChange(row)"
+                    >
+                      <option value="%">%</option>
+                      <option value="Rupiah">Rp</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                    <input
+                      v-if="getRowUnitCategory(row) === 'Lainnya'"
+                      v-model="row.unit"
+                      class="form-input row-unit-custom"
+                      placeholder="Satuan..."
+                    />
+                  </div>
                   <select
                     v-model="row.assignedTeamMemberId"
                     class="form-input row-assignee"
@@ -1777,7 +1891,10 @@
           <button
             class="primary-btn"
             @click="saveCard"
-            :disabled="saving || (cardType === 'INISIATIF' && !initiativeForm.unit?.trim())"
+            :disabled="
+              saving ||
+              (cardType === 'INISIATIF' && !initiativeForm.unit?.trim())
+            "
           >
             {{ saving ? "Menyimpan..." : "Simpan Card" }}
           </button>
@@ -1837,11 +1954,25 @@
               </div>
               <div>
                 <label>Satuan (Unit) Default</label>
-                <input
-                  v-model="batchDefaults.unit"
-                  class="form-input"
-                  placeholder="%, task..."
-                />
+                <div style="display: flex; gap: 4px">
+                  <select
+                    v-model="batchDefaults._unitCategory"
+                    class="form-input"
+                    style="flex: 1; min-width: 70px"
+                    @change="onBatchDefaultsUnitCategoryChange"
+                  >
+                    <option value="%">% (Persen)</option>
+                    <option value="Rupiah">Rupiah (Rp)</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                  <input
+                    v-if="batchDefaults._unitCategory === 'Lainnya'"
+                    v-model="batchDefaults.unit"
+                    class="form-input"
+                    placeholder="Satuan..."
+                    style="flex: 1.2"
+                  />
+                </div>
               </div>
               <div>
                 <label>Bulan Sprint</label>
@@ -1928,11 +2059,23 @@
                   <option value="AT_MOST">≤</option>
                   <option value="EXACT">=</option>
                 </select>
-                <input
-                  v-model="row.unit"
-                  class="form-input row-unit"
-                  placeholder="Satuan"
-                />
+                <div class="row-unit-group">
+                  <select
+                    v-model="row._unitCategory"
+                    class="form-input row-unit-select"
+                    @change="onRowUnitCategoryChange(row)"
+                  >
+                    <option value="%">%</option>
+                    <option value="Rupiah">Rp</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                  <input
+                    v-if="getRowUnitCategory(row) === 'Lainnya'"
+                    v-model="row.unit"
+                    class="form-input row-unit-custom"
+                    placeholder="Satuan..."
+                  />
+                </div>
                 <select
                   v-model="row.assignedTeamMemberId"
                   class="form-input row-assignee"
@@ -2001,7 +2144,7 @@ import BulkUploadModal from "~/components/BulkUploadModal.vue";
 import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
 import InitiativesList from "~/components/InitiativesList.vue";
 import InitiativesGantt from "~/components/InitiativesGantt.vue";
-import { isRupiahUnit } from "~/utils/formatters";
+import { isRupiahUnit, detectUnitCategory } from "~/utils/formatters";
 
 const route = useRoute();
 const router = useRouter();
@@ -2449,6 +2592,7 @@ const batchDefaults = ref({
   targetValue: 100,
   targetType: "AT_LEAST",
   unit: "%",
+  _unitCategory: "%",
   sprintMonth: "",
   assignedTeamMemberId: "",
 });
@@ -2458,6 +2602,7 @@ const taskRows = ref<any[]>([
     targetValue: 100,
     targetType: "AT_LEAST",
     unit: "%",
+    _unitCategory: "%",
     assignedTeamMemberId: "",
     sprintMonth: "",
   },
@@ -2880,7 +3025,7 @@ function openAddInitiativeModal() {
     teamId: isTeam.value
       ? auth.user?.teamId || availableTeams.value[0]?.id || ""
       : selectedTeamId.value || availableTeams.value[0]?.id || "",
-    ownerId: isTeam.value ? auth.user?.id || "" : (auth.user?.id || ""),
+    ownerId: isTeam.value ? auth.user?.id || "" : auth.user?.id || "",
     assignedLeaderId: "",
     targetValue: 100,
     targetType: "AT_LEAST",
@@ -3035,7 +3180,9 @@ async function saveInitiative() {
       setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
-      const err = await res.json().catch(() => ({ message: "Gagal menyimpan inisiatif" }));
+      const err = await res
+        .json()
+        .catch(() => ({ message: "Gagal menyimpan inisiatif" }));
       errorMessage.value = err.message || "Gagal menyimpan inisiatif";
       alert(errorMessage.value);
     }
@@ -3099,8 +3246,11 @@ async function saveCard() {
         };
         await fetchInitiatives();
       } else {
-        const err = await res.json().catch(() => ({ message: "Gagal membuat Task Lintas Departemen" }));
-        errorMessage.value = err.message || "Gagal membuat Task Lintas Departemen";
+        const err = await res
+          .json()
+          .catch(() => ({ message: "Gagal membuat Task Lintas Departemen" }));
+        errorMessage.value =
+          err.message || "Gagal membuat Task Lintas Departemen";
         alert(errorMessage.value);
       }
     } catch (err: any) {
@@ -3140,7 +3290,9 @@ async function saveCard() {
         setTimeout(() => (successMessage.value = ""), 3000);
         await fetchInitiatives();
       } else {
-        const err = await res.json().catch(() => ({ message: "Gagal membuat Task massal" }));
+        const err = await res
+          .json()
+          .catch(() => ({ message: "Gagal membuat Task massal" }));
         errorMessage.value = err.message || "Gagal membuat Task massal";
         alert(errorMessage.value);
       }
@@ -3241,11 +3393,15 @@ function openAddTaskModal(ini: any) {
 }
 
 function addTaskRow() {
+  const cat =
+    batchDefaults.value._unitCategory ||
+    detectUnitCategory(batchDefaults.value.unit);
   taskRows.value.push({
     title: "",
     targetValue: batchDefaults.value.targetValue || 100,
     targetType: batchDefaults.value.targetType || "AT_LEAST",
     unit: batchDefaults.value.unit || "%",
+    _unitCategory: cat,
     assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
     sprintMonth: batchDefaults.value.sprintMonth || "",
   });
@@ -3261,6 +3417,9 @@ function applyDefaultsToAllRows() {
   taskRows.value.forEach((r) => {
     r.targetValue = batchDefaults.value.targetValue;
     r.unit = batchDefaults.value.unit;
+    r._unitCategory =
+      batchDefaults.value._unitCategory ||
+      detectUnitCategory(batchDefaults.value.unit);
     r.sprintMonth = batchDefaults.value.sprintMonth;
     r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
   });
@@ -3285,6 +3444,47 @@ function onRowTargetRupiahInput(e: Event, row: any) {
   const num = parseInt(rawDigits, 10);
   row.targetValue = num;
   input.value = num.toLocaleString("en-US");
+}
+function getRowUnitCategory(row: any): "Rupiah" | "%" | "Lainnya" {
+  if (!row._unitCategory) {
+    row._unitCategory = detectUnitCategory(row.unit);
+  }
+  return row._unitCategory;
+}
+
+function onRowUnitCategoryChange(row: any) {
+  if (row._unitCategory === "Rupiah") {
+    row.unit = "Rupiah (Rp)";
+  } else if (row._unitCategory === "%") {
+    row.unit = "%";
+    const num = Number(row.targetValue) || 0;
+    if (num > 100) {
+      row.targetValue = 100;
+    }
+  } else {
+    // If switched to Lainnya and current unit is standard Rupiah or %, clear it
+    if (row.unit === "Rupiah (Rp)" || row.unit === "%") {
+      row.unit = "";
+    }
+  }
+
+  function onBatchDefaultsUnitCategoryChange() {
+    if (batchDefaults.value._unitCategory === "Rupiah") {
+      batchDefaults.value.unit = "Rupiah (Rp)";
+    } else if (batchDefaults.value._unitCategory === "%") {
+      batchDefaults.value.unit = "%";
+      if (batchDefaults.value.targetValue > 100) {
+        batchDefaults.value.targetValue = 100;
+      }
+    } else {
+      if (
+        batchDefaults.value.unit === "Rupiah (Rp)" ||
+        batchDefaults.value.unit === "%"
+      ) {
+        batchDefaults.value.unit = "";
+      }
+    }
+  }
 }
 
 async function saveTasksBatch() {
@@ -4587,6 +4787,25 @@ onMounted(async () => {
   flex: 1;
   min-width: 80px;
   margin-bottom: 0 !important;
+}
+.row-unit-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1.2;
+  min-width: 90px;
+}
+.row-unit-select {
+  flex: 1;
+  min-width: 65px;
+  margin-bottom: 0 !important;
+  padding: 6px 8px;
+}
+.row-unit-custom {
+  flex: 1.2;
+  min-width: 75px;
+  margin-bottom: 0 !important;
+  padding: 6px 8px;
 }
 .row-unit {
   flex: 1;

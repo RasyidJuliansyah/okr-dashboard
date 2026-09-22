@@ -10,6 +10,28 @@ export function isPercentUnit(unit?: string | null): boolean {
   return u === "%" || u.includes("persen") || u.includes("percent");
 }
 
+export function detectUnitCategory(
+  u?: string | null,
+): "Rupiah" | "%" | "Lainnya" {
+  if (!u) return "%";
+  const trimmed = u.trim().toLowerCase();
+  if (
+    trimmed.includes("rupiah") ||
+    trimmed.includes("rp") ||
+    trimmed === "idr"
+  ) {
+    return "Rupiah";
+  }
+  if (
+    trimmed === "%" ||
+    trimmed.includes("persen") ||
+    trimmed.includes("percent")
+  ) {
+    return "%";
+  }
+  return "Lainnya";
+}
+
 export function validateAndClampTargetValue(
   val: number | string | null | undefined,
   unit?: string | null,
