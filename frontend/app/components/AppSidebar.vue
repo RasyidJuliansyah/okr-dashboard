@@ -69,7 +69,7 @@
         "
       >
         <img
-          :src="logoskollaS"
+          src="/logoskollaS.png"
           alt="Skolla Logo"
           style="width: 32px; height: 32px; object-fit: contain; display: block"
         />
@@ -587,7 +587,6 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
-import logoskollaS from "../../asset/logoskollaS.png";
 
 const props = defineProps({
   isOpen: {
