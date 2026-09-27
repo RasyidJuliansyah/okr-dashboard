@@ -323,7 +323,7 @@ function getMenuTitleByPath(path) {
   if (path.startsWith("/leader/initiatives")) return "Inisiatif Tim";
   if (path.startsWith("/team/my-work")) return "Pekerjaan Saya";
   if (path.startsWith("/approvals")) return "Persetujuan Task";
-  if (path.startsWith("/strategy-map")) return "Causal Map";
+  if (path.startsWith("/strategy-map")) return "Strategy Map";
   if (path.startsWith("/bsc-view"))
     return "Strategic Mapping (Balanced Scorecard)";
   if (path.startsWith("/kr-history")) return "Riwayat Key Result";
