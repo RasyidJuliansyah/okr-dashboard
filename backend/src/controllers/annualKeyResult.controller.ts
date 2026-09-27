@@ -13,10 +13,13 @@ const prisma = new PrismaClient();
 // GET /api/annual-key-results
 export async function getAnnualKeyResults(req: AuthRequest, res: Response) {
   try {
-    const { year, bscPerspective } = req.query;
+    const { year, bscPerspective, includeInactive } = req.query;
     const { id: userId, role } = req.user!;
 
     const where: any = {};
+    if (includeInactive !== "true") {
+      where.isActive = true;
+    }
     if (year) {
       where.year = String(year);
     }
@@ -41,10 +44,12 @@ export async function getAnnualKeyResults(req: AuthRequest, res: Response) {
       include: {
         objective: { select: { id: true, title: true, year: true } },
         keyResults: {
+          where: includeInactive === "true" ? undefined : { isActive: true },
           include: {
             assignments: { include: { user: true } },
             departments: true,
             initiatives: {
+              where: includeInactive === "true" ? undefined : { isActive: true },
               select: {
                 id: true,
                 title: true,
@@ -262,35 +267,36 @@ export async function deleteAnnualKeyResult(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "Annual Key Result not found" });
     }
 
-    const keyResultCount = await prisma.keyResult.count({
-      where: { annualKeyResultId: id },
-    });
-
-    if (keyResultCount > 0) {
-      return res.status(400).json({
-        message:
-          "Tidak dapat menghapus Annual Key Result ini karena masih memiliki KR bulanan aktif. Putus link KR bulanan terlebih dahulu.",
-      });
-    }
-
-    await prisma.annualKeyResult.delete({
-      where: { id },
-    });
+    // ponytail: soft-delete keeps FK historical integrity intact; add hard purge when data retention policy drafted
+    await prisma.$transaction([
+      prisma.annualKeyResult.update({
+        where: { id },
+        data: { isActive: false },
+      }),
+      prisma.keyResult.updateMany({
+        where: { annualKeyResultId: id },
+        data: { isActive: false },
+      }),
+    ]);
 
     await logAudit(prisma, {
       userId: req.user?.id,
-      action: "DELETE",
+      action: "STATUS_CHANGE",
       entityType: "KEY_RESULT",
       entityId: id,
       oldValues: {
         title: annualKr.title,
+        isActive: annualKr.isActive,
+      },
+      newValues: {
+        isActive: false,
       },
       req,
     });
 
     return res
       .status(200)
-      .json({ message: "Annual Key Result deleted successfully" });
+      .json({ message: "Annual Key Result deactivated successfully" });
   } catch (error) {
     console.error("Delete annual key result error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -515,7 +521,7 @@ export async function getAnnualKrsByMonth(req: AuthRequest, res: Response) {
 
     const queryYear = year ? String(year) : String(month).split("-")[0];
 
-    const where: any = { year: queryYear };
+    const where: any = { year: queryYear, isActive: true };
     if (bscPerspective) {
       where.bscPerspective = String(bscPerspective);
     }
@@ -527,6 +533,7 @@ export async function getAnnualKrsByMonth(req: AuthRequest, res: Response) {
         keyResults: {
           where: {
             month: String(month),
+            isActive: true,
           },
           include: {
             assignments: {

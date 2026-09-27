@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
@@ -64,9 +65,12 @@ export async function createObjective(req: AuthRequest, res: Response) {
 
 export async function getObjectives(req: AuthRequest, res: Response) {
   try {
-    const { year } = req.query;
+    const { year, includeInactive } = req.query;
 
     const whereClause: any = {};
+    if (includeInactive !== "true") {
+      whereClause.isActive = true;
+    }
     if (year) {
       whereClause.year = String(year);
     }
@@ -75,6 +79,7 @@ export async function getObjectives(req: AuthRequest, res: Response) {
       where: whereClause,
       include: {
         keyResults: {
+          where: includeInactive === "true" ? undefined : { isActive: true },
           include: {
             updates: true,
             assignments: {
@@ -91,12 +96,14 @@ export async function getObjectives(req: AuthRequest, res: Response) {
             },
             departments: true,
             initiatives: {
+              where: includeInactive === "true" ? undefined : { isActive: true },
               include: {
                 team: { select: { id: true, name: true, department: true } },
                 owner: {
                   select: { id: true, name: true, email: true, position: true },
                 },
                 tasks: {
+                  where: includeInactive === "true" ? undefined : { isActive: true },
                   include: {
                     assignments: {
                       include: { user: { select: { id: true, name: true } } },
@@ -124,6 +131,13 @@ export async function deleteObjective(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
 
+    const objective = await prisma.objective.findUnique({
+      where: { id },
+    });
+    if (!objective) {
+      return res.status(404).json({ message: "Objective tidak ditemukan" });
+    }
+
     // Find all Key Results associated with this Objective
     const keyResults = await prisma.keyResult.findMany({
       where: { objectiveId: id },
@@ -131,31 +145,54 @@ export async function deleteObjective(req: AuthRequest, res: Response) {
     });
     const krIds = keyResults.map((kr) => kr.id);
 
-    // Delete everything in a transaction to maintain integrity
+    const initiatives = await prisma.initiative.findMany({
+      where: { keyResultId: { in: krIds } },
+      select: { id: true },
+    });
+    const initiativeIds = initiatives.map((i) => i.id);
+
+    // ponytail: soft-delete keeps FK historical integrity (AKR, KR, initiatives, tasks, audit) intact; add hard purge when data retention policy drafted
     await prisma.$transaction([
-      // 1. Delete all updates for these Key Results
-      prisma.krUpdate.deleteMany({
-        where: { keyResultId: { in: krIds } },
-      }),
-      // 2. Delete all causal links involving these Key Results
-      prisma.causalLink.deleteMany({
-        where: {
-          OR: [{ sourceKrId: { in: krIds } }, { targetKrId: { in: krIds } }],
-        },
-      }),
-      // 3. Delete the Key Results themselves
-      prisma.keyResult.deleteMany({
-        where: { objectiveId: id },
-      }),
-      // 4. Delete the Objective
-      prisma.objective.delete({
+      prisma.objective.update({
         where: { id },
+        data: { isActive: false },
+      }),
+      prisma.annualKeyResult.updateMany({
+        where: { objectiveId: id },
+        data: { isActive: false },
+      }),
+      prisma.keyResult.updateMany({
+        where: { objectiveId: id },
+        data: { isActive: false },
+      }),
+      prisma.initiative.updateMany({
+        where: { keyResultId: { in: krIds } },
+        data: { isActive: false },
+      }),
+      prisma.task.updateMany({
+        where: { initiativeId: { in: initiativeIds } },
+        data: { isActive: false },
       }),
     ]);
 
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "STATUS_CHANGE",
+      entityType: "OBJECTIVE",
+      entityId: id,
+      oldValues: {
+        title: objective.title,
+        isActive: objective.isActive,
+      },
+      newValues: {
+        isActive: false,
+      },
+      req,
+    });
+
     return res
       .status(200)
-      .json({ message: "Objective and its Key Results deleted successfully" });
+      .json({ message: "Objective and associated Key Results deactivated successfully" });
   } catch (error) {
     console.error("Delete objective error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -167,12 +204,13 @@ export async function getManagerOverview(req: AuthRequest, res: Response) {
   try {
     const { id: userId, role } = req.user!;
 
-    let whereClause: any = {};
-    let krWhereClause: any = {};
+    let whereClause: any = { isActive: true };
+    let krWhereClause: any = { isActive: true };
 
     if (role !== "ADMIN") {
       // Hanya tampilkan KR yang di-assign ke user ini
       krWhereClause = {
+        isActive: true,
         assignments: {
           some: {
             userId: userId,
@@ -182,8 +220,10 @@ export async function getManagerOverview(req: AuthRequest, res: Response) {
 
       // Hanya tampilkan Objective yang memiliki KR yang di-assign ke user ini
       whereClause = {
+        isActive: true,
         keyResults: {
           some: {
+            isActive: true,
             assignments: {
               some: {
                 userId: userId,
@@ -203,9 +243,11 @@ export async function getManagerOverview(req: AuthRequest, res: Response) {
             assignments: { include: { user: true } },
             departments: true,
             initiatives: {
+              where: { isActive: true },
               include: {
                 team: true,
                 tasks: {
+                  where: { isActive: true },
                   include: { assignments: { include: { user: true } } },
                 },
               },

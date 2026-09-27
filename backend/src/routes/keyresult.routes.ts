@@ -67,7 +67,7 @@ router.get("/:id/assignments", authMiddleware, getKeyResultAssignments);
 router.get(
   "/my/assigned",
   authMiddleware,
-  roleGuard(["LEADER", "MANAGER", "ADMIN"]),
+  roleGuard(["LEADER", "MANAGER", "ADMIN", "C_LEVEL"]),
   getMyAssignedKrs,
 );
 

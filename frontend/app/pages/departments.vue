@@ -19,27 +19,30 @@
               {{ scopeDescription }}
             </span>
           </div>
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              margin-top: 0.75rem;
+              align-items: center;
+            "
+          >
+            <select v-model="statusFilter" class="dept-filter-select">
+              <option value="ALL">Semua Status</option>
+              <option value="ACTIVE">Hanya Aktif</option>
+              <option value="INACTIVE">Hanya Nonaktif</option>
+            </select>
+            <select v-model="selectedDept" class="dept-filter-select">
+              <option value="">Semua Departemen</option>
+              <option v-for="d in DEPARTMENTS" :key="d.value" :value="d.value">
+                {{ d.label }}
+              </option>
+            </select>
+          </div>
         </div>
         <div
-          class="header-actions"
-          style="
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-            flex-wrap: wrap;
-          "
+          style="display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap"
         >
-          <select v-model="statusFilter" class="dept-filter-select">
-            <option value="ALL">Semua Status</option>
-            <option value="ACTIVE">Hanya Aktif</option>
-            <option value="INACTIVE">Hanya Nonaktif</option>
-          </select>
-          <select v-model="selectedDept" class="dept-filter-select">
-            <option value="">Semua Departemen</option>
-            <option v-for="d in DEPARTMENTS" :key="d.value" :value="d.value">
-              {{ d.label }}
-            </option>
-          </select>
           <button v-if="isAdmin" class="primary-btn" @click="openAddDeptModal">
             + Tambah Dept
           </button>
@@ -118,6 +121,60 @@
               >
                 {{ dept.isActive !== false ? "Nonaktifkan" : "Aktifkan" }}
               </button>
+            </div>
+          </div>
+
+          <!-- C-Board (Sponsor) Row -->
+          <div class="role-section">
+            <div class="role-label cboard-label">
+              <span class="role-dot cboard-dot"></span>
+              C-Board Sponsor (Executive)
+            </div>
+            <div class="role-member-list">
+              <div v-if="!getCLevel(dept.value)" class="empty-role">
+                <span class="empty-hint">Belum ada C-Board Sponsor</span>
+                <button
+                  v-if="isAdmin"
+                  class="assign-btn cboard-btn"
+                  @click="openAssignCLevelModal(dept)"
+                >
+                  + Assign C-Board
+                </button>
+              </div>
+              <div v-else class="member-chips">
+                <div class="member-chip cboard-chip">
+                  <div
+                    class="chip-avatar cboard-avatar"
+                    :style="{
+                      background: getAvatarColor(getCLevel(dept.value).name),
+                    }"
+                  >
+                    {{ getInitials(getCLevel(dept.value).name) }}
+                  </div>
+                  <div class="chip-info">
+                    <span class="chip-name">{{
+                      getCLevel(dept.value).name
+                    }}</span>
+                    <span class="chip-pos">{{
+                      getCLevel(dept.value).position || "C-Board Executive"
+                    }}</span>
+                  </div>
+                </div>
+                <div v-if="isAdmin" class="manager-action-btns">
+                  <button
+                    class="assign-btn small cboard-btn"
+                    @click="openAssignCLevelModal(dept)"
+                  >
+                    Ubah
+                  </button>
+                  <button
+                    class="assign-btn small btn-danger"
+                    @click="removeCLevel(dept)"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -547,6 +604,87 @@
         </div>
       </div>
     </div>
+    <!-- ─── MODAL: Assign C-Board Sponsor ─── -->
+    <div
+      v-if="showCLevelModal"
+      class="modal-backdrop"
+      @click.self="showCLevelModal = false"
+    >
+      <div class="modal-card card">
+        <div class="modal-header">
+          <h3>
+            Assign C-Board Sponsor ke Departemen {{ targetCLevelDept?.label }}
+          </h3>
+          <button class="close-btn" @click="showCLevelModal = false">
+            &times;
+          </button>
+        </div>
+        <p class="modal-subtitle">
+          Pilih eksekutif C-Board (CEO, CTO, CBO) sebagai Strategic Sponsor
+          untuk departemen ini. C-Board sponsor berwenang memantau, menyetujui
+          approval OKR/Task, dan beralih konteks ke departemen ini.
+        </p>
+
+        <div class="search-box" style="margin-bottom: 1rem">
+          <input
+            v-model="cLevelSearch"
+            type="text"
+            placeholder="Cari nama C-Board eksekutif..."
+          />
+        </div>
+
+        <div class="user-pick-list">
+          <label
+            v-for="user in filteredUsersForCLevel"
+            :key="user.id"
+            class="user-pick-item"
+            :class="{ selected: selectedCLevelUserId === user.id }"
+          >
+            <input
+              type="radio"
+              :value="user.id"
+              v-model="selectedCLevelUserId"
+            />
+            <div
+              class="chip-avatar small"
+              :style="{ background: getAvatarColor(user.name) }"
+            >
+              {{ getInitials(user.name) }}
+            </div>
+            <div class="pick-info">
+              <span class="pick-name">{{ user.name }}</span>
+              <span class="pick-meta"
+                >{{ user.position || "C-Level Executive" }} ·
+                {{ user.email }}</span
+              >
+            </div>
+            <span class="current-role-badge clevel">
+              {{ user.role }}
+            </span>
+          </label>
+          <div
+            v-if="filteredUsersForCLevel.length === 0"
+            class="empty-hint"
+            style="padding: 1rem; text-align: center"
+          >
+            Tidak ada eksekutif C-Board ditemukan.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="secondary-btn" @click="showCLevelModal = false">
+            Batal
+          </button>
+          <button
+            class="primary-btn"
+            :disabled="saving || !selectedCLevelUserId"
+            @click="saveCLevelAssignment"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan C-Board Sponsor" }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ─── MODAL: Assign RACI KR ─── -->
     <div
@@ -921,6 +1059,11 @@ const targetRole = ref("");
 const roleSearch = ref("");
 const selectedRoleUserIds = ref([]);
 
+const showCLevelModal = ref(false);
+const targetCLevelDept = ref(null);
+const cLevelSearch = ref("");
+const selectedCLevelUserId = ref("");
+
 const showKrModal = ref(false);
 const selectedKrId = ref("");
 const krAssign = ref({
@@ -963,7 +1106,31 @@ const filteredUsersForRole = computed(() => {
   });
 });
 
+const filteredUsersForCLevel = computed(() => {
+  return allUsers.value.filter((u) => {
+    const isCandidate =
+      u.role === "C_LEVEL" ||
+      u.department === "STRATEGIC" ||
+      /CEO|CTO|CBO|CHIEF|DIRECTOR|EXECUTIVE/i.test(u.position || "");
+    if (!isCandidate) return false;
+
+    const matchSearch =
+      !cLevelSearch.value ||
+      u.name.toLowerCase().includes(cLevelSearch.value.toLowerCase()) ||
+      (u.position || "")
+        .toLowerCase()
+        .includes(cLevelSearch.value.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(cLevelSearch.value.toLowerCase());
+    return matchSearch;
+  });
+});
+
 // ─── Helpers ───
+function getCLevel(deptVal) {
+  const deptObj = DEPARTMENTS.value.find((d) => d.value === deptVal);
+  return deptObj?.cLevel || null;
+}
+
 function getManagers(deptVal) {
   const deptObj = DEPARTMENTS.value.find((d) => d.value === deptVal);
   if (deptObj && deptObj.manager) {
@@ -1028,6 +1195,8 @@ async function fetchDepartments() {
       isActive: d.isActive !== undefined ? d.isActive : true,
       managerId: d.managerId,
       manager: d.manager,
+      cLevelId: d.cLevelId,
+      cLevel: d.cLevel,
       icon: FALLBACK_ICONS[index % FALLBACK_ICONS.length],
     }));
   } catch (e) {
@@ -1090,6 +1259,65 @@ async function removeManager(dept) {
     setTimeout(() => (successMsg.value = ""), 4000);
   } catch (e) {
     errorMsg.value = e.message || "Gagal menghapus manager";
+  } finally {
+    saving.value = false;
+  }
+}
+function openAssignCLevelModal(dept) {
+  targetCLevelDept.value = dept;
+  selectedCLevelUserId.value = dept.cLevelId || dept.cLevel?.id || "";
+  cLevelSearch.value = "";
+  showCLevelModal.value = true;
+}
+
+async function saveCLevelAssignment() {
+  if (!targetCLevelDept.value) return;
+  saving.value = true;
+  errorMsg.value = "";
+  try {
+    const res = await fetch(
+      `${API}/departments/${targetCLevelDept.value.id}/c-level`,
+      {
+        method: "PATCH",
+        headers: getHeaders(),
+        body: JSON.stringify({ userId: selectedCLevelUserId.value }),
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Gagal meng-assign C-Board");
+    }
+    successMsg.value = `C-Board Sponsor untuk departemen "${targetCLevelDept.value.label}" berhasil disimpan.`;
+    showCLevelModal.value = false;
+    await Promise.all([fetchDepartments(), fetchUsers()]);
+    setTimeout(() => (successMsg.value = ""), 4000);
+  } catch (e) {
+    errorMsg.value = e.message || "Gagal meng-assign C-Board";
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function removeCLevel(dept) {
+  if (!confirm(`Hapus C-Board Sponsor dari departemen "${dept.label}"?`))
+    return;
+  saving.value = true;
+  errorMsg.value = "";
+  try {
+    const res = await fetch(`${API}/departments/${dept.id}/c-level`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify({ userId: null }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Gagal menghapus C-Board Sponsor");
+    }
+    successMsg.value = `C-Board Sponsor departemen "${dept.label}" berhasil dihapus.`;
+    await Promise.all([fetchDepartments(), fetchUsers()]);
+    setTimeout(() => (successMsg.value = ""), 4000);
+  } catch (e) {
+    errorMsg.value = e.message || "Gagal menghapus C-Board Sponsor";
   } finally {
     saving.value = false;
   }
@@ -1499,6 +1727,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 .header-title h2 {
   font-size: 1.5rem;
@@ -1594,6 +1823,19 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #0e97d6;
 }
 
 .dept-card-header {
@@ -1739,6 +1981,36 @@ onMounted(async () => {
 }
 .team-label {
   color: #00a925;
+}
+.cboard-dot {
+  background: #d97706;
+}
+.cboard-label {
+  color: #b45309;
+}
+.cboard-chip {
+  background: #fffbeb !important;
+  border: 1px solid #fde68a !important;
+}
+.cboard-chip .chip-name {
+  color: #92400e !important;
+  font-weight: 600;
+}
+.cboard-chip .chip-pos {
+  color: #b45309 !important;
+}
+.cboard-btn {
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+  background: #fffbeb !important;
+}
+.cboard-btn:hover {
+  background: #fef3c7 !important;
+  border-color: #f59e0b !important;
+}
+.current-role-badge.clevel {
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .role-member-list {

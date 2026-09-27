@@ -1,14 +1,24 @@
 import { defineStore } from "pinia";
 
+export interface StrategicDepartment {
+  id: string;
+  name: string;
+  value: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  originalRole?: string | null;
+  position?: string | null;
   teamId?: string | null;
   department?: string | null;
+  activeDepartment?: string | null;
   isDepartmentActive?: boolean;
   managedDepartments?: string[];
+  strategicDepartments?: StrategicDepartment[];
 }
 
 export const useAuthStore = defineStore("auth", {
@@ -108,5 +118,44 @@ export const useAuthStore = defineStore("auth", {
         this.logout();
       }
     },
+    async switchContext(department?: string, role?: string) {
+      if (!this.token) return;
+      const config = useRuntimeConfig();
+      try {
+        const response = await $fetch<{ token: string; user: User }>(
+          `${config.public.apiBase}/auth/switch-context`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+            },
+            body: { department, role },
+          },
+        );
+
+        this.token = response.token;
+        this.user = response.user;
+
+        const tokenCookie = useCookie<string | null>("auth_token", {
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        const userCookie = useCookie<User | null>("auth_user", {
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        tokenCookie.value = response.token;
+        userCookie.value = response.user;
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("auth_token", response.token);
+          localStorage.setItem("auth_user", JSON.stringify(response.user));
+        }
+
+        return response;
+      } catch (error: any) {
+        console.error("Store switch context error:", error);
+        throw error;
+      }
+    },
+
   },
 });

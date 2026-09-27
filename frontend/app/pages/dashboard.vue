@@ -1417,7 +1417,12 @@ function getProgressPercent(task) {
     task.achievedValue !== null && task.achievedValue !== undefined
       ? task.achievedValue
       : task.currentValue;
-  return calculateProgressPercent(val, task.targetValue, task.targetType, task.baselineValue);
+  return calculateProgressPercent(
+    val,
+    task.targetValue,
+    task.targetType,
+    task.baselineValue,
+  );
 }
 
 async function fetchInitiativeProgress() {
@@ -2936,6 +2941,10 @@ async function handleReject() {
   padding: 24px;
   width: 100%;
   max-width: 500px;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--card-border, #e2e8f0);
 }
@@ -3468,6 +3477,7 @@ button.task-count-mini {
 
 .approvals-section .text-gray {
   color: #64748b;
+  margin-bottom: 8px;
 }
 
 .approvals-section .update-details {

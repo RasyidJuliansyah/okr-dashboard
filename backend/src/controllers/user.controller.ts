@@ -6,35 +6,26 @@ import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
-const VALID_DEPARTMENTS = [
-  "STRATEGIC",
-  "FINANCE",
-  "BUSINESS",
-  "B2S",
-  "B2B_EXPANSION",
-  "B2B_CORPORATION",
-  "B2C",
-  "PRODUCT_SERVICE",
-  "SERVICE_ACCOUNT",
-  "TECHDEV",
-  "TECHOPS",
-  "EDUCATION",
-  "SSC",
-  "DESIGN",
-  "DATA",
-  "HR",
-];
-
 const VALID_ROLES = ["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"];
+
+async function getValidDepartmentValues(): Promise<string[]> {
+  const depts = await prisma.department.findMany({
+    select: { value: true },
+  });
+  return depts.map((d) => d.value);
+}
 
 // GET /api/users
 export async function getAllUsers(req: AuthRequest, res: Response) {
   try {
-    const { department, role, teamId } = req.query;
+    const { department, role, teamId, includeInactive } = req.query;
     const where: any = {};
     if (department) where.department = department as string;
     if (role) where.role = role as string;
     if (teamId) where.teamId = teamId as string;
+    if (includeInactive !== "true") {
+      where.isActive = true;
+    }
 
     const users = await prisma.user.findMany({
       where,
@@ -46,6 +37,7 @@ export async function getAllUsers(req: AuthRequest, res: Response) {
         department: true,
         position: true,
         teamId: true,
+        isActive: true,
         createdAt: true,
       },
       orderBy: { name: "asc" },
@@ -67,10 +59,26 @@ export async function createEmployee(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: "Name and email are required" });
     }
 
-    if (department && !VALID_DEPARTMENTS.includes(department)) {
-      return res.status(400).json({
-        message: `Department must be one of: ${VALID_DEPARTMENTS.join(", ")}`,
-      });
+    let normalizedDept: string | null = null;
+    let teamId = req.body.teamId || null;
+
+    if (department) {
+      normalizedDept = department.trim().toUpperCase();
+      const validDepts = await getValidDepartmentValues();
+      if (!validDepts.includes(normalizedDept as string)) {
+        return res.status(400).json({
+          message: `Department tidak valid: ${department}. Pilihan valid: ${validDepts.join(", ")}`,
+        });
+      }
+
+      if (!teamId) {
+        const team = await prisma.team.findFirst({
+          where: { department: normalizedDept },
+        });
+        if (team) {
+          teamId = team.id;
+        }
+      }
     }
 
     if (role && !VALID_ROLES.includes(role.toUpperCase())) {
@@ -79,8 +87,52 @@ export async function createEmployee(req: AuthRequest, res: Response) {
       });
     }
 
+    const targetRole = role ? role.toUpperCase() : "TEAM";
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
+      if (!existingUser.isActive) {
+        const reactivated = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name,
+            position: position || null,
+            department: normalizedDept,
+            teamId,
+            role: targetRole,
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            department: true,
+            position: true,
+            teamId: true,
+            isActive: true,
+            createdAt: true,
+          },
+        });
+
+        if (targetRole === "LEADER" && teamId) {
+          await prisma.team.update({
+            where: { id: teamId },
+            data: { leaderId: reactivated.id },
+          });
+        }
+
+        await logAudit(prisma, {
+          userId: req.user?.id,
+          action: "STATUS_CHANGE",
+          entityType: "USER",
+          entityId: reactivated.id,
+          newValues: reactivated,
+          req,
+        });
+
+        return res.status(200).json(reactivated);
+      }
       return res.status(400).json({ message: "Email already registered" });
     }
 
@@ -92,8 +144,9 @@ export async function createEmployee(req: AuthRequest, res: Response) {
         email,
         password: hashedPassword,
         position: position || null,
-        department: department || null,
-        role: role ? role.toUpperCase() : "TEAM",
+        department: normalizedDept,
+        teamId,
+        role: targetRole,
       },
       select: {
         id: true,
@@ -102,9 +155,17 @@ export async function createEmployee(req: AuthRequest, res: Response) {
         role: true,
         department: true,
         position: true,
+        teamId: true,
         createdAt: true,
       },
     });
+
+    if (targetRole === "LEADER" && teamId) {
+      await prisma.team.update({
+        where: { id: teamId },
+        data: { leaderId: newUser.id },
+      });
+    }
 
     await logAudit(prisma, {
       userId: req.user?.id,
@@ -128,10 +189,32 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { name, position, department, role } = req.body;
 
-    if (department && !VALID_DEPARTMENTS.includes(department)) {
-      return res.status(400).json({
-        message: `Department must be one of: ${VALID_DEPARTMENTS.join(", ")}`,
-      });
+    let normalizedDept: string | null | undefined = undefined;
+    let newTeamId: string | null | undefined =
+      req.body.teamId !== undefined ? req.body.teamId : undefined;
+
+    if (department !== undefined) {
+      if (department) {
+        normalizedDept = department.trim().toUpperCase();
+        const validDepts = await getValidDepartmentValues();
+        if (!validDepts.includes(normalizedDept as string)) {
+          return res.status(400).json({
+            message: `Department tidak valid: ${department}. Pilihan valid: ${validDepts.join(", ")}`,
+          });
+        }
+
+        if (newTeamId === undefined) {
+          const team = await prisma.team.findFirst({
+            where: { department: normalizedDept },
+          });
+          newTeamId = team ? team.id : null;
+        }
+      } else {
+        normalizedDept = null;
+        if (newTeamId === undefined) {
+          newTeamId = null;
+        }
+      }
     }
 
     if (role && !VALID_ROLES.includes(role.toUpperCase())) {
@@ -145,13 +228,16 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const newRole = role !== undefined ? role.toUpperCase() : user.role;
+
     const updated = await prisma.user.update({
       where: { id },
       data: {
         ...(name !== undefined && { name }),
         ...(position !== undefined && { position: position || null }),
-        ...(department !== undefined && { department: department || null }),
-        ...(role !== undefined && { role: role.toUpperCase() }),
+        ...(normalizedDept !== undefined && { department: normalizedDept }),
+        ...(newTeamId !== undefined && { teamId: newTeamId }),
+        ...(role !== undefined && { role: newRole }),
       },
       select: {
         id: true,
@@ -160,9 +246,30 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
         role: true,
         department: true,
         position: true,
+        teamId: true,
         createdAt: true,
       },
     });
+
+    const effectiveTeamId = updated.teamId;
+    if (newRole === "LEADER" && effectiveTeamId) {
+      await prisma.team.update({
+        where: { id: effectiveTeamId },
+        data: { leaderId: user.id },
+      });
+    } else if (
+      user.role === "LEADER" &&
+      (newRole !== "LEADER" ||
+        (normalizedDept !== undefined && normalizedDept !== user.department))
+    ) {
+      await prisma.team.updateMany({
+        where: {
+          leaderId: user.id,
+          ...(effectiveTeamId ? { id: { not: effectiveTeamId } } : {}),
+        },
+        data: { leaderId: null },
+      });
+    }
 
     await logAudit(prisma, {
       userId: req.user?.id,
@@ -173,12 +280,14 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
         name: user.name,
         position: user.position,
         department: user.department,
+        teamId: user.teamId,
         role: user.role,
       },
       newValues: {
         name: updated.name,
         position: updated.position,
         department: updated.department,
+        teamId: updated.teamId,
         role: updated.role,
       },
       req,
@@ -191,7 +300,7 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
   }
 }
 
-// DELETE /api/users/:id (Delete Employee)
+// DELETE /api/users/:id (Delete Employee -> Soft delete)
 export async function deleteEmployee(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
@@ -201,23 +310,15 @@ export async function deleteEmployee(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check RACI assignment
-    const assignmentCount = await prisma.krAssignment.count({
-      where: { userId: id },
+    // ponytail: soft-delete keeps FK historical integrity (audit logs, tasks, initiatives) intact; add permanent purge when data retention policy drafted
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
     });
-
-    if (assignmentCount > 0) {
-      return res.status(400).json({
-        message:
-          "Pegawai tidak dapat dihapus karena masih terdaftar dalam RACI Assignment Key Result.",
-      });
-    }
-
-    await prisma.user.delete({ where: { id } });
 
     await logAudit(prisma, {
       userId: req.user?.id,
-      action: "DELETE",
+      action: "STATUS_CHANGE",
       entityType: "USER",
       entityId: user.id,
       oldValues: {
@@ -226,11 +327,15 @@ export async function deleteEmployee(req: AuthRequest, res: Response) {
         email: user.email,
         role: user.role,
         department: user.department,
+        isActive: user.isActive,
+      },
+      newValues: {
+        isActive: false,
       },
       req,
     });
 
-    return res.status(200).json({ message: "Pegawai berhasil dihapus" });
+    return res.status(200).json({ message: "Pegawai berhasil dinonaktifkan" });
   } catch (error) {
     console.error("Delete employee error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -255,6 +360,14 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
 
     const results = { success: 0, updated: 0, errors: [] as any[] };
     const hashedPassword = await bcrypt.hash("SkollaEdu", 10);
+    const validDepts = await getValidDepartmentValues();
+    const allTeams = await prisma.team.findMany({
+      select: { id: true, department: true },
+    });
+    const teamMap = new Map<string, string>();
+    allTeams.forEach((t) => {
+      if (t.department) teamMap.set(t.department.toUpperCase(), t.id);
+    });
 
     for (const [index, emp] of employees.entries()) {
       const rowNum = index + 2; // baris ke-2 (baris 1 = header)
@@ -278,17 +391,20 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
         continue;
       }
 
-      if (
-        emp.department &&
-        !VALID_DEPARTMENTS.includes(emp.department.toUpperCase())
-      ) {
-        results.errors.push({
-          row: rowNum,
-          email: emp.email,
-          reason: `Department tidak valid: ${emp.department}`,
-        });
-        continue;
+      let empDept: string | null = null;
+      if (emp.department) {
+        empDept = emp.department.trim().toUpperCase();
+        if (!validDepts.includes(empDept as string)) {
+          results.errors.push({
+            row: rowNum,
+            email: emp.email,
+            reason: `Department tidak valid: ${emp.department}`,
+          });
+          continue;
+        }
       }
+
+      const resolvedTeamId = empDept ? teamMap.get(empDept) || null : null;
 
       if (emp.role && !VALID_ROLES.includes(emp.role.toUpperCase())) {
         results.errors.push({
@@ -310,8 +426,10 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
             data: {
               name: emp.name,
               position: emp.position || null,
-              department: emp.department ? emp.department.toUpperCase() : null,
+              department: empDept,
+              ...(resolvedTeamId !== null ? { teamId: resolvedTeamId } : {}),
               ...(emp.role && { role: emp.role.toUpperCase() }),
+              isActive: true,
             },
           });
           results.updated++;
@@ -323,7 +441,8 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
               password: hashedPassword,
               role: emp.role ? emp.role.toUpperCase() : "TEAM",
               position: emp.position || null,
-              department: emp.department ? emp.department.toUpperCase() : null,
+              department: empDept,
+              teamId: resolvedTeamId,
             },
           });
           results.success++;

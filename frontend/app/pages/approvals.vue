@@ -260,12 +260,14 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { useRuntimeConfig } from "#app";
 import { useAuthStore } from "../stores/auth";
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
 const auth = useAuthStore();
+const router = useRouter();
 
 const activeTab = ref("pending");
 const pendingUpdates = ref([]);
@@ -401,6 +403,13 @@ async function confirmReject(id) {
 }
 
 onMounted(() => {
+  if (
+    !auth.isAuthenticated ||
+    !["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(auth.user?.role)
+  ) {
+    router.push("/login");
+    return;
+  }
   loadAllData();
 });
 </script>

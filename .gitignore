@@ -9,3 +9,9 @@ backend/dist
 !.env.example
 backend/scripts/migration-data/
 
+backup/
+scripts/restore_demo.sh
+backend/scripts/seed_demo_realtime.ts
+backend/src/tests/test_cboard_*
+backend/migrations_c_level.sql
+

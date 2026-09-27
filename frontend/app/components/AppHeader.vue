@@ -22,10 +22,121 @@
           <line x1="4" x2="20" y1="18" y2="18" />
         </svg>
       </button> -->
-      <h1 class="header-title">{{ title }}</h1>
+      <h1 class="header-title">{{ headerTitle }}</h1>
     </div>
     <div class="header-right">
       <slot name="actions" />
+
+      <!-- C-Board Dynamic Context Switcher -->
+      <div v-if="isCBoardUser" class="context-switcher-wrapper">
+        <button
+          class="context-switcher-btn"
+          :class="{ 'in-manager-mode': isOperatingAsManager }"
+          @click.stop="toggleContextDropdown"
+          :title="'Konteks aktif: ' + currentContextLabel"
+        >
+          <span class="context-label-group">
+            <span class="context-role-tag">{{
+              isOperatingAsManager ? "Manager Mode" : "Strategic Mode"
+            }}</span>
+            <span class="context-text">{{ currentContextLabel }}</span>
+          </span>
+          <svg
+            class="chevron-icon"
+            :class="{ open: showContextDropdown }"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        <!-- Context Switcher Dropdown -->
+        <div
+          v-if="showContextDropdown"
+          class="context-dropdown card"
+          @click.stop
+        >
+          <div class="context-dropdown-header">
+            <div class="dropdown-title-row">
+              <span class="dropdown-title">Dynamic Context Switcher</span>
+              <span v-if="switching" class="switching-indicator"
+                >Beralih...</span
+              >
+            </div>
+            <p class="dropdown-sub">
+              Ganti perspektif antara C-Board Executive dan Manager Departemen
+            </p>
+          </div>
+
+          <div class="context-options-list">
+            <!-- Strategic Board Mode Option -->
+            <button
+              class="context-option-item strategic-option"
+              :class="{ active: !isOperatingAsManager }"
+              @click="switchContext('STRATEGIC', 'C_LEVEL')"
+              :disabled="switching"
+            >
+              <div class="option-text-group">
+                <span class="option-name">Strategic C-Board Level</span>
+                <span class="option-desc"
+                  >Executive Overview & Balanced Scorecard Korporat</span
+                >
+              </div>
+            </button>
+
+            <!-- Operational Departments Section -->
+            <div class="context-divider">
+              <span>Supervisi Operasional (Mode Manager)</span>
+            </div>
+
+            <div
+              v-if="availableSwitchDepts.length === 0"
+              class="empty-context-hint"
+            >
+              Belum ada departemen operasional yang terhubung.
+            </div>
+
+            <button
+              v-for="dept in availableSwitchDepts"
+              :key="dept.id || dept.value"
+              class="context-option-item dept-option"
+              :class="{
+                active:
+                  isOperatingAsManager &&
+                  (auth.user?.activeDepartment === dept.value ||
+                    auth.user?.department === dept.value),
+              }"
+              @click="switchContext(dept.value, 'MANAGER')"
+              :disabled="switching"
+            >
+              <div class="option-text-group">
+                <div class="dept-title-row">
+                  <span class="option-name">{{ dept.name || dept.label }}</span>
+                  <span class="dept-code-tag">{{ dept.value }}</span>
+                </div>
+                <span class="option-desc"
+                  >Supervisi operasional & approval OKR sebagai Manager</span
+                >
+              </div>
+              <span
+                v-if="
+                  isOperatingAsManager &&
+                  (auth.user?.activeDepartment === dept.value ||
+                    auth.user?.department === dept.value)
+                "
+                class="active-indicator"
+              >
+                ✓
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div
         v-if="auth.user"
@@ -166,10 +277,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
 import ChangePasswordModal from "./ChangePasswordModal.vue";
 
+const route = useRoute();
 const auth = useAuthStore();
 const notifStore = useNotificationStore();
 const emit = defineEmits(["toggle-sidebar"]);
@@ -177,7 +290,7 @@ const emit = defineEmits(["toggle-sidebar"]);
 const props = defineProps({
   title: {
     type: String,
-    required: true,
+    default: "",
   },
   isSidebarOpen: {
     type: Boolean,
@@ -185,12 +298,159 @@ const props = defineProps({
   },
 });
 
+function getMenuTitleByPath(path) {
+  if (!path) return "";
+  if (path.startsWith("/c-level")) return "Executive Dashboard";
+  if (path.startsWith("/dashboard")) return "Dashboard";
+  if (path.startsWith("/initiatives")) return "Inisiatif & Task";
+  if (path.startsWith("/member-achievement")) return "Capaian Task Member";
+  if (path.startsWith("/departments") || path.startsWith("/admin/departments"))
+    return "Struktur Departemen";
+  if (path.startsWith("/admin/objectives")) return "OKR Builder";
+  if (
+    path.startsWith("/admin/initiatives-kanban") ||
+    path.startsWith("/admin/initiatives")
+  )
+    return "Inisiatif & Task";
+  if (path.startsWith("/admin/update-progress")) return "Update Progress";
+  if (path.startsWith("/admin/employees")) return "Data Pegawai";
+  if (path.startsWith("/admin/kpis")) return "Master KPI";
+  if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
+  if (path.startsWith("/admin/sprints")) return "Siklus Sprint";
+  if (path.startsWith("/admin/annual-bsc")) return "Annual BSC";
+  if (path.startsWith("/manager/overview")) return "OKR Overview";
+  if (path.startsWith("/leader/my-krs")) return "KR Saya";
+  if (path.startsWith("/leader/initiatives")) return "Inisiatif Tim";
+  if (path.startsWith("/team/my-work")) return "Pekerjaan Saya";
+  if (path.startsWith("/approvals")) return "Persetujuan Task";
+  if (path.startsWith("/strategy-map")) return "Causal Map";
+  if (path.startsWith("/bsc-view"))
+    return "Strategic Mapping (Balanced Scorecard)";
+  if (path.startsWith("/kr-history")) return "Riwayat Key Result";
+  return "";
+}
+
+const headerTitle = computed(() => {
+  const currentPath = route?.path || "";
+  const menuTitle = getMenuTitleByPath(currentPath);
+  if (menuTitle) return menuTitle;
+  if (props.title && props.title !== "Profil Pengguna") return props.title;
+  return props.title || "Dashboard";
+});
+
 const showNotifDropdown = ref(false);
 const showChangePasswordModal = ref(false);
+const showContextDropdown = ref(false);
+const switching = ref(false);
+const allDepartmentsList = ref([]);
 
 const roleBadgeClass = computed(() => {
   return auth.user?.role?.toLowerCase().replace("_", "") || "";
 });
+
+const isCBoardUser = computed(() => {
+  if (!auth.user) return false;
+  if (auth.user.originalRole === "C_LEVEL" || auth.user.role === "C_LEVEL")
+    return true;
+  const pos = (auth.user.position || "").toUpperCase();
+  return /CEO|CTO|CBO|CHIEF EXECUTIVE|CHIEF TECHNOLOGY|CHIEF BUSINESS/i.test(
+    pos,
+  );
+});
+
+const isCeo = computed(() => {
+  if (!auth.user) return false;
+  const pos = (auth.user.position || "").toUpperCase();
+  return (
+    (auth.user.role === "C_LEVEL" ||
+      auth.user.originalRole === "C_LEVEL" ||
+      auth.user.role === "MANAGER") &&
+    /CEO|CHIEF EXECUTIVE/i.test(pos)
+  );
+});
+
+const isOperatingAsManager = computed(() => {
+  return (
+    auth.user?.role === "MANAGER" &&
+    (auth.user?.originalRole === "C_LEVEL" || isCBoardUser.value)
+  );
+});
+
+const currentContextLabel = computed(() => {
+  if (isOperatingAsManager.value) {
+    return (
+      auth.user?.activeDepartment || auth.user?.department || "Operasional"
+    );
+  }
+  return "Strategic";
+});
+
+const availableSwitchDepts = computed(() => {
+  if (isCeo.value || auth.user?.role === "ADMIN") {
+    return allDepartmentsList.value.filter(
+      (d) => d.value !== "STRATEGIC" && d.isActive !== false,
+    );
+  }
+  const sponsored = auth.user?.strategicDepartments || [];
+  if (sponsored.length > 0) {
+    const sponsoredValues = sponsored.map((s) => s.value);
+    return allDepartmentsList.value.filter(
+      (d) => sponsoredValues.includes(d.value) && d.isActive !== false,
+    );
+  }
+  return allDepartmentsList.value.filter(
+    (d) => d.value !== "STRATEGIC" && d.isActive !== false,
+  );
+});
+
+async function fetchHeaderDepartments() {
+  if (!auth.token) return;
+  const config = useRuntimeConfig();
+  try {
+    const res = await $fetch(`${config.public.apiBase}/departments`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    allDepartmentsList.value = res || [];
+  } catch (err) {
+    console.error("Failed to load departments in header:", err);
+  }
+}
+
+function toggleContextDropdown() {
+  showContextDropdown.value = !showContextDropdown.value;
+  if (showContextDropdown.value && allDepartmentsList.value.length === 0) {
+    fetchHeaderDepartments();
+  }
+}
+
+async function switchContext(deptValue, targetRole) {
+  switching.value = true;
+  try {
+    await auth.switchContext(deptValue, targetRole);
+    showContextDropdown.value = false;
+    if (deptValue === "STRATEGIC" || targetRole === "C_LEVEL") {
+      navigateTo("/dashboard");
+    } else {
+      navigateTo("/manager/overview");
+    }
+  } catch (err) {
+    alert(
+      "Gagal beralih konteks: " +
+        (err.data?.message || err.message || "Terjadi kesalahan"),
+    );
+  } finally {
+    switching.value = false;
+  }
+}
+
+function handleClickOutside(e) {
+  if (!e.target.closest(".context-switcher-wrapper")) {
+    showContextDropdown.value = false;
+  }
+  if (!e.target.closest(".notif-wrapper")) {
+    showNotifDropdown.value = false;
+  }
+}
 
 function toggleNotifDropdown() {
   showNotifDropdown.value = !showNotifDropdown.value;
@@ -217,11 +477,20 @@ function formatTime(isoString) {
 onMounted(() => {
   if (auth.isAuthenticated) {
     notifStore.startPolling();
+    if (isCBoardUser.value) {
+      fetchHeaderDepartments();
+    }
+  }
+  if (typeof window !== "undefined") {
+    document.addEventListener("click", handleClickOutside);
   }
 });
 
 onUnmounted(() => {
   notifStore.stopPolling();
+  if (typeof window !== "undefined") {
+    document.removeEventListener("click", handleClickOutside);
+  }
 });
 </script>
 
@@ -293,6 +562,249 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+/* Dynamic Context Switcher */
+.context-switcher-wrapper {
+  position: relative;
+}
+
+.context-switcher-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.context-switcher-btn:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.context-switcher-btn.in-manager-mode {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.context-switcher-btn.in-manager-mode:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+}
+
+.context-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.context-label-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.context-role-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  line-height: 1.1;
+}
+
+.in-manager-mode .context-role-tag {
+  color: #15803d;
+}
+
+.context-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.chevron-icon {
+  color: #94a3b8;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.context-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  padding: 0;
+}
+
+.context-dropdown-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+  border-radius: 14px 14px 0 0;
+}
+
+.dropdown-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdown-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.switching-indicator {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0284c7;
+  animation: pulse 1.5s infinite;
+}
+
+.dropdown-sub {
+  font-size: 11px;
+  color: #64748b;
+  margin: 3px 0 0;
+  line-height: 1.3;
+}
+
+.context-options-list {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.context-divider {
+  padding: 8px 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+}
+
+.context-option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.context-option-item:hover {
+  background: #f1f5f9;
+}
+
+.context-option-item.active {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.context-option-item.strategic-option.active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.option-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.option-icon-box.crown-box {
+  background: #fef3c7;
+}
+
+.option-icon-box.dept-box {
+  background: #e0f2fe;
+}
+
+.option-text-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.dept-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dept-code-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 4px;
+}
+
+.option-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.option-desc {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.active-indicator {
+  font-size: 14px;
+  font-weight: 700;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.strategic-option .active-indicator {
+  color: #0284c7;
+}
+
+.empty-context-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 10px;
+  text-align: center;
 }
 
 .notif-wrapper {

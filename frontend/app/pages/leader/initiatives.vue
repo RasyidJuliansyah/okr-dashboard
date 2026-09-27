@@ -832,8 +832,10 @@ async function confirmReject(updateId) {
   padding: 24px;
   width: 100%;
   max-width: 520px;
-  max-height: 85vh;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
+  box-sizing: border-box;
 }
 .update-card {
   background: #f8fafc;

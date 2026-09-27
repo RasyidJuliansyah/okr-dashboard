@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS `annual_key_result` (
   `bsc_perspective` VARCHAR(191) NOT NULL,
   `year`            VARCHAR(191) NOT NULL,
   `status`          VARCHAR(191) NOT NULL DEFAULT 'ON_TRACK',
+  `target_type`     VARCHAR(20)  NOT NULL DEFAULT 'AT_LEAST',
+
   `created_at`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
@@ -161,7 +163,56 @@ PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'department' AND COLUMN_NAME = 'manager_id');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `department` ADD COLUMN `manager_id` VARCHAR(191) NULL AFTER `value`;', 'SELECT 1;');
 PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+-- 2.2 Pastikan target_type ada di annual_key_result (jika tabel sudah pernah ada sebelumnya)
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'annual_key_result' AND COLUMN_NAME = 'target_type');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `annual_key_result` ADD COLUMN `target_type` VARCHAR(20) NOT NULL DEFAULT ''AT_LEAST'' AFTER `status`;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+
+
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `user` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `position`;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- ────────────────────────────────────────────────────────────────────
+-- SOFT DELETE COLUMNS (is_active) FOR RELATIONAL TABLES
+-- ────────────────────────────────────────────────────────────────────
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'objective' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `objective` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'annual_key_result' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `annual_key_result` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'key_result' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `key_result` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'initiative' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `initiative` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'task' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `task` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'team' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `team` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'kpi' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `kpi` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'causal_link' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `causal_link` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sprint' AND COLUMN_NAME = 'is_active');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `sprint` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ────────────────────────────────────────────────────────────────────
 -- BAGIAN 3: MODIFIKASI KOLOM TABEL key_result
@@ -182,6 +233,11 @@ PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'key_result' AND COLUMN_NAME = 'is_manual_override');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `key_result` ADD COLUMN `is_manual_override` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`;', 'SELECT 1;');
 PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'key_result' AND COLUMN_NAME = 'target_type');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `key_result` ADD COLUMN `target_type` VARCHAR(20) NOT NULL DEFAULT ''AT_LEAST'' AFTER `status`;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+
 
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'key_result' AND INDEX_NAME = 'KeyResult_annualKeyResultId_fkey');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `key_result` ADD INDEX `KeyResult_annualKeyResultId_fkey` (`annual_key_result_id`);', 'SELECT 1;');
@@ -211,6 +267,11 @@ PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'initiative' AND COLUMN_NAME = 'kanban_status');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `initiative` ADD COLUMN `kanban_status` VARCHAR(191) NOT NULL DEFAULT ''TODO'' AFTER `status`;', 'SELECT 1;');
 PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'initiative' AND COLUMN_NAME = 'target_type');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `initiative` ADD COLUMN `target_type` VARCHAR(20) NOT NULL DEFAULT ''AT_LEAST'' AFTER `status`;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'initiative' AND COLUMN_NAME = 'finish_date');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `initiative` ADD COLUMN `finish_date` DATETIME(3) NULL AFTER `due_date`;', 'SELECT 1;');
@@ -282,6 +343,11 @@ PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'task' AND COLUMN_NAME = 'kanban_status');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `task` ADD COLUMN `kanban_status` VARCHAR(191) NULL DEFAULT ''TODO'' AFTER `status`;', 'SELECT 1;');
 PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'task' AND COLUMN_NAME = 'target_type');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `task` ADD COLUMN `target_type` VARCHAR(20) NOT NULL DEFAULT ''AT_LEAST'' AFTER `status`;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 
 SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'task' AND COLUMN_NAME = 'documentation_link');
 SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `task` ADD COLUMN `documentation_link` VARCHAR(191) NULL AFTER `kanban_status`;', 'SELECT 1;');
@@ -533,6 +599,51 @@ UPDATE `initiative` i
 INNER JOIN `sprint` s ON s.name = i.sprint_month
 SET i.sprint_id = s.id
 WHERE i.sprint_id IS NULL AND i.sprint_month IS NOT NULL;
+
+-- ────────────────────────────────────────────────────────────────────
+-- BAGIAN 10: C-BOARD LEVEL & STRATEGIC SPONSORSHIP (c_level_id)
+-- ────────────────────────────────────────────────────────────────────
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'department' AND COLUMN_NAME = 'c_level_id');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `department` ADD COLUMN `c_level_id` VARCHAR(191) NULL AFTER `manager_id`;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @exist := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'department' AND CONSTRAINT_NAME = 'Department_cLevelId_fkey' AND CONSTRAINT_TYPE = 'FOREIGN KEY');
+SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE `department` ADD CONSTRAINT `Department_cLevelId_fkey` FOREIGN KEY (`c_level_id`) REFERENCES `user` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;', 'SELECT 1;');
+PREPARE stmt FROM @sqlstmt; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Sinkronisasi role C_LEVEL untuk C-Board
+UPDATE `user`
+SET `role` = 'C_LEVEL'
+WHERE `email` IN ('devlin@skolla.education', 'akbar@skolla.education', 'yazid@skolla.education');
+
+-- ────────────────────────────────────────────────────────────────────
+-- BAGIAN 11: AUTO-BACKFILL TEAM & SINKRONISASI DEPARTEMEN
+-- ────────────────────────────────────────────────────────────────────
+
+-- 11.1 Sinkronisasi B2B_CORPORATION / B2B_CORPORATE jika ada mismatch
+UPDATE `team` SET `department` = 'B2B_CORPORATE' WHERE `department` = 'B2B_CORPORATION';
+
+-- 11.2 Buat default Team untuk setiap Department yang belum punya record di tabel team
+INSERT INTO `team` (`id`, `name`, `manager_id`, `leader_id`, `department`, `is_active`)
+SELECT
+  UUID(),
+  d.`name`,
+  d.`manager_id`,
+  NULL,
+  d.`value`,
+  1
+FROM `department` d
+WHERE NOT EXISTS (
+  SELECT 1 FROM `team` t WHERE t.`department` = d.`value`
+);
+
+-- 11.3 Sinkronisasi team_id pegawai yang sudah punya department tapi team_id masih NULL
+UPDATE `user` u
+INNER JOIN `team` t ON t.`department` = u.`department`
+SET u.`team_id` = t.`id`
+WHERE u.`team_id` IS NULL AND u.`department` IS NOT NULL;
+
 
 SET FOREIGN_KEY_CHECKS = 1;
 

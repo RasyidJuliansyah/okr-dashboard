@@ -163,19 +163,34 @@ provide("managerFilters", {
 
 const pageTitle = computed(() => {
   const path = route.path;
-  if (path.startsWith("/dashboard")) return "Dashboard OKR";
-  if (path.startsWith("/bsc-view"))
-    return "Strategic Mapping (Balanced Scorecard)";
-  if (path.startsWith("/strategy-map")) return "Causal Map";
-  if (path.startsWith("/admin/objectives")) return "OKR Builder";
-  if (path.startsWith("/admin/update-progress")) return "Update Capaian";
-  if (path.startsWith("/admin/employees")) return "Data Pegawai";
-  if (path.startsWith("/admin/departments") || path.startsWith("/departments"))
+  if (path.startsWith("/c-level")) return "Executive Dashboard";
+  if (path.startsWith("/dashboard")) return "Dashboard";
+  if (path.startsWith("/initiatives")) return "Inisiatif & Task";
+  if (path.startsWith("/member-achievement")) return "Capaian Task Member";
+  if (path.startsWith("/departments") || path.startsWith("/admin/departments"))
     return "Struktur Departemen";
+  if (path.startsWith("/admin/objectives")) return "OKR Builder";
+  if (
+    path.startsWith("/admin/initiatives-kanban") ||
+    path.startsWith("/admin/initiatives")
+  )
+    return "Inisiatif & Task";
+  if (path.startsWith("/admin/update-progress")) return "Update Progress";
+  if (path.startsWith("/admin/employees")) return "Data Pegawai";
+  if (path.startsWith("/admin/kpis")) return "Master KPI";
   if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
   if (path.startsWith("/admin/sprints")) return "Siklus Sprint";
-  if (path.startsWith("/approvals")) return "Persetujuan (Approvals)";
-  return "Profil Pengguna";
+  if (path.startsWith("/admin/annual-bsc")) return "Annual BSC";
+  if (path.startsWith("/manager/overview")) return "OKR Overview";
+  if (path.startsWith("/leader/my-krs")) return "KR Saya";
+  if (path.startsWith("/leader/initiatives")) return "Inisiatif Tim";
+  if (path.startsWith("/team/my-work")) return "Pekerjaan Saya";
+  if (path.startsWith("/approvals")) return "Persetujuan Task";
+  if (path.startsWith("/strategy-map")) return "Causal Map";
+  if (path.startsWith("/bsc-view"))
+    return "Strategic Mapping (Balanced Scorecard)";
+  if (path.startsWith("/kr-history")) return "Riwayat Key Result";
+  return "Dashboard";
 });
 </script>
 
@@ -503,5 +518,21 @@ p {
   .sidebar-overlay {
     display: none !important;
   }
+
+/* Responsive vertical scroll for all modal boxes */
+.modal-box {
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@media (max-height: 700px) {
+  .modal-box {
+    max-height: calc(100dvh - 20px);
+    max-height: calc(100vh - 20px);
+  }
+}
+
 }
 </style>

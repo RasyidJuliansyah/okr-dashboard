@@ -50,6 +50,7 @@ export async function getStrategyMap(req: AuthRequest, res: Response) {
 
     // Fetch all KRs for nodes
     const keyResults = await prisma.keyResult.findMany({
+      where: { isActive: true },
       include: {
         objective: {
           select: {
@@ -61,7 +62,9 @@ export async function getStrategyMap(req: AuthRequest, res: Response) {
     });
 
     // Fetch all CausalLinks for edges
-    const links = await prisma.causalLink.findMany();
+    const links = await prisma.causalLink.findMany({
+      where: { isActive: true },
+    });
 
     // Group keyResults by BSC perspective
     const groups: { [key: string]: typeof keyResults } = {
@@ -143,7 +146,11 @@ export async function deleteCausalLink(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: 'Causal link not found' });
     }
 
-    await prisma.causalLink.delete({ where: { id } });
+    // ponytail: soft-delete keeps FK historical integrity intact; add hard purge when data retention policy drafted
+    await prisma.causalLink.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
     return res.status(200).json({ message: 'Causal link deleted successfully' });
   } catch (error) {

@@ -139,69 +139,52 @@ export async function deleteKeyResult(req: AuthRequest, res: Response) {
     }
 
     const initiativeIds = kr.initiatives.map((i) => i.id);
-    const taskIds = kr.initiatives.flatMap((i) => i.tasks.map((k) => k.id));
-
     const annualKeyResultId = kr.annualKeyResultId;
 
-    // Cascade delete in transaction to prevent Foreign Key Violation (P2003)
+    // ponytail: soft-delete keeps FK historical integrity (tasks, initiatives, updates, RACI, audit) intact; add hard purge when data retention policy drafted
     await prisma.$transaction([
-      // 1. Delete Task updates & Task assignments
-      prisma.taskUpdate.deleteMany({
-        where: { taskId: { in: taskIds } },
+      prisma.keyResult.update({
+        where: { id },
+        data: { isActive: false },
       }),
-      prisma.taskAssignment.deleteMany({
-        where: { taskId: { in: taskIds } },
+      prisma.initiative.updateMany({
+        where: { keyResultId: id },
+        data: { isActive: false },
       }),
-      // 2. Delete Tasks
-      prisma.task.deleteMany({
-        where: { id: { in: taskIds } },
-      }),
-      // 3. Delete Initiative Updates & Initiatives
-      prisma.initiativeUpdate.deleteMany({
+      prisma.task.updateMany({
         where: { initiativeId: { in: initiativeIds } },
+        data: { isActive: false },
       }),
-      prisma.initiative.deleteMany({
-        where: { id: { in: initiativeIds } },
-      }),
-      // 4. Delete KR Assignments (RACI) & KR Departments & KR Updates
-      prisma.krAssignment.deleteMany({
-        where: { keyResultId: id },
-      }),
-      prisma.krDepartment.deleteMany({
-        where: { keyResultId: id },
-      }),
-      prisma.krUpdate.deleteMany({
-        where: { keyResultId: id },
-      }),
-      // 5. Delete Causal Links
-      prisma.causalLink.deleteMany({
+      prisma.causalLink.updateMany({
         where: {
           OR: [{ sourceKrId: id }, { targetKrId: id }],
         },
-      }),
-      // 6. Delete Key Result
-      prisma.keyResult.delete({
-        where: { id },
+        data: { isActive: false },
       }),
     ]);
 
     if (annualKeyResultId) {
       await normalizeMonthlyKrWeights(annualKeyResultId);
+      await cascadeMonthlyKrToAnnual(annualKeyResultId);
     }
 
     await logAudit(prisma, {
       userId: req.user?.id,
-      action: "DELETE",
+      action: "STATUS_CHANGE",
       entityType: "KEY_RESULT",
       entityId: id,
       oldValues: {
         title: kr.title,
         targetValue: kr.targetValue,
+        isActive: kr.isActive,
+      },
+      newValues: {
+        isActive: false,
       },
       req,
     });
 
-    return res.status(200).json({ message: "Key Result deleted successfully" });
+    return res.status(200).json({ message: "Key Result deactivated successfully" });
   } catch (error) {
     console.error("Delete key result error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -647,8 +630,71 @@ export async function getKeyResultAssignments(req: AuthRequest, res: Response) {
 export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
   try {
     const { id: userId, role } = req.user!;
+    const { userId: queryUserId } = req.query;
 
-    let whereClause: any = { userId };
+    const keyResultInclude = {
+      objective: true,
+      initiatives: {
+        include: {
+          team: true,
+          owner: true,
+          assignedLeader: true,
+          tasks: {
+            include: { assignments: { include: { user: true } } },
+          },
+        },
+      },
+      departments: true,
+      annualKeyResult: {
+        select: {
+          id: true,
+          title: true,
+          targetValue: true,
+          currentValue: true,
+          status: true,
+        },
+      },
+    };
+
+    if (role === "ADMIN" || role === "C_LEVEL") {
+      if (queryUserId) {
+        const assignments = await prisma.krAssignment.findMany({
+          where: { userId: String(queryUserId), keyResult: { isActive: true } },
+          include: {
+            keyResult: {
+              include: keyResultInclude,
+            },
+          },
+        });
+        return res.status(200).json(assignments);
+      } else {
+        const krs = await prisma.keyResult.findMany({
+          where: { isActive: true },
+          include: {
+            ...keyResultInclude,
+            assignments: {
+              include: { user: true },
+            },
+          },
+        });
+
+        const assignments = krs.map((kr) => {
+          const primaryAssign =
+            kr.assignments.find((a) => a.raciRole === "RESPONSIBLE") ||
+            kr.assignments[0];
+          return {
+            id: primaryAssign ? primaryAssign.id : `virtual-${kr.id}`,
+            keyResultId: kr.id,
+            userId: primaryAssign ? primaryAssign.userId : userId,
+            raciRole: primaryAssign ? primaryAssign.raciRole : "RESPONSIBLE",
+            keyResult: kr,
+          };
+        });
+        return res.status(200).json(assignments);
+      }
+    }
+
+    let whereClause: any = { userId, keyResult: { isActive: true } };
 
     if (role === "LEADER") {
       whereClause = {
@@ -664,29 +710,7 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
       where: whereClause,
       include: {
         keyResult: {
-          include: {
-            objective: true,
-            initiatives: {
-              include: {
-                team: true,
-                owner: true,
-                assignedLeader: true,
-                tasks: {
-                  include: { assignments: { include: { user: true } } },
-                },
-              },
-            },
-            departments: true,
-            annualKeyResult: {
-              select: {
-                id: true,
-                title: true,
-                targetValue: true,
-                currentValue: true,
-                status: true,
-              },
-            },
-          },
+          include: keyResultInclude,
         },
       },
     });
@@ -769,7 +793,10 @@ export async function getKrsForInitiativeDropdown(
     }
 
     const keyResults = await prisma.keyResult.findMany({
-      where: krWhere,
+      where: {
+        ...krWhere,
+        isActive: true,
+      },
       include: {
         objective: { select: { id: true, title: true, year: true } },
         departments: true,
@@ -789,7 +816,7 @@ export async function cascadeMonthlyKrToAnnual(
   annualKeyResultId: string,
 ): Promise<void> {
   const monthlyKrs = await prisma.keyResult.findMany({
-    where: { annualKeyResultId },
+    where: { annualKeyResultId, isActive: true },
   });
   const annualKr = await prisma.annualKeyResult.findUnique({
     where: { id: annualKeyResultId },
@@ -830,7 +857,7 @@ export async function normalizeMonthlyKrWeights(
   annualKeyResultId: string,
 ): Promise<void> {
   const monthlyKrs = await prisma.keyResult.findMany({
-    where: { annualKeyResultId },
+    where: { annualKeyResultId, isActive: true },
   });
   if (monthlyKrs.length === 0) return;
 

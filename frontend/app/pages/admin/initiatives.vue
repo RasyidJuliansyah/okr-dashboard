@@ -850,6 +850,10 @@ onMounted(async () => {
   border-radius: 12px;
   width: 400px;
   max-width: 90%;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
   border: 1px solid #333;
   display: flex;
   flex-direction: column;

@@ -33,7 +33,7 @@ export async function getAllDepartments(req: AuthRequest, res: Response) {
     const depts = await prisma.department.findMany({
       where,
       orderBy: { name: "asc" },
-      include: { manager: true },
+      include: { manager: true, cLevel: true },
     });
     return res.status(200).json(depts);
   } catch (error) {
@@ -50,8 +50,11 @@ export async function createDepartment(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: "Name and value are required" });
     }
 
+    const deptVal = value.trim().toUpperCase();
+    const deptName = name.trim();
+
     const existing = await prisma.department.findUnique({
-      where: { value: value.toUpperCase() },
+      where: { value: deptVal },
     });
     if (existing) {
       return res.status(400).json({ message: "Department value already exists" });
@@ -59,11 +62,25 @@ export async function createDepartment(req: AuthRequest, res: Response) {
 
     const newDept = await prisma.department.create({
       data: {
-        name,
-        value: value.toUpperCase(),
+        name: deptName,
+        value: deptVal,
         isActive: true,
       },
     });
+
+    // Otomatis buat default Team untuk departemen baru agar pegawai bisa langsung di-assign
+    const existingTeam = await prisma.team.findFirst({
+      where: { department: deptVal },
+    });
+    if (!existingTeam) {
+      await prisma.team.create({
+        data: {
+          name: deptName,
+          department: deptVal,
+          isActive: true,
+        },
+      });
+    }
 
     await logAudit(prisma, {
       userId: req.user?.id,
@@ -99,6 +116,12 @@ export async function assignManager(req: AuthRequest, res: Response) {
       where: { id },
       data: { managerId: newManagerId },
       include: { manager: true },
+    });
+
+    // Sinkronisasi manager_id pada Team yang bersangkutan
+    await prisma.team.updateMany({
+      where: { department: dept.value },
+      data: { managerId: newManagerId },
     });
 
     // If new manager assigned, set role to MANAGER
@@ -138,6 +161,50 @@ export async function assignManager(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+export async function assignCLevel(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body; // user ID to be C-Level sponsor, or null / empty
+
+    const dept = await prisma.department.findUnique({ where: { id } });
+    if (!dept) {
+      return res.status(404).json({ message: "Department not found" });
+    }
+
+    const oldCLevelId = dept.cLevelId;
+    const newCLevelId = userId || null;
+
+    if (newCLevelId) {
+      const user = await prisma.user.findUnique({ where: { id: newCLevelId } });
+      if (!user) {
+        return res.status(404).json({ message: "Pegawai tidak ditemukan" });
+      }
+    }
+
+    const updatedDept = await prisma.department.update({
+      where: { id },
+      data: { cLevelId: newCLevelId },
+      include: { manager: true, cLevel: true },
+    });
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: newCLevelId ? "ASSIGN_C_LEVEL" : "REMOVE_C_LEVEL",
+      entityType: "DEPARTMENT",
+      entityId: dept.id,
+      oldValues: { cLevelId: oldCLevelId },
+      newValues: { cLevelId: newCLevelId },
+      req,
+    });
+
+    return res.status(200).json(updatedDept);
+  } catch (error) {
+    console.error("Assign C-Level error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
 
 export async function toggleDepartmentStatus(req: AuthRequest, res: Response) {
   try {
@@ -160,6 +227,12 @@ export async function toggleDepartmentStatus(req: AuthRequest, res: Response) {
       where: { id },
       data: { isActive: nextStatus },
       include: { manager: true },
+    });
+
+    // Sinkronisasi status aktif team
+    await prisma.team.updateMany({
+      where: { department: dept.value },
+      data: { isActive: nextStatus },
     });
 
     await logAudit(prisma, {
@@ -193,10 +266,17 @@ export async function updateDepartment(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "Department not found" });
     }
 
+    const trimmedName = name.trim();
     const updated = await prisma.department.update({
       where: { id },
-      data: { name: name.trim() },
+      data: { name: trimmedName },
       include: { manager: true },
+    });
+
+    // Sinkronisasi nama team
+    await prisma.team.updateMany({
+      where: { department: dept.value },
+      data: { name: trimmedName },
     });
 
     await logAudit(prisma, {
