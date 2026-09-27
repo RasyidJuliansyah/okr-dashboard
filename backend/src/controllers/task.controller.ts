@@ -203,6 +203,7 @@ export async function getCrossDeptTasks(req: AuthRequest, res: Response) {
 
     let where: any = {
       isCrossDept: true,
+      isActive: true,
     };
 
     if (status) {

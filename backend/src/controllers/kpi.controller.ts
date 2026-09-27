@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { logAudit } from "../utils/auditLogger";
 
 const prisma = new PrismaClient();
 
@@ -17,6 +18,7 @@ export async function getAllKpis(req: AuthRequest, res: Response) {
     const { department, bscPerspective, search } = req.query;
 
     const where: any = {
+      isActive: true,
       status: "ACTIVE",
     };
 
@@ -163,25 +165,30 @@ export async function deleteKpi(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "KPI tidak ditemukan" });
     }
 
-    const usageCount =
-      (await prisma.initiativeKpi.count({ where: { kpiId: id } })) +
-      (await prisma.taskKpi.count({ where: { kpiId: id } }));
+    // ponytail: soft-delete keeps FK historical integrity intact; add hard purge when data retention policy drafted
+    await prisma.kpi.update({
+      where: { id },
+      data: { isActive: false, status: "INACTIVE" },
+    });
 
-    if (usageCount > 0) {
-      // Soft delete jika KPI sudah digunakan oleh Inisiatif atau Task
-      await prisma.kpi.update({
-        where: { id },
-        data: { status: "INACTIVE" },
-      });
-      return res
-        .status(200)
-        .json({
-          message: "KPI dinonaktifkan karena sudah terpakai di Inisiatif/Task",
-        });
-    }
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "STATUS_CHANGE",
+      entityType: "KPI",
+      entityId: id,
+      oldValues: {
+        name: existing.name,
+        status: existing.status,
+        isActive: existing.isActive,
+      },
+      newValues: {
+        status: "INACTIVE",
+        isActive: false,
+      },
+      req,
+    });
 
-    await prisma.kpi.delete({ where: { id } });
-    return res.status(200).json({ message: "KPI berhasil dihapus" });
+    return res.status(200).json({ message: "KPI berhasil dinonaktifkan" });
   } catch (error) {
     console.error("Delete KPI error:", error);
     return res.status(500).json({ message: "Internal server error" });

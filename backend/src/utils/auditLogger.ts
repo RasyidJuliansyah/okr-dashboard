@@ -4,7 +4,7 @@ import { Request } from "express";
 export interface LogAuditParams {
   userId?: string | null;
   action: string;
-  entityType: "USER" | "DEPARTMENT" | "TASK" | "INITIATIVE" | "KEY_RESULT" | "SPRINT";
+  entityType: "USER" | "DEPARTMENT" | "TASK" | "INITIATIVE" | "KEY_RESULT" | "SPRINT" | "OBJECTIVE" | "KPI" | "TEAM";
   entityId?: string | null;
   oldValues?: any;
   newValues?: any;

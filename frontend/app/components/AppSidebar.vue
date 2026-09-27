@@ -394,12 +394,12 @@
 
       <!-- Manager divider when collapsed -->
       <div
-        v-if="!isOpen && (isManager || isAdmin)"
+        v-if="!isOpen && (isManager || isAdmin || isCLevel)"
         style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
       ></div>
 
       <!-- Manager menu -->
-      <div v-if="isManager || isAdmin" :style="navGroupStyle">
+      <div v-if="isManager || isAdmin || isCLevel" :style="navGroupStyle">
         <p :style="navGroupLabelStyle">MANAGER</p>
         <NuxtLink
           to="/manager/overview"
@@ -447,7 +447,7 @@
       </div>
 
       <!-- Leader menu -->
-      <div v-if="isLeader && !isManager && !isAdmin" :style="navGroupStyle">
+      <div v-if="isLeader && !isManager && !isAdmin && !isCLevel" :style="navGroupStyle">
         <p :style="navGroupLabelStyle">LEADER</p>
         <NuxtLink
           to="/leader/my-krs"
@@ -475,13 +475,13 @@
 
       <!-- Team divider when collapsed -->
       <div
-        v-if="!isOpen && (isTeam || isLeader || isManager || isAdmin)"
+        v-if="!isOpen && (isTeam || isLeader || isManager || isAdmin || isCLevel)"
         style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
       ></div>
 
       <!-- Team menu -->
       <div
-        v-if="isTeam || isLeader || isManager || isAdmin"
+        v-if="isTeam || isLeader || isManager || isAdmin || isCLevel"
         :style="navGroupStyle"
       >
         <p :style="navGroupLabelStyle">PEKERJAAN</p>

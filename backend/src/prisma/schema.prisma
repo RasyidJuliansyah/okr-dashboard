@@ -15,12 +15,14 @@ model User {
   role                String           @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
   department          String?
   position            String?
+  isActive            Boolean          @default(true) @map("is_active")
   teamId              String?          @map("team_id")
   team                Team?            @relation("TeamMembers", fields: [teamId], references: [id], map: "User_teamId_fkey")
   leadingTeams        Team[]           @relation("TeamLeader")
   assignments         KrAssignment[]
   taskAssignments     TaskAssignment[]
   managedDepartments  Department[]     @relation("DepartmentManager")
+  strategicDepartments Department[]    @relation("DepartmentCLevel")
   ownedInitiatives    Initiative[]     @relation("InitiativeOwner")
   assignedInitiatives Initiative[]     @relation("InitiativeLeader") // NOTE: FK to user currently missing in DB
   assignedTasks       Task[]           @relation("TaskAssignedMember") // NOTE: FK to user currently missing in DB
@@ -42,6 +44,7 @@ model Team {
   leaderId    String?      @map("leader_id")
   leader      User?        @relation("TeamLeader", fields: [leaderId], references: [id], map: "Team_leaderId_fkey")
   department  String?
+  isActive    Boolean      @default(true) @map("is_active")
   users       User[]       @relation("TeamMembers")
   initiatives Initiative[]
 
@@ -56,6 +59,7 @@ model Objective {
   quarter          String?
   year             String            @default("Q3-2026")
   ownerId          String?           @map("owner_id")
+  isActive         Boolean           @default(true) @map("is_active")
   keyResults       KeyResult[]
   annualKeyResults AnnualKeyResult[]
   createdAt        DateTime          @default(now()) @map("created_at")
@@ -76,6 +80,7 @@ model AnnualKeyResult {
   year           String
   status         String      @default("ON_TRACK")
   targetType     String      @default("AT_LEAST") @map("target_type")
+  isActive       Boolean     @default(true) @map("is_active")
   keyResults     KeyResult[]
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
@@ -100,6 +105,7 @@ model KeyResult {
   status            String           @default("ON_TRACK")
   targetType        String           @default("AT_LEAST") @map("target_type")
   isManualOverride  Boolean          @default(false) @map("is_manual_override")
+  isActive          Boolean          @default(true) @map("is_active")
   assignments       KrAssignment[]
   departments       KrDepartment[]
   updates           KrUpdate[]
@@ -166,6 +172,7 @@ model CausalLink {
   relationship String
   note         String?   @db.Text
   createdBy    String    @map("created_by")
+  isActive     Boolean   @default(true) @map("is_active")
   createdAt    DateTime  @default(now()) @map("created_at")
 
   @@index([sourceKrId], map: "CausalLink_sourceKrId_idx")
@@ -201,6 +208,7 @@ model Initiative {
   sprintId          String?            @map("sprint_id")
   sprint            Sprint?            @relation(fields: [sprintId], references: [id])
   documentationLink String?            @map("documentation_link")
+  isActive          Boolean            @default(true) @map("is_active")
   tasks             Task[]
   kpis              InitiativeKpi[]                                    // NOTE: FK missing in DB
   progressUpdates   InitiativeUpdate[]
@@ -245,6 +253,7 @@ model Task {
   targetDept           String?          @map("target_dept")
   description          String?          @db.Text
   link                 String?
+  isActive             Boolean          @default(true) @map("is_active")
   assignments          TaskAssignment[]
   updates              TaskUpdate[]
   kpis                 TaskKpi[]                                          // NOTE: FK missing in DB
@@ -316,9 +325,12 @@ model Department {
   isActive  Boolean  @default(true) @map("is_active")
   managerId String?  @map("manager_id")
   manager   User?    @relation("DepartmentManager", fields: [managerId], references: [id], map: "Department_managerId_fkey")
+  cLevelId  String?  @map("c_level_id")
+  cLevel    User?    @relation("DepartmentCLevel", fields: [cLevelId], references: [id], map: "Department_cLevelId_fkey")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([managerId], map: "Department_managerId_fkey")
+  @@index([cLevelId], map: "Department_cLevelId_fkey")
   @@map("department")
 }
 
@@ -384,6 +396,7 @@ model Kpi {
   unit           String
   defaultTarget  Float?          @map("default_target")
   status         String          @default("ACTIVE")
+  isActive       Boolean         @default(true) @map("is_active")
   initiativeKpis InitiativeKpi[] // NOTE: FK missing in DB
   taskKpis       TaskKpi[]       // NOTE: FK missing in DB
   createdAt      DateTime        @default(now()) @map("created_at")
@@ -437,6 +450,7 @@ model Sprint {
   isLocked      Boolean                @default(false) @map("is_locked")
   year          String                 @default("2026")
   orderIndex    Int                    @default(1) @map("order_index")
+  isActive      Boolean                @default(true) @map("is_active")
   initiatives   Initiative[]
   tasks         Task[]
   krTargets     KrSprintTarget[]

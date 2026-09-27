@@ -654,6 +654,14 @@ const availableSprints = computed(() => {
 });
 
 const availableEmployees = computed(() => {
+  if (
+    ["ADMIN", "C_LEVEL"].includes(authStore.user?.role) &&
+    userList.value.length > 0
+  ) {
+    return [...userList.value].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || ""),
+    );
+  }
   const emps = new Map();
   krs.value.forEach((assign) => {
     assign.keyResult.initiatives?.forEach((ini) => {
@@ -715,12 +723,15 @@ const filteredKrs = computed(() => {
 
   if (selectedEmployee.value) {
     result = result.filter((assign) => {
-      return assign.keyResult.initiatives?.some(
-        (ini) =>
-          ini.owner?.id === selectedEmployee.value ||
-          ini.tasks?.some((t) =>
-            t.assignments?.some((a) => a.user?.id === selectedEmployee.value),
-          ),
+      return (
+        assign.userId === selectedEmployee.value ||
+        assign.keyResult.initiatives?.some(
+          (ini) =>
+            ini.owner?.id === selectedEmployee.value ||
+            ini.tasks?.some((t) =>
+              t.assignments?.some((a) => a.user?.id === selectedEmployee.value),
+            ),
+        )
       );
     });
   }
@@ -867,7 +878,7 @@ function getHeaders() {
 onMounted(async () => {
   if (
     !authStore.isAuthenticated ||
-    !["LEADER", "MANAGER", "ADMIN"].includes(authStore.user?.role)
+    !["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(authStore.user?.role)
   ) {
     router.push("/login");
     return;
@@ -886,6 +897,12 @@ onMounted(async () => {
   await Promise.all([fetchData(), fetchMyTeams(), fetchUsers()]);
 });
 
+watch(selectedEmployee, () => {
+  if (["ADMIN", "C_LEVEL"].includes(authStore.user?.role)) {
+    fetchData();
+  }
+});
+
 async function fetchUsers() {
   try {
     const res = await fetch(`${API}/users`, { headers: getHeaders() });
@@ -901,7 +918,12 @@ async function fetchData() {
   loading.value = true;
   errorMsg.value = "";
   try {
-    const res = await fetch(`${API}/key-results/my/assigned`, {
+    const query =
+      selectedEmployee.value &&
+      ["ADMIN", "C_LEVEL"].includes(authStore.user?.role)
+        ? `?userId=${selectedEmployee.value}`
+        : "";
+    const res = await fetch(`${API}/key-results/my/assigned${query}`, {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Gagal memuat KR");
@@ -1559,6 +1581,10 @@ function getGroupedAssignedKrs(assignments) {
   padding: 24px;
   width: 100%;
   max-width: 500px;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .modal-header {
   display: flex;

@@ -1059,22 +1059,21 @@ const isExistingObjective = ref(false);
 const selectedObjectiveId = ref("");
 const allObjectivesForDropdown = ref([]);
 const userList = ref([]);
+const availableDepartments = ref([]);
 
-const availableDepartments = [
-  { value: "STRATEGIC", label: "Strategic" },
-  { value: "FINANCE", label: "Finance" },
-  // { value: "BUSINESS", label: "Business" },
-  { value: "B2S", label: "B2S" },
-  { value: "B2B_EXPANSION", label: "B2B Expansion" },
-  { value: "B2B_CORPORATION", label: "B2B Corporation" },
-  { value: "B2C", label: "B2C" },
-  { value: "SERVICE_ACCOUNT", label: "Service Account" },
-  { value: "TECHDEV", label: "Techdev" },
-  { value: "TECHOPS", label: "TechOps" },
-  { value: "EDUCATION", label: "Education" },
-  { value: "SSC", label: "SSC" },
-  // { value: "HR", label: "HR" },
-];
+async function fetchDepartments() {
+  try {
+    const response = await $fetch(`${config.public.apiBase}/departments`, {
+      headers: { Authorization: `Bearer ${auth.token}` },
+    });
+    availableDepartments.value = response.map((d) => ({
+      value: d.value,
+      label: d.name,
+    }));
+  } catch (err) {
+    console.error("Error fetching departments:", err);
+  }
+}
 
 const newObjective = ref({
   title: "",
@@ -1576,6 +1575,7 @@ onMounted(() => {
   fetchAllObjectivesForDropdown();
   fetchUserList();
   fetchTeams();
+  fetchDepartments();
 });
 
 // --- Inisiatif & Task State & Logic ---
@@ -2377,11 +2377,28 @@ select:focus {
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: 30px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   color: var(--color-gamma-065);
+  box-sizing: border-box;
+}
+
+.modal-box {
+  background: var(--card-bg, #1e293b);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  color: var(--color-gamma-065);
+  box-sizing: border-box;
 }
 
 .modal-header {

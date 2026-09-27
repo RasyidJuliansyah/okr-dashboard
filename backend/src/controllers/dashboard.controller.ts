@@ -24,12 +24,13 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
     if (role === "TEAM") {
       const initiatives = dbUser?.teamId
         ? await prisma.initiative.findMany({
-            where: { teamId: dbUser.teamId },
+            where: { teamId: dbUser.teamId, isActive: true },
             include: {
               keyResult: {
                 select: { id: true, title: true, bscPerspective: true },
               },
               tasks: {
+                where: { isActive: true },
                 include: {
                   assignments: { where: { userId }, select: { userId: true } },
                 },
@@ -40,6 +41,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
 
       const myTasks = await prisma.task.findMany({
         where: {
+          isActive: true,
           OR: [
             { assignedTeamMemberId: userId },
             { assignments: { some: { userId } } },
@@ -103,6 +105,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
 
       const initiatives = await prisma.initiative.findMany({
         where: {
+          isActive: true,
           OR: [
             { teamId: { in: leaderTeamIds } },
             { ownerId: userId },
@@ -119,7 +122,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
             },
           },
           team: { select: { id: true, name: true } },
-          tasks: true,
+          tasks: { where: { isActive: true } },
         },
       });
 
@@ -177,8 +180,10 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       if (deptValues.length > 0) {
         objectives = await prisma.objective.findMany({
           where: {
+            isActive: true,
             keyResults: {
               some: {
+                isActive: true,
                 departments: { some: { department: { in: deptValues } } },
               },
             },
@@ -186,6 +191,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           include: {
             keyResults: {
               where: {
+                isActive: true,
                 departments: { some: { department: { in: deptValues } } },
               },
               include: {
@@ -374,8 +380,10 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
 
     // --- C_LEVEL & ADMIN: Semua data ---
     const objectives = await prisma.objective.findMany({
+      where: { isActive: true },
       include: {
         keyResults: {
+          where: { isActive: true },
           include: {
             assignments: {
               include: {

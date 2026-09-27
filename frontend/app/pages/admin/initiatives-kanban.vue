@@ -1716,11 +1716,13 @@ onMounted(async () => {
   border-radius: 16px;
   width: 95%;
   max-width: 580px;
-  max-height: 90vh;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .modal-header {

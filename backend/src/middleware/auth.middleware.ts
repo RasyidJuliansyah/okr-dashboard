@@ -3,13 +3,19 @@ import * as jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-okr-bsc-dashboard-2026';
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+  position?: string | null;
+  department?: string | null;
+  activeDepartment?: string | null;
+  originalRole?: string | null;
+}
+
 export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-    name: string;
-  };
+  user?: AuthUser;
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
@@ -21,12 +27,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      email: string;
-      role: string;
-      name: string;
-    };
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
     req.user = decoded;
     next();
   } catch (error) {

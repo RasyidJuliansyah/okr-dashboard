@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node-dev src/prisma/seed.ts",
     "migrate:export": "bash scripts/export-sqlite.sh",
-    "migrate:import": "ts-node scripts/import-mysql.ts"
+    "migrate:import": "ts-node scripts/import-mysql.ts",
+    "demo:seed": "ts-node scripts/seed_demo_realtime.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",

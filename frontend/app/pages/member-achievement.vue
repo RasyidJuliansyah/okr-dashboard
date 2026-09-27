@@ -417,13 +417,16 @@ function getAchColorClass(pct: number) {
 const availableDepartments = computed(() => {
   const depts = new Set<string>();
   for (const m of memberProgressList.value) {
-    if (m.department) depts.add(m.department);
+    if (m.isActive !== false && m.department) depts.add(m.department);
   }
   return Array.from(depts).sort();
 });
 
 const displayedMembers = computed(() => {
   let list = [...memberProgressList.value];
+
+  // Hanya tampilkan pegawai yang aktif (card pegawai non-aktif tidak dimunculkan)
+  list = list.filter((m: any) => m.isActive !== false);
 
   // Search query
   if (searchQuery.value.trim()) {

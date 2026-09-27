@@ -2418,12 +2418,18 @@ const filteredTeamMembersTasks = computed(() => {
 onMounted(async () => {
   if (
     !authStore.isAuthenticated ||
-    !["TEAM", "LEADER", "MANAGER", "ADMIN"].includes(authStore.user?.role)
+    !["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(authStore.user?.role)
   ) {
     router.push("/login");
     return;
   }
   await Promise.all([fetchMyWork(), fetchAllUsers()]);
+});
+
+watch(selectedEmployeeId, () => {
+  if (["ADMIN", "C_LEVEL"].includes(authStore.user?.role)) {
+    fetchMyWork();
+  }
 });
 
 const teamMembersWork = ref({ taskAssignments: [], initiatives: [] });
@@ -2654,7 +2660,12 @@ async function fetchMyWork() {
   loading.value = true;
   errorMsg.value = "";
   try {
-    const res = await fetch(`${API}/initiatives/my-work/all`, {
+    const query =
+      selectedEmployeeId.value &&
+      ["ADMIN", "C_LEVEL"].includes(authStore.user?.role)
+        ? `?userId=${selectedEmployeeId.value}`
+        : "";
+    const res = await fetch(`${API}/initiatives/my-work/all${query}`, {
       headers: getHeaders(),
     });
     if (res.status === 401) {
@@ -3232,6 +3243,10 @@ function getGroupedInitiatives(initiatives) {
   padding: 24px;
   width: 100%;
   max-width: 500px;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .info-box {
   background: #f8fafc;

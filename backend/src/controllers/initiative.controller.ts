@@ -5,6 +5,7 @@ import { resolveSprint, getActiveSprint } from "../services/sprint.service";
 import { cascadeMonthlyKrToAnnual } from "./keyresult.controller";
 import { logAudit } from "../utils/auditLogger";
 import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
+import { isCeoUser, isCLevelUser } from "./auth.controller";
 
 const prisma = new PrismaClient();
 
@@ -248,13 +249,18 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
     let visibleUserIds: string[] = [];
 
     if (role === "TEAM") {
-      // TEAM HANYA boleh melihat dirinya sendiri!
-      visibleUserIds = [userId];
+      // TEAM HANYA boleh melihat dirinya sendiri (jika masih aktif)!
+      const selfUser = await prisma.user.findFirst({
+        where: { id: userId, isActive: true },
+        select: { id: true },
+      });
+      visibleUserIds = selfUser ? [selfUser.id] : [];
     } else if (role === "LEADER") {
-      // LEADER melihat dirinya + anggota tim yang dipimpin/dimilikinya/departemennya
+      // LEADER melihat dirinya + anggota tim yang dipimpin/dimilikinya/departemennya (hanya yang aktif)
       const leaderTeamIds = await getLeaderTeamIds(userId);
       const teamMembers = await prisma.user.findMany({
         where: {
+          isActive: true,
           OR: [
             { id: userId },
             { teamId: { in: leaderTeamIds } },
@@ -267,9 +273,9 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
       });
       visibleUserIds = teamMembers.map((u) => u.id);
     } else if (role === "MANAGER") {
-      // MANAGER melihat dirinya + Leader & Team di seluruh departemen yang dikelolanya
+      // MANAGER melihat dirinya + Leader & Team di seluruh departemen yang dikelolanya (hanya yang aktif)
       const managedDepts = await prisma.department.findMany({
-        where: { managerId: userId },
+        where: { managerId: userId, isActive: true },
         select: { value: true },
       });
       const deptList = managedDepts.map((d) => d.value);
@@ -283,14 +289,18 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
 
       const deptUsers = await prisma.user.findMany({
         where: {
+          isActive: true,
           OR: [{ id: userId }, { department: { in: deptList } }],
         },
         select: { id: true },
       });
       visibleUserIds = deptUsers.map((u) => u.id);
     } else {
-      // ADMIN & C_LEVEL melihat semua user
-      const allUsers = await prisma.user.findMany({ select: { id: true } });
+      // ADMIN & C_LEVEL melihat semua user aktif
+      const allUsers = await prisma.user.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
       visibleUserIds = allUsers.map((u) => u.id);
     }
 
@@ -307,6 +317,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         where: {
           sprintId: targetSprint.id,
           userId: { in: visibleUserIds },
+          user: { isActive: true },
         },
         include: {
           user: {
@@ -316,6 +327,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
               role: true,
               position: true,
               department: true,
+              isActive: true,
               team: { select: { id: true, name: true } },
             },
           },
@@ -329,22 +341,25 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           select: { id: true, name: true, status: true, isLocked: true, startDate: true, endDate: true },
         });
 
-        const members = snapshots.map((s) => ({
-          userId: s.user.id,
-          userName: s.user.name,
-          role: s.user.role,
-          position: s.user.position || s.user.role,
-          department: s.user.department || "",
-          teamName: s.user.team?.name || "",
-          achievementPct: s.totalScore,
-          initiativeAchievementPct: s.totalScore,
-          taskAchievementPct: s.totalScore,
-          totalAssignedTasks: s.taskCount,
-          totalInitiativesCount: (s.detailsJson as any)?.initiativeCount || 0,
-          totalTasksCount: s.taskCount,
-          initiatives: ((s.detailsJson as any)?.initiatives || []).concat((s.detailsJson as any)?.tasks || []),
-          isSnapshot: true,
-        }));
+        const members = snapshots
+          .filter((s) => s.user && s.user.isActive !== false)
+          .map((s) => ({
+            userId: s.user.id,
+            userName: s.user.name,
+            role: s.user.role,
+            position: s.user.position || s.user.role,
+            department: s.user.department || "",
+            teamName: s.user.team?.name || "",
+            isActive: s.user.isActive,
+            achievementPct: s.totalScore,
+            initiativeAchievementPct: s.totalScore,
+            taskAchievementPct: s.totalScore,
+            totalAssignedTasks: s.taskCount,
+            totalInitiativesCount: (s.detailsJson as any)?.initiativeCount || 0,
+            totalTasksCount: s.taskCount,
+            initiatives: ((s.detailsJson as any)?.initiatives || []).concat((s.detailsJson as any)?.tasks || []),
+            isSnapshot: true,
+          }));
 
         return res.status(200).json({
           role,
@@ -360,13 +375,17 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
 
     // 2. Fetch users and their associated Initiatives (weight 2) and Tasks (weight 1)
     const users = await prisma.user.findMany({
-      where: { id: { in: visibleUserIds } },
+      where: {
+        id: { in: visibleUserIds },
+        isActive: true,
+      },
       select: {
         id: true,
         name: true,
         role: true,
         position: true,
         department: true,
+        isActive: true,
         team: { select: { id: true, name: true } },
       },
       orderBy: { name: "asc" },
@@ -379,6 +398,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         // Initiatives (Milik sendiri atau di-assign oleh leader) - Bobot = 2
         const ownedInitiatives = await prisma.initiative.findMany({
           where: {
+            isActive: true,
             OR: [{ ownerId: user.id }, { assignedLeaderId: user.id }],
             kanbanStatus: { not: "DROP" },
           },
@@ -394,13 +414,17 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
             sprintMonth: true,
             sprintId: true,
             keyResult: { select: { title: true } },
-            tasks: { select: { targetValue: true, currentValue: true } },
+            tasks: {
+              where: { isActive: true },
+              select: { targetValue: true, currentValue: true },
+            },
           },
         });
 
         // Tasks (Di-assign ke user ini oleh leader / role atas atau Cross-Dept) - Bobot = 1
         const assignedTasks = await prisma.task.findMany({
           where: {
+            isActive: true,
             kanbanStatus: { not: "DROP" },
             AND: [
               {
@@ -412,7 +436,12 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
               {
                 OR: [
                   { initiativeId: null },
-                  { initiative: { kanbanStatus: { not: "DROP" } } },
+                  {
+                    initiative: {
+                      isActive: true,
+                      kanbanStatus: { not: "DROP" },
+                    },
+                  },
                 ],
               },
             ],
@@ -595,6 +624,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
           position: user.position || user.role,
           department: user.department || "",
           teamName: user.team?.name || "",
+          isActive: user.isActive,
           achievementPct,
           initiativeAchievementPct: iniAvg,
           taskAchievementPct: taskAvg,
@@ -630,7 +660,7 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
 export async function getInitiativeProgress(req: AuthRequest, res: Response) {
   try {
     const { role, id: userId } = req.user!;
-    let where: any = {};
+    let where: any = { isActive: true };
 
     // LEADER: hanya tim yang dipimpin
     if (role === "LEADER") {
@@ -645,7 +675,7 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
       });
       if (dbUser?.department) {
         const deptTeams = await prisma.team.findMany({
-          where: { department: dbUser.department },
+          where: { department: dbUser.department, isActive: true },
           select: { id: true },
         });
         where.teamId = { in: deptTeams.map((t) => t.id) };
@@ -670,6 +700,7 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
         team: { select: { id: true, name: true, department: true } },
         owner: { select: { id: true, name: true, position: true } },
         tasks: {
+          where: { isActive: true },
           include: {
             assignments: {
               include: { user: { select: { id: true, name: true } } },
@@ -785,7 +816,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       req.query;
     const { role, id: userId } = req.user!;
 
-    let where: any = {};
+    let where: any = { isActive: true };
     if (krId) where.keyResultId = krId as string;
     if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
     if (sprintId) {
@@ -935,6 +966,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
           select: { id: true, name: true, startDate: true, endDate: true, status: true },
         },
         tasks: {
+          where: { isActive: true },
           include: {
             assignedTeamMember: {
               select: { id: true, name: true },
@@ -952,7 +984,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
     });
 
     // Query Task cards for Kanban (Task Individual)
-    let taskWhere: any = {};
+    let taskWhere: any = { isActive: true };
     if (sprintId) {
       taskWhere.OR = [
         { sprintId: sprintId as string },
@@ -1886,33 +1918,37 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
         .json({ message: "Forbidden: Role tidak diizinkan" });
     }
 
-    // Hapus InitiativeKpi (join table antara Initiative dan Master KPI)
-    await prisma.initiativeKpi.deleteMany({ where: { initiativeId: id } });
+    // ponytail: soft-delete keeps FK historical integrity (tasks, updates, KPI links, comments) intact; add hard purge when data retention policy drafted
+    await prisma.$transaction([
+      prisma.initiative.update({
+        where: { id },
+        data: { isActive: false },
+      }),
+      prisma.task.updateMany({
+        where: { initiativeId: id },
+        data: { isActive: false },
+      }),
+    ]);
 
-    // Hapus InitiativeUpdate (riwayat progress inisiatif)
-    await prisma.initiativeUpdate.deleteMany({ where: { initiativeId: id } });
-
-    // Hapus TaskKpi & TaskComment dari semua Task child (sebelum delete Task)
-    const tasks = await prisma.task.findMany({
-      where: { initiativeId: id },
-      select: { id: true },
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "STATUS_CHANGE",
+      entityType: "INITIATIVE",
+      entityId: id,
+      oldValues: {
+        title: existing.title,
+        isActive: existing.isActive,
+      },
+      newValues: {
+        isActive: false,
+      },
+      req,
     });
-    const taskIds = tasks.map((k) => k.id);
-    await prisma.taskKpi.deleteMany({ where: { taskId: { in: taskIds } } });
-    await prisma.taskComment.deleteMany({ where: { taskId: { in: taskIds } } });
-
-    // Hapus TaskUpdate & TaskAssignment dari semua Task child
-    await prisma.taskUpdate.deleteMany({ where: { taskId: { in: taskIds } } });
-    await prisma.taskAssignment.deleteMany({
-      where: { taskId: { in: taskIds } },
-    });
-    await prisma.task.deleteMany({ where: { initiativeId: id } });
-    await prisma.initiative.delete({ where: { id } });
 
     // Recalculate parent KeyResult progress jika ada
     if (existing.keyResultId) {
       const remainingInitiatives = await prisma.initiative.findMany({
-        where: { keyResultId: existing.keyResultId },
+        where: { keyResultId: existing.keyResultId, isActive: true },
       });
       let avgProgress = 0;
       if (remainingInitiatives.length > 0) {
@@ -1994,12 +2030,18 @@ function formatInitiativeForResponse(ini: any): any {
 export async function getMyWork(req: AuthRequest, res: Response) {
   try {
     const { id: userId, role } = req.user!;
+    const { userId: queryUserId } = req.query;
+
+    const targetUserId =
+      (["ADMIN", "C_LEVEL"].includes(role) && queryUserId)
+        ? String(queryUserId)
+        : userId;
 
     // TEAM & LEADER lihat full history; MANAGER & C_LEVEL hanya 1 terakhir
     const historyLimit = ["MANAGER", "C_LEVEL"].includes(role) ? 1 : undefined;
 
     const dbUser = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: targetUserId },
       select: { teamId: true, department: true },
     });
 
@@ -2030,7 +2072,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     };
 
     const taskAssignments = await prisma.taskAssignment.findMany({
-      where: { userId },
+      where: { userId: targetUserId },
       include: {
         task: {
           include: taskIncludeCommon,
@@ -2038,11 +2080,11 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       },
     });
 
-    // Ambil juga task yang assignedTeamMemberId = userId tetapi belum ada di taskAssignment
+    // Ambil juga task yang assignedTeamMemberId = targetUserId tetapi belum ada di taskAssignment
     const existingTaskIds = taskAssignments.map((a) => a.taskId);
     const directTasks = await prisma.task.findMany({
       where: {
-        assignedTeamMemberId: userId,
+        assignedTeamMemberId: targetUserId,
         ...(existingTaskIds.length > 0
           ? { id: { notIn: existingTaskIds } }
           : {}),
@@ -2053,7 +2095,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const directTaskAssignments = directTasks.map((t) => ({
       id: `virtual-direct-${t.id}`,
       taskId: t.id,
-      userId,
+      userId: targetUserId,
       task: t,
       createdAt: t.createdAt,
     }));
@@ -2066,7 +2108,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const unassignedTasks = await prisma.task.findMany({
       where: {
         initiative: {
-          ownerId: userId,
+          ownerId: targetUserId,
         },
         ...(allFetchedTaskIds.length > 0
           ? { id: { notIn: allFetchedTaskIds } }
@@ -2078,7 +2120,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const unassignedTaskAssignments = unassignedTasks.map((t) => ({
       id: `virtual-${t.id}`,
       taskId: t.id,
-      userId,
+      userId: targetUserId,
       task: t,
       createdAt: t.createdAt,
     }));
@@ -2092,9 +2134,9 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       where: {
         isCrossDept: true,
         OR: [
-          { creatorId: userId },
-          { assignedTeamMemberId: userId },
-          { assignments: { some: { userId } } },
+          { creatorId: targetUserId },
+          { assignedTeamMemberId: targetUserId },
+          { assignments: { some: { userId: targetUserId } } },
           ...(dbUser?.department ? [{ targetDept: dbUser.department }] : []),
           ...(dbUser?.department && ["MANAGER", "LEADER"].includes(role)
             ? [{ creatorDept: dbUser.department }]
@@ -2108,7 +2150,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const crossDeptAssignments = crossDeptTasks.map((t) => ({
       id: `virtual-cross-${t.id}`,
       taskId: t.id,
-      userId,
+      userId: targetUserId,
       task: t,
       createdAt: t.createdAt,
     }));
@@ -2123,14 +2165,14 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     myInitiatives = await prisma.initiative.findMany({
       where: {
         OR: [
-          { ownerId: userId },
-          { assignedLeaderId: userId },
+          { ownerId: targetUserId },
+          { assignedLeaderId: targetUserId },
           {
             tasks: {
               some: {
                 OR: [
-                  { assignedTeamMemberId: userId },
-                  { assignments: { some: { userId } } },
+                  { assignedTeamMemberId: targetUserId },
+                  { assignments: { some: { userId: targetUserId } } },
                 ],
               },
             },
@@ -2984,9 +3026,26 @@ export async function deleteTask(req: AuthRequest, res: Response) {
         .json({ message: "Forbidden: Role tidak diizinkan" });
     }
 
-    await prisma.taskUpdate.deleteMany({ where: { taskId: id } });
-    await prisma.taskAssignment.deleteMany({ where: { taskId: id } });
-    await prisma.task.delete({ where: { id } });
+    // ponytail: soft-delete keeps FK historical integrity (comments, updates, assignments) intact; add hard purge when data retention policy drafted
+    await prisma.task.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "STATUS_CHANGE",
+      entityType: "TASK",
+      entityId: id,
+      oldValues: {
+        title: existing.title,
+        isActive: existing.isActive,
+      },
+      newValues: {
+        isActive: false,
+      },
+      req,
+    });
 
     // Recalculate parent initiative progress
     await cascadeTaskValueUpdate(id, existing.initiativeId);
@@ -3118,8 +3177,8 @@ export async function cascadeInitiativeToMonthlyKr(
   }
 
   const allInitiatives = await prisma.initiative.findMany({
-    where: { keyResultId },
-    include: { tasks: true },
+    where: { keyResultId, isActive: true },
+    include: { tasks: { where: { isActive: true } } },
   });
 
   if (allInitiatives.length === 0 || kr.targetValue <= 0) return;
@@ -3215,13 +3274,13 @@ export async function submitTaskUpdate(req: AuthRequest, res: Response) {
       task.assignedTeamMemberId === userId ||
       task.assignedBy === userId;
 
-    if (!isAssigned && !["LEADER", "MANAGER", "ADMIN"].includes(role)) {
+    if (!isAssigned && !["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(role)) {
       return res
         .status(403)
         .json({ message: "Kamu tidak di-assign ke Task ini" });
     }
 
-    const isAutoApprove = ["LEADER", "MANAGER", "ADMIN"].includes(role);
+    const isAutoApprove = ["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(role);
     const updateStatus = isAutoApprove ? "APPROVED" : "PENDING_APPROVAL";
 
     const update = await prisma.taskUpdate.create({
@@ -3375,6 +3434,31 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
           });
         }
       }
+    } else if (role === "C_LEVEL") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: managerId },
+        include: { strategicDepartments: true },
+      });
+      const isCeo = isCeoUser(dbUser);
+      if (!isCeo) {
+        const taskDept =
+          taskUpdate.task.initiative?.team?.department ||
+          taskUpdate.task.targetDept ||
+          taskUpdate.task.creatorDept;
+        const sponsoredDeptValues = (dbUser?.strategicDepartments || []).map((d) => d.value);
+        if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
+          sponsoredDeptValues.push(req.user.activeDepartment);
+        }
+        if (sponsoredDeptValues.length > 0 && taskDept && !sponsoredDeptValues.includes(taskDept)) {
+          return res.status(403).json({
+            message: "Forbidden: C-Level hanya berwenang menyetujui update di departemen yang disupervisi",
+          });
+        }
+      }
+    } else if (role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Forbidden: Peran Anda tidak diizinkan menyetujui update",
+      });
     }
 
     const taskStatus = calculateAutoStatus(
@@ -3521,6 +3605,31 @@ export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
           });
         }
       }
+    } else if (role === "C_LEVEL") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: managerId },
+        include: { strategicDepartments: true },
+      });
+      const isCeo = isCeoUser(dbUser);
+      if (!isCeo) {
+        const taskDept =
+          taskUpdate.task.initiative?.team?.department ||
+          taskUpdate.task.targetDept ||
+          taskUpdate.task.creatorDept;
+        const sponsoredDeptValues = (dbUser?.strategicDepartments || []).map((d) => d.value);
+        if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
+          sponsoredDeptValues.push(req.user.activeDepartment);
+        }
+        if (sponsoredDeptValues.length > 0 && taskDept && !sponsoredDeptValues.includes(taskDept)) {
+          return res.status(403).json({
+            message: "Forbidden: C-Level hanya berwenang menolak update di departemen yang disupervisi",
+          });
+        }
+      }
+    } else if (role !== "ADMIN") {
+      return res.status(403).json({
+        message: "Forbidden: Peran Anda tidak diizinkan menolak update",
+      });
     }
 
     const rejected = await prisma.taskUpdate.update({
@@ -3602,7 +3711,7 @@ export async function submitInitiativeUpdate(req: AuthRequest, res: Response) {
     });
     if (
       dbUser?.teamId !== initiative.teamId &&
-      !["LEADER", "MANAGER", "ADMIN"].includes(role)
+      !["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(role)
     ) {
       return res
         .status(403)
@@ -3803,7 +3912,31 @@ export async function getPendingInitiativeUpdates(
         },
       };
       taskWhereClause.submittedBy = { in: teamMemberIds };
-    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+    } else if (role === "C_LEVEL") {
+      const cUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { strategicDepartments: true },
+      });
+      const isCeo = isCeoUser(cUser);
+      if (!isCeo && cUser?.strategicDepartments && cUser.strategicDepartments.length > 0) {
+        const sponsoredDeptValues = cUser.strategicDepartments.map((d) => d.value);
+        if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
+          if (!sponsoredDeptValues.includes(req.user.activeDepartment)) {
+            sponsoredDeptValues.push(req.user.activeDepartment);
+          }
+        }
+        whereClause.initiative = {
+          team: { department: { in: sponsoredDeptValues } },
+        };
+        taskWhereClause.task = {
+          OR: [
+            { initiative: { team: { department: { in: sponsoredDeptValues } } } },
+            { targetDept: { in: sponsoredDeptValues } },
+            { creatorDept: { in: sponsoredDeptValues } },
+          ],
+        };
+      }
+    } else if (role !== "ADMIN") {
       return res.status(200).json([]);
     }
 
@@ -4141,7 +4274,25 @@ export async function approveInitiativeUpdate(req: AuthRequest, res: Response) {
             "Forbidden: Anda hanya bisa menyetujui update untuk tim Anda sendiri",
         });
       }
-    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+    } else if (role === "C_LEVEL") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: managerId },
+        include: { strategicDepartments: true },
+      });
+      const isCeo = isCeoUser(dbUser);
+      if (!isCeo) {
+        const initiativeDept = initiativeUpdate.initiative.team?.department;
+        const sponsoredDeptValues = (dbUser?.strategicDepartments || []).map((d) => d.value);
+        if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
+          sponsoredDeptValues.push(req.user.activeDepartment);
+        }
+        if (sponsoredDeptValues.length > 0 && initiativeDept && !sponsoredDeptValues.includes(initiativeDept)) {
+          return res.status(403).json({
+            message: "Forbidden: C-Level hanya berwenang menyetujui update di departemen yang disupervisi",
+          });
+        }
+      }
+    } else if (role !== "ADMIN") {
       return res.status(403).json({
         message: "Forbidden: Peran Anda tidak diizinkan menyetujui update",
       });
@@ -4288,7 +4439,25 @@ export async function rejectInitiativeUpdate(req: AuthRequest, res: Response) {
             "Forbidden: Anda hanya bisa menolak update untuk tim Anda sendiri",
         });
       }
-    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+    } else if (role === "C_LEVEL") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: managerId },
+        include: { strategicDepartments: true },
+      });
+      const isCeo = isCeoUser(dbUser);
+      if (!isCeo) {
+        const initiativeDept = initiativeUpdate.initiative.team?.department;
+        const sponsoredDeptValues = (dbUser?.strategicDepartments || []).map((d) => d.value);
+        if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
+          sponsoredDeptValues.push(req.user.activeDepartment);
+        }
+        if (sponsoredDeptValues.length > 0 && initiativeDept && !sponsoredDeptValues.includes(initiativeDept)) {
+          return res.status(403).json({
+            message: "Forbidden: C-Level hanya berwenang menolak update di departemen yang disupervisi",
+          });
+        }
+      }
+    } else if (role !== "ADMIN") {
       return res.status(403).json({
         message: "Forbidden: Peran Anda tidak diizinkan menolak update",
       });

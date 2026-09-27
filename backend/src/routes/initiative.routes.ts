@@ -98,7 +98,7 @@ router.get(
 router.post(
   "/:id/progress-updates",
   authMiddleware,
-  roleGuard(["TEAM", "LEADER", "ADMIN"]),
+  roleGuard(["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"]),
   submitInitiativeUpdate,
 );
 router.get(
@@ -149,7 +149,7 @@ router.post(
 router.post(
   "/tasks/:id/updates",
   authMiddleware,
-  roleGuard(["TEAM", "LEADER", "MANAGER", "ADMIN"]),
+  roleGuard(["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"]),
   submitTaskUpdate,
 );
 router.get(
@@ -171,13 +171,13 @@ router.get(
 router.patch(
   "/task-updates/:updateId/approve",
   authMiddleware,
-  roleGuard(["MANAGER", "LEADER", "ADMIN"]),
+  roleGuard(["MANAGER", "LEADER", "ADMIN", "C_LEVEL"]),
   approveTaskUpdate,
 );
 router.patch(
   "/task-updates/:updateId/reject",
   authMiddleware,
-  roleGuard(["MANAGER", "LEADER", "ADMIN"]),
+  roleGuard(["MANAGER", "LEADER", "ADMIN", "C_LEVEL"]),
   rejectTaskUpdate,
 );
 
@@ -197,13 +197,13 @@ router.get(
 router.patch(
   "/initiative-updates/:updateId/approve",
   authMiddleware,
-  roleGuard(["MANAGER", "LEADER", "ADMIN"]),
+  roleGuard(["MANAGER", "LEADER", "ADMIN", "C_LEVEL"]),
   approveInitiativeUpdate,
 );
 router.patch(
   "/initiative-updates/:updateId/reject",
   authMiddleware,
-  roleGuard(["MANAGER", "LEADER", "ADMIN"]),
+  roleGuard(["MANAGER", "LEADER", "ADMIN", "C_LEVEL"]),
   rejectInitiativeUpdate,
 );
 

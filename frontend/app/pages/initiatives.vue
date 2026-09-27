@@ -216,26 +216,6 @@
           </svg>
           List
         </button>
-        <button
-          :class="['view-switch-btn', { active: activeView === 'gantt' }]"
-          @click="activeView = 'gantt'"
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="4" y1="6" x2="16" y2="6" />
-            <line x1="8" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="18" x2="12" y2="18" />
-          </svg>
-          Gantt Chart
-        </button>
       </div>
     </div>
 
@@ -4216,11 +4196,13 @@ onMounted(async () => {
   border-radius: 16px;
   width: 95%;
   max-width: 580px;
-  max-height: 90vh;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .modal-header {

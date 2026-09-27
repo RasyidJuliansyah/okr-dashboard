@@ -19,6 +19,7 @@ export async function getBscOverview(req: AuthRequest, res: Response) {
 
     // Fetch all annual key results with their parent objectives
     const keyResults = await prisma.annualKeyResult.findMany({
+      where: { isActive: true },
       include: {
         objective: {
           select: {
@@ -93,7 +94,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
     const { month } = req.query;
-    const where: any = {};
+    const where: any = { isActive: true };
     if (month) {
       where.month = String(month);
     }
@@ -294,6 +295,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
 
     const allYearKrs = await prisma.keyResult.findMany({
       where: {
+        isActive: true,
         OR: [
           { month: { startsWith: `${targetYear}-` } },
           { objective: { year: `${targetYear}` } },
