@@ -131,6 +131,58 @@
         </NuxtLink>
 
         <NuxtLink
+          v-if="isCLevel || isAdmin"
+          to="/bsc-view"
+          title="Strategic Mapping"
+          :style="navItemStyle('/bsc-view')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polygon
+              points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+            />
+          </svg>
+          <span v-if="isOpen">Strategic Mapping</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isCLevel || isAdmin"
+          to="/strategy-map"
+          title="Strategy Map"
+          :style="navItemStyle('/strategy-map')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="16" y="16" width="6" height="6" rx="1" />
+            <rect x="2" y="16" width="6" height="6" rx="1" />
+            <rect x="9" y="2" width="6" height="6" rx="1" />
+            <line x1="12" y1="12" x2="12" y2="8" />
+            <line x1="12" y1="12" x2="5" y2="12" />
+            <line x1="12" y1="12" x2="19" y2="12" />
+          </svg>
+          <span v-if="isOpen">Strategy Map</span>
+        </NuxtLink>
+
+        <NuxtLink
           to="/initiatives"
           title="Inisiatif (Kanban)"
           :style="navItemStyle('/initiatives')"
