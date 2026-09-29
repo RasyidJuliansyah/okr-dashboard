@@ -218,6 +218,7 @@ import { useAuthStore } from "~/stores/auth";
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
+const { confirm: confirmDialog } = useConfirm();
 
 function getHeaders() {
   return {
@@ -278,7 +279,8 @@ async function fetchSprints() {
 }
 
 async function handleGenerateYearly() {
-  if (!confirm("Buat 12 sprint cadence (21 ke 20) otomatis?")) return;
+  const ok = await confirmDialog("Buat 12 sprint cadence (21 ke 20) otomatis?");
+  if (!ok) return;
   generating.value = true;
   errorMsg.value = "";
   successMsg.value = "";
@@ -315,7 +317,7 @@ async function handleToggleLock(sprint: any) {
 }
 
 async function confirmCloseSprint(sprint: any) {
-  const ok = confirm(
+  const ok = await confirmDialog(
     `Apakah Anda yakin ingin menutup "${sprint.name}"?\n\n` +
       `Semua capaian member akan dibekukan ke arsip, target KR diakumulasikan, dan sprint berikutnya akan diaktifkan.`,
   );

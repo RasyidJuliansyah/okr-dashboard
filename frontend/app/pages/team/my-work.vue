@@ -612,32 +612,47 @@
                 formatDate(assign.task.finishDate || assign.task.dueDate)
               }}</strong>
             </div>
-            <!-- Selector Stage Kanban Task -->
-            <select
-              :value="
-                assign.task.kanbanStatus === 'CLOSED'
-                  ? 'DONE'
-                  : assign.task.kanbanStatus || 'TODO'
-              "
-              style="
-                font-size: 14px;
-                padding: 12px;
-                border-radius: 6px;
-                border: 1px solid #cbd5e1;
-                background: #f8fafc;
-                font-weight: 600;
-                color: #334155;
-                cursor: pointer;
-              "
-              @change="
-                updateKanbanStage(assign.task, 'task', $event.target.value)
-              "
-            >
-              <option value="TODO">TO DO</option>
-              <option value="IN_PROGRESS">IN PROGRESS</option>
-              <option value="DONE">DONE</option>
-              <option value="DROP">DROP</option>
-            </select>
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+              <!-- Selector Stage Kanban Task -->
+              <select
+                :value="
+                  assign.task.kanbanStatus === 'CLOSED'
+                    ? 'DONE'
+                    : assign.task.kanbanStatus || 'TODO'
+                "
+                style="
+                  font-size: 14px;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  border: 1px solid #cbd5e1;
+                  background: #f8fafc;
+                  font-weight: 600;
+                  color: #334155;
+                  cursor: pointer;
+                  flex: 1;
+                "
+                @change="
+                  updateKanbanStage(assign.task, 'task', $event.target.value)
+                "
+              >
+                <option value="TODO">TO DO</option>
+                <option value="IN_PROGRESS">IN PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="DROP">DROP</option>
+              </select>
+              <button
+                v-if="isAdmin"
+                class="action-btn danger"
+                title="Hapus Task"
+                style="padding: 8px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center;"
+                @click.stop="deleteTask(assign.task.id)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div class="task-context">
@@ -1255,37 +1270,51 @@
                       formatDate(assign.task.finishDate || assign.task.dueDate)
                     }}</strong>
                   </div>
-                  <!-- Selector Stage Kanban Task -->
-                  <select
-                    :value="
-                      assign.task.kanbanStatus === 'CLOSED'
-                        ? 'DONE'
-                        : assign.task.kanbanStatus || 'TODO'
-                    "
-                    style="
-                      font-size: 14px;
-                      padding: 2px 8px;
-                      border-radius: 6px;
-                      border: 1px solid #cbd5e1;
-                      background: #f8fafc;
-                      font-weight: 600;
-                      color: #334155;
-                      cursor: pointer;
-                      margin-top: 4px;
-                    "
-                    @change="
-                      updateKanbanStage(
-                        assign.task,
-                        'task',
-                        $event.target.value,
-                      )
-                    "
-                  >
-                    <option value="TODO">TO DO</option>
-                    <option value="IN_PROGRESS">IN PROGRESS</option>
-                    <option value="DONE">DONE</option>
-                    <option value="DROP">DROP</option>
-                  </select>
+                  <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                    <!-- Selector Stage Kanban Task -->
+                    <select
+                      :value="
+                        assign.task.kanbanStatus === 'CLOSED'
+                          ? 'DONE'
+                          : assign.task.kanbanStatus || 'TODO'
+                      "
+                      style="
+                        font-size: 14px;
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                        border: 1px solid #cbd5e1;
+                        background: #f8fafc;
+                        font-weight: 600;
+                        color: #334155;
+                        cursor: pointer;
+                        flex: 1;
+                      "
+                      @change="
+                        updateKanbanStage(
+                          assign.task,
+                          'task',
+                          $event.target.value,
+                        )
+                      "
+                    >
+                      <option value="TODO">TO DO</option>
+                      <option value="IN_PROGRESS">IN PROGRESS</option>
+                      <option value="DONE">DONE</option>
+                      <option value="DROP">DROP</option>
+                    </select>
+                    <button
+                      v-if="isAdmin"
+                      class="action-btn danger"
+                      title="Hapus Task"
+                      style="padding: 4px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center;"
+                      @click.stop="deleteTask(assign.task.id)"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
 
                   <div class="task-context">
                     <p>
@@ -2160,35 +2189,83 @@ const userRole = computed(() => authStore.user?.role || "");
 const isAutoApproveRole = computed(() =>
   ["LEADER", "MANAGER", "ADMIN"].includes(userRole.value),
 );
-const isAdmin = computed(() => userRole.value === "ADMIN");
+const isAdmin = computed(() => userRole.value === "ADMIN" || authStore.user?.originalRole === "ADMIN");
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
+const { confirm: confirmDialog } = useConfirm();
 
 function getHeaders() {
+  const token =
+    authStore.token ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${authStore.token}`,
+    Authorization: `Bearer ${token}`,
   };
 }
 
 async function deleteInitiative(id) {
-  if (!confirm("Hapus inisiatif ini beserta seluruh Task di dalamnya?")) return;
+  const ok = await confirmDialog(
+    "Hapus inisiatif ini beserta seluruh Task di dalamnya?",
+  );
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
   try {
-    const res = await fetch(`${API}/initiatives/${id}`, {
+    let res = await fetch(`${API}/initiatives/${cleanId}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
     if (res.ok) {
       successMsg.value = "Inisiatif berhasil dihapus";
       setTimeout(() => (successMsg.value = ""), 3000);
       await fetchMyWork();
     } else {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       errorMsg.value = err.message || "Gagal menghapus inisiatif";
+      alert(errorMsg.value);
     }
   } catch (err) {
-    errorMsg.value = err.message;
+    errorMsg.value = err.message || "Terjadi kesalahan jaringan";
+    alert(errorMsg.value);
+  }
+}
+
+async function deleteTask(id) {
+  const ok = await confirmDialog("Hapus Task ini?");
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
+  try {
+    let res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+    if (res.ok) {
+      successMsg.value = "Task berhasil dihapus";
+      setTimeout(() => (successMsg.value = ""), 3000);
+      await fetchMyWork();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      errorMsg.value = err.message || "Gagal menghapus Task";
+      alert(errorMsg.value);
+    }
+  } catch (err) {
+    errorMsg.value = err.message || "Terjadi kesalahan jaringan";
+    alert(errorMsg.value);
   }
 }
 

@@ -130,7 +130,7 @@
           <span v-if="isOpen">Dashboard</span>
         </NuxtLink>
 
-        <NuxtLink
+        <!-- <NuxtLink
           v-if="isCLevel || isAdmin"
           to="/bsc-view"
           title="Strategic Mapping"
@@ -153,9 +153,9 @@
             />
           </svg>
           <span v-if="isOpen">Strategic Mapping</span>
-        </NuxtLink>
+        </NuxtLink> -->
 
-        <NuxtLink
+        <!-- <NuxtLink
           v-if="isCLevel || isAdmin"
           to="/strategy-map"
           title="Strategy Map"
@@ -180,7 +180,7 @@
             <line x1="12" y1="12" x2="19" y2="12" />
           </svg>
           <span v-if="isOpen">Strategy Map</span>
-        </NuxtLink>
+        </NuxtLink> -->
 
         <NuxtLink
           to="/initiatives"
@@ -499,7 +499,10 @@
       </div>
 
       <!-- Leader menu -->
-      <div v-if="isLeader && !isManager && !isAdmin && !isCLevel" :style="navGroupStyle">
+      <div
+        v-if="isLeader && !isManager && !isAdmin && !isCLevel"
+        :style="navGroupStyle"
+      >
         <p :style="navGroupLabelStyle">LEADER</p>
         <NuxtLink
           to="/leader/my-krs"
@@ -527,7 +530,9 @@
 
       <!-- Team divider when collapsed -->
       <div
-        v-if="!isOpen && (isTeam || isLeader || isManager || isAdmin || isCLevel)"
+        v-if="
+          !isOpen && (isTeam || isLeader || isManager || isAdmin || isCLevel)
+        "
         style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
       ></div>
 

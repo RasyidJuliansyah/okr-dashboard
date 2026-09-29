@@ -94,7 +94,8 @@
             </button>
             <button
               class="icon-btn danger"
-              @click="deleteInitiative(initiative.id)"
+              title="Hapus Initiative"
+              @click.stop="deleteInitiative(initiative.id)"
             >
               <svg
                 width="16"
@@ -379,11 +380,19 @@ import BulkUploadModal from "~/components/BulkUploadModal.vue";
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
+const { confirm: confirmDialog } = useConfirm();
 
-const getHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${auth.token}`,
-});
+const getHeaders = () => {
+  const token =
+    auth.token ||
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
 
 // ─── Data ───
 const initiatives = ref<any[]>([]);
@@ -534,15 +543,48 @@ async function saveInitiative() {
 }
 
 async function deleteInitiative(id: string) {
-  if (!confirm("Hapus Initiative ini beserta semua Task di dalamnya?")) return;
-  const res = await fetch(`${API}/initiatives/${id}`, {
-    method: "DELETE",
-    headers: getHeaders(),
-  });
-  if (res.ok) {
-    successMessage.value = "Initiative berhasil dihapus";
-    setTimeout(() => (successMessage.value = ""), 3000);
-    await fetchInitiatives();
+  const isTask = String(id).startsWith("task-");
+  const cleanId = String(id).replace(/^task-/, "");
+  const confirmMsg = isTask
+    ? "Hapus Task ini?"
+    : "Hapus Initiative ini beserta semua Task di dalamnya?";
+  const ok = await confirmDialog(confirmMsg);
+  if (!ok) return;
+
+  try {
+    const endpoint = isTask
+      ? `${API}/initiatives/tasks/${cleanId}`
+      : `${API}/initiatives/${cleanId}`;
+    let res = await fetch(endpoint, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const fallback = isTask
+        ? `${API}/tasks/${cleanId}`
+        : `${API}/initiatives/tasks/${cleanId}`;
+      res = await fetch(fallback, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+
+    if (res.ok) {
+      successMessage.value = isTask
+        ? "Task berhasil dihapus"
+        : "Initiative berhasil dihapus";
+      setTimeout(() => (successMessage.value = ""), 3000);
+      await fetchInitiatives();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || "Gagal menghapus";
+      errorMessage.value = msg;
+      alert(msg);
+    }
+  } catch (err: any) {
+    const msg = err.message || "Terjadi kesalahan jaringan";
+    errorMessage.value = msg;
+    alert(msg);
   }
 }
 
@@ -574,10 +616,17 @@ async function saveTask() {
     errorMessage.value = "Satuan (Unit) wajib diisi";
     return;
   }
+  const cleanTaskId = editingTask.value?.id
+    ? String(editingTask.value.id).replace(/^task-/, "")
+    : "";
+  const cleanIniId = selectedInitiativeForTask.value?.id
+    ? String(selectedInitiativeForTask.value.id).replace(/^task-/, "")
+    : "";
+
   const method = editingTask.value ? "PUT" : "POST";
   const url = editingTask.value
-    ? `${API}/initiatives/tasks/${editingTask.value.id}`
-    : `${API}/initiatives/${selectedInitiativeForTask.value.id}/tasks`;
+    ? `${API}/initiatives/tasks/${cleanTaskId}`
+    : `${API}/initiatives/${cleanIniId}/tasks`;
   const res = await fetch(url, {
     method,
     headers: getHeaders(),
@@ -595,15 +644,35 @@ async function saveTask() {
 }
 
 async function deleteTask(id: string) {
-  if (!confirm("Hapus Task ini?")) return;
-  const res = await fetch(`${API}/initiatives/tasks/${id}`, {
-    method: "DELETE",
-    headers: getHeaders(),
-  });
-  if (res.ok) {
-    successMessage.value = "Task berhasil dihapus";
-    setTimeout(() => (successMessage.value = ""), 3000);
-    await fetchInitiatives();
+  const ok = await confirmDialog("Hapus Task ini?");
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
+  try {
+    let res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+
+    if (res.ok) {
+      successMessage.value = "Task berhasil dihapus";
+      setTimeout(() => (successMessage.value = ""), 3000);
+      await fetchInitiatives();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || "Gagal menghapus Task";
+      errorMessage.value = msg;
+      alert(msg);
+    }
+  } catch (err: any) {
+    const msg = err.message || "Terjadi kesalahan jaringan";
+    errorMessage.value = msg;
+    alert(msg);
   }
 }
 

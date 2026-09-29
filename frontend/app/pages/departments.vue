@@ -997,6 +997,7 @@ import { useAuthStore } from "../stores/auth";
 const config = useRuntimeConfig();
 const auth = useAuthStore();
 const API = config.public.apiBase;
+const { confirm: confirmDialog } = useConfirm();
 const getHeaders = () => ({
   "Content-Type": "application/json",
   Authorization: `Bearer ${auth.token || localStorage.getItem("auth_token")}`,
@@ -1210,7 +1211,8 @@ async function toggleDeptStatus(dept) {
     ? `Nonaktifkan departemen "${dept.label}"? Akses user departemen ini ke data OKR/BSC akan dibatasi.`
     : `Aktifkan kembali departemen "${dept.label}"?`;
 
-  if (!confirm(msg)) return;
+  const ok = await confirmDialog(msg);
+  if (!ok) return;
 
   saving.value = true;
   errorMsg.value = "";
@@ -1235,12 +1237,10 @@ async function toggleDeptStatus(dept) {
 }
 
 async function removeManager(dept) {
-  if (
-    !confirm(
-      `Hapus jabatan Manager dari departemen "${dept.label}"? Jika user tidak mengelola departemen lain, role-nya akan diturunkan ke TEAM.`,
-    )
-  )
-    return;
+  const ok = await confirmDialog(
+    `Hapus jabatan Manager dari departemen "${dept.label}"? Jika user tidak mengelola departemen lain, role-nya akan diturunkan ke TEAM.`,
+  );
+  if (!ok) return;
 
   saving.value = true;
   errorMsg.value = "";
@@ -1299,8 +1299,10 @@ async function saveCLevelAssignment() {
 }
 
 async function removeCLevel(dept) {
-  if (!confirm(`Hapus C-Board Sponsor dari departemen "${dept.label}"?`))
-    return;
+  const ok = await confirmDialog(
+    `Hapus C-Board Sponsor dari departemen "${dept.label}"?`,
+  );
+  if (!ok) return;
   saving.value = true;
   errorMsg.value = "";
   try {
@@ -1516,12 +1518,10 @@ async function saveRoleAssignment() {
 }
 
 async function removeUserFromDept(userId) {
-  if (
-    !confirm(
-      "Apakah Anda yakin ingin mengeluarkan pegawai ini dari struktur departemen? (Data master tidak akan terhapus)",
-    )
-  )
-    return;
+  const ok = await confirmDialog(
+    "Apakah Anda yakin ingin mengeluarkan pegawai ini dari struktur departemen? (Data master tidak akan terhapus)",
+  );
+  if (!ok) return;
   try {
     const res = await fetch(`${API}/users/${userId}`, {
       method: "PATCH",

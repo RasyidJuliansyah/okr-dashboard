@@ -185,7 +185,7 @@
                   <button
                     class="icon-btn delete-btn"
                     title="Hapus KPI"
-                    @click="confirmDelete(kpi)"
+                    @click.stop="confirmDelete(kpi)"
                   >
                     <svg
                       width="16"
@@ -634,13 +634,15 @@ async function saveKpi() {
 }
 
 async function confirmDelete(kpi) {
-  if (!confirm(`Apakah Anda yakin ingin menghapus Master KPI "${kpi.name}"?`))
-    return;
-
   try {
+    const token =
+      auth.token ||
+      (typeof localStorage !== "undefined"
+        ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+        : "");
     const res = await $fetch(`${config.public.apiBase}/kpis/${kpi.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${auth.token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     successMessage.value =
       res.message || `Master KPI "${kpi.name}" berhasil dihapus.`;
@@ -648,7 +650,8 @@ async function confirmDelete(kpi) {
     setTimeout(() => (successMessage.value = ""), 4000);
   } catch (err) {
     console.error("Error deleting KPI:", err);
-    errorMessage.value = err.data?.message || "Gagal menghapus KPI.";
+    errorMessage.value =
+      err.data?.message || err.message || "Gagal menghapus KPI.";
     setTimeout(() => (errorMessage.value = ""), 5000);
   }
 }

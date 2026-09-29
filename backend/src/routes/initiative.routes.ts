@@ -33,7 +33,7 @@ import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// Initiative
+// Static Initiative endpoints
 router.get(
   "/",
   authMiddleware,
@@ -58,36 +58,6 @@ router.get(
   roleGuard(["ADMIN", "MANAGER", "C_LEVEL", "LEADER", "TEAM"]),
   getInitiativeWeightBudget,
 );
-router.post(
-  "/",
-  authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
-  createInitiative,
-);
-router.put(
-  "/:id",
-  authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
-  updateInitiative,
-);
-router.patch(
-  "/:id/reassign",
-  authMiddleware,
-  roleGuard(["LEADER", "MANAGER", "ADMIN"]),
-  reassignInitiative,
-);
-router.patch(
-  "/:id/kanban-status",
-  authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
-  updateInitiativeKanbanStatus,
-);
-router.delete(
-  "/:id",
-  authMiddleware,
-  roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
-  deleteInitiative,
-);
 router.get("/my-work/all", authMiddleware, getMyWork);
 router.get(
   "/my-team",
@@ -96,38 +66,13 @@ router.get(
   getMyTeamInitiatives,
 );
 router.post(
-  "/:id/progress-updates",
-  authMiddleware,
-  roleGuard(["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"]),
-  submitInitiativeUpdate,
-);
-router.get(
-  "/:id/progress-updates",
-  authMiddleware,
-  getInitiativeProgressUpdates,
-);
-
-// Task di bawah Initiative
-router.get(
-  "/:initiativeId/tasks",
-  authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "C_LEVEL", "LEADER", "TEAM"]),
-  getTasksForInitiative,
-);
-router.post(
-  "/:initiativeId/tasks",
+  "/",
   authMiddleware,
   roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
-  createTask,
-);
-router.post(
-  "/:initiativeId/tasks/batch",
-  authMiddleware,
-  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
-  createTasksBatch,
+  createInitiative,
 );
 
-// Task standalone endpoints
+// Task standalone endpoints (registered before /:id routes to avoid route precedence conflict)
 router.put(
   "/tasks/:id",
   authMiddleware,
@@ -181,7 +126,7 @@ router.patch(
   rejectTaskUpdate,
 );
 
-// Pending & Approval for Initiative Updates (NEW)
+// Pending & Approval for Initiative Updates
 router.get(
   "/initiative-updates/pending",
   authMiddleware,
@@ -205,6 +150,64 @@ router.patch(
   authMiddleware,
   roleGuard(["MANAGER", "LEADER", "ADMIN", "C_LEVEL"]),
   rejectInitiativeUpdate,
+);
+
+// Tasks under Initiative
+router.get(
+  "/:initiativeId/tasks",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "C_LEVEL", "LEADER", "TEAM"]),
+  getTasksForInitiative,
+);
+router.post(
+  "/:initiativeId/tasks",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  createTask,
+);
+router.post(
+  "/:initiativeId/tasks/batch",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  createTasksBatch,
+);
+
+// Initiative progress updates & parameterized routes
+router.post(
+  "/:id/progress-updates",
+  authMiddleware,
+  roleGuard(["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"]),
+  submitInitiativeUpdate,
+);
+router.get(
+  "/:id/progress-updates",
+  authMiddleware,
+  getInitiativeProgressUpdates,
+);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  updateInitiative,
+);
+router.patch(
+  "/:id/reassign",
+  authMiddleware,
+  roleGuard(["LEADER", "MANAGER", "ADMIN"]),
+  reassignInitiative,
+);
+router.patch(
+  "/:id/kanban-status",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  updateInitiativeKanbanStatus,
+);
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
+  deleteInitiative,
 );
 
 export default router;
