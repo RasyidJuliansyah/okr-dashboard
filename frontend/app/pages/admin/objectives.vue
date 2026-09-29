@@ -1154,7 +1154,7 @@ async function fetchDepartments() {
 const newObjective = ref({
   title: "",
   description: "",
-  year: "Q3-2026",
+  year: "",
   keyResults: [
     {
       title: "",

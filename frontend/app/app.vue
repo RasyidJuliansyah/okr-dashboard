@@ -452,6 +452,67 @@ const pageTitle = computed(() => {
   box-sizing: border-box;
 }
 
+/* Keep native dropdown arrow inside every select control. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem !important;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Shared custom dropdown pattern. */
+.dropdown {
+  position: relative;
+}
+
+.dropdown .dropbtn {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.dropdown .dropdown-content {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 1000;
+  min-width: 12.5rem;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
+}
+
+.dropdown .dropdown-content a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--text-body);
+  text-decoration: none;
+}
+
+.dropdown .dropdown-content a:hover,
+.dropdown .dropdown-content a:focus-visible {
+  background: var(--primary-light, #f1f5f9);
+}
+
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
+  display: block;
+}
+
 body,
 button,
 input,

@@ -928,7 +928,10 @@ body:not(.dark-theme) .sun-icon {
 /* KR Body: Collapsible section */
 .kr-body {
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.25s ease, padding-top 0.25s ease;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.25s ease,
+    padding-top 0.25s ease;
 }
 .kr-body--expanded {
   max-height: 200px;
@@ -1005,8 +1008,6 @@ body:not(.dark-theme) .sun-icon {
   height: 12px;
   flex-shrink: 0;
 }
-
-
 
 .kr-numeric-progress {
   text-align: right;
