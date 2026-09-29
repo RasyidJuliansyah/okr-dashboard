@@ -199,6 +199,44 @@ export async function deleteObjective(req: AuthRequest, res: Response) {
   }
 }
 
+export async function updateObjective(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { title, description, year } = req.body;
+
+    if (!title || !year) {
+      return res.status(400).json({ message: "Title and year are required" });
+    }
+
+    const objective = await prisma.objective.findFirst({
+      where: { id, isActive: true },
+    });
+    if (!objective) {
+      return res.status(404).json({ message: "Objective not found" });
+    }
+
+    const updated = await prisma.objective.update({
+      where: { id },
+      data: { title, description: description || null, year },
+    });
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "OBJECTIVE",
+      entityId: id,
+      oldValues: { title: objective.title, description: objective.description, year: objective.year },
+      newValues: { title, description, year },
+      req,
+    });
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error("Update objective error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 // GET /api/objectives/manager-overview
 export async function getManagerOverview(req: AuthRequest, res: Response) {
   try {

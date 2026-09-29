@@ -574,6 +574,7 @@ async function deleteInitiative(id: string) {
         ? "Task berhasil dihapus"
         : "Initiative berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
+      initiatives.value = initiatives.value.filter((i: any) => i.id !== cleanId && i.id !== id);
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -662,6 +663,12 @@ async function deleteTask(id: string) {
     if (res.ok) {
       successMessage.value = "Task berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
+      initiatives.value.forEach((i: any) => {
+        if (i.tasks) {
+          i.tasks = i.tasks.filter((t: any) => t.id !== cleanId && t.id !== id);
+        }
+      });
+      initiatives.value = initiatives.value.filter((i: any) => i.id !== cleanId && i.id !== id && i.id !== `task-${cleanId}`);
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
