@@ -836,17 +836,8 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
 
     // 2. LEADER (P): melihat card miliknya sendiri + semua card anggota tim di bawahnya
     else if (role === "LEADER") {
-      const leaderTeams = await prisma.team.findMany({
-        where: { leaderId: userId },
-        select: { id: true },
-      });
-      const dbUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { teamId: true },
-      });
-      const teamIdSet = new Set<string>(leaderTeams.map((t) => t.id));
-      if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
-      const teamIds = Array.from(teamIdSet);
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      const teamIds = leaderTeamIds;
 
       if (ownerId) {
         // Filter spesifik pegawai di bawahnya / dirinya
@@ -984,25 +975,38 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
     });
 
     // Query Task cards for Kanban (Task Individual)
-    let taskWhere: any = { isActive: true };
+    let taskWhere: any = {
+      isActive: true,
+      OR: [
+        { initiativeId: null },
+        { initiative: { isActive: true } },
+      ],
+      AND: [],
+    };
     if (sprintId) {
-      taskWhere.OR = [
-        { sprintId: sprintId as string },
-        { initiative: { sprintId: sprintId as string } },
-      ];
+      taskWhere.AND.push({
+        OR: [
+          { sprintId: sprintId as string },
+          { initiative: { sprintId: sprintId as string } },
+        ],
+      });
     } else if (sprintMonth) {
-      taskWhere.OR = [
-        { sprintMonth: sprintMonth as string },
-        { initiative: { sprintMonth: sprintMonth as string } },
-        { sprint: { name: sprintMonth as string } },
-        { initiative: { sprint: { name: sprintMonth as string } } },
-      ];
+      taskWhere.AND.push({
+        OR: [
+          { sprintMonth: sprintMonth as string },
+          { initiative: { sprintMonth: sprintMonth as string } },
+          { sprint: { name: sprintMonth as string } },
+          { initiative: { sprint: { name: sprintMonth as string } } },
+        ],
+      });
     }
     if (krId) {
-      taskWhere.initiative = {
-        ...(taskWhere.initiative || {}),
-        keyResultId: krId as string,
-      };
+      taskWhere.AND.push({
+        initiative: {
+          keyResultId: krId as string,
+          isActive: true,
+        },
+      });
     }
     if (teamId) {
       taskWhere.AND = [
@@ -1923,10 +1927,13 @@ export async function deleteInitiative(req: AuthRequest, res: Response): Promise
         });
       }
     } else if (role === "LEADER") {
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      const isLeaderOfTeam = existing.teamId && leaderTeamIds.includes(existing.teamId);
       if (
         existing.assignedLeaderId !== userId &&
         existing.ownerId !== userId &&
-        existing.assignedBy !== userId
+        existing.assignedBy !== userId &&
+        !isLeaderOfTeam
       ) {
         return res.status(403).json({
           message:
@@ -2073,7 +2080,13 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     };
 
     const taskAssignments = await prisma.taskAssignment.findMany({
-      where: { userId: targetUserId },
+      where: {
+        userId: targetUserId,
+        task: {
+          isActive: true,
+          OR: [{ initiativeId: null }, { initiative: { isActive: true } }],
+        },
+      },
       include: {
         task: {
           include: taskIncludeCommon,
@@ -2086,6 +2099,8 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const directTasks = await prisma.task.findMany({
       where: {
         assignedTeamMemberId: targetUserId,
+        isActive: true,
+        OR: [{ initiativeId: null }, { initiative: { isActive: true } }],
         ...(existingTaskIds.length > 0
           ? { id: { notIn: existingTaskIds } }
           : {}),
@@ -2108,8 +2123,10 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     ];
     const unassignedTasks = await prisma.task.findMany({
       where: {
+        isActive: true,
         initiative: {
           ownerId: targetUserId,
+          isActive: true,
         },
         ...(allFetchedTaskIds.length > 0
           ? { id: { notIn: allFetchedTaskIds } }
@@ -2134,14 +2151,20 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     const crossDeptTasks = await prisma.task.findMany({
       where: {
         isCrossDept: true,
-        OR: [
-          { creatorId: targetUserId },
-          { assignedTeamMemberId: targetUserId },
-          { assignments: { some: { userId: targetUserId } } },
-          ...(dbUser?.department ? [{ targetDept: dbUser.department }] : []),
-          ...(dbUser?.department && ["MANAGER", "LEADER"].includes(role)
-            ? [{ creatorDept: dbUser.department }]
-            : []),
+        isActive: true,
+        OR: [{ initiativeId: null }, { initiative: { isActive: true } }],
+        AND: [
+          {
+            OR: [
+              { creatorId: targetUserId },
+              { assignedTeamMemberId: targetUserId },
+              { assignments: { some: { userId: targetUserId } } },
+              ...(dbUser?.department ? [{ targetDept: dbUser.department }] : []),
+              ...(dbUser?.department && ["MANAGER", "LEADER"].includes(role)
+                ? [{ creatorDept: dbUser.department }]
+                : []),
+            ],
+          },
         ],
         ...(allKnownIds.length > 0 ? { id: { notIn: allKnownIds } } : {}),
       },
@@ -2243,7 +2266,9 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       const memberTaskAssignments = await prisma.taskAssignment.findMany({
         where: {
           task: {
+            isActive: true,
             initiative: {
+              isActive: true,
               teamId: { in: uniqueTeamIds },
             },
           },
@@ -2270,7 +2295,9 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       // Ambil task tanpa assignment di DB, tapi inisiatif induknya dimiliki anggota tim lain (fallback PIC inisiatif)
       const memberUnassignedTasks = await prisma.task.findMany({
         where: {
+          isActive: true,
           initiative: {
+            isActive: true,
             teamId: { in: uniqueTeamIds },
             NOT: [{ ownerId: userId }, { ownerId: null }],
           },
@@ -2455,7 +2482,7 @@ export async function getTasksForInitiative(req: AuthRequest, res: Response) {
     }
 
     const tasks = await prisma.task.findMany({
-      where: { initiativeId },
+      where: { initiativeId, isActive: true },
       include: {
         assignedTeamMember: { select: { id: true, name: true, email: true } },
         assignments: {
@@ -2970,7 +2997,7 @@ export async function deleteTask(req: AuthRequest, res: Response): Promise<any> 
 
     const existing = await prisma.task.findUnique({
       where: { id: cleanId },
-      include: { initiative: { include: { team: true } } },
+      include: { initiative: { include: { team: true } }, assignments: true },
     });
     if (!existing) {
       const existingIni = await prisma.initiative.findUnique({ where: { id: cleanId } });
@@ -3017,11 +3044,16 @@ export async function deleteTask(req: AuthRequest, res: Response): Promise<any> 
         });
       }
     } else if (role === "LEADER") {
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      const isLeaderOfTaskTeam = existing.initiative?.teamId && leaderTeamIds.includes(existing.initiative.teamId);
+      const isAssigned = existing.assignments?.some((a) => a.userId === userId);
       if (
         existing.assignedBy !== userId &&
         existing.creatorId !== userId &&
         existing.initiative?.assignedLeaderId !== userId &&
-        existing.assignedTeamMemberId !== userId
+        existing.assignedTeamMemberId !== userId &&
+        !isAssigned &&
+        !isLeaderOfTaskTeam
       ) {
         return res.status(403).json({
           message:
@@ -3029,9 +3061,12 @@ export async function deleteTask(req: AuthRequest, res: Response): Promise<any> 
         });
       }
     } else if (role === "TEAM") {
+      const isAssigned = existing.assignments?.some((a) => a.userId === userId);
       if (
         existing.assignedTeamMemberId !== userId &&
-        existing.assignedBy !== userId
+        existing.assignedBy !== userId &&
+        existing.creatorId !== userId &&
+        !isAssigned
       ) {
         return res.status(403).json({
           message: "Forbidden: Anda hanya dapat menghapus task Anda sendiri",
