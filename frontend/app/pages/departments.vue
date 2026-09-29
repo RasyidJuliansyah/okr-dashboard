@@ -490,7 +490,7 @@
               class="form-input"
               disabled
               style="
-                background: #f8fafc;
+                background: var(--bg-page);
                 cursor: not-allowed;
                 text-transform: uppercase;
               "
@@ -1715,7 +1715,7 @@ onMounted(async () => {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 14px;
   padding: 1.5rem;
   border: 1px solid #f0f3f9;
@@ -1774,18 +1774,18 @@ onMounted(async () => {
   color: #6b21a8;
 }
 .scope-banner.scope-team {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   color: #475569;
 }
 
 .dept-filter-select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-family: inherit;
   font-size: 0.9rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   color: #2d3643;
   cursor: pointer;
 }
@@ -1882,7 +1882,7 @@ onMounted(async () => {
   font-weight: 500;
   cursor: pointer;
   border: 1px solid #d0d5dd;
-  background: #ffffff;
+  background: var(--card-bg);
   color: #344054;
   transition: all 0.15s;
 }
@@ -2175,7 +2175,7 @@ onMounted(async () => {
   transition: all 0.15s;
 }
 .secondary-btn:hover {
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 /* Modal */
@@ -2249,12 +2249,12 @@ onMounted(async () => {
 .form-select {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-family: inherit;
   font-size: 0.9rem;
   color: #2d3643;
-  background: #f8fafc;
+  background: var(--bg-page);
   box-sizing: border-box;
 }
 .form-group {
@@ -2275,7 +2275,7 @@ onMounted(async () => {
   gap: 0.35rem;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 0.5rem;
   background: #fafbfc;
@@ -2418,7 +2418,7 @@ onMounted(async () => {
 .task-target-badge {
   font-size: 0.75rem;
   font-weight: 400;
-  background: #f0f3f9;
+  background: var(--input-bg);
   color: #5e718d;
   padding: 0.15rem 0.5rem;
   border-radius: 8px;

@@ -425,7 +425,7 @@ onMounted(() => {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 24px;
   border: 2px solid #f1f5f9;
@@ -448,7 +448,7 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 8px;
 }
 
@@ -468,7 +468,7 @@ onMounted(() => {
 }
 
 .tab-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #1e293b;
 }
 
@@ -558,10 +558,10 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   font-size: 13px;
 }
 
@@ -594,7 +594,7 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  background: #ffffff;
+  background: var(--card-bg);
   padding: 16px;
   border-radius: 12px;
   border: 1px solid #f1f5f9;
@@ -648,7 +648,7 @@ onMounted(() => {
 .form-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
@@ -703,7 +703,7 @@ onMounted(() => {
 .secondary-btn {
   background-color: #f1f5f9;
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;

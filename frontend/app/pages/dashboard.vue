@@ -713,7 +713,7 @@
           <div
             v-if="selectedTask?.updates?.length > 0"
             class="mini-history mb-4"
-            style="border-top: 1px solid #e2e8f0; padding-top: 12px"
+            style="border-top: 1px solid var(--card-border); padding-top: 12px"
           >
             <h5 style="margin: 0 0 8px 0; font-size: 13px; color: #475569">
               Riwayat Update Sebelumnya:
@@ -733,7 +733,7 @@
                 style="
                   font-size: 11px;
                   padding: 6px;
-                  border: 1px solid #e2e8f0;
+                  border: 1px solid var(--card-border);
                   border-radius: 6px;
                 "
               >
@@ -817,11 +817,11 @@
               class="val"
               style="
                 display: block;
-                background: #f8fafc;
+                background: var(--bg-page);
                 padding: 10px;
                 border-radius: 8px;
                 font-style: italic;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--card-border);
                 white-space: pre-line;
               "
             >
@@ -2125,7 +2125,7 @@ async function handleReject() {
 }
 
 .bg-gray {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
 }
 
@@ -2424,7 +2424,7 @@ async function handleReject() {
 
 .kr-progress-track {
   height: 6px;
-  background: #f0f3f9;
+  background: var(--input-bg);
   border-radius: 3px #f0f3f9;
   flex-grow: 1;
   overflow: hidden;
@@ -2534,7 +2534,7 @@ async function handleReject() {
   padding: 60px;
   color: #5e718d;
   font-size: 17px;
-  background: #ffff;
+  background: var(--card-bg);
   border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 12px;
 }
@@ -2697,13 +2697,13 @@ async function handleReject() {
 
 .date-range-inputs input[type="date"] {
   padding: 8px 12px;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   font-size: 14px;
   font-family: "Rubik", sans-serif;
   color: #2d3643;
   cursor: pointer;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
 }
 
 .date-sep {
@@ -2720,8 +2720,8 @@ async function handleReject() {
 .shortcut-btn {
   padding: 6px 12px;
   border-radius: 20px;
-  border: 1px solid #e4e4e4;
-  background: #f8fafc;
+  border: 1px solid var(--card-border);
+  background: var(--bg-page);
   color: #5e718d;
   font-size: 13px;
   font-family: "Rubik", sans-serif;
@@ -2804,7 +2804,7 @@ async function handleReject() {
 
 .delta-neutral {
   color: #5e718d;
-  background: #f0f3f9;
+  background: var(--input-bg);
 }
 
 .task-no-data {
@@ -2937,7 +2937,7 @@ async function handleReject() {
   z-index: 1000;
 }
 .modal-box {
-  background: #ffffff;
+  background: var(--card-bg);
   color: var(--text-color, #0f172a);
   border-radius: 16px;
   padding: 24px;
@@ -2992,7 +2992,7 @@ async function handleReject() {
   margin-bottom: 16px;
   box-sizing: border-box;
   font-size: 14px;
-  background: #ffffff;
+  background: var(--card-bg);
   color: var(--text-color, #0f172a);
 }
 .modal-actions {
@@ -3187,7 +3187,7 @@ async function handleReject() {
 .task-count-mini {
   font-size: 0.75rem;
   color: var(--text-secondary, #64748b);
-  background: #ffffff;
+  background: var(--card-bg);
   padding: 2px 8px;
   border-radius: 10px;
   border: 1px solid #cbd5e1;
@@ -3211,7 +3211,7 @@ button.task-count-mini {
 
 .init-row-header.is-clickable:hover .task-count-mini.is-toggleable,
 .task-count-mini.is-toggleable:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border-color: #94a3b8;
 }
 
@@ -3268,7 +3268,7 @@ button.task-count-mini {
   align-items: center;
   gap: 10px;
   font-size: 0.78rem;
-  background: #ffffff;
+  background: var(--card-bg);
   padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid #f1f5f9;
@@ -3310,7 +3310,7 @@ button.task-count-mini {
 
 .assignee-mini {
   font-size: 0.7rem;
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   padding: 1px 6px;
   border-radius: 4px;
@@ -3337,7 +3337,7 @@ button.task-count-mini {
   gap: 6px;
 }
 .month-badge {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   font-size: 11px;
   font-weight: 600;
@@ -3368,8 +3368,8 @@ button.task-count-mini {
   border: 1px solid #dbeafe;
 }
 .parent-annual-context {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 16px;
@@ -3563,7 +3563,7 @@ button.task-count-mini {
 .approvals-section .secondary-btn.small {
   background-color: #f1f5f9;
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
@@ -3698,7 +3698,7 @@ button.task-count-mini {
 }
 .cross-dept-status-pill.todo,
 .current-status-pill.todo {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
 }
 .cross-dept-status-pill.in_progress,
@@ -3742,7 +3742,7 @@ button.task-count-mini {
   gap: 2px;
   font-size: 11px;
   color: #64748b;
-  background: #fff;
+  background: var(--card-bg);
   padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid #fef08a;

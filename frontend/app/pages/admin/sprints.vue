@@ -386,7 +386,7 @@ onMounted(() => {
 <style scoped>
 .sprint-root {
   padding: 1.5rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   min-height: 100vh;
 }
 .sprint-content {
@@ -397,9 +397,9 @@ onMounted(() => {
   gap: 1.5rem;
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
 }
@@ -452,7 +452,7 @@ onMounted(() => {
   background: #1d4ed8;
 }
 .secondary-btn {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -540,7 +540,7 @@ onMounted(() => {
 }
 .table-header-row {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
 }
 .table-header-row h3 {
   margin: 0;
@@ -558,11 +558,11 @@ onMounted(() => {
   text-align: left;
 }
 .sprint-table th {
-  background: #f8fafc;
+  background: var(--bg-page);
   color: #475569;
   font-weight: 600;
   padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
 }
 .sprint-table td {
   padding: 1rem 1.25rem;
@@ -596,7 +596,7 @@ onMounted(() => {
   color: #1e40af;
 }
 .badge-closed {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #64748b;
 }
 .badge-upcoming {
@@ -644,7 +644,7 @@ onMounted(() => {
   border: 1px solid transparent;
 }
 .edit-btn {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #334155;
   border-color: #cbd5e1;
 }

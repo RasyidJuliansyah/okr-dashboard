@@ -149,9 +149,9 @@
         class="team-initiatives-section mb-6 card"
         style="
           padding: 16px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--card-border);
           border-radius: 12px;
-          background: #fff;
+          background: var(--card-bg);
         "
       >
         <div
@@ -222,7 +222,7 @@
                         padding: 2px 8px;
                         border-radius: 6px;
                         border: 1px solid #cbd5e1;
-                        background: #f8fafc;
+                        background: var(--bg-page);
                         font-weight: 600;
                         color: #334155;
                         cursor: pointer;
@@ -338,7 +338,7 @@
                   v-if="ini.progressUpdates?.length > 0"
                   class="ini-updates"
                   style="
-                    background: #f8fafc;
+                    background: var(--bg-page);
                     padding: 10px;
                     border-radius: 8px;
                     font-size: 12px;
@@ -625,7 +625,7 @@
                   padding: 8px 12px;
                   border-radius: 6px;
                   border: 1px solid #cbd5e1;
-                  background: #f8fafc;
+                  background: var(--bg-page);
                   font-weight: 600;
                   color: #334155;
                   cursor: pointer;
@@ -867,9 +867,9 @@
             class="mb-6 card"
             style="
               padding: 16px;
-              border: 1px solid #e2e8f0;
+              border: 1px solid var(--card-border);
               border-radius: 12px;
-              background: #fff;
+              background: var(--card-bg);
             "
           >
             <div
@@ -901,7 +901,7 @@
                 <span
                   class="col-count-badge"
                   style="
-                    background: #f1f5f9;
+                    background: var(--bg-page);
                     color: #475569;
                     padding: 2px 10px;
                     border-radius: 12px;
@@ -955,7 +955,7 @@
                             padding: 2px 8px;
                             border-radius: 6px;
                             border: 1px solid #cbd5e1;
-                            background: #f8fafc;
+                            background: var(--bg-page);
                             font-weight: 600;
                             color: #334155;
                             cursor: pointer;
@@ -1064,7 +1064,7 @@
                     <div
                       class="ini-updates"
                       style="
-                        background: #f8fafc;
+                        background: var(--bg-page);
                         padding: 10px;
                         border-radius: 8px;
                         font-size: 12px;
@@ -1283,7 +1283,7 @@
                         padding: 4px 8px;
                         border-radius: 6px;
                         border: 1px solid #cbd5e1;
-                        background: #f8fafc;
+                        background: var(--bg-page);
                         font-weight: 600;
                         color: #334155;
                         cursor: pointer;
@@ -1580,7 +1580,7 @@
           <div
             v-if="selectedTask?.updates?.length > 0"
             class="mini-history mb-4"
-            style="border-top: 1px solid #e2e8f0; padding-top: 12px"
+            style="border-top: 1px solid var(--card-border); padding-top: 12px"
           >
             <h5 style="margin: 0 0 8px 0; font-size: 13px; color: #475569">
               Riwayat Update Sebelumnya:
@@ -1600,7 +1600,7 @@
                 style="
                   font-size: 11px;
                   padding: 6px;
-                  border: 1px solid #e2e8f0;
+                  border: 1px solid var(--card-border);
                   border-radius: 6px;
                 "
               >
@@ -1798,11 +1798,11 @@
               class="val"
               style="
                 display: block;
-                background: #f8fafc;
+                background: var(--bg-page);
                 padding: 10px;
                 border-radius: 8px;
                 font-style: italic;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--card-border);
                 white-space: pre-line;
               "
             >
@@ -2227,6 +2227,20 @@ async function deleteInitiative(id) {
     if (res.ok) {
       successMsg.value = "Inisiatif berhasil dihapus";
       setTimeout(() => (successMsg.value = ""), 3000);
+      teamInitiatives.value = teamInitiatives.value.filter((i) => i.id !== cleanId && i.id !== id);
+      taskAssignments.value = taskAssignments.value.filter((a) => {
+        const parentId = a.task?.initiativeId || a.task?.initiative?.id;
+        return parentId !== cleanId && parentId !== id;
+      });
+      if (teamMembersWork.value.initiatives) {
+        teamMembersWork.value.initiatives = teamMembersWork.value.initiatives.filter((i) => i.id !== cleanId && i.id !== id);
+      }
+      if (teamMembersWork.value.taskAssignments) {
+        teamMembersWork.value.taskAssignments = teamMembersWork.value.taskAssignments.filter((a) => {
+          const parentId = a.task?.initiativeId || a.task?.initiative?.id;
+          return parentId !== cleanId && parentId !== id;
+        });
+      }
       await fetchMyWork();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -2257,6 +2271,16 @@ async function deleteTask(id) {
     if (res.ok) {
       successMsg.value = "Task berhasil dihapus";
       setTimeout(() => (successMsg.value = ""), 3000);
+      taskAssignments.value = taskAssignments.value.filter((a) => {
+        const tId = a.task?.id || a.taskId || a.id;
+        return tId !== cleanId && tId !== id;
+      });
+      if (teamMembersWork.value.taskAssignments) {
+        teamMembersWork.value.taskAssignments = teamMembersWork.value.taskAssignments.filter((a) => {
+          const tId = a.task?.id || a.taskId || a.id;
+          return tId !== cleanId && tId !== id;
+        });
+      }
       await fetchMyWork();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -2364,6 +2388,8 @@ const filteredTaskAssignments = computed(() => {
   return taskAssignments.value.filter((assign) => {
     const task = assign.task || assign;
     if (!task) return false;
+    if (task.isActive === false) return false;
+    if (task.initiative && task.initiative.isActive === false) return false;
 
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase().trim();
@@ -2405,6 +2431,7 @@ const filteredTaskAssignments = computed(() => {
 const filteredTeamMembersInitiatives = computed(() => {
   if (!teamMembersWork.value.initiatives) return [];
   return teamMembersWork.value.initiatives.filter((ini) => {
+    if (ini.isActive === false) return false;
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase().trim();
       const matchTitle = ini.title?.toLowerCase().includes(q);
@@ -2454,6 +2481,8 @@ const filteredTeamMembersTasks = computed(() => {
   return teamMembersWork.value.taskAssignments.filter((assign) => {
     const task = assign.task || assign;
     if (!task) return false;
+    if (task.isActive === false) return false;
+    if (task.initiative && task.initiative.isActive === false) return false;
 
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase().trim();
@@ -3025,7 +3054,7 @@ function getGroupedInitiatives(initiatives) {
   gap: 24px;
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 24px;
   border: 2px solid var(--border-color, #e2e8f0);
@@ -3108,7 +3137,7 @@ function getGroupedInitiatives(initiatives) {
   border-color: #f59e0b;
 }
 .cross-dept-link-btn {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #2563eb;
   border: 1px solid #cbd5e1;
   font-size: 12px;
@@ -3167,7 +3196,7 @@ function getGroupedInitiatives(initiatives) {
 }
 
 .task-context {
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 12px;
   border-radius: 8px;
   font-size: 13px;
@@ -3213,7 +3242,7 @@ function getGroupedInitiatives(initiatives) {
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   font-size: 12px;
 }
@@ -3260,7 +3289,7 @@ function getGroupedInitiatives(initiatives) {
   color: #991b1b;
 }
 .bg-gray {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
 }
 
@@ -3326,16 +3355,16 @@ function getGroupedInitiatives(initiatives) {
   box-sizing: border-box;
 }
 .info-box {
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 12px;
   border-radius: 8px;
   font-size: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
 }
 .form-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   box-sizing: border-box;
 }
@@ -3383,7 +3412,7 @@ function getGroupedInitiatives(initiatives) {
   flex-direction: column;
   gap: 3px;
   padding: 8px 10px;
-  background: #f8fafc;
+  background: var(--bg-page);
   border-radius: 6px;
   font-size: 12px;
 }
@@ -3504,7 +3533,7 @@ function getGroupedInitiatives(initiatives) {
   color: #0f172a;
 }
 .ini-context {
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 12px;
   border-radius: 8px;
   font-size: 13px;
@@ -3605,7 +3634,7 @@ function getGroupedInitiatives(initiatives) {
 }
 
 .batch-defaults-card {
-  background: #f8fafc;
+  background: var(--bg-page);
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   padding: 12px 16px;
@@ -3621,7 +3650,7 @@ function getGroupedInitiatives(initiatives) {
   grid-template-columns: repeat(4, 1fr);
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   margin-bottom: 16px;
   box-sizing: border-box;
@@ -3676,8 +3705,8 @@ function getGroupedInitiatives(initiatives) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 10px 12px;
   box-sizing: border-box;

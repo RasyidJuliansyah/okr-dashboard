@@ -60,7 +60,7 @@ import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import AppSidebar from "./components/AppSidebar.vue";
 import AppHeader from "./components/AppHeader.vue";
-import ConfirmModal from "./components/ConfirmModal.vue";
+// ConfirmModal auto-imported by Nuxt from app/components/
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -268,6 +268,16 @@ const pageTitle = computed(() => {
   --card-bg: #ffffff;
   --card-border: #e4e4e4;
   --content-bg: #fafcff;
+  --bg-page: #f8fafc;
+  --text-heading: #1e293b;
+  --text-body: #334155;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-color: #334155;
+  --header-bg: #ffffff;
+  --input-bg: #f0f3f9;
+  --input-border: #e2e8f0;
+  --input-focus: #0e97d6;
   --color-green: #009c29;
   --color-purple: #02219e;
   --color-red: #eb3123;
@@ -397,38 +407,46 @@ const pageTitle = computed(() => {
 }
 
 /* Dark Theme Override */
-/* .dark-theme {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #131a2c;
-  --bg-card: rgba(22, 30, 49, 0.85);
-  --bg-input: rgba(255, 255, 255, 0.04);
-  --border-color: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --text-primary: #f8fafc;
+.dark-theme {
+  --card-bg: #131a2c;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --content-bg: #0b0f19;
+  --bg-page: #0b0f19;
+  --text-heading: #f8fafc;
+  --text-body: #e2e8f0;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
+  --text-color: #e2e8f0;
+  --header-bg: rgba(19, 26, 44, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-focus: #0e97d6;
+  --color-field: #1a2236;
+  --color-green-badge: rgba(52, 211, 153, 0.15);
+  --color-yellow-badge: rgba(251, 191, 36, 0.15);
+  --color-red-badge: rgba(248, 113, 113, 0.15);
+  --color-purple-badge: rgba(167, 139, 250, 0.15);
+  --color-blue-badge: rgba(56, 182, 240, 0.15);
+  --color-black-badge: #94a3b8;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --shadow-color-rgb: 0, 0, 0;
+  --bg-primary: #0b0f19;
+  --bg-secondary: #131a2c;
+  --bg-card: #131a2c;
+  --bg-input: rgba(255, 255, 255, 0.04);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #f8fafc;
+}
 
-  --primary: #38b6f0;
-  --primary-dark: #0e97d6;
-  --primary-glow: rgba(56, 182, 240, 0.15);
-  --primary-light: rgba(56, 182, 240, 0.08);
-  --purple: #a78bfa;
-  --purple-glow: rgba(167, 139, 250, 0.15);
+.dark-theme body {
+  background: var(--content-bg);
+}
 
-  --green: #34d399;
-  --green-glow: rgba(52, 211, 153, 0.1);
-  --green-light: rgba(52, 211, 153, 0.1);
-  --orange: #fbbf24;
-  --orange-glow: rgba(251, 191, 36, 0.1);
-  --orange-light: rgba(251, 191, 36, 0.1);
-  --red: #f87171;
-  --red-glow: rgba(248, 113, 113, 0.1);
-  --red-light: rgba(248, 113, 113, 0.1);
-
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-} */
+.dark-theme .page-content {
+  background: var(--bg-page);
+}
 
 * {
   box-sizing: border-box;

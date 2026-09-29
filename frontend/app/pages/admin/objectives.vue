@@ -392,6 +392,16 @@
           </div>
         </div>
 
+        <div class="kr-search-bar">
+          <input
+            v-model="krSearch"
+            type="text"
+            placeholder="Cari Key Result..."
+            class="kr-search-input"
+          />
+          <span v-if="krSearch" class="kr-search-clear" @click="krSearch = ''">✕</span>
+        </div>
+
         <div v-if="loadingList" class="loading-state">Memuat data OKR...</div>
 
         <div v-else-if="objectives.length === 0" class="empty-state">
@@ -407,7 +417,7 @@
               align-items: center;
               justify-content: space-between;
               padding: 12px 16px;
-              background: #f8fafc;
+              background: var(--bg-page);
               border: 1px solid #cbd5e1;
               border-radius: 8px;
               margin-bottom: 16px;
@@ -441,7 +451,7 @@
           </div>
 
           <div class="objectives-list">
-            <div v-for="obj in objectives" :key="obj.id" class="objective-item">
+            <div v-for="obj in filteredObjectives" :key="obj.id" class="objective-item">
               <div class="objective-item-header">
                 <div>
                   <span class="year-badge">{{ obj.year }}</span>
@@ -450,18 +460,27 @@
                     {{ obj.description }}
                   </p>
                 </div>
-                <button
-                  @click.stop="deleteObjective(obj.id)"
-                  class="delete-obj-btn"
-                  title="Hapus Objective ini beserta seluruh Key Results nya"
-                >
-                  Hapus
-                </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button
+                    @click.stop="startEditObjective(obj)"
+                    class="edit-obj-btn"
+                    title="Edit Objective"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    @click.stop="deleteObjective(obj.id)"
+                    class="delete-obj-btn"
+                    title="Hapus Objective ini beserta seluruh Key Results nya"
+                  >
+                    Hapus
+                  </button>
+                </div>
               </div>
 
               <div class="key-results-container">
                 <div
-                  v-for="kr in obj.keyResults"
+                  v-for="kr in obj.filteredKrs"
                   :key="kr.id"
                   class="kr-list-row"
                 >
@@ -965,6 +984,54 @@
         </div>
       </div>
     </div>
+    <!-- Edit Objective Modal -->
+    <div
+      v-if="editingObj"
+      class="modal-overlay"
+      @click.self="editingObj = null"
+    >
+      <div class="modal-box" style="max-width: 500px">
+        <h3 style="margin-top: 0">Edit Objective</h3>
+        <div class="form-group">
+          <label>Judul Objective *</label>
+          <input
+            v-model="editObjData.title"
+            type="text"
+            class="form-control"
+            placeholder="Judul Objective"
+          />
+        </div>
+        <div class="form-group">
+          <label>Deskripsi</label>
+          <textarea
+            v-model="editObjData.description"
+            class="form-control"
+            rows="3"
+            placeholder="Deskripsi (opsional)"
+          />
+        </div>
+        <div class="form-group">
+          <label>Tahun *</label>
+          <input
+            v-model="editObjData.year"
+            type="text"
+            class="form-control"
+            placeholder="Contoh: 2025"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="cancel-btn" @click="editingObj = null">Batal</button>
+          <button
+            class="save-kr-btn"
+            :disabled="savingObj"
+            @click="submitEditObjective"
+          >
+            {{ savingObj ? "Menyimpan..." : "Simpan" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete Objective Confirmation Modal -->
     <div
       v-if="objectiveToDelete"
@@ -1374,6 +1441,46 @@ async function submitObjective() {
 
 const objectiveToDelete = ref(null);
 
+// Edit Objective
+const editingObj = ref(null);
+const editObjData = ref({ title: "", description: "", year: "" });
+const savingObj = ref(false);
+
+function startEditObjective(obj) {
+  editingObj.value = obj;
+  editObjData.value = {
+    title: obj.title,
+    description: obj.description || "",
+    year: obj.year,
+  };
+}
+
+async function submitEditObjective() {
+  if (!editObjData.value.title.trim() || !editObjData.value.year.trim()) {
+    alert("Judul dan Tahun wajib diisi!");
+    return;
+  }
+  savingObj.value = true;
+  try {
+    await $fetch(`${config.public.apiBase}/objectives/${editingObj.value.id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${auth.token}` },
+      body: {
+        title: editObjData.value.title.trim(),
+        description: editObjData.value.description.trim() || null,
+        year: editObjData.value.year.trim(),
+      },
+    });
+    editingObj.value = null;
+    fetchObjectives();
+  } catch (err) {
+    console.error("Update objective error:", err);
+    alert(err.data?.message || "Gagal mengupdate Objective.");
+  } finally {
+    savingObj.value = false;
+  }
+}
+
 function deleteObjective(id) {
   console.log("deleteObjective called with ID:", id);
   objectiveToDelete.value = id;
@@ -1520,13 +1627,26 @@ async function confirmDeleteKr() {
 
 const selectedKrIds = ref([]);
 const showBulkDeleteModal = ref(false);
+const krSearch = ref("");
+
+const filteredObjectives = computed(() => {
+  const q = krSearch.value.trim().toLowerCase();
+  return objectives.value
+    .map((obj) => ({
+      ...obj,
+      filteredKrs: q
+        ? (obj.keyResults || []).filter((kr) =>
+            kr.title.toLowerCase().includes(q),
+          )
+        : (obj.keyResults || []),
+    }))
+    .filter((obj) => obj.filteredKrs.length > 0);
+});
 
 const allDisplayedKrs = computed(() => {
   const krsList = [];
-  for (const obj of objectives.value) {
-    if (obj.keyResults) {
-      krsList.push(...obj.keyResults);
-    }
+  for (const obj of filteredObjectives.value) {
+    krsList.push(...obj.filteredKrs);
   }
   return krsList;
 });
@@ -2112,6 +2232,48 @@ select:focus {
   margin-bottom: 24px;
 }
 
+.kr-search-bar {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.kr-search-input {
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #f1f5f9;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.kr-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.kr-search-input:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.kr-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.kr-search-clear:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .filter-group {
   display: flex;
   align-items: center;
@@ -2201,6 +2363,22 @@ select:focus {
   font-size: 16px;
   color: rgba(255, 255, 255, 0.5);
   margin: 6px 0 0 0;
+}
+
+.edit-obj-btn {
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  color: #60a5fa;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-obj-btn:hover {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(37, 99, 235, 0.4);
 }
 
 .delete-obj-btn {
