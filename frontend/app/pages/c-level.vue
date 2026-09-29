@@ -744,7 +744,7 @@ onMounted(fetchData);
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: #f8fafc;
+  background: var(--bg-page);
   border: 1px solid #d7dfe9;
   border-radius: 10px;
   font-family: "Rubik", sans-serif;
@@ -920,7 +920,7 @@ onMounted(fetchData);
   gap: 20px;
   padding: 16px 20px;
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--bg-page);
   border-left: 4px solid transparent;
   transition: background 0.15s;
 }

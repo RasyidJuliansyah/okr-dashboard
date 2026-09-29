@@ -1161,6 +1161,12 @@ async function handleDelete(ini: any) {
         ? "Task berhasil dihapus"
         : "Inisiatif berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
+      initiatives.value = initiatives.value.filter((item: any) => {
+        if (isTask) {
+          return item.id !== ini.id && item.taskId !== rawId && item.id !== `task-${rawId}`;
+        }
+        return item.id !== rawId && item.id !== ini.id;
+      });
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -1193,6 +1199,12 @@ async function handleDeleteTaskFromBucket(task: any) {
     if (res.ok) {
       successMessage.value = "Task berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
+      initiatives.value.forEach((i: any) => {
+        if (i.tasks) {
+          i.tasks = i.tasks.filter((t: any) => t.id !== rawId && t.id !== task.id);
+        }
+      });
+      initiatives.value = initiatives.value.filter((item: any) => item.id !== `task-${rawId}` && item.taskId !== rawId);
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -1336,7 +1348,7 @@ onMounted(async () => {
 }
 
 .secondary-btn {
-  background: #ffffff;
+  background: var(--card-bg);
   color: var(--text-primary, #0f172a);
   border: 1px solid var(--border-color, #cbd5e1);
   padding: 8px 14px;
@@ -1352,7 +1364,7 @@ onMounted(async () => {
 }
 
 .secondary-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border-color: #94a3b8;
 }
 
@@ -1395,7 +1407,7 @@ onMounted(async () => {
 
 .search-input:focus {
   border-color: #0e97d6;
-  background: #ffffff;
+  background: var(--card-bg);
 }
 
 .filter-item {
@@ -1410,7 +1422,7 @@ onMounted(async () => {
   padding: 7px 12px;
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--card-bg);
   font-size: 0.85rem;
   outline: none;
 }
@@ -1671,7 +1683,7 @@ onMounted(async () => {
 
 .task-count-tag {
   font-size: 0.75rem;
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   padding: 3px 8px;
   border-radius: 6px;
@@ -1730,7 +1742,7 @@ onMounted(async () => {
 }
 
 .action-btn {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 3px 7px;
@@ -1753,7 +1765,7 @@ onMounted(async () => {
 }
 
 .move-btn {
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid #0e97d6;
   color: #0e97d6;
   font-size: 0.75rem;
@@ -1791,7 +1803,7 @@ onMounted(async () => {
 }
 
 .modal-box {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   width: 95%;
   max-width: 580px;
@@ -1806,7 +1818,7 @@ onMounted(async () => {
 
 .modal-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1865,8 +1877,8 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 10px;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-top: 1px solid var(--card-border);
+  background: var(--bg-page);
 }
 
 .alert {

@@ -384,7 +384,7 @@ onMounted(() => {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 14px;
   padding: 1.5rem;
   border: 1px solid #f0f3f9;
@@ -411,7 +411,7 @@ onMounted(() => {
 }
 
 .stat-badge {
-  background: #f0f3f9;
+  background: var(--input-bg);
   color: #475467;
   padding: 0.35rem 0.75rem;
   border-radius: 20px;
@@ -451,7 +451,7 @@ onMounted(() => {
   border: 1px solid #d0d5dd;
   border-radius: 8px;
   font-size: 0.88rem;
-  background: #ffffff;
+  background: var(--card-bg);
   color: #1d2939;
   outline: none;
 }
@@ -479,7 +479,7 @@ onMounted(() => {
 }
 
 .audit-table th {
-  background: #f8fafc;
+  background: var(--bg-page);
   color: #475467;
   font-weight: 600;
   padding: 0.85rem 1.25rem;
@@ -496,7 +496,7 @@ onMounted(() => {
 }
 
 .audit-table tr:hover {
-  background: #fafcff;
+  background: var(--content-bg);
 }
 
 .time-primary {
@@ -570,7 +570,7 @@ onMounted(() => {
 
 .entity-badge {
   display: inline-block;
-  background: #f0f3f9;
+  background: var(--input-bg);
   color: #344054;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
@@ -596,7 +596,7 @@ onMounted(() => {
 
 .detail-btn {
   padding: 0.35rem 0.75rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   border: 1px solid #d0d5dd;
   border-radius: 6px;
   color: #344054;
@@ -621,7 +621,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   border-top: 1px solid #eaecf0;
 }
 
@@ -637,7 +637,7 @@ onMounted(() => {
 
 .page-btn {
   padding: 0.35rem 0.75rem;
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid #d0d5dd;
   border-radius: 6px;
   font-size: 0.82rem;
@@ -725,7 +725,7 @@ onMounted(() => {
 .meta-strip {
   display: flex;
   gap: 1.5rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -746,7 +746,7 @@ onMounted(() => {
 }
 
 .diff-pane {
-  background: #f8fafc;
+  background: var(--bg-page);
   border-radius: 8px;
   padding: 0.75rem;
   border: 1px solid #eaecf0;
@@ -765,7 +765,7 @@ onMounted(() => {
 .json-code {
   font-family: monospace;
   font-size: 0.78rem;
-  background: #ffffff;
+  background: var(--card-bg);
   padding: 0.75rem;
   border-radius: 6px;
   border: 1px solid #e4e7ec;
@@ -795,7 +795,7 @@ onMounted(() => {
 
 .secondary-btn {
   padding: 0.5rem 1rem;
-  background: #ffffff;
+  background: var(--card-bg);
   color: #344054;
   border: 1px solid #d0d5dd;
   border-radius: 8px;

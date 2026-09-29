@@ -242,10 +242,10 @@
                   display: flex;
                   gap: 12px;
                   font-size: 11px;
-                  background: #f8fafc;
+                  background: var(--bg-page);
                   padding: 8px 12px;
                   border-radius: 6px;
-                  border: 1px solid #e2e8f0;
+                  border: 1px solid var(--card-border);
                 "
               >
                 <span
@@ -281,7 +281,7 @@
                         :style="
                           ini.type === 'TASK'
                             ? 'background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #bae6fd;'
-                            : 'background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #cbd5e1;'
+                            : 'background: var(--bg-page); color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #cbd5e1;'
                         "
                       >
                         {{ ini.type === "TASK" ? "TASK" : "INISIATIF" }}
@@ -638,7 +638,7 @@ onMounted(async () => {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   font-size: 0.85rem;
-  background: #ffffff;
+  background: var(--card-bg);
   color: #0f172a;
   outline: none;
   cursor: pointer;
@@ -767,9 +767,9 @@ onMounted(async () => {
   font-weight: 500;
   padding: 3px 8px;
   border-radius: 6px;
-  background: #f8fafc;
+  background: var(--bg-page);
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
 }
 
 .pct-badge-container {
@@ -798,7 +798,7 @@ onMounted(async () => {
 .progress-track {
   width: 100%;
   height: 8px;
-  background: #f1f5f9;
+  background: var(--bg-page);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -870,8 +870,8 @@ onMounted(async () => {
 }
 
 .expanded-tasks-list {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 12px;
   margin-top: 4px;
@@ -900,10 +900,10 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  background: var(--card-bg);
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
 }
 
 .task-info {

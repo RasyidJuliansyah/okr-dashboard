@@ -86,7 +86,7 @@
                     <thead>
                       <tr
                         style="
-                          background: #f8fafc;
+                          background: var(--bg-page);
                           border-bottom: 2px solid #e2e8f0;
                           text-align: left;
                         "
@@ -124,7 +124,7 @@
                                 @click="toggleKrExpand(kr.id)"
                                 class="btn-expand"
                                 style="
-                                  background: #f1f5f9;
+                                  background: var(--bg-page);
                                   border: 1px solid #cbd5e1;
                                   border-radius: 4px;
                                   cursor: pointer;
@@ -238,10 +238,10 @@
                                 class="nested-ini-item"
                                 style="
                                   margin-bottom: 10px;
-                                  background: #ffffff;
+                                  background: var(--card-bg);
                                   padding: 10px 12px;
                                   border-radius: 6px;
-                                  border: 1px solid #e2e8f0;
+                                  border: 1px solid var(--card-border);
                                 "
                               >
                                 <div
@@ -1005,7 +1005,7 @@ function getGroupedKrs(keyResults) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   padding: 32px;
 }
 .admin-content {
@@ -1016,7 +1016,7 @@ function getGroupedKrs(keyResults) {
   gap: 24px;
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 24px;
   border: 2px solid #f1f5f9;
@@ -1042,7 +1042,7 @@ function getGroupedKrs(keyResults) {
 .tabs {
   display: flex;
   gap: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
 }
 .tab-btn {
   background: none;
@@ -1072,9 +1072,9 @@ function getGroupedKrs(keyResults) {
   overflow: hidden;
 }
 .obj-header {
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
 }
 .obj-header h3 {
   margin: 0;
@@ -1127,7 +1127,7 @@ function getGroupedKrs(keyResults) {
   color: #991b1b;
 }
 .bg-gray {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
 }
 .team-badge {
@@ -1214,10 +1214,10 @@ function getGroupedKrs(keyResults) {
 .update-details {
   display: flex;
   gap: 16px;
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   margin-top: 8px;
 }
 .detail-box {
@@ -1367,9 +1367,9 @@ function getGroupedKrs(keyResults) {
   overflow: hidden;
 }
 .akr-card-header {
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1466,7 +1466,7 @@ function getGroupedKrs(keyResults) {
 @media (max-width: 768px) {
   .chart-section {
     border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--card-border);
   }
 }
 .details-section {
@@ -1495,9 +1495,9 @@ function getGroupedKrs(keyResults) {
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
 }
 .month-info-col {
   display: flex;
@@ -1544,7 +1544,7 @@ function getGroupedKrs(keyResults) {
   transition: width 0.6s ease-in-out;
 }
 .dept-group-header {
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 12px 24px;
   border-bottom: 1px solid #f1f5f9;
   border-top: 1px solid #f1f5f9;

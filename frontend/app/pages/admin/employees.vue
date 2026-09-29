@@ -554,8 +554,8 @@
           </p>
           <div
             style="
-              background-color: #f8fafc;
-              border: 1px solid #e2e8f0;
+              background-color: var(--bg-page);
+              border: 1px solid var(--card-border);
               border-radius: 8px;
               padding: 1rem;
               margin-bottom: 1.25rem;
@@ -1022,7 +1022,7 @@ onMounted(async () => {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   background: var(--bg-page, #f8fafc);
   padding: 2rem;
   font-family: "Rubik", sans-serif;
@@ -1037,7 +1037,7 @@ onMounted(async () => {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 1.5rem;
   border: 1px solid #f0f3f9;
@@ -1074,8 +1074,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   flex: 1;
@@ -1100,7 +1100,7 @@ onMounted(async () => {
 
 .filter-group select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   outline: none;
   font-family: inherit;
@@ -1184,7 +1184,7 @@ onMounted(async () => {
 }
 
 .position-badge {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #334155;
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
@@ -1247,7 +1247,7 @@ onMounted(async () => {
 }
 
 .icon-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
 }
 
 .text-muted {
@@ -1333,7 +1333,7 @@ onMounted(async () => {
 .form-group input,
 .form-group select {
   padding: 0.65rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   outline: none;
   font-family: inherit;
@@ -1360,7 +1360,7 @@ onMounted(async () => {
   border-radius: 12px;
   padding: 3rem 1rem;
   text-align: center;
-  background: #f8fafc;
+  background: var(--bg-page);
   transition: all 0.2s;
 }
 .upload-area:hover {
@@ -1382,7 +1382,7 @@ onMounted(async () => {
 .preview-table-wrapper {
   max-height: 350px;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   margin-bottom: 1rem;
 }
@@ -1413,7 +1413,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   padding: 0.5rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   border-radius: 6px;
   font-weight: 500;
   font-size: 0.9rem;
@@ -1434,7 +1434,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 1.5rem;
   border-radius: 8px;
   margin: 1rem 0;

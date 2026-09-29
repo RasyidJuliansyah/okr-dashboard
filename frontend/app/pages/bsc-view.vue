@@ -309,7 +309,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
-  background: #ffff;
+  background: var(--card-bg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -633,7 +633,7 @@ onMounted(() => {
 }
 
 .kr-drilldown-item {
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid #d7dfe9;
   border-radius: 12px;
   padding: 16px 20px;
@@ -673,7 +673,7 @@ onMounted(() => {
 
 .kr-progress-track {
   height: 6px;
-  background: #f0f3f9;
+  background: var(--input-bg);
   border-radius: 3px #f0f3f9;
   flex-grow: 1;
   overflow: hidden;

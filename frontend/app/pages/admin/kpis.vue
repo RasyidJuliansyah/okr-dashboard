@@ -785,7 +785,7 @@ onMounted(() => {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   padding: 2rem;
   font-family: "Rubik", sans-serif;
 }
@@ -799,10 +799,10 @@ onMounted(() => {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -839,8 +839,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   flex: 1;
@@ -865,11 +865,11 @@ onMounted(() => {
 
 .filter-group select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   outline: none;
   font-family: inherit;
-  background: #ffffff;
+  background: var(--card-bg);
   font-size: 0.875rem;
   color: #334155;
 }
@@ -924,8 +924,8 @@ onMounted(() => {
   font-size: 0.725rem;
   text-transform: uppercase;
   color: #64748b;
-  background-color: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--bg-page);
+  border-bottom: 1px solid var(--card-border);
   letter-spacing: 0.04em;
   font-weight: 600;
 }
@@ -942,7 +942,7 @@ onMounted(() => {
 }
 
 .employee-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
 }
 
 .employee-table tbody tr:last-child td {
@@ -990,9 +990,9 @@ onMounted(() => {
 .position-badge {
   display: inline-block;
   white-space: nowrap;
-  background: #f8fafc;
+  background: var(--bg-page);
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   padding: 0.25rem 0.55rem;
   border-radius: 6px;
   font-size: 0.775rem;
@@ -1092,7 +1092,7 @@ onMounted(() => {
 }
 
 .icon-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
 }
 
 .icon-btn.edit-btn:hover {
@@ -1128,7 +1128,7 @@ onMounted(() => {
 .modal-card {
   width: 100%;
   max-width: 500px;
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -1180,7 +1180,7 @@ onMounted(() => {
 .form-group select,
 .form-group textarea {
   padding: 0.65rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   outline: none;
   font-family: inherit;
@@ -1205,7 +1205,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 3rem 1rem;
   text-align: center;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 .file-input {

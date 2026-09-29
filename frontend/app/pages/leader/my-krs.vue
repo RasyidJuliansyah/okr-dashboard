@@ -1632,7 +1632,7 @@ function getGroupedAssignedKrs(assignments) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   padding: 32px;
 }
 
@@ -1645,7 +1645,7 @@ function getGroupedAssignedKrs(assignments) {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 24px;
   border: 2px solid #f1f5f9;
@@ -1709,7 +1709,7 @@ function getGroupedAssignedKrs(assignments) {
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
 }
 
@@ -1738,7 +1738,7 @@ function getGroupedAssignedKrs(assignments) {
   color: #1e40af;
 }
 .bg-gray {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
 }
 
@@ -1785,7 +1785,7 @@ function getGroupedAssignedKrs(assignments) {
   display: flex;
   align-items: left;
   padding: 8px 12px;
-  background: #f8fafc;
+  background: var(--bg-page);
   border-radius: 8px;
 }
 
@@ -1823,7 +1823,7 @@ function getGroupedAssignedKrs(assignments) {
   cursor: pointer;
 }
 .secondary-btn:hover {
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 
 .mt-2 {
@@ -1879,7 +1879,7 @@ function getGroupedAssignedKrs(assignments) {
 .form-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   margin-bottom: 16px;
   box-sizing: border-box;
@@ -1912,7 +1912,7 @@ function getGroupedAssignedKrs(assignments) {
 .search-mini {
   margin-bottom: 0 !important;
   font-size: 13px;
-  background: #f8fafc;
+  background: var(--bg-page);
 }
 .ini-list-items {
   list-style: none;
@@ -1926,10 +1926,10 @@ function getGroupedAssignedKrs(assignments) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   gap: 10px;
 }
 .ini-item-main {
@@ -1958,7 +1958,7 @@ function getGroupedAssignedKrs(assignments) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  background: var(--card-bg);
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #f1f5f9;
@@ -1991,7 +1991,7 @@ function getGroupedAssignedKrs(assignments) {
   gap: 4px;
 }
 .task-assignee-tag {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border: 1px solid #cbd5e1;
   padding: 1px 6px;
   border-radius: 10px;
@@ -2034,7 +2034,7 @@ function getGroupedAssignedKrs(assignments) {
   justify-content: center;
 }
 .icon-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
 }
 .icon-btn.danger:hover {
   background: #fee2e2;
@@ -2074,7 +2074,7 @@ function getGroupedAssignedKrs(assignments) {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   cursor: pointer;
-  background: #ffffff;
+  background: var(--card-bg);
   font-weight: 500;
   transition: all 0.2s;
 }

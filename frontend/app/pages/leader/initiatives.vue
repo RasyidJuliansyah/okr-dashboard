@@ -587,7 +587,7 @@ async function confirmReject(updateId) {
 <style scoped>
 .admin-root {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
   padding: 32px;
 }
 .admin-content {
@@ -598,7 +598,7 @@ async function confirmReject(updateId) {
   gap: 24px;
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
@@ -628,7 +628,7 @@ async function confirmReject(updateId) {
 }
 
 .initiative-header {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 16px;
 }
 .init-header-top {
@@ -655,7 +655,7 @@ async function confirmReject(updateId) {
   font-size: 12px;
   color: #475569;
   font-weight: 500;
-  background: #f1f5f9;
+  background: var(--bg-page);
   padding: 4px 8px;
   border-radius: 6px;
 }
@@ -678,7 +678,7 @@ async function confirmReject(updateId) {
 .init-progress-track {
   width: 100%;
   height: 8px;
-  background: #f1f5f9;
+  background: var(--bg-page);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -703,10 +703,10 @@ async function confirmReject(updateId) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8fafc;
+  background: var(--bg-page);
   padding: 14px 16px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   gap: 12px;
 }
 .task-info {
@@ -757,7 +757,7 @@ async function confirmReject(updateId) {
   gap: 6px;
 }
 .assignee-chip {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border: 1px solid #cbd5e1;
   padding: 2px 8px;
   border-radius: 12px;
@@ -838,8 +838,8 @@ async function confirmReject(updateId) {
   box-sizing: border-box;
 }
 .update-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 12px;
@@ -892,7 +892,7 @@ async function confirmReject(updateId) {
   max-height: 200px;
   overflow-y: auto;
   padding: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   margin-bottom: 16px;
 }

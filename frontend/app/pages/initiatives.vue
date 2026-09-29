@@ -367,8 +367,8 @@
                     :key="task.id"
                     class="task-bucket-card"
                     style="
-                      background: #f8fafc;
-                      border: 1px solid #e2e8f0;
+                      background: var(--bg-page);
+                      border: 1px solid var(--card-border);
                       border-radius: 6px;
                       padding: 6px 8px;
                       font-size: 11px;
@@ -685,8 +685,8 @@
                     :key="task.id"
                     class="task-bucket-card"
                     style="
-                      background: #f8fafc;
-                      border: 1px solid #e2e8f0;
+                      background: var(--bg-page);
+                      border: 1px solid var(--card-border);
                       border-radius: 6px;
                       padding: 6px 8px;
                       font-size: 11px;
@@ -1045,8 +1045,8 @@
                     :key="task.id"
                     class="task-bucket-card"
                     style="
-                      background: #f8fafc;
-                      border: 1px solid #e2e8f0;
+                      background: var(--bg-page);
+                      border: 1px solid var(--card-border);
                       border-radius: 6px;
                       padding: 6px 8px;
                       font-size: 11px;
@@ -1445,7 +1445,7 @@
               v-model="cardType"
               class="form-input"
               style="
-                background: #f1f5f9;
+                background: var(--bg-page);
                 border-color: #0ea5e9;
                 font-weight: 600;
               "
@@ -1967,7 +1967,7 @@
             <select
               v-model="batchInitiativeId"
               class="form-input"
-              style="font-weight: 600; background: #f8fafc; margin-top: 4px"
+              style="font-weight: 600; background: var(--bg-page); margin-top: 4px"
             >
               <option value="">-- Pilih Inisiatif Induk --</option>
               <option
@@ -3392,6 +3392,12 @@ async function handleDelete(ini: any) {
         ? "Task berhasil dihapus"
         : "Inisiatif berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
+      initiatives.value = initiatives.value.filter((item: any) => {
+        if (isTask) {
+          return item.id !== ini.id && item.taskId !== rawId && item.id !== `task-${rawId}`;
+        }
+        return item.id !== rawId && item.id !== ini.id;
+      });
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -3432,6 +3438,12 @@ async function handleDeleteTaskFromBucket(task: any, parentIni?: any) {
     if (res.ok) {
       successMessage.value = "Task berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
+      initiatives.value.forEach((i: any) => {
+        if (i.tasks) {
+          i.tasks = i.tasks.filter((t: any) => t.id !== rawId && t.id !== task.id);
+        }
+      });
+      initiatives.value = initiatives.value.filter((item: any) => item.id !== `task-${rawId}` && item.taskId !== rawId);
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -3783,8 +3795,8 @@ onMounted(async () => {
   color: #6b21a8;
 }
 .scope-banner.scope-team {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
   color: #334155;
 }
 
@@ -3815,7 +3827,7 @@ onMounted(async () => {
 }
 
 .secondary-btn {
-  background: #ffffff;
+  background: var(--card-bg);
   color: var(--text-primary, #0f172a);
   border: 1px solid var(--border-color, #cbd5e1);
   padding: 8px 14px;
@@ -3832,7 +3844,7 @@ onMounted(async () => {
 }
 
 .secondary-btn:hover {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border-color: #94a3b8;
 }
 
@@ -3925,7 +3937,7 @@ onMounted(async () => {
 
 .search-input:focus {
   border-color: #0e97d6;
-  background: #ffffff;
+  background: var(--card-bg);
 }
 
 .filter-item {
@@ -3944,7 +3956,7 @@ onMounted(async () => {
   padding: 7px 12px;
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--card-bg);
   font-size: 0.85rem;
   outline: none;
 }
@@ -4212,7 +4224,7 @@ onMounted(async () => {
 
 .task-count-tag {
   font-size: 0.75rem;
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   padding: 3px 8px;
   border-radius: 6px;
@@ -4272,7 +4284,7 @@ onMounted(async () => {
 }
 
 .action-btn {
-  background: #f1f5f9;
+  background: var(--bg-page);
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 3px 7px;
@@ -4295,7 +4307,7 @@ onMounted(async () => {
 }
 
 .move-btn {
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid #0e97d6;
   color: #0e97d6;
   font-size: 0.75rem;
@@ -4333,7 +4345,7 @@ onMounted(async () => {
 }
 
 .modal-box {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 16px;
   width: 95%;
   max-width: 580px;
@@ -4348,7 +4360,7 @@ onMounted(async () => {
 
 .modal-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -4407,8 +4419,8 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 10px;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-top: 1px solid var(--card-border);
+  background: var(--bg-page);
 }
 
 .alert {
@@ -4469,7 +4481,7 @@ onMounted(async () => {
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
-  background: #ffffff;
+  background: var(--card-bg);
   color: #1e293b;
   outline: none;
   cursor: pointer;
@@ -4624,7 +4636,7 @@ onMounted(async () => {
 }
 
 .dept-tag {
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid #cbd5e1;
   padding: 1px 6px;
   border-radius: 4px;
@@ -4652,7 +4664,7 @@ onMounted(async () => {
 .sprint-pill {
   font-size: 0.72rem;
   font-weight: 700;
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   border: 1px solid #cbd5e1;
   padding: 2px 7px;
@@ -4706,7 +4718,7 @@ onMounted(async () => {
 }
 
 .kanban-card.ini-card-type {
-  background: #ffffff;
+  background: var(--card-bg);
   border-left: 4px solid #3b82f6;
 }
 
@@ -4727,7 +4739,7 @@ onMounted(async () => {
 }
 
 .card-type-pill.initiative {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #475569;
   border: 1px solid #cbd5e1;
 }
@@ -4783,7 +4795,7 @@ onMounted(async () => {
 }
 
 .cross-dept-link-btn {
-  background: #f1f5f9;
+  background: var(--bg-page);
   color: #2563eb;
   border: 1px solid #cbd5e1;
   font-size: 11px;
@@ -4817,7 +4829,7 @@ onMounted(async () => {
 }
 
 .batch-defaults-card {
-  background: #f8fafc;
+  background: var(--bg-page);
   border: 1px dashed #cbd5e1;
   border-radius: 8px;
   padding: 12px 16px;
@@ -4883,8 +4895,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 8px 12px;
 }

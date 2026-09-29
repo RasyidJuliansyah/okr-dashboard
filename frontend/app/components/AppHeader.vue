@@ -117,6 +117,8 @@
         </div>
       </div>
 
+      <ThemeToggle />
+
       <div
         v-if="auth.user"
         class="user-info"
@@ -477,8 +479,8 @@ onUnmounted(() => {
 .app-header {
   height: 72px;
   min-height: 72px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f3f9;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--card-border);
   padding: 0 32px;
   display: flex;
   align-items: center;
@@ -498,9 +500,9 @@ onUnmounted(() => {
 .hamburger-btn {
   display: flex;
   background: transparent;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--input-border);
   border-radius: 8px;
-  color: #5e718d;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 6px;
   align-items: center;
@@ -510,9 +512,9 @@ onUnmounted(() => {
 }
 
 .hamburger-btn:hover {
-  background-color: #f8fafc;
-  color: #0e97d6;
-  border-color: #cbd5e1;
+  background-color: var(--bg-page);
+  color: var(--color-primary);
+  border-color: var(--input-border);
 }
 
 @media (max-width: 1024px) {
@@ -526,7 +528,7 @@ onUnmounted(() => {
   font-weight: 600;
   font-size: 27px;
   line-height: 32px;
-  color: #2d3643;
+  color: var(--text-heading);
   margin: 0;
 }
 

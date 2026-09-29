@@ -135,7 +135,7 @@
                 padding: 0.5rem 1rem;
                 border: 1px solid #ccc;
                 border-radius: 4px;
-                background: #fff;
+                background: var(--card-bg);
                 cursor: pointer;
               "
             >
@@ -687,7 +687,7 @@ onMounted(async () => {
   color: #374151;
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 8px;
   border: 2px solid #e5e7eb;
   padding: 1.25rem;
