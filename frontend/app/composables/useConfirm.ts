@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { useState } from "#app";
 
 export interface ConfirmOptions {
   title?: string;
@@ -8,18 +8,18 @@ export interface ConfirmOptions {
   danger?: boolean;
 }
 
-const isVisible = ref(false);
-const modalOptions = ref<ConfirmOptions>({
-  title: "Konfirmasi Hapus",
-  message: "",
-  confirmText: "Hapus",
-  cancelText: "Batal",
-  danger: true,
-});
-
 let resolvePromise: ((val: boolean) => void) | null = null;
 
 export function useConfirm() {
+  const isVisible = useState<boolean>("confirm-modal-visible", () => false);
+  const modalOptions = useState<ConfirmOptions>("confirm-modal-options", () => ({
+    title: "Konfirmasi Hapus",
+    message: "",
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    danger: true,
+  }));
+
   function confirm(input: string | ConfirmOptions): Promise<boolean> {
     if (typeof input === "string") {
       const isDelete =
@@ -72,3 +72,4 @@ export function useConfirm() {
     onCancel,
   };
 }
+
