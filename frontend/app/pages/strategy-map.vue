@@ -561,6 +561,7 @@ import { useAuthStore } from "../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
+const { confirm: confirmDialog } = useConfirm();
 
 const isAdmin = computed(() =>
   auth.user ? ["ADMIN", "C_LEVEL"].includes(auth.user.role) : false
@@ -940,8 +941,9 @@ function submitCustomLink() {
   nextTick(recalculatePositions);
 }
 
-function removeLink(id) {
-  if (!confirm("Hapus hubungan kausalitas ini?")) return;
+async function removeLink(id) {
+  const ok = await confirmDialog("Hapus hubungan kausalitas ini?");
+  if (!ok) return;
   links.value = links.value.filter((l) => l.id !== id);
   nextTick(recalculatePositions);
 }

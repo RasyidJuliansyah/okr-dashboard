@@ -396,6 +396,27 @@
                       >
                         {{ task.status }}
                       </span>
+                      <button
+                        v-if="isAdmin"
+                        class="action-btn danger"
+                        title="Hapus Task ini"
+                        style="padding: 1px 3px; border: none; background: transparent; cursor: pointer; color: #ef4444;"
+                        @click.stop="handleDeleteTaskFromBucket(task, ini)"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          />
+                        </svg>
+                      </button>
                     </div>
 
                     <div
@@ -446,7 +467,7 @@
               </div>
 
               <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
+              <div v-if="canMoveCards || isAdmin" class="card-hover-actions">
                 <div class="left-actions">
                   <button
                     v-if="!ini.isTaskCard && canManageInitiative(ini)"
@@ -483,8 +504,8 @@
                   <button
                     v-if="isAdmin"
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -505,7 +526,7 @@
                     </svg>
                   </button>
                 </div>
-                <div class="move-actions">
+                <div v-if="canMoveCards" class="move-actions">
                   <button
                     class="move-btn"
                     title="Pindah ke In Progress"
@@ -693,6 +714,27 @@
                       >
                         {{ task.status }}
                       </span>
+                      <button
+                        v-if="isAdmin"
+                        class="action-btn danger"
+                        title="Hapus Task ini"
+                        style="padding: 1px 3px; border: none; background: transparent; cursor: pointer; color: #ef4444;"
+                        @click.stop="handleDeleteTaskFromBucket(task, ini)"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          />
+                        </svg>
+                      </button>
                     </div>
 
                     <div
@@ -742,7 +784,7 @@
               </div>
 
               <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
+              <div v-if="canMoveCards || isAdmin" class="card-hover-actions">
                 <div class="left-actions">
                   <button
                     v-if="!ini.isTaskCard && canManageInitiative(ini)"
@@ -779,8 +821,8 @@
                   <button
                     v-if="isAdmin"
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -801,7 +843,7 @@
                     </svg>
                   </button>
                 </div>
-                <div class="move-actions">
+                <div v-if="canMoveCards" class="move-actions">
                   <button
                     class="move-btn"
                     title="Kembalikan ke To Do"
@@ -1032,6 +1074,27 @@
                       >
                         {{ task.status }}
                       </span>
+                      <button
+                        v-if="isAdmin"
+                        class="action-btn danger"
+                        title="Hapus Task ini"
+                        style="padding: 1px 3px; border: none; background: transparent; cursor: pointer; color: #ef4444;"
+                        @click.stop="handleDeleteTaskFromBucket(task, ini)"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          />
+                        </svg>
+                      </button>
                     </div>
 
                     <div
@@ -1083,7 +1146,7 @@
               </div>
 
               <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
+              <div v-if="canMoveCards || isAdmin" class="card-hover-actions">
                 <div class="left-actions">
                   <button
                     v-if="!ini.isTaskCard && canManageInitiative(ini)"
@@ -1120,8 +1183,8 @@
                   <button
                     v-if="isAdmin"
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -1142,7 +1205,7 @@
                     </svg>
                   </button>
                 </div>
-                <div class="move-actions">
+                <div v-if="canMoveCards" class="move-actions">
                   <button
                     class="move-btn"
                     title="Pindah ke In Progress"
@@ -1259,7 +1322,7 @@
               </div>
 
               <!-- Card Action Buttons -->
-              <div v-if="canMoveCards" class="card-hover-actions">
+              <div v-if="canMoveCards || isAdmin" class="card-hover-actions">
                 <div class="left-actions">
                   <button
                     v-if="!ini.isTaskCard && canManageInitiative(ini)"
@@ -1296,8 +1359,8 @@
                   <button
                     v-if="isAdmin"
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -1318,7 +1381,7 @@
                     </svg>
                   </button>
                 </div>
-                <div class="move-actions">
+                <div v-if="canMoveCards" class="move-actions">
                   <button
                     class="move-btn"
                     title="Pindah ke To Do"
@@ -2132,6 +2195,7 @@ const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
 const { fetchAvailableLeaders, fetchAvailableTeamMembers } = useAssignment();
+const { confirm: confirmDialog } = useConfirm();
 
 // ─── View Mode (synced with query param ?view=kanban|list|gantt) ───
 type ViewMode = "kanban" | "list" | "gantt";
@@ -2150,13 +2214,22 @@ const activeView = computed<ViewMode>({
 const availableLeaders = ref<any[]>([]);
 const availableTeamMembers = ref<any[]>([]);
 
-const getHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${auth.token}`,
-});
+const getHeaders = () => {
+  const token =
+    auth.token ||
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
 
 // ─── Roles & Permissions ───
-const isAdmin = computed(() => auth.user?.role === "ADMIN");
+const isAdmin = computed(
+  () => auth.user?.role === "ADMIN" || auth.user?.originalRole === "ADMIN",
+);
 const isCLevel = computed(() => auth.user?.role === "C_LEVEL");
 const isManager = computed(() => auth.user?.role === "MANAGER");
 const isLeader = computed(() => auth.user?.role === "LEADER");
@@ -3285,23 +3358,91 @@ async function saveCard() {
   }
 }
 
-async function deleteInitiative(id: string) {
-  if (!confirm("Hapus inisiatif ini beserta seluruh Task di dalamnya?")) return;
+async function handleDelete(ini: any) {
+  const isTask = ini.isTaskCard || String(ini.id).startsWith("task-");
+  const confirmMsg = isTask
+    ? `Hapus Task "${ini.title}"?`
+    : `Hapus inisiatif "${ini.title}" beserta seluruh Task di dalamnya?`;
+
+  const ok = await confirmDialog(confirmMsg);
+  if (!ok) return;
+
   try {
-    const res = await fetch(`${API}/initiatives/${id}`, {
+    const rawId = isTask
+      ? (ini.taskId || String(ini.id).replace(/^task-/, ""))
+      : ini.id;
+    const endpoint = isTask
+      ? `${API}/initiatives/tasks/${rawId}`
+      : `${API}/initiatives/${rawId}`;
+
+    let res = await fetch(endpoint, {
       method: "DELETE",
       headers: getHeaders(),
     });
+
+    if (!res.ok && isTask) {
+      res = await fetch(`${API}/tasks/${rawId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+
     if (res.ok) {
-      successMessage.value = "Inisiatif berhasil dihapus";
+      successMessage.value = isTask
+        ? "Task berhasil dihapus"
+        : "Inisiatif berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
-      const err = await res.json();
-      errorMessage.value = err.message || "Gagal menghapus";
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || "Gagal menghapus";
+      errorMessage.value = msg;
+      alert(msg);
     }
   } catch (err: any) {
-    errorMessage.value = err.message;
+    const msg = err.message || "Terjadi kesalahan saat menghapus";
+    errorMessage.value = msg;
+    alert(msg);
+  }
+}
+
+async function deleteInitiative(id: string) {
+  const ini = initiatives.value.find((i: any) => i.id === id);
+  if (ini) {
+    return handleDelete(ini);
+  }
+  return handleDelete({ id, title: "inisiatif" });
+}
+
+async function handleDeleteTaskFromBucket(task: any, parentIni?: any) {
+  const ok = await confirmDialog(`Hapus Task "${task.title}"?`);
+  if (!ok) return;
+  try {
+    const rawId = task.id ? String(task.id).replace(/^task-/, "") : "";
+    let res = await fetch(`${API}/initiatives/tasks/${rawId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${rawId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+    if (res.ok) {
+      successMessage.value = "Task berhasil dihapus";
+      setTimeout(() => (successMessage.value = ""), 3000);
+      await fetchInitiatives();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || "Gagal menghapus Task";
+      errorMessage.value = msg;
+      alert(msg);
+    }
+  } catch (err: any) {
+    const msg = err.message || "Terjadi kesalahan saat menghapus Task";
+    errorMessage.value = msg;
+    alert(msg);
   }
 }
 

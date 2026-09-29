@@ -222,8 +222,8 @@
                   </button>
                   <button
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -366,8 +366,8 @@
                   </button>
                   <button
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -495,8 +495,8 @@
                   </button>
                   <button
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -617,8 +617,8 @@
                   </button>
                   <button
                     class="action-btn danger"
-                    title="Hapus"
-                    @click="deleteInitiative(ini.id)"
+                    :title="ini.isTaskCard ? 'Hapus Task' : 'Hapus Inisiatif'"
+                    @click.stop="handleDelete(ini)"
                   >
                     <svg
                       width="14"
@@ -832,11 +832,19 @@ import BulkUploadModal from "~/components/BulkUploadModal.vue";
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase;
+const { confirm: confirmDialog } = useConfirm();
 
-const getHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${auth.token}`,
-});
+const getHeaders = () => {
+  const token =
+    auth.token ||
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+};
 
 // ─── State ───
 const initiatives = ref<any[]>([]);
@@ -1116,24 +1124,95 @@ async function saveInitiative() {
   }
 }
 
-async function deleteInitiative(id: string) {
-  if (!confirm("Hapus inisiatif ini beserta seluruh Task di dalamnya?")) return;
+async function handleDelete(ini: any) {
+  const isTask = ini.isTaskCard || String(ini.id).startsWith("task-");
+  const confirmMsg = isTask
+    ? `Hapus Task "${ini.title}"?`
+    : `Hapus inisiatif "${ini.title}" beserta seluruh Task di dalamnya?`;
+
+  const ok = await confirmDialog(confirmMsg);
+  if (!ok) return;
+
   try {
-    const res = await fetch(`${API}/initiatives/${id}`, {
+    const rawId = isTask
+      ? (ini.taskId || String(ini.id).replace(/^task-/, ""))
+      : ini.id;
+    const endpoint = isTask
+      ? `${API}/initiatives/tasks/${rawId}`
+      : `${API}/initiatives/${rawId}`;
+
+    let res = await fetch(endpoint, {
       method: "DELETE",
       headers: getHeaders(),
     });
+
+    if (!res.ok) {
+      const fallback = isTask
+        ? `${API}/tasks/${rawId}`
+        : `${API}/initiatives/tasks/${rawId}`;
+      res = await fetch(fallback, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+
     if (res.ok) {
-      successMessage.value = "Inisiatif berhasil dihapus";
+      successMessage.value = isTask
+        ? "Task berhasil dihapus"
+        : "Inisiatif berhasil dihapus";
       setTimeout(() => (successMessage.value = ""), 3000);
       await fetchInitiatives();
     } else {
-      const err = await res.json();
-      errorMessage.value = err.message || "Gagal menghapus";
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || "Gagal menghapus";
+      errorMessage.value = msg;
+      alert(msg);
     }
   } catch (err: any) {
-    errorMessage.value = err.message;
+    const msg = err.message || "Terjadi kesalahan saat menghapus";
+    errorMessage.value = msg;
+    alert(msg);
   }
+}
+
+async function handleDeleteTaskFromBucket(task: any) {
+  const ok = await confirmDialog(`Hapus Task "${task.title}"?`);
+  if (!ok) return;
+  try {
+    const rawId = task.id ? String(task.id).replace(/^task-/, "") : "";
+    let res = await fetch(`${API}/initiatives/tasks/${rawId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${rawId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+    if (res.ok) {
+      successMessage.value = "Task berhasil dihapus";
+      setTimeout(() => (successMessage.value = ""), 3000);
+      await fetchInitiatives();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.message || "Gagal menghapus Task";
+      errorMessage.value = msg;
+      alert(msg);
+    }
+  } catch (err: any) {
+    const msg = err.message || "Terjadi kesalahan saat menghapus Task";
+    errorMessage.value = msg;
+    alert(msg);
+  }
+}
+
+async function deleteInitiative(id: string) {
+  const ini = initiatives.value.find((i: any) => i.id === id);
+  if (ini) {
+    return handleDelete(ini);
+  }
+  return handleDelete({ id, title: "inisiatif" });
 }
 
 function openAddTaskModal(ini: any) {

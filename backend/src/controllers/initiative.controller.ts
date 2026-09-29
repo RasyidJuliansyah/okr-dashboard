@@ -1464,9 +1464,16 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 }
 
 // PUT /api/initiatives/:id — Update initiative
-export async function updateInitiative(req: AuthRequest, res: Response) {
+export async function updateInitiative(req: AuthRequest, res: Response): Promise<any> {
   try {
     const { id } = req.params;
+    const cleanId = id && id.startsWith("task-") ? id.replace(/^task-/, "") : id;
+
+    if (id && id.startsWith("task-")) {
+      req.params.id = cleanId;
+      return updateTask(req, res);
+    }
+
     const {
       title,
       description,
@@ -1484,11 +1491,18 @@ export async function updateInitiative(req: AuthRequest, res: Response) {
       sprintMonth,
       kpis,
     } = req.body;
-    const { role, id: userId } = req.user!;
+    const role = req.user?.originalRole === "ADMIN" || req.user?.role === "ADMIN" ? "ADMIN" : req.user!.role;
+    const userId = req.user!.id;
 
-    const existing = await prisma.initiative.findUnique({ where: { id } });
-    if (!existing)
+    const existing = await prisma.initiative.findUnique({ where: { id: cleanId } });
+    if (!existing) {
+      const existingTask = await prisma.task.findUnique({ where: { id: cleanId } });
+      if (existingTask) {
+        req.params.id = cleanId;
+        return updateTask(req, res);
+      }
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
+    }
 
     // Guard locked sprint
     if (existing.sprintId && role !== "ADMIN") {
@@ -1852,17 +1866,31 @@ export async function updateInitiativeKanbanStatus(
 }
 
 // DELETE /api/initiatives/:id — Admin / Manager / Leader / Team delete initiative (cascade hapus Task & InitiativeUpdate)
-export async function deleteInitiative(req: AuthRequest, res: Response) {
+export async function deleteInitiative(req: AuthRequest, res: Response): Promise<any> {
   try {
     const { id } = req.params;
-    const { role, id: userId } = req.user!;
+    const cleanId = id && id.startsWith("task-") ? id.replace(/^task-/, "") : id;
+    const role = req.user?.originalRole === "ADMIN" || req.user?.role === "ADMIN" ? "ADMIN" : req.user!.role;
+    const userId = req.user!.id;
+
+    // Forward task- cards from kanban to deleteTask
+    if (id && id.startsWith("task-")) {
+      req.params.id = cleanId;
+      return deleteTask(req, res);
+    }
 
     const existing = await prisma.initiative.findUnique({
-      where: { id },
+      where: { id: cleanId },
       include: { team: true },
     });
-    if (!existing)
+    if (!existing) {
+      const existingTask = await prisma.task.findUnique({ where: { id: cleanId } });
+      if (existingTask) {
+        req.params.id = cleanId;
+        return deleteTask(req, res);
+      }
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
+    }
 
     // Guard locked sprint
     if (existing.sprintId && role !== "ADMIN") {
@@ -1921,11 +1949,11 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
     // ponytail: soft-delete keeps FK historical integrity (tasks, updates, KPI links, comments) intact; add hard purge when data retention policy drafted
     await prisma.$transaction([
       prisma.initiative.update({
-        where: { id },
+        where: { id: existing.id },
         data: { isActive: false },
       }),
       prisma.task.updateMany({
-        where: { initiativeId: id },
+        where: { initiativeId: existing.id },
         data: { isActive: false },
       }),
     ]);
@@ -1934,7 +1962,7 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
       userId: req.user?.id,
       action: "STATUS_CHANGE",
       entityType: "INITIATIVE",
-      entityId: id,
+      entityId: existing.id,
       oldValues: {
         title: existing.title,
         isActive: existing.isActive,
@@ -1947,34 +1975,7 @@ export async function deleteInitiative(req: AuthRequest, res: Response) {
 
     // Recalculate parent KeyResult progress jika ada
     if (existing.keyResultId) {
-      const remainingInitiatives = await prisma.initiative.findMany({
-        where: { keyResultId: existing.keyResultId, isActive: true },
-      });
-      let avgProgress = 0;
-      if (remainingInitiatives.length > 0) {
-        const totalProgress = remainingInitiatives.reduce((acc, ini) => {
-          const p =
-            ini.targetValue > 0
-              ? Math.min(100, (ini.currentValue / ini.targetValue) * 100)
-              : 0;
-          return acc + p;
-        }, 0);
-        avgProgress = totalProgress / remainingInitiatives.length;
-      }
-      const kr = await prisma.keyResult.findUnique({
-        where: { id: existing.keyResultId },
-      });
-      if (kr) {
-        const newKrValue = (avgProgress / 100) * kr.targetValue;
-        let krStatus = "ON_TRACK";
-        if (avgProgress < 50) krStatus = "OFF_TRACK";
-        else if (avgProgress < 75) krStatus = "AT_RISK";
-
-        await prisma.keyResult.update({
-          where: { id: existing.keyResultId },
-          data: { currentValue: newKrValue, status: krStatus },
-        });
-      }
+      await cascadeInitiativeToMonthlyKr(existing.keyResultId);
     }
 
     return res.status(200).json({ message: "Initiative berhasil dihapus" });
@@ -2164,12 +2165,14 @@ export async function getMyWork(req: AuthRequest, res: Response) {
     let myInitiatives: any[] = [];
     myInitiatives = await prisma.initiative.findMany({
       where: {
+        isActive: true,
         OR: [
           { ownerId: targetUserId },
           { assignedLeaderId: targetUserId },
           {
             tasks: {
               some: {
+                isActive: true,
                 OR: [
                   { assignedTeamMemberId: targetUserId },
                   { assignments: { some: { userId: targetUserId } } },
@@ -2185,6 +2188,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         team: true,
         owner: { select: { id: true, name: true } },
         tasks: {
+          where: { isActive: true },
           include: {
             assignments: {
               include: { user: { select: { id: true, name: true } } },
@@ -2303,6 +2307,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       // Inisiatif tim yang dimiliki anggota lain (atau belum diassign)
       const memberInitiatives = await prisma.initiative.findMany({
         where: {
+          isActive: true,
           teamId: { in: uniqueTeamIds },
           OR: [{ ownerId: { not: userId } }, { ownerId: null }],
         },
@@ -2310,7 +2315,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           keyResult: { include: { objective: true, departments: true } },
           team: true,
           owner: { select: { id: true, name: true } },
-          tasks: true,
+          tasks: { where: { isActive: true } },
           progressUpdates: { orderBy: { createdAt: "desc" } },
         },
       });
@@ -2397,7 +2402,10 @@ export async function getMyTeamInitiatives(req: AuthRequest, res: Response) {
     }
 
     const initiatives = await prisma.initiative.findMany({
-      where,
+      where: {
+        ...where,
+        isActive: true,
+      },
       include: {
         keyResult: { include: { objective: true } },
         team: true,
@@ -2405,6 +2413,7 @@ export async function getMyTeamInitiatives(req: AuthRequest, res: Response) {
           select: { id: true, name: true, email: true, position: true },
         },
         tasks: {
+          where: { isActive: true },
           include: {
             assignments: {
               include: { user: { select: { id: true, name: true } } },
@@ -2952,17 +2961,25 @@ export async function updateTask(req: AuthRequest, res: Response) {
 }
 
 // DELETE /api/tasks/:id — Delete Task
-export async function deleteTask(req: AuthRequest, res: Response) {
+export async function deleteTask(req: AuthRequest, res: Response): Promise<any> {
   try {
     const { id } = req.params;
-    const { role, id: userId } = req.user!;
+    const cleanId = id && id.startsWith("task-") ? id.replace(/^task-/, "") : id;
+    const role = req.user?.originalRole === "ADMIN" || req.user?.role === "ADMIN" ? "ADMIN" : req.user!.role;
+    const userId = req.user!.id;
 
     const existing = await prisma.task.findUnique({
-      where: { id },
+      where: { id: cleanId },
       include: { initiative: { include: { team: true } } },
     });
-    if (!existing)
+    if (!existing) {
+      const existingIni = await prisma.initiative.findUnique({ where: { id: cleanId } });
+      if (existingIni) {
+        req.params.id = cleanId;
+        return deleteInitiative(req, res);
+      }
       return res.status(404).json({ message: "Task tidak ditemukan" });
+    }
 
     // Guard locked sprint
     if (existing.sprintId && role !== "ADMIN") {
@@ -3028,7 +3045,7 @@ export async function deleteTask(req: AuthRequest, res: Response) {
 
     // ponytail: soft-delete keeps FK historical integrity (comments, updates, assignments) intact; add hard purge when data retention policy drafted
     await prisma.task.update({
-      where: { id },
+      where: { id: existing.id },
       data: { isActive: false },
     });
 
@@ -3036,7 +3053,7 @@ export async function deleteTask(req: AuthRequest, res: Response) {
       userId: req.user?.id,
       action: "STATUS_CHANGE",
       entityType: "TASK",
-      entityId: id,
+      entityId: existing.id,
       oldValues: {
         title: existing.title,
         isActive: existing.isActive,
@@ -3048,7 +3065,7 @@ export async function deleteTask(req: AuthRequest, res: Response) {
     });
 
     // Recalculate parent initiative progress
-    await cascadeTaskValueUpdate(id, existing.initiativeId);
+    await cascadeTaskValueUpdate(existing.id, existing.initiativeId);
 
     return res.status(200).json({ message: "Task berhasil dihapus" });
   } catch (error) {

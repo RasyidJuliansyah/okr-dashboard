@@ -619,6 +619,7 @@ import { useAuthStore } from "../../stores/auth";
 
 const config = useRuntimeConfig();
 const auth = useAuthStore();
+const { confirm: confirmDialog } = useConfirm();
 
 const employees = ref([]);
 const loading = ref(false);
@@ -959,8 +960,10 @@ async function saveEmployee() {
 }
 
 async function confirmDelete(emp) {
-  if (!confirm(`Apakah Anda yakin ingin menghapus data pegawai "${emp.name}"?`))
-    return;
+  const ok = await confirmDialog(
+    `Apakah Anda yakin ingin menghapus data pegawai "${emp.name}"?`,
+  );
+  if (!ok) return;
 
   try {
     await $fetch(`${config.public.apiBase}/users/${emp.id}`, {

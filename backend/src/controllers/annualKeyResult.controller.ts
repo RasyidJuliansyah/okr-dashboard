@@ -89,9 +89,10 @@ export async function getAnnualKeyResultDetail(
             },
             departments: true,
             initiatives: {
+              where: { isActive: true },
               include: {
                 team: { select: { id: true, name: true } },
-                tasks: true,
+                tasks: { where: { isActive: true } },
               },
             },
           },

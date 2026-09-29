@@ -629,17 +629,23 @@ export async function getKeyResultAssignments(req: AuthRequest, res: Response) {
 // GET /api/key-results/my-assigned
 export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
   try {
-    const { id: userId, role } = req.user!;
+    const userId = req.user!.id;
+    const role =
+      req.user?.originalRole === "ADMIN" || req.user?.role === "ADMIN"
+        ? "ADMIN"
+        : req.user!.role;
     const { userId: queryUserId } = req.query;
 
     const keyResultInclude = {
       objective: true,
       initiatives: {
+        where: { isActive: true },
         include: {
           team: true,
           owner: true,
           assignedLeader: true,
           tasks: {
+            where: { isActive: true },
             include: { assignments: { include: { user: true } } },
           },
         },
@@ -700,6 +706,7 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
       whereClause = {
         userId,
         keyResult: {
+          isActive: true,
           month: { not: null },
           targetValue: { gt: 0 },
         },

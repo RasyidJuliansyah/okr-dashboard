@@ -1164,6 +1164,7 @@ import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
+const { confirm: confirmDialog } = useConfirm();
 
 // Ambil role dari auth store
 const userRole = computed(() => auth.user?.role || "");
@@ -1756,7 +1757,8 @@ function openRejectModal(update) {
 }
 
 async function handleApprove(updateId) {
-  if (!confirm("Setujui update ini?")) return;
+  const ok = await confirmDialog("Setujui update ini?");
+  if (!ok) return;
   const token = auth.token || localStorage.getItem("token");
   const res = await fetch(
     `${config.public.apiBase}/initiatives/initiative-updates/${updateId}/approve`,

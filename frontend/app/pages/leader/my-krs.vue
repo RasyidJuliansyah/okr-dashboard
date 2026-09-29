@@ -143,7 +143,8 @@
                       }}
                       ({{
                         getProgressPercent(assign.keyResult).toFixed(1)
-                      }}%)</span>
+                      }}%)</span
+                    >
                     >
                   </div>
                 </div>
@@ -218,10 +219,11 @@
                                 'MANAGER',
                                 'LEADER',
                                 'TEAM',
-                              ].includes(authStore.user?.role)
+                              ].includes(authStore.user?.role) ||
+                              authStore.user?.originalRole === 'ADMIN'
                             "
                             class="icon-btn danger"
-                            @click="deleteInitiative(ini.id)"
+                            @click.stop="deleteInitiative(ini.id)"
                             title="Hapus Inisiatif"
                           >
                             <svg
@@ -256,7 +258,7 @@
                             v-if="
                               ['LEADER', 'MANAGER', 'ADMIN'].includes(
                                 authStore.user?.role,
-                              )
+                              ) || authStore.user?.originalRole === 'ADMIN'
                             "
                             class="create-task-btn"
                             @click="openCreateTaskModal(ini, assign.keyResult)"
@@ -323,7 +325,8 @@
                               v-if="
                                 authStore.user?.role === 'LEADER' ||
                                 authStore.user?.role === 'ADMIN' ||
-                                authStore.user?.role === 'MANAGER'
+                                authStore.user?.role === 'MANAGER' ||
+                                authStore.user?.originalRole === 'ADMIN'
                               "
                               class="icon-btn small"
                               @click="
@@ -358,10 +361,11 @@
                                   'MANAGER',
                                   'LEADER',
                                   'TEAM',
-                                ].includes(authStore.user?.role)
+                                ].includes(authStore.user?.role) ||
+                                authStore.user?.originalRole === 'ADMIN'
                               "
                               class="icon-btn small danger"
-                              @click="deleteTask(task.id)"
+                              @click.stop="deleteTask(task.id)"
                               title="Hapus Task"
                               style="padding: 2px 4px; margin-left: 4px"
                             >
@@ -476,7 +480,35 @@
             </select>
 
             <label>Bulan / Sprint Task *</label>
-            <input v-model="form.sprintMonth" type="month" class="form-input" />
+            <select
+              v-if="sprintOptions.length > 0"
+              v-model="form.sprintMonth"
+              class="form-input"
+            >
+              <option value="">-- Pilih Sprint --</option>
+              <option
+                v-if="
+                  form.sprintMonth &&
+                  !sprintOptions.some((s) => s.value === form.sprintMonth)
+                "
+                :value="form.sprintMonth"
+              >
+                {{ form.sprintMonth }}
+              </option>
+              <option
+                v-for="s in sprintOptions"
+                :key="s.value"
+                :value="s.value"
+              >
+                {{ s.label }}
+              </option>
+            </select>
+            <input
+              v-else
+              v-model="form.sprintMonth"
+              type="month"
+              class="form-input"
+            />
 
             <label>Judul Task *</label>
             <input
@@ -539,7 +571,35 @@
             ></textarea>
 
             <label>Bulan / Sprint Inisiatif *</label>
-            <input v-model="form.sprintMonth" type="month" class="form-input" />
+            <select
+              v-if="sprintOptions.length > 0"
+              v-model="form.sprintMonth"
+              class="form-input"
+            >
+              <option value="">-- Pilih Sprint --</option>
+              <option
+                v-if="
+                  form.sprintMonth &&
+                  !sprintOptions.some((s) => s.value === form.sprintMonth)
+                "
+                :value="form.sprintMonth"
+              >
+                {{ form.sprintMonth }}
+              </option>
+              <option
+                v-for="s in sprintOptions"
+                :key="s.value"
+                :value="s.value"
+              >
+                {{ s.label }}
+              </option>
+            </select>
+            <input
+              v-else
+              v-model="form.sprintMonth"
+              type="month"
+              class="form-input"
+            />
 
             <label>Pilih Tim / Departemen Anda *</label>
             <div class="searchable-field">
@@ -557,7 +617,9 @@
                   :value="team.id"
                 >
                   {{ team.name
-                  }}{{ team.department ? ` - ${team.department}` : "" }}
+                  }}{{
+                    team.department ? ` - ${getDeptName(team.department)}` : ""
+                  }}
                 </option>
               </select>
             </div>
@@ -751,15 +813,125 @@ const filteredKrs = computed(() => {
 
 const leaderTeamSearch = ref("");
 const leaderUserSearch = ref("");
+const departments = ref([]);
+const systemSprints = ref([]);
+const activeSprint = ref(null);
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+function getSprintMonthValue(sprint) {
+  if (!sprint) return "";
+  if (sprint.endDate) {
+    const d = new Date(sprint.endDate);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }
+  const monthNames = [
+    "januari",
+    "februari",
+    "maret",
+    "april",
+    "mei",
+    "juni",
+    "juli",
+    "agustus",
+    "september",
+    "oktober",
+    "november",
+    "desember",
+  ];
+  for (let i = 0; i < monthNames.length; i++) {
+    if (sprint.name?.toLowerCase().includes(monthNames[i])) {
+      const year = sprint.year || new Date().getFullYear();
+      return `${year}-${String(i + 1).padStart(2, "0")}`;
+    }
+  }
+  return "";
+}
+
+function getCurrentRunningSprintMonth() {
+  const now = new Date();
+  if (systemSprints.value.length > 0) {
+    const matched = systemSprints.value.find((s) => {
+      if (!s.startDate || !s.endDate) return false;
+      const start = new Date(s.startDate);
+      const end = new Date(s.endDate);
+      return now >= start && now <= end;
+    });
+    if (matched) return getSprintMonthValue(matched);
+  }
+  if (activeSprint.value) {
+    return getSprintMonthValue(activeSprint.value);
+  }
+  let y = now.getFullYear();
+  let m = now.getMonth() + 1;
+  if (now.getDate() >= 21) {
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+function getResolvedSprintMonth(val) {
+  if (!val) return getCurrentRunningSprintMonth();
+  if (/^\d{4}-\d{2}$/.test(val)) return val;
+  const found = systemSprints.value.find(
+    (s) => s.name?.toLowerCase() === val.toLowerCase() || s.id === val,
+  );
+  if (found) {
+    return getSprintMonthValue(found);
+  }
+  return val;
+}
+
+const sprintOptions = computed(() => {
+  const now = new Date();
+  return systemSprints.value.map((s) => {
+    const val = getSprintMonthValue(s);
+    const startStr = formatDateShort(s.startDate);
+    const endStr = formatDateShort(s.endDate);
+    const isCurrent =
+      (s.startDate &&
+        s.endDate &&
+        now >= new Date(s.startDate) &&
+        now <= new Date(s.endDate)) ||
+      s.id === activeSprint.value?.id ||
+      s.status === "ACTIVE";
+    return {
+      id: s.id,
+      value: val,
+      label: `${s.name}${startStr && endStr ? ` (${startStr} - ${endStr})` : ""}${isCurrent ? " Sedang Berjalan" : ""}`,
+    };
+  });
+});
+
+function getDeptName(deptValue) {
+  if (!deptValue) return "";
+  const found = departments.value.find(
+    (d) => d.value?.toUpperCase() === deptValue?.toUpperCase(),
+  );
+  return found ? found.name : deptValue;
+}
 
 const filteredLeaderTeams = computed(() => {
   if (!leaderTeamSearch.value.trim()) return myTeams.value;
   const q = leaderTeamSearch.value.toLowerCase();
-  return myTeams.value.filter(
-    (t) =>
-      (t.name && t.name.toLowerCase().includes(q)) ||
-      (t.department && t.department.toLowerCase().includes(q)),
-  );
+  return myTeams.value.filter((t) => {
+    const teamNameMatch = t.name && t.name.toLowerCase().includes(q);
+    const deptCodeMatch =
+      t.department && t.department.toLowerCase().includes(q);
+    const deptNameMatch =
+      t.department && getDeptName(t.department).toLowerCase().includes(q);
+    return teamNameMatch || deptCodeMatch || deptNameMatch;
+  });
 });
 
 const filteredLeaderUsers = computed(() => {
@@ -775,22 +947,24 @@ const filteredLeaderUsers = computed(() => {
         u.department &&
         u.department.toLowerCase() === selectedTeam.department.toLowerCase(),
     );
-  } else {
+  } else if (!["ADMIN", "C_LEVEL"].includes(authStore.user?.role)) {
     // Fallback: Filter by all departments managed/owned by this manager/leader
     const leaderDept = authStore.user?.department;
-    const managedDepts = authStore.user?.managedDepartments || [];
+    const activeDept = authStore.user?.activeDepartment;
+    const managedDepts = (authStore.user?.managedDepartments || []).map((d) =>
+      typeof d === "string"
+        ? d.toLowerCase()
+        : (d?.value || d?.name || "").toLowerCase(),
+    );
+    const allowedDepts = [leaderDept, activeDept, ...managedDepts]
+      .filter(Boolean)
+      .map((d) => String(d).toLowerCase());
 
-    if (leaderDept || managedDepts.length > 0) {
-      list = list.filter((u) => {
-        if (!u.department) return false;
-        const deptLower = u.department.toLowerCase();
-        const isPrimaryDept =
-          leaderDept && deptLower === leaderDept.toLowerCase();
-        const isManagedDept = managedDepts.some(
-          (d) => d.toLowerCase() === deptLower,
-        );
-        return isPrimaryDept || isManagedDept;
-      });
+    if (allowedDepts.length > 0) {
+      list = list.filter(
+        (u) =>
+          u.department && allowedDepts.includes(u.department.toLowerCase()),
+      );
     }
   }
 
@@ -867,11 +1041,17 @@ watch(
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
+const { confirm: confirmDialog } = useConfirm();
 
 function getHeaders() {
+  const token =
+    authStore.token ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${authStore.token}`,
+    Authorization: `Bearer ${token}`,
   };
 }
 
@@ -894,7 +1074,25 @@ onMounted(async () => {
       console.error(err);
     }
   }
-  await Promise.all([fetchData(), fetchMyTeams(), fetchUsers()]);
+  await Promise.all([
+    fetchData(),
+    fetchMyTeams(),
+    fetchUsers(),
+    fetchDepartments(),
+    fetchSprints(),
+  ]);
+});
+
+watch(myTeams, (newTeams) => {
+  if (!form.value.teamId && newTeams.length > 0) {
+    form.value.teamId = newTeams[0].id;
+  }
+});
+
+watch(systemSprints, () => {
+  if (showModal.value && !form.value.sprintMonth) {
+    form.value.sprintMonth = getCurrentRunningSprintMonth();
+  }
 });
 
 watch(selectedEmployee, () => {
@@ -902,6 +1100,30 @@ watch(selectedEmployee, () => {
     fetchData();
   }
 });
+
+async function fetchSprints() {
+  try {
+    const res = await fetch(`${API}/sprints`, { headers: getHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      systemSprints.value = data.sprints || [];
+      activeSprint.value = data.activeSprint || null;
+    }
+  } catch (err) {
+    console.error("Error fetch sprints:", err);
+  }
+}
+
+async function fetchDepartments() {
+  try {
+    const res = await fetch(`${API}/departments`, { headers: getHeaders() });
+    if (res.ok) {
+      departments.value = await res.json();
+    }
+  } catch (err) {
+    console.error("Error fetch departments:", err);
+  }
+}
 
 async function fetchUsers() {
   try {
@@ -941,16 +1163,34 @@ async function fetchMyTeams() {
     const res = await fetch(`${API}/users/teams`, { headers: getHeaders() });
     if (res.ok) {
       const teams = await res.json();
+      const userRole = authStore.user?.role;
+      if (userRole === "ADMIN" || userRole === "C_LEVEL") {
+        myTeams.value = teams;
+        return;
+      }
+
       const userTeamId = authStore.user?.teamId;
       const userDept = authStore.user?.department;
-      const managedDepts = authStore.user?.managedDepartments || [];
-      myTeams.value = teams.filter(
+      const activeDept = authStore.user?.activeDepartment;
+      const rawManaged = authStore.user?.managedDepartments || [];
+      const managedDeptNames = rawManaged.map((d) =>
+        typeof d === "string"
+          ? d.toUpperCase()
+          : (d?.value || d?.name || "").toUpperCase(),
+      );
+
+      const deptList = [userDept, activeDept, ...managedDeptNames]
+        .filter(Boolean)
+        .map((d) => String(d).toUpperCase());
+
+      const filtered = teams.filter(
         (t) =>
           t.leaderId === authStore.user?.id ||
           (userTeamId && t.id === userTeamId) ||
-          (userDept && t.department === userDept) ||
-          (t.department && managedDepts.includes(t.department)),
+          (t.department && deptList.includes(t.department.toUpperCase())),
       );
+
+      myTeams.value = filtered.length > 0 ? filtered : teams;
     }
   } catch (e) {
     console.error(e);
@@ -959,7 +1199,11 @@ async function fetchMyTeams() {
 
 function getProgressPercent(kr) {
   if (!kr || !kr.targetValue) return 0;
-  return calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType);
+  return calculateProgressPercent(
+    kr.currentValue,
+    kr.targetValue,
+    kr.targetType,
+  );
 }
 
 function getStatusClass(status) {
@@ -985,7 +1229,7 @@ function openInitiativeModal(kr) {
     targetValue: 100,
     unit: "%",
     keyResultId: kr?.id || "",
-    sprintMonth: new Date().toISOString().slice(0, 7),
+    sprintMonth: getCurrentRunningSprintMonth(),
     kpis: [],
   };
   modalError.value = "";
@@ -1007,7 +1251,7 @@ function openCreateTaskModal(ini, kr) {
     description: "",
     teamId: ini.teamId || "",
     ownerId: "",
-    sprintMonth: ini.sprintMonth || new Date().toISOString().slice(0, 7),
+    sprintMonth: getResolvedSprintMonth(ini.sprintMonth),
     targetValue: 100,
     unit: "%",
     kpis: [],
@@ -1031,7 +1275,7 @@ function startEditInitiative(ini, kr) {
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "%",
     keyResultId: ini.keyResultId || kr?.id || "",
-    sprintMonth: ini.sprintMonth || "",
+    sprintMonth: getResolvedSprintMonth(ini.sprintMonth),
     kpis: ini.kpis
       ? ini.kpis.map((ik) => ({
           kpiId: ik.kpiId,
@@ -1060,7 +1304,7 @@ function startEditTask(task, ini, kr) {
     description: "",
     teamId: "",
     ownerId: task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
-    sprintMonth: task.sprintMonth || ini.sprintMonth || "",
+    sprintMonth: getResolvedSprintMonth(task.sprintMonth || ini.sprintMonth),
     targetValue: task.targetValue || 0,
     unit: task.unit || "%",
     kpis: task.kpis
@@ -1077,22 +1321,34 @@ function startEditTask(task, ini, kr) {
 }
 
 async function deleteInitiative(id) {
-  if (
-    !confirm(
-      "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?",
-    )
-  ) {
-    return;
-  }
+  const ok = await confirmDialog(
+    "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?",
+  );
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
   try {
-    const res = await fetch(`${API}/initiatives/${id}`, {
+    let res = await fetch(`${API}/initiatives/${cleanId}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message);
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
     }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal menghapus Inisiatif");
+    }
+    // Optimistically remove deleted initiative immediately
+    krs.value.forEach((assign) => {
+      if (assign.keyResult?.initiatives) {
+        assign.keyResult.initiatives = assign.keyResult.initiatives.filter(
+          (i) => i.id !== cleanId && i.id !== id,
+        );
+      }
+    });
     await fetchData();
   } catch (err) {
     console.error("Delete initiative error:", err);
@@ -1101,18 +1357,32 @@ async function deleteInitiative(id) {
 }
 
 async function deleteTask(id) {
-  if (!confirm("Apakah Anda yakin ingin menghapus Task ini?")) {
-    return;
-  }
+  const ok = await confirmDialog("Apakah Anda yakin ingin menghapus Task ini?");
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
   try {
-    const res = await fetch(`${API}/initiatives/tasks/${id}`, {
+    let res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message);
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
     }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal menghapus Task");
+    }
+    // Optimistically remove deleted task immediately
+    krs.value.forEach((assign) => {
+      assign.keyResult?.initiatives?.forEach((ini) => {
+        if (ini.tasks) {
+          ini.tasks = ini.tasks.filter((t) => t.id !== cleanId && t.id !== id);
+        }
+      });
+    });
     await fetchData();
   } catch (err) {
     console.error("Delete task error:", err);

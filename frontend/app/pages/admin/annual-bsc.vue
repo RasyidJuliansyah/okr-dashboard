@@ -490,6 +490,7 @@ import { useAuthStore } from "../../stores/auth";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
+const { confirm: confirmDialog } = useConfirm();
 
 const objectives = ref([]);
 const annualKrs = ref([]);
@@ -630,7 +631,10 @@ function editAnnualKr(item) {
 }
 
 async function deleteAnnualKr(id) {
-  if (!confirm("Apakah Anda yakin ingin menghapus BSC Tahunan ini?")) return;
+  const ok = await confirmDialog(
+    "Apakah Anda yakin ingin menghapus BSC Tahunan ini?",
+  );
+  if (!ok) return;
   try {
     await $fetch(`${config.public.apiBase}/annual-key-results/${id}`, {
       method: "DELETE",

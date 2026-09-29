@@ -40,7 +40,10 @@ export function roleGuard(allowedRoles: string[]) {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    if (!allowedRoles.includes(req.user.role)) {
+    const isAllowed =
+      allowedRoles.includes(req.user.role) ||
+      req.user.originalRole === "ADMIN";
+    if (!isAllowed) {
       return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
     }
     next();

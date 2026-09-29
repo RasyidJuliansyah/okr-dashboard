@@ -1040,6 +1040,7 @@ import BulkUploadModal from "~/components/BulkUploadModal.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
+const { confirm: confirmDialog } = useConfirm();
 
 const showBulkModal = ref(false);
 const bulkModalType = ref("kr");
@@ -1655,24 +1656,26 @@ function startEditInitiative(ini, kr) {
 }
 
 async function deleteInitiative(id) {
-  if (
-    !confirm(
-      "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?",
-    )
-  ) {
-    return;
-  }
+  const ok = await confirmDialog(
+    "Apakah Anda yakin ingin menghapus Inisiatif ini beserta seluruh Task di dalamnya?",
+  );
+  if (!ok) return;
   try {
+    const token =
+      auth.token ||
+      (typeof localStorage !== "undefined"
+        ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+        : "");
     await $fetch(`${config.public.apiBase}/initiatives/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${auth.token}`,
+        Authorization: `Bearer ${token}`,
       },
     });
     fetchObjectives();
   } catch (err) {
     console.error("Delete initiative error:", err);
-    alert(err.data?.message || "Gagal menghapus Inisiatif.");
+    alert(err.data?.message || err.message || "Gagal menghapus Inisiatif.");
   }
 }
 

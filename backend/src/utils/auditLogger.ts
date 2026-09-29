@@ -14,7 +14,7 @@ export interface LogAuditParams {
 export async function logAudit(prisma: PrismaClient, params: LogAuditParams) {
   try {
     let ipAddress: string | null = null;
-    if (params.req) {
+    if (params.req && params.req.headers) {
       const forwarded = params.req.headers["x-forwarded-for"];
       if (typeof forwarded === "string") {
         ipAddress = forwarded.split(",")[0].trim();

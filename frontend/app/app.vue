@@ -50,6 +50,7 @@
         <NuxtPage />
       </main>
     </div>
+    <ConfirmModal />
   </div>
 </template>
 
@@ -59,6 +60,7 @@ import { useRoute } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import AppSidebar from "./components/AppSidebar.vue";
 import AppHeader from "./components/AppHeader.vue";
+import ConfirmModal from "./components/ConfirmModal.vue";
 
 const auth = useAuthStore();
 const route = useRoute();
