@@ -197,10 +197,7 @@
               </div>
               <div class="form-group quarter">
                 <label :for="'kr-type-' + index">Tipe Target</label>
-                <select
-                  :id="'kr-type-' + index"
-                  v-model="kr.targetType"
-                >
+                <select :id="'kr-type-' + index" v-model="kr.targetType">
                   <option value="AT_LEAST">Minimal (≥)</option>
                   <option value="AT_MOST">Maksimal (≤)</option>
                   <option value="EXACT">Tepat (=)</option>
@@ -399,7 +396,9 @@
             placeholder="Cari Key Result..."
             class="kr-search-input"
           />
-          <span v-if="krSearch" class="kr-search-clear" @click="krSearch = ''">✕</span>
+          <span v-if="krSearch" class="kr-search-clear" @click="krSearch = ''"
+            >✕</span
+          >
         </div>
 
         <div v-if="loadingList" class="loading-state">Memuat data OKR...</div>
@@ -451,7 +450,11 @@
           </div>
 
           <div class="objectives-list">
-            <div v-for="obj in filteredObjectives" :key="obj.id" class="objective-item">
+            <div
+              v-for="obj in filteredObjectives"
+              :key="obj.id"
+              class="objective-item"
+            >
               <div class="objective-item-header">
                 <div>
                   <span class="year-badge">{{ obj.year }}</span>
@@ -460,7 +463,7 @@
                     {{ obj.description }}
                   </p>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="display: flex; gap: 8px; align-items: center">
                   <button
                     @click.stop="startEditObjective(obj)"
                     class="edit-obj-btn"
@@ -508,7 +511,12 @@
                       <div class="kr-stats">
                         Target:
                         <strong>{{
-                          formatTargetValue(kr.targetValue, kr.unit, "", kr.targetType)
+                          formatTargetValue(
+                            kr.targetValue,
+                            kr.unit,
+                            "",
+                            kr.targetType,
+                          )
                         }}</strong>
                         <span
                           class="status-badge"
@@ -1638,7 +1646,7 @@ const filteredObjectives = computed(() => {
         ? (obj.keyResults || []).filter((kr) =>
             kr.title.toLowerCase().includes(q),
           )
-        : (obj.keyResults || []),
+        : obj.keyResults || [],
     }))
     .filter((obj) => obj.filteredKrs.length > 0);
 });
@@ -1736,7 +1744,12 @@ const filteredTeamsForDropdown = computed(() => {
 
 const showTaskModal = ref(false);
 const selectedIniForTask = ref(null);
-const taskForm = ref({ title: "", targetValue: null, unit: "%", targetType: "AT_LEAST" });
+const taskForm = ref({
+  title: "",
+  targetValue: null,
+  unit: "%",
+  targetType: "AT_LEAST",
+});
 const savingTask = ref(false);
 
 function toggleInitiatives(krId) {
@@ -1898,7 +1911,12 @@ async function saveTaskForInitiative() {
       },
     );
     showTaskModal.value = false;
-    taskForm.value = { title: "", targetValue: null, unit: "%", targetType: "AT_LEAST" };
+    taskForm.value = {
+      title: "",
+      targetValue: null,
+      unit: "%",
+      targetType: "AT_LEAST",
+    };
     fetchObjectives(); // Reload
   } catch (err) {
     console.error("Save Task error:", err);
@@ -2631,9 +2649,9 @@ select:focus {
 
 .cancel-btn {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 10px 16px;
+  border: 4px solid #ff4b4b;
+  color: #ff4b4b;
+  padding: 10px 24px;
   border-radius: 8px;
   font-size: 17px;
   font-weight: 500;
@@ -2643,6 +2661,7 @@ select:focus {
 
 .cancel-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .save-kr-btn {
