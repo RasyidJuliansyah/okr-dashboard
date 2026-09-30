@@ -400,7 +400,13 @@
                         v-if="isAdmin"
                         class="action-btn danger"
                         title="Hapus Task ini"
-                        style="padding: 1px 3px; border: none; background: transparent; cursor: pointer; color: #ef4444;"
+                        style="
+                          padding: 1px 3px;
+                          border: none;
+                          background: transparent;
+                          cursor: pointer;
+                          color: #ef4444;
+                        "
                         @click.stop="handleDeleteTaskFromBucket(task, ini)"
                       >
                         <svg
@@ -718,7 +724,13 @@
                         v-if="isAdmin"
                         class="action-btn danger"
                         title="Hapus Task ini"
-                        style="padding: 1px 3px; border: none; background: transparent; cursor: pointer; color: #ef4444;"
+                        style="
+                          padding: 1px 3px;
+                          border: none;
+                          background: transparent;
+                          cursor: pointer;
+                          color: #ef4444;
+                        "
                         @click.stop="handleDeleteTaskFromBucket(task, ini)"
                       >
                         <svg
@@ -1078,7 +1090,13 @@
                         v-if="isAdmin"
                         class="action-btn danger"
                         title="Hapus Task ini"
-                        style="padding: 1px 3px; border: none; background: transparent; cursor: pointer; color: #ef4444;"
+                        style="
+                          padding: 1px 3px;
+                          border: none;
+                          background: transparent;
+                          cursor: pointer;
+                          color: #ef4444;
+                        "
                         @click.stop="handleDeleteTaskFromBucket(task, ini)"
                       >
                         <svg
@@ -1496,23 +1514,71 @@
             </select>
 
             <label>PIC / Owner Inisiatif *</label>
-            <input
-              v-model="userSearch"
-              type="text"
-              class="form-input"
-              style="margin-bottom: 6px"
-              placeholder="Cari PIC / Owner..."
-            />
-            <select v-model="initiativeForm.ownerId" class="form-input">
-              <option value="">-- Pilih PIC / Owner --</option>
-              <option
-                v-for="user in filteredUsers"
-                :key="user.id"
-                :value="user.id"
+            <div v-if="!editingInitiative">
+              <input
+                v-model="userSearch"
+                type="text"
+                class="form-input search-mini"
+                style="margin-bottom: 6px"
+                placeholder="Cari PIC / Owner..."
+              />
+              <div class="pic-checkbox-box">
+                <label
+                  v-for="user in filteredUsers"
+                  :key="user.id"
+                  class="pic-check-item"
+                >
+                  <input
+                    type="checkbox"
+                    :value="user.id"
+                    v-model="initiativeForm.ownerIds"
+                  />
+                  <span
+                    >{{ user.name }}
+                    <small class="text-muted"
+                      >({{ user.position || user.role }})</small
+                    ></span
+                  >
+                </label>
+                <div
+                  v-if="filteredUsers.length === 0"
+                  class="p-2 text-muted text-sm"
+                >
+                  Tidak ada anggota ditemukan
+                </div>
+              </div>
+              <div
+                v-if="
+                  initiativeForm.ownerIds && initiativeForm.ownerIds.length > 1
+                "
+                class="multi-pic-info-note"
               >
-                {{ user.name }} ({{ user.role }})
-              </option>
-            </select>
+                <strong
+                  >{{ initiativeForm.ownerIds.length }} PIC dipilih:</strong
+                >
+                1 card inisiatif terpisah akan dibuat untuk masing-masing PIC di
+                bucket mereka masing-masing.
+              </div>
+            </div>
+            <div v-else>
+              <input
+                v-model="userSearch"
+                type="text"
+                class="form-input search-mini"
+                style="margin-bottom: 6px"
+                placeholder="Cari PIC / Owner..."
+              />
+              <select v-model="initiativeForm.ownerId" class="form-input">
+                <option value="">-- Pilih PIC / Owner --</option>
+                <option
+                  v-for="user in filteredUsers"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }} ({{ user.position || user.role }})
+                </option>
+              </select>
+            </div>
 
             <UnitTargetInput
               v-model:targetValue="initiativeForm.targetValue"
@@ -1967,7 +2033,11 @@
             <select
               v-model="batchInitiativeId"
               class="form-input"
-              style="font-weight: 600; background: var(--bg-page); margin-top: 4px"
+              style="
+                font-weight: 600;
+                background: var(--bg-page);
+                margin-top: 4px;
+              "
             >
               <option value="">-- Pilih Inisiatif Induk --</option>
               <option
@@ -2300,6 +2370,7 @@ const initiativeForm = ref({
   keyResultId: "",
   teamId: "",
   ownerId: "",
+  ownerIds: [] as string[],
   assignedLeaderId: "",
   targetValue: 100,
   targetType: "AT_LEAST",
@@ -2429,7 +2500,12 @@ const availableOwners = computed(() => {
     return teamMembers.value.length > 0
       ? teamMembers.value
       : allUsers.value.filter(
-          (u: any) => u.teamId === auth.user?.teamId || u.id === auth.user?.id,
+          (u: any) =>
+            u.teamId === auth.user?.teamId ||
+            (u.department &&
+              (auth.user as any)?.department &&
+              u.department === (auth.user as any)?.department) ||
+            u.id === auth.user?.id,
         );
   }
   if (managedDepartmentValues.value.length > 0) {
@@ -3070,6 +3146,7 @@ function openAddInitiativeModal() {
   const defaultSprint = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const defaultSprintId = activeSprint.value?.id || "";
   const defaultSprintMonth = activeSprint.value?.name || defaultSprint;
+  const initOwnerId = isTeam.value ? auth.user?.id || "" : auth.user?.id || "";
   initiativeForm.value = {
     sprintId: defaultSprintId,
     title: "",
@@ -3078,7 +3155,8 @@ function openAddInitiativeModal() {
     teamId: isTeam.value
       ? auth.user?.teamId || availableTeams.value[0]?.id || ""
       : selectedTeamId.value || availableTeams.value[0]?.id || "",
-    ownerId: isTeam.value ? auth.user?.id || "" : auth.user?.id || "",
+    ownerId: initOwnerId,
+    ownerIds: (initOwnerId ? [initOwnerId] : []) as string[],
     assignedLeaderId: "",
     targetValue: 100,
     targetType: "AT_LEAST",
@@ -3143,6 +3221,7 @@ function openEditInitiativeModal(ini: any) {
     keyResultId: ini.keyResultId || "",
     teamId: ini.teamId || "",
     ownerId: ini.ownerId || "",
+    ownerIds: ini.ownerId ? [ini.ownerId] : [],
     assignedLeaderId: ini.assignedLeaderId || "",
     targetValue:
       ini.targetValue !== undefined && ini.targetValue !== null
@@ -3205,6 +3284,15 @@ async function saveInitiative() {
     if (!initiativeForm.value.teamId && auth.user?.teamId) {
       initiativeForm.value.teamId = auth.user.teamId;
     }
+  }
+
+  if (
+    initiativeForm.value.ownerIds &&
+    initiativeForm.value.ownerIds.length > 0
+  ) {
+    initiativeForm.value.ownerId = initiativeForm.value.ownerIds[0];
+  } else if (initiativeForm.value.ownerId) {
+    initiativeForm.value.ownerIds = [initiativeForm.value.ownerId];
   }
 
   if (!initiativeForm.value.teamId && availableTeams.value.length > 0) {
@@ -3369,7 +3457,7 @@ async function handleDelete(ini: any) {
 
   try {
     const rawId = isTask
-      ? (ini.taskId || String(ini.id).replace(/^task-/, ""))
+      ? ini.taskId || String(ini.id).replace(/^task-/, "")
       : ini.id;
     const endpoint = isTask
       ? `${API}/initiatives/tasks/${rawId}`
@@ -3394,7 +3482,11 @@ async function handleDelete(ini: any) {
       setTimeout(() => (successMessage.value = ""), 3000);
       initiatives.value = initiatives.value.filter((item: any) => {
         if (isTask) {
-          return item.id !== ini.id && item.taskId !== rawId && item.id !== `task-${rawId}`;
+          return (
+            item.id !== ini.id &&
+            item.taskId !== rawId &&
+            item.id !== `task-${rawId}`
+          );
         }
         return item.id !== rawId && item.id !== ini.id;
       });
@@ -3440,10 +3532,14 @@ async function handleDeleteTaskFromBucket(task: any, parentIni?: any) {
       setTimeout(() => (successMessage.value = ""), 3000);
       initiatives.value.forEach((i: any) => {
         if (i.tasks) {
-          i.tasks = i.tasks.filter((t: any) => t.id !== rawId && t.id !== task.id);
+          i.tasks = i.tasks.filter(
+            (t: any) => t.id !== rawId && t.id !== task.id,
+          );
         }
       });
-      initiatives.value = initiatives.value.filter((item: any) => item.id !== `task-${rawId}` && item.taskId !== rawId);
+      initiatives.value = initiatives.value.filter(
+        (item: any) => item.id !== `task-${rawId}` && item.taskId !== rawId,
+      );
       await fetchInitiatives();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -4348,7 +4444,7 @@ onMounted(async () => {
   background: var(--card-bg);
   border-radius: 16px;
   width: 95%;
-  max-width: 580px;
+  max-width: 720px;
   max-height: calc(100dvh - 32px);
   max-height: calc(100vh - 32px);
   display: flex;
@@ -4977,5 +5073,44 @@ onMounted(async () => {
 }
 .btn-remove-row:hover:not(:disabled) {
   background: #fee2e2;
+}
+
+.pic-checkbox-box {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.pic-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-main, #1e293b);
+  cursor: pointer;
+  padding: 3px 0;
+  user-select: none;
+}
+.pic-check-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #2563eb;
+}
+.multi-pic-info-note {
+  padding: 8px 12px;
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #1e40af;
+  line-height: 1.4;
+  margin-bottom: 8px;
 }
 </style>

@@ -644,9 +644,21 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
           team: true,
           owner: true,
           assignedLeader: true,
+          kpis: {
+            include: {
+              kpi: true,
+            },
+          },
           tasks: {
             where: { isActive: true },
-            include: { assignments: { include: { user: true } } },
+            include: {
+              assignments: { include: { user: true } },
+              kpis: {
+                include: {
+                  kpi: true,
+                },
+              },
+            },
           },
         },
       },

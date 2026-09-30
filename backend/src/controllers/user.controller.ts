@@ -532,18 +532,21 @@ export async function getTeamMembers(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { role, id: userId } = req.user!;
 
+    const team = await prisma.team.findUnique({ where: { id } });
+    if (!team) {
+      return res.status(404).json({ message: "Tim tidak ditemukan" });
+    }
+
     // LEADER: hanya bisa melihat member tim yang dipimpinnya / tim miliknya / tim di departemennya
     if (role === "LEADER") {
       const dbUser = await prisma.user.findUnique({
         where: { id: userId },
         select: { teamId: true, department: true },
       });
-      const team = await prisma.team.findUnique({ where: { id } });
       const isAllowed =
-        team &&
-        (team.leaderId === userId ||
-          team.id === dbUser?.teamId ||
-          (dbUser?.department && team.department === dbUser.department));
+        team.leaderId === userId ||
+        team.id === dbUser?.teamId ||
+        (dbUser?.department && team.department === dbUser.department);
       if (!isAllowed) {
         return res
           .status(403)
@@ -552,7 +555,13 @@ export async function getTeamMembers(req: AuthRequest, res: Response) {
     }
 
     const members = await prisma.user.findMany({
-      where: { teamId: id },
+      where: {
+        isActive: true,
+        OR: [
+          { teamId: id },
+          ...(team.department ? [{ department: team.department }] : []),
+        ],
+      },
       select: { id: true, name: true, email: true, role: true, position: true },
       orderBy: { name: "asc" },
     });

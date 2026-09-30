@@ -78,6 +78,8 @@ Diambil dari `roleGuard` di folder [routes/](../backend/src/routes/) digabung de
 | Kelola pegawai & tim                  |     ✅     |     —      |     —      |      —       |         —          |
 | Bulk upload (Objective/KR/Initiative) |     ✅     |     —      |     —      |      —       |         —          |
 
+**Catatan scope Edit/Delete Initiative:** `ADMIN` dan `C_LEVEL` memiliki akses global. `MANAGER` hanya boleh mengubah atau menghapus Initiative dalam scope department/team-nya; `LEADER` hanya dalam scope team/department-nya; `TEAM` hanya Initiative dengan `ownerId === currentUser.id`. Guard Edit dan Delete wajib diterapkan di UI dan backend. Tidak boleh ada akses Edit/Delete yang melampaui scope role, dan izin Edit tidak otomatis membuka izin Delete.
+
 Baris yang ditebalkan adalah celah otorisasi, bukan keputusan desain — lihat temuan S-1.
 
 ### Pergeseran dari PRD

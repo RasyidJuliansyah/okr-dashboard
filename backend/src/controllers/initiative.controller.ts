@@ -1157,19 +1157,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
     });
 
     const taskCards = tasksList.map((t: any) => {
-      let taskKanbanStatus = t.kanbanStatus || "TODO";
-      if (!t.isCrossDept) {
-        if (t.status === "DROP" || t.status === "OFF_TRACK") {
-          taskKanbanStatus = "DROP";
-        } else if (
-          t.status === "DONE" ||
-          (t.targetValue > 0 && t.currentValue >= t.targetValue)
-        ) {
-          taskKanbanStatus = "DONE";
-        } else if (t.currentValue > 0) {
-          taskKanbanStatus = "IN_PROGRESS";
-        }
-      }
+      const taskKanbanStatus = getTaskKanbanStatus(t);
 
       const assignedOwnerId =
         t.assignedTeamMemberId || t.assignments?.[0]?.userId || userId;
@@ -1209,6 +1197,7 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         sprintMonth: t.sprintMonth || t.initiative?.sprintMonth || null,
         startDate: t.startDate || t.initiative?.startDate || null,
         dueDate: t.finishDate || t.initiative?.dueDate || null,
+        finishDate: t.finishDate || t.initiative?.finishDate || null,
         keyResultId: t.initiative?.keyResultId,
         keyResult: t.initiative?.keyResult || null,
         teamId: t.initiative?.teamId || null,
@@ -1242,6 +1231,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       keyResultId,
       teamId,
       ownerId,
+      ownerIds,
       assignedLeaderId,
       title,
       description,
@@ -1309,12 +1299,24 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       }
     }
 
-    // TEAM (T): Membuat inisiatif untuk dirinya sendiri
+    // Resolve targetOwnerIds for multi-PIC assignment (1 card per owner)
+    // ponytail: duplicate records per owner; upgrade path: shared initiative_owners junction table when multi-owner synchronization is explicitly required.
+    const rawOwnerIds = Array.isArray(ownerIds) && ownerIds.length > 0
+      ? ownerIds.map((id: any) => String(id).trim()).filter(Boolean)
+      : (ownerId && String(ownerId).trim() ? [String(ownerId).trim()] : []);
+
+    // TEAM (T): Membuat inisiatif untuk dirinya sendiri jika tidak di-assign spesifik
     if (role === "TEAM") {
-      ownerId = userId;
       if (!teamId && dbUser?.teamId) {
         teamId = dbUser.teamId;
       }
+    }
+
+    let targetOwnerIds: (string | null)[] = rawOwnerIds;
+    if (role === "TEAM" && targetOwnerIds.length === 0) {
+      targetOwnerIds = [userId];
+    } else if (targetOwnerIds.length === 0) {
+      targetOwnerIds = [null];
     }
 
     // LEADER (P): Jika teamId belum ditentukan, pakai tim yang dipimpin
@@ -1364,8 +1366,6 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       }
     }
 
-    const finalOwnerId =
-      (ownerId && String(ownerId).trim()) || (role === "TEAM" ? userId : null);
     const finalAssignedLeaderId =
       (assignedLeaderId && String(assignedLeaderId).trim()) || null;
     const finalKeyResultId =
@@ -1375,66 +1375,97 @@ export async function createInitiative(req: AuthRequest, res: Response) {
         ? parseFloat(weight)
         : 1.0;
 
-    const initiative = await (prisma.initiative as any).create({
-      data: {
-        ...(finalKeyResultId ? { keyResultId: finalKeyResultId } : {}),
-        teamId,
-        ownerId: finalOwnerId,
-        assignedLeaderId: finalAssignedLeaderId,
-        assignedBy: userId,
-        ...(finalSprintId ? { sprintId: finalSprintId } : {}),
-        title,
-        description: description || null,
-        targetValue: targetValue ? parseFloat(targetValue) : 0,
-        achievedValue:
-          achievedValue !== undefined &&
-          achievedValue !== null &&
-          achievedValue !== ""
-            ? parseFloat(achievedValue)
-            : null,
-        unit: unit || null,
-        status: calculateAutoStatus(
-          calculateProgressPercent(
-            achievedValue !== undefined && achievedValue !== null && achievedValue !== ""
+    const createdInitiatives: any[] = [];
+
+    for (const curOwnerId of targetOwnerIds) {
+      const initiative = await (prisma.initiative as any).create({
+        data: {
+          ...(finalKeyResultId ? { keyResultId: finalKeyResultId } : {}),
+          teamId,
+          ownerId: curOwnerId,
+          assignedLeaderId: finalAssignedLeaderId,
+          assignedBy: userId,
+          ...(finalSprintId ? { sprintId: finalSprintId } : {}),
+          title,
+          description: description || null,
+          targetValue: targetValue ? parseFloat(targetValue) : 0,
+          achievedValue:
+            achievedValue !== undefined &&
+            achievedValue !== null &&
+            achievedValue !== ""
               ? parseFloat(achievedValue)
-              : 0,
-            targetValue ? parseFloat(targetValue) : 0,
-            req.body.targetType || "AT_LEAST"
-          )
-        ),
-        targetType: req.body.targetType || "AT_LEAST",
-        kanbanStatus: kanbanStatus || "TODO",
-        weight: parsedWeight,
-        startDate: startDate ? new Date(startDate) : null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        finishDate: finishDate ? new Date(finishDate) : null,
-        sprintMonth: sprintMonth || null,
-        ...(Array.isArray(kpis) &&
-          kpis.length > 0 && {
-            kpis: {
-              create: kpis.map((k: any) => ({
-                kpiId: k.kpiId,
-                targetValue: parseFloat(k.targetValue) || 0,
-                currentValue: parseFloat(k.currentValue) || 0,
-              })),
+              : null,
+          unit: unit || null,
+          status: calculateAutoStatus(
+            calculateProgressPercent(
+              achievedValue !== undefined && achievedValue !== null && achievedValue !== ""
+                ? parseFloat(achievedValue)
+                : 0,
+              targetValue ? parseFloat(targetValue) : 0,
+              req.body.targetType || "AT_LEAST"
+            )
+          ),
+          targetType: req.body.targetType || "AT_LEAST",
+          kanbanStatus: kanbanStatus || "TODO",
+          weight: parsedWeight,
+          startDate: startDate ? new Date(startDate) : null,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          finishDate: finishDate ? new Date(finishDate) : null,
+          sprintMonth: sprintMonth || null,
+          ...(Array.isArray(kpis) &&
+            kpis.length > 0 && {
+              kpis: {
+                create: kpis.map((k: any) => ({
+                  kpiId: k.kpiId,
+                  targetValue: parseFloat(k.targetValue) || 0,
+                  currentValue: parseFloat(k.currentValue) || 0,
+                })),
+              },
+            }),
+        },
+        include: {
+          team: true,
+          owner: {
+            select: { id: true, name: true, email: true, position: true },
+          },
+          assignedLeader: {
+            select: { id: true, name: true, position: true },
+          },
+          kpis: {
+            include: {
+              kpi: true,
             },
-          }),
-      },
-      include: {
-        team: true,
-        owner: {
-          select: { id: true, name: true, email: true, position: true },
-        },
-        assignedLeader: {
-          select: { id: true, name: true, position: true },
-        },
-        kpis: {
-          include: {
-            kpi: true,
           },
         },
-      },
-    });
+      });
+
+      if (curOwnerId && curOwnerId !== userId) {
+        await createNotification({
+          recipientId: curOwnerId,
+          type: "INITIATIVE_ASSIGNED",
+          title: "Inisiatif Baru Ditugaskan",
+          body: `Anda ditugaskan sebagai PIC Inisiatif: "${title}"`,
+          link: "/team/my-work",
+        });
+      }
+
+      await logAudit(prisma, {
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "INITIATIVE",
+        entityId: initiative.id,
+        newValues: {
+          title: initiative.title,
+          targetValue: initiative.targetValue,
+          teamId: initiative.teamId,
+          keyResultId: initiative.keyResultId,
+          ownerId: curOwnerId,
+        },
+        req,
+      });
+
+      createdInitiatives.push(initiative);
+    }
 
     if (assignedLeaderId) {
       await createNotification({
@@ -1446,21 +1477,14 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       });
     }
 
-    await logAudit(prisma, {
-      userId: req.user?.id,
-      action: "CREATE",
-      entityType: "INITIATIVE",
-      entityId: initiative.id,
-      newValues: {
-        title: initiative.title,
-        targetValue: initiative.targetValue,
-        teamId: initiative.teamId,
-        keyResultId: initiative.keyResultId,
-      },
-      req,
+    if (createdInitiatives.length === 1) {
+      return res.status(201).json(createdInitiatives[0]);
+    }
+    return res.status(201).json({
+      ...createdInitiatives[0],
+      initiatives: createdInitiatives,
+      count: createdInitiatives.length,
     });
-
-    return res.status(201).json(initiative);
   } catch (error) {
     console.error("Create initiative error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -1498,7 +1522,10 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
     const role = req.user?.originalRole === "ADMIN" || req.user?.role === "ADMIN" ? "ADMIN" : req.user!.role;
     const userId = req.user!.id;
 
-    const existing = await prisma.initiative.findUnique({ where: { id: cleanId } });
+    const existing = await prisma.initiative.findUnique({
+      where: { id: cleanId },
+      include: { team: true },
+    });
     if (!existing) {
       const existingTask = await prisma.task.findUnique({ where: { id: cleanId } });
       if (existingTask) {
@@ -1514,6 +1541,55 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
       if (sp?.isLocked) {
         return res.status(403).json({ message: "Sprint sudah ditutup dan terkunci. Hanya Admin yang dapat mengubah inisiatif." });
       }
+    }
+
+    // Role scope checks
+    if (role === "MANAGER") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true },
+      });
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true },
+      });
+      const deptList = managedDepts.map((d) => d.value);
+      if (dbUser?.department) deptList.push(dbUser.department);
+
+      if (
+        !existing.team?.department ||
+        !deptList.includes(existing.team.department)
+      ) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Manager hanya dapat mengubah inisiatif di departemennya",
+        });
+      }
+    } else if (role === "LEADER") {
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      const isLeaderOfTeam = existing.teamId && leaderTeamIds.includes(existing.teamId);
+      if (
+        existing.assignedLeaderId !== userId &&
+        existing.ownerId !== userId &&
+        existing.assignedBy !== userId &&
+        !isLeaderOfTeam
+      ) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Anda tidak memiliki akses untuk mengubah inisiatif ini",
+        });
+      }
+    } else if (role === "TEAM") {
+      if (existing.ownerId !== userId && existing.assignedBy !== userId) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Anda hanya dapat mengubah inisiatif milik Anda sendiri",
+        });
+      }
+    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+      return res
+        .status(403)
+        .json({ message: "Forbidden: Role tidak diizinkan" });
     }
 
     // Non-restricted initiative editing
@@ -1995,7 +2071,7 @@ export async function deleteInitiative(req: AuthRequest, res: Response): Promise
 function getTaskKanbanStatus(t: any): string {
   if (!t) return "TODO";
   if (t.kanbanStatus) return t.kanbanStatus;
-  if (t.status === "DROP" || t.status === "OFF_TRACK") {
+  if (t.status === "DROP") {
     return "DROP";
   }
   if (
@@ -2068,6 +2144,11 @@ export async function getMyWork(req: AuthRequest, res: Response) {
       },
       assignments: {
         include: { user: { select: { id: true, name: true } } },
+      },
+      kpis: {
+        include: {
+          kpi: true,
+        },
       },
       comments: {
         include: { user: { select: { id: true, name: true, role: true } } },
@@ -2210,11 +2291,21 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         keyResult: { include: { objective: true, departments: true } },
         team: true,
         owner: { select: { id: true, name: true } },
+        kpis: {
+          include: {
+            kpi: true,
+          },
+        },
         tasks: {
           where: { isActive: true },
           include: {
             assignments: {
               include: { user: { select: { id: true, name: true } } },
+            },
+            kpis: {
+              include: {
+                kpi: true,
+              },
             },
           },
         },
@@ -2286,6 +2377,11 @@ export async function getMyWork(req: AuthRequest, res: Response) {
                   team: true,
                 },
               },
+              kpis: {
+                include: {
+                  kpi: true,
+                },
+              },
               updates: { orderBy: { createdAt: "desc" } },
             },
           },
@@ -2311,6 +2407,11 @@ export async function getMyWork(req: AuthRequest, res: Response) {
               keyResult: { include: { objective: true, departments: true } },
               team: true,
               owner: { select: { id: true, name: true } },
+            },
+          },
+          kpis: {
+            include: {
+              kpi: true,
             },
           },
           updates: { orderBy: { createdAt: "desc" } },
@@ -2342,7 +2443,24 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           keyResult: { include: { objective: true, departments: true } },
           team: true,
           owner: { select: { id: true, name: true } },
-          tasks: { where: { isActive: true } },
+          kpis: {
+            include: {
+              kpi: true,
+            },
+          },
+          tasks: {
+            where: { isActive: true },
+            include: {
+              assignments: {
+                include: { user: { select: { id: true, name: true } } },
+              },
+              kpis: {
+                include: {
+                  kpi: true,
+                },
+              },
+            },
+          },
           progressUpdates: { orderBy: { createdAt: "desc" } },
         },
       });
@@ -2439,11 +2557,21 @@ export async function getMyTeamInitiatives(req: AuthRequest, res: Response) {
         owner: {
           select: { id: true, name: true, email: true, position: true },
         },
+        kpis: {
+          include: {
+            kpi: true,
+          },
+        },
         tasks: {
           where: { isActive: true },
           include: {
             assignments: {
               include: { user: { select: { id: true, name: true } } },
+            },
+            kpis: {
+              include: {
+                kpi: true,
+              },
             },
             updates: { orderBy: { createdAt: "desc" }, take: 1 },
           },
@@ -2509,9 +2637,13 @@ export async function createTask(req: AuthRequest, res: Response) {
       unit,
       assigneeId,
       assignedTeamMemberId,
+      assigneeIds,
+      assignedTeamMemberIds,
       sprintMonth,
       startDate,
       finishDate,
+      dueDate,
+      kanbanStatus,
       keyResultId,
       kpis,
     } = req.body;
@@ -2536,47 +2668,60 @@ export async function createTask(req: AuthRequest, res: Response) {
       return res.status(400).json({ message: err.message });
     }
 
-    const targetMemberId =
-      (assignedTeamMemberId && String(assignedTeamMemberId).trim()) ||
-      (assigneeId && String(assigneeId).trim()) ||
-      null;
+    // Resolve targetAssigneeIds for multi-assignee task creation (1 card per assignee)
+    // ponytail: duplicate records per assignee; upgrade path: shared task assignments table when multi-assignee task sync is explicitly required.
+    const rawAssigneeIds = Array.isArray(assigneeIds) && assigneeIds.length > 0
+      ? assigneeIds.map((id: any) => String(id).trim()).filter(Boolean)
+      : Array.isArray(assignedTeamMemberIds) && assignedTeamMemberIds.length > 0
+      ? assignedTeamMemberIds.map((id: any) => String(id).trim()).filter(Boolean)
+      : [
+          (assignedTeamMemberId && String(assignedTeamMemberId).trim()) ||
+          (assigneeId && String(assigneeId).trim()) ||
+          null,
+        ].filter(Boolean);
 
-    if (targetMemberId && (role === "LEADER" || role === "TEAM")) {
-      const leaderUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { department: true },
-      });
-      const targetUser = await prisma.user.findUnique({
-        where: { id: targetMemberId },
-        select: { department: true },
-      });
-      if (!targetUser) {
-        return res
-          .status(400)
-          .json({ message: "Assignee user tidak ditemukan" });
-      }
-      if (
-        leaderUser?.department &&
-        targetUser.department &&
-        leaderUser.department !== targetUser.department
-      ) {
-        return res.status(403).json({
-          message:
-            "Anggota tim yang dipilih harus berada di departemen yang sama",
+    const targetAssigneeIds = rawAssigneeIds.length > 0
+      ? rawAssigneeIds
+      : [
+          (initiative.assignedLeaderId && String(initiative.assignedLeaderId).trim()) ||
+          (initiative.ownerId && String(initiative.ownerId).trim()) ||
+          userId,
+        ].filter(Boolean);
+
+    for (const curAssigneeId of targetAssigneeIds) {
+      if (curAssigneeId && (role === "LEADER" || role === "TEAM")) {
+        const leaderUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { department: true },
         });
+        const targetUser = await prisma.user.findUnique({
+          where: { id: curAssigneeId },
+          select: { department: true },
+        });
+        if (!targetUser) {
+          return res
+            .status(400)
+            .json({ message: `Assignee user ${curAssigneeId} tidak ditemukan` });
+        }
+        if (
+          leaderUser?.department &&
+          targetUser.department &&
+          leaderUser.department !== targetUser.department
+        ) {
+          return res.status(403).json({
+            message:
+              "Anggota tim yang dipilih harus berada di departemen yang sama",
+          });
+        }
       }
     }
 
-    const targetAssigneeId =
-      targetMemberId ||
-      (initiative.assignedLeaderId && String(initiative.assignedLeaderId).trim()) ||
-      (initiative.ownerId && String(initiative.ownerId).trim()) ||
-      userId;
+    const targetFinishDate = finishDate !== undefined ? finishDate : dueDate;
     const finalSprintMonth = sprintMonth || initiative.sprintMonth || null;
     let finalSprintId = req.body.sprintId || null;
     if (!finalSprintId) {
       const matchedSprint = await resolveSprint({
-        date: startDate || finishDate || null,
+        date: startDate || targetFinishDate || null,
         sprintMonth: finalSprintMonth,
         fallbackToActive: false,
       });
@@ -2600,74 +2745,88 @@ export async function createTask(req: AuthRequest, res: Response) {
       calculateProgressPercent(0, parseFloat(targetValue), targetTypeVal, finalBaselineValue)
     );
 
-    const task = await prisma.task.create({
-      data: {
-        initiativeId,
-        title,
-        targetValue: parseFloat(targetValue),
-        baselineValue: finalBaselineValue,
-        unit: unit || null,
-        status: initialStatus,
-        targetType: targetTypeVal,
-        assignedTeamMemberId: targetAssigneeId,
-        assignedBy: userId,
-        sprintMonth: finalSprintMonth,
-        sprintId: finalSprintId,
-        startDate: startDate ? new Date(startDate) : null,
-        finishDate: finishDate ? new Date(finishDate) : null,
-        ...(targetAssigneeId && {
-          assignments: {
-            create: {
-              userId: targetAssigneeId,
-            },
-          },
-        }),
-        ...(Array.isArray(kpis) &&
-          kpis.length > 0 && {
-            kpis: {
-              create: kpis.map((k: any) => ({
-                kpiId: k.kpiId,
-                targetValue: parseFloat(k.targetValue) || 0,
-                currentValue: parseFloat(k.currentValue) || 0,
-              })),
+    const createdTasks: any[] = [];
+
+    for (const curAssigneeId of targetAssigneeIds) {
+      const task = await prisma.task.create({
+        data: {
+          initiativeId,
+          title,
+          targetValue: parseFloat(targetValue),
+          baselineValue: finalBaselineValue,
+          unit: unit || null,
+          status: initialStatus,
+          targetType: targetTypeVal,
+          kanbanStatus: kanbanStatus || "TODO",
+          assignedTeamMemberId: curAssigneeId,
+          assignedBy: userId,
+          sprintMonth: finalSprintMonth,
+          sprintId: finalSprintId,
+          startDate: startDate ? new Date(startDate) : null,
+          finishDate: targetFinishDate ? new Date(targetFinishDate) : null,
+          ...(curAssigneeId && {
+            assignments: {
+              create: {
+                userId: curAssigneeId,
+              },
             },
           }),
-      },
-      include: {
-        assignedTeamMember: { select: { id: true, name: true } },
-        kpis: {
-          include: {
-            kpi: true,
+          ...(Array.isArray(kpis) &&
+            kpis.length > 0 && {
+              kpis: {
+                create: kpis.map((k: any) => ({
+                  kpiId: k.kpiId,
+                  targetValue: parseFloat(k.targetValue) || 0,
+                  currentValue: parseFloat(k.currentValue) || 0,
+                })),
+              },
+            }),
+        },
+        include: {
+          assignedTeamMember: { select: { id: true, name: true } },
+          kpis: {
+            include: {
+              kpi: true,
+            },
           },
         },
-      },
-    });
-
-    if (targetAssigneeId && targetAssigneeId !== userId) {
-      await createNotification({
-        recipientId: targetAssigneeId,
-        type: "TASK_ASSIGNED",
-        title: "Task Baru Ditugaskan",
-        body: `Anda mendapat assignment Task: "${title}"`,
-        link: "/team/my-work",
       });
+
+      if (curAssigneeId && curAssigneeId !== userId) {
+        await createNotification({
+          recipientId: curAssigneeId,
+          type: "TASK_ASSIGNED",
+          title: "Task Baru Ditugaskan",
+          body: `Anda mendapat assignment Task: "${title}"`,
+          link: "/team/my-work",
+        });
+      }
+
+      await logAudit(prisma, {
+        userId: req.user?.id,
+        action: "CREATE",
+        entityType: "TASK",
+        entityId: task.id,
+        newValues: {
+          title: task.title,
+          targetValue: task.targetValue,
+          initiativeId: task.initiativeId,
+          assignedTeamMemberId: task.assignedTeamMemberId,
+        },
+        req,
+      });
+
+      createdTasks.push(task);
     }
 
-    await logAudit(prisma, {
-      userId: req.user?.id,
-      action: "CREATE",
-      entityType: "TASK",
-      entityId: task.id,
-      newValues: {
-        title: task.title,
-        targetValue: task.targetValue,
-        initiativeId: task.initiativeId,
-        assignedTeamMemberId: task.assignedTeamMemberId,
-      },
-      req,
+    if (createdTasks.length === 1) {
+      return res.status(201).json(createdTasks[0]);
+    }
+    return res.status(201).json({
+      ...createdTasks[0],
+      tasks: createdTasks,
+      count: createdTasks.length,
     });
-
-    return res.status(201).json(task);
   } catch (error) {
     console.error("Create Task error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -2727,19 +2886,27 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
     }
 
     for (const item of validTaskItems) {
-      const targetAssigneeId =
-        (item.assignedTeamMemberId && String(item.assignedTeamMemberId).trim()) ||
-        (item.assignedMemberId && String(item.assignedMemberId).trim()) ||
-        (initiative.assignedLeaderId && String(initiative.assignedLeaderId).trim()) ||
-        (initiative.ownerId && String(initiative.ownerId).trim()) ||
-        userId;
+      const itemAssigneeIds = Array.isArray(item.assigneeIds) && item.assigneeIds.length > 0
+        ? item.assigneeIds.map((id: any) => String(id).trim()).filter(Boolean)
+        : Array.isArray(item.assignedTeamMemberIds) && item.assignedTeamMemberIds.length > 0
+        ? item.assignedTeamMemberIds.map((id: any) => String(id).trim()).filter(Boolean)
+        : [
+            (item.assignedTeamMemberId && String(item.assignedTeamMemberId).trim()) ||
+            (item.assignedMemberId && String(item.assignedMemberId).trim()) ||
+            (initiative.assignedLeaderId && String(initiative.assignedLeaderId).trim()) ||
+            (initiative.ownerId && String(initiative.ownerId).trim()) ||
+            userId,
+          ].filter(Boolean);
 
+      const targetAssignees = itemAssigneeIds.length > 0 ? itemAssigneeIds : [userId];
+
+      const itemFinishDate = item.finishDate !== undefined ? item.finishDate : item.dueDate;
       const finalSprintMonth =
         item.sprintMonth || initiative.sprintMonth || null;
       let finalSprintId = item.sprintId || null;
       if (!finalSprintId) {
         const matchedSprint = await resolveSprint({
-          date: item.startDate || item.finishDate || null,
+          date: item.startDate || itemFinishDate || null,
           sprintMonth: finalSprintMonth,
           fallbackToActive: false,
         });
@@ -2756,58 +2923,60 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
         calculateProgressPercent(0, targetVal, itemTargetType, finalBaselineValue)
       );
 
-      const created = await prisma.task.create({
-        data: {
-          initiativeId,
-          title: item.title.trim(),
-          targetValue: targetVal,
-          baselineValue: finalBaselineValue,
-          unit: item.unit || null,
-          status: initialStatus,
-          targetType: itemTargetType,
-          kanbanStatus: "TODO",
-          assignedTeamMemberId: targetAssigneeId,
-          assignedBy: userId,
-          sprintMonth: finalSprintMonth,
-          sprintId: finalSprintId,
-          startDate: item.startDate ? new Date(item.startDate) : null,
-          finishDate: item.finishDate ? new Date(item.finishDate) : null,
-          ...(targetAssigneeId && {
-            assignments: {
-              create: {
-                userId: targetAssigneeId,
-              },
-            },
-          }),
-          ...(Array.isArray(item.kpis) &&
-            item.kpis.length > 0 && {
-              kpis: {
-                create: item.kpis.map((k: any) => ({
-                  kpiId: k.kpiId || k.id,
-                  targetValue: parseFloat(k.targetValue) || 0,
-                  currentValue: parseFloat(k.currentValue) || 0,
-                })),
+      for (const targetAssigneeId of targetAssignees) {
+        const created = await prisma.task.create({
+          data: {
+            initiativeId,
+            title: item.title.trim(),
+            targetValue: targetVal,
+            baselineValue: finalBaselineValue,
+            unit: item.unit || null,
+            status: initialStatus,
+            targetType: itemTargetType,
+            kanbanStatus: item.kanbanStatus || "TODO",
+            assignedTeamMemberId: targetAssigneeId,
+            assignedBy: userId,
+            sprintMonth: finalSprintMonth,
+            sprintId: finalSprintId,
+            startDate: item.startDate ? new Date(item.startDate) : null,
+            finishDate: itemFinishDate ? new Date(itemFinishDate) : null,
+            ...(targetAssigneeId && {
+              assignments: {
+                create: {
+                  userId: targetAssigneeId,
+                },
               },
             }),
-        },
-        include: {
-          assignedTeamMember: { select: { id: true, name: true } },
-          kpis: {
-            include: {
-              kpi: true,
+            ...(Array.isArray(item.kpis) &&
+              item.kpis.length > 0 && {
+                kpis: {
+                  create: item.kpis.map((k: any) => ({
+                    kpiId: k.kpiId || k.id,
+                    targetValue: parseFloat(k.targetValue) || 0,
+                    currentValue: parseFloat(k.currentValue) || 0,
+                  })),
+                },
+              }),
+          },
+          include: {
+            assignedTeamMember: { select: { id: true, name: true } },
+            kpis: {
+              include: {
+                kpi: true,
+              },
             },
           },
-        },
-      });
-
-      createdTasks.push(created);
-
-      if (targetAssigneeId && targetAssigneeId !== userId) {
-        notificationsToSend.push({
-          recipientId: targetAssigneeId,
-          title: "Task Baru Ditugaskan",
-          body: `Anda mendapat assignment Task: "${item.title.trim()}"`,
         });
+
+        createdTasks.push(created);
+
+        if (targetAssigneeId && targetAssigneeId !== userId) {
+          notificationsToSend.push({
+            recipientId: targetAssigneeId,
+            title: "Task Baru Ditugaskan",
+            body: `Anda mendapat assignment Task: "${item.title.trim()}"`,
+          });
+        }
       }
     }
 
@@ -2840,16 +3009,21 @@ export async function updateTask(req: AuthRequest, res: Response) {
       targetValue,
       unit,
       status,
+      kanbanStatus,
       assignedTeamMemberId,
       sprintMonth,
       startDate,
       finishDate,
+      dueDate,
       keyResultId,
       kpis,
     } = req.body;
     const { role, id: userId } = req.user!;
 
-    const existing = await prisma.task.findUnique({ where: { id } });
+    const existing = await prisma.task.findUnique({
+      where: { id },
+      include: { initiative: { include: { team: true } }, assignments: true },
+    });
     if (!existing)
       return res.status(404).json({ message: "Task tidak ditemukan" });
 
@@ -2859,6 +3033,63 @@ export async function updateTask(req: AuthRequest, res: Response) {
       if (sp?.isLocked) {
         return res.status(403).json({ message: "Sprint sudah ditutup dan terkunci. Hanya Admin yang dapat mengubah task." });
       }
+    }
+
+    // Role scope checks
+    if (role === "MANAGER") {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { department: true },
+      });
+      const managedDepts = await prisma.department.findMany({
+        where: { managerId: userId },
+        select: { value: true },
+      });
+      const deptList = managedDepts.map((d) => d.value);
+      if (dbUser?.department) deptList.push(dbUser.department);
+
+      const taskDept =
+        existing.initiative?.team?.department ||
+        existing.targetDept ||
+        existing.creatorDept;
+
+      if (!taskDept || !deptList.includes(taskDept)) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Manager hanya dapat mengubah task di departemennya",
+        });
+      }
+    } else if (role === "LEADER") {
+      const leaderTeamIds = await getLeaderTeamIds(userId);
+      const isLeaderOfTaskTeam = existing.initiative?.teamId && leaderTeamIds.includes(existing.initiative.teamId);
+      const isAssigned = existing.assignments?.some((a) => a.userId === userId);
+      if (
+        existing.assignedBy !== userId &&
+        existing.creatorId !== userId &&
+        existing.initiative?.assignedLeaderId !== userId &&
+        existing.assignedTeamMemberId !== userId &&
+        !isAssigned &&
+        !isLeaderOfTaskTeam
+      ) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Anda tidak memiliki akses untuk mengubah task ini",
+        });
+      }
+    } else if (role === "TEAM") {
+      const isAssigned = existing.assignments?.some((a) => a.userId === userId);
+      if (
+        existing.assignedTeamMemberId !== userId &&
+        existing.assignedBy !== userId &&
+        existing.creatorId !== userId &&
+        !isAssigned
+      ) {
+        return res.status(403).json({
+          message: "Forbidden: Anda hanya dapat mengubah task Anda sendiri",
+        });
+      }
+    } else if (role !== "ADMIN" && role !== "C_LEVEL") {
+      return res.status(403).json({ message: "Forbidden: Role tidak diizinkan" });
     }
 
     // Validate Cascade KR if provided
@@ -2889,10 +3120,12 @@ export async function updateTask(req: AuthRequest, res: Response) {
       }
     }
 
+    const targetFinishDate = finishDate !== undefined ? finishDate : dueDate;
+
     let targetSprintId = req.body.sprintId !== undefined ? req.body.sprintId : existing.sprintId;
-    if (!targetSprintId && (sprintMonth || startDate || finishDate || existing.startDate || existing.finishDate)) {
+    if (!targetSprintId && (sprintMonth || startDate || targetFinishDate || existing.startDate || existing.finishDate)) {
       const sp = await resolveSprint({
-        date: startDate || finishDate || existing.startDate || existing.finishDate,
+        date: startDate || targetFinishDate || existing.startDate || existing.finishDate,
         sprintMonth: sprintMonth || existing.sprintMonth,
         fallbackToActive: false,
       });
@@ -2903,6 +3136,17 @@ export async function updateTask(req: AuthRequest, res: Response) {
     const finalTgt = targetValue !== undefined ? parseFloat(targetValue) : (existing.targetValue || 0);
     const finalBase = req.body.baselineValue !== undefined ? parseFloat(req.body.baselineValue) : (existing.baselineValue || 0);
     const autoStatus = calculateAutoStatus(calculateProgressPercent(existing.currentValue, finalTgt, targetTypeVal, finalBase));
+
+    let finalStatus = status;
+    if (finalStatus === undefined) {
+      if (kanbanStatus === "DONE") {
+        finalStatus = "DONE";
+      } else if (kanbanStatus === "DROP") {
+        finalStatus = "DROP";
+      } else {
+        finalStatus = autoStatus;
+      }
+    }
 
     const updated = await prisma.task.update({
       where: { id },
@@ -2916,15 +3160,16 @@ export async function updateTask(req: AuthRequest, res: Response) {
         }),
         ...(unit !== undefined && { unit }),
         ...(req.body.targetType !== undefined && { targetType: req.body.targetType }),
-        ...(status !== undefined ? { status } : { status: autoStatus }),
+        ...(finalStatus !== undefined && { status: finalStatus }),
+        ...(kanbanStatus !== undefined && { kanbanStatus }),
         ...(assignedTeamMemberId !== undefined && { assignedTeamMemberId }),
         ...(sprintMonth !== undefined && { sprintMonth }),
         ...(targetSprintId !== undefined && { sprintId: targetSprintId }),
         ...(startDate !== undefined && {
           startDate: startDate ? new Date(startDate) : null,
         }),
-        ...(finishDate !== undefined && {
-          finishDate: finishDate ? new Date(finishDate) : null,
+        ...(targetFinishDate !== undefined && {
+          finishDate: targetFinishDate ? new Date(targetFinishDate) : null,
         }),
       },
     });

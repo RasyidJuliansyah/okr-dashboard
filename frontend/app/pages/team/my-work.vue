@@ -240,11 +240,32 @@
                       <option value="DONE">DONE</option>
                       <option value="DROP">DROP</option>
                     </select>
-                    <!-- Delete button for ADMIN only -->
+                    <!-- CTA Edit & Delete Inisiatif -->
                     <button
-                      v-if="isAdmin"
+                      v-if="canEditInitiative(ini)"
+                      class="action-btn"
+                      title="Edit Inisiatif"
+                      style="padding: 2px 6px; font-size: 11px; cursor: pointer; color: #475569;"
+                      @click="openEditIniModal(ini)"
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteInitiative(ini)"
                       class="action-btn danger"
-                      title="Hapus"
+                      title="Hapus Inisiatif"
                       style="padding: 2px 6px; font-size: 11px; cursor: pointer"
                       @click="deleteInitiative(ini.id)"
                     >
@@ -279,6 +300,30 @@
                       >)</span
                     >
                   </p>
+                </div>
+
+                <!-- KPI Inisiatif -->
+                <div v-if="ini.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+                  <button
+                    type="button"
+                    class="kpi-toggle"
+                    :aria-expanded="isKpiExpanded(`initiative-${ini.id}`)"
+                    @click.stop="toggleKpi(`initiative-${ini.id}`)"
+                  >
+                    <span>KPI Initiative ({{ ini.kpis.length }})</span>
+                    <span aria-hidden="true">{{ isKpiExpanded(`initiative-${ini.id}`) ? '▼' : '▶' }}</span>
+                  </button>
+                  <div
+                    v-show="isKpiExpanded(`initiative-${ini.id}`)"
+                    class="kpi-list"
+                  >
+                    <div v-for="assignment in ini.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
+                      <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                      <span class="kpi-value">
+                        {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Realisasi vs Target Inisiatif -->
@@ -514,6 +559,29 @@
                           :style="{ width: getProgressPercent(task) + '%' }"
                         ></div>
                       </div>
+                      <!-- KPI Task -->
+                      <div v-if="task.kpis?.length" style="margin-top: 4px;">
+                        <button
+                          type="button"
+                          class="kpi-toggle task-kpi-toggle"
+                          :aria-expanded="isKpiExpanded(`ini-task-${task.id}`)"
+                          @click.stop="toggleKpi(`ini-task-${task.id}`)"
+                        >
+                          <span>KPI Task ({{ task.kpis.length }})</span>
+                          <span aria-hidden="true">{{ isKpiExpanded(`ini-task-${task.id}`) ? '▼' : '▶' }}</span>
+                        </button>
+                        <div
+                          v-show="isKpiExpanded(`ini-task-${task.id}`)"
+                          class="kpi-list task-kpi-list"
+                        >
+                          <div v-for="assignment in task.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
+                            <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                            <span class="kpi-value">
+                              {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -641,7 +709,19 @@
                 <option value="DROP">DROP</option>
               </select>
               <button
-                v-if="isAdmin"
+                v-if="canEditTask(assign.task)"
+                class="action-btn"
+                title="Edit Task"
+                style="padding: 8px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; color: #475569;"
+                @click.stop="openEditTaskModal(assign.task)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+              <button
+                v-if="canDeleteTask(assign.task)"
                 class="action-btn danger"
                 title="Hapus Task"
                 style="padding: 8px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center;"
@@ -663,6 +743,30 @@
             <p>
               <strong>Inisiatif:</strong> {{ assign.task.initiative?.title }}
             </p>
+          </div>
+
+          <!-- KPI Task -->
+          <div v-if="assign.task.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+            <button
+              type="button"
+              class="kpi-toggle"
+              :aria-expanded="isKpiExpanded(`my-task-${assign.task.id}`)"
+              @click.stop="toggleKpi(`my-task-${assign.task.id}`)"
+            >
+              <span>KPI Task ({{ assign.task.kpis.length }})</span>
+              <span aria-hidden="true">{{ isKpiExpanded(`my-task-${assign.task.id}`) ? '▼' : '▶' }}</span>
+            </button>
+            <div
+              v-show="isKpiExpanded(`my-task-${assign.task.id}`)"
+              class="kpi-list"
+            >
+              <div v-for="assignment in assign.task.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
+                <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                <span class="kpi-value">
+                  {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div class="task-progress-section">
@@ -975,9 +1079,30 @@
                         </select>
                         <!-- Delete button for ADMIN only -->
                         <button
-                          v-if="isAdmin"
+                          v-if="canEditInitiative(ini)"
+                          class="action-btn"
+                          title="Edit Inisiatif"
+                          style="padding: 2px 6px; font-size: 11px; cursor: pointer; color: #475569;"
+                          @click="openEditIniModal(ini)"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          v-if="canDeleteInitiative(ini)"
                           class="action-btn danger"
-                          title="Hapus"
+                          title="Hapus Inisiatif"
                           style="
                             padding: 2px 6px;
                             font-size: 11px;
@@ -1007,6 +1132,30 @@
                     <div class="ini-context">
                       <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
                       <p><strong>PIC:</strong> {{ ini.owner?.name || "-" }}</p>
+                    </div>
+
+                    <!-- KPI Inisiatif Tim -->
+                    <div v-if="ini.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+                      <button
+                        type="button"
+                        class="kpi-toggle"
+                        :aria-expanded="isKpiExpanded(`team-ini-${ini.id}`)"
+                        @click.stop="toggleKpi(`team-ini-${ini.id}`)"
+                      >
+                        <span>KPI Initiative ({{ ini.kpis.length }})</span>
+                        <span aria-hidden="true">{{ isKpiExpanded(`team-ini-${ini.id}`) ? '▼' : '▶' }}</span>
+                      </button>
+                      <div
+                        v-show="isKpiExpanded(`team-ini-${ini.id}`)"
+                        class="kpi-list"
+                      >
+                        <div v-for="assignment in ini.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
+                          <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                          <span class="kpi-value">
+                            {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     <div
@@ -1303,7 +1452,19 @@
                       <option value="DROP">DROP</option>
                     </select>
                     <button
-                      v-if="isAdmin"
+                      v-if="canEditTask(assign.task)"
+                      class="action-btn"
+                      title="Edit Task"
+                      style="padding: 4px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; color: #475569;"
+                      @click.stop="openEditTaskModal(assign.task)"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteTask(assign.task)"
                       class="action-btn danger"
                       title="Hapus Task"
                       style="padding: 4px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center;"
@@ -1325,6 +1486,30 @@
                       <strong>Inisiatif:</strong>
                       {{ assign.task.initiative?.title }}
                     </p>
+                  </div>
+
+                  <!-- KPI Task Tim -->
+                  <div v-if="assign.task.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+                    <button
+                      type="button"
+                      class="kpi-toggle"
+                      :aria-expanded="isKpiExpanded(`team-task-${assign.task.id}`)"
+                      @click.stop="toggleKpi(`team-task-${assign.task.id}`)"
+                    >
+                      <span>KPI Task ({{ assign.task.kpis.length }})</span>
+                      <span aria-hidden="true">{{ isKpiExpanded(`team-task-${assign.task.id}`) ? '▼' : '▶' }}</span>
+                    </button>
+                    <div
+                      v-show="isKpiExpanded(`team-task-${assign.task.id}`)"
+                      class="kpi-list"
+                    >
+                      <div v-for="assignment in assign.task.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
+                        <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                        <span class="kpi-value">
+                          {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <div
@@ -2061,6 +2246,164 @@
       </div>
     </div>
 
+    <!-- ─── MODAL: Edit Inisiatif ─── -->
+    <div
+      v-if="showEditIniModal"
+      class="modal-overlay"
+      @click.self="showEditIniModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Edit Inisiatif</h3>
+          <button class="modal-close-btn" @click="showEditIniModal = false">
+            &times;
+          </button>
+        </div>
+        <div v-if="modalError" class="alert alert-error mb-4">
+          {{ modalError }}
+        </div>
+        <div class="form-group mb-3">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Judul Inisiatif *</label>
+          <input
+            v-model="editIniForm.title"
+            type="text"
+            class="form-input"
+            placeholder="Judul inisiatif..."
+            required
+          />
+        </div>
+        <div class="form-group mb-3">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Deskripsi</label>
+          <textarea
+            v-model="editIniForm.description"
+            class="form-input"
+            rows="3"
+            placeholder="Deskripsi inisiatif..."
+          ></textarea>
+        </div>
+        <UnitTargetInput
+          v-model:targetValue="editIniForm.targetValue"
+          v-model:unit="editIniForm.unit"
+          labelTarget="Target Value"
+          labelUnit="Satuan (Unit)"
+          :required="true"
+        />
+        <div class="form-group mb-4">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Bulan Sprint</label>
+          <input
+            v-model="editIniForm.sprintMonth"
+            type="month"
+            class="form-input"
+          />
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            @click="showEditIniModal = false"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            class="primary-btn"
+            :disabled="saving || !editIniForm.title?.trim()"
+            @click="submitEditIni"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MODAL: Edit Task ─── -->
+    <div
+      v-if="showEditTaskModal"
+      class="modal-overlay"
+      @click.self="showEditTaskModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Edit Task</h3>
+          <button class="modal-close-btn" @click="showEditTaskModal = false">
+            &times;
+          </button>
+        </div>
+        <div v-if="modalError" class="alert alert-error mb-4">
+          {{ modalError }}
+        </div>
+        <div class="form-group mb-3">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Judul Task *</label>
+          <input
+            v-model="editTaskForm.title"
+            type="text"
+            class="form-input"
+            placeholder="Judul task..."
+            required
+          />
+        </div>
+        <div class="form-group mb-3">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Deskripsi</label>
+          <textarea
+            v-model="editTaskForm.description"
+            class="form-input"
+            rows="3"
+            placeholder="Deskripsi task..."
+          ></textarea>
+        </div>
+        <UnitTargetInput
+          v-model:targetValue="editTaskForm.targetValue"
+          v-model:unit="editTaskForm.unit"
+          labelTarget="Target Value"
+          labelUnit="Satuan (Unit)"
+          :required="true"
+        />
+        <div class="form-row-2 mb-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Assignee</label>
+            <select
+              v-model="editTaskForm.assignedTeamMemberId"
+              class="form-input"
+            >
+              <option value="">-- Diri Sendiri / Tidak Diubah --</option>
+              <option
+                v-for="u in availableAssignees"
+                :key="u.id"
+                :value="u.id"
+              >
+                {{ u.name }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Bulan Sprint</label>
+            <input
+              v-model="editTaskForm.sprintMonth"
+              type="month"
+              class="form-input"
+            />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn"
+            @click="showEditTaskModal = false"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            class="primary-btn"
+            :disabled="saving || !editTaskForm.title?.trim()"
+            @click="submitEditTask"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Cross Department Discussion & Lifecycle Modal -->
     <CrossDeptCommentModal
       :task-id="activeCrossDeptTaskId"
@@ -2089,6 +2432,24 @@ const errorMsg = ref("");
 // Expand & Collapse states (Default TERTUTUP/Collapsed)
 const isMyInitiativesExpanded = ref(false);
 const isTeamInitiativesExpanded = ref(false);
+
+// KPI Expand & Collapse states
+const expandedKpis = ref({});
+
+function toggleKpi(id) {
+  expandedKpis.value = {
+    ...expandedKpis.value,
+    [id]: !expandedKpis.value[id],
+  };
+}
+
+function isKpiExpanded(id) {
+  return !!expandedKpis.value[id];
+}
+
+function getKpiTitle(assignment) {
+  return assignment.kpi?.title || assignment.kpi?.name || assignment.kpiId || "KPI";
+}
 
 const showUpdateModal = ref(false);
 const showIniModal = ref(false);
@@ -2857,6 +3218,189 @@ function canReportTask(task) {
     task.assignments?.some((a) => a.userId === userId || a.user?.id === userId)
   );
 }
+function canEditInitiative(ini) {
+  if (!ini) return false;
+  const role = userRole.value;
+  if (["ADMIN", "C_LEVEL"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  if (role === "MANAGER") {
+    const userDept = authStore.user?.department;
+    return !ini.team?.department || ini.team.department === userDept;
+  }
+  if (role === "LEADER") {
+    return (
+      ini.assignedLeaderId === userId ||
+      ini.ownerId === userId ||
+      ini.owner?.id === userId ||
+      ini.teamId === authStore.user?.teamId
+    );
+  }
+  return ini.ownerId === userId || ini.owner?.id === userId;
+}
+
+function canDeleteInitiative(ini) {
+  return canEditInitiative(ini);
+}
+
+function canEditTask(task) {
+  if (!task) return false;
+  const role = userRole.value;
+  if (["ADMIN", "C_LEVEL"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  if (role === "MANAGER") {
+    const userDept = authStore.user?.department;
+    const taskDept = task.initiative?.team?.department || task.targetDept || task.creatorDept;
+    return !taskDept || taskDept === userDept;
+  }
+  if (role === "LEADER") {
+    const isAssigned = task.assignments?.some((a) => a.userId === userId || a.user?.id === userId);
+    return (
+      task.assignedTeamMemberId === userId ||
+      task.assignedTeamMember?.id === userId ||
+      task.creatorId === userId ||
+      task.assignedBy === userId ||
+      isAssigned ||
+      task.initiative?.teamId === authStore.user?.teamId
+    );
+  }
+  const isAssigned = task.assignments?.some((a) => a.userId === userId || a.user?.id === userId);
+  return (
+    task.assignedTeamMemberId === userId ||
+    task.assignedTeamMember?.id === userId ||
+    task.creatorId === userId ||
+    isAssigned
+  );
+}
+
+function canDeleteTask(task) {
+  return canEditTask(task);
+}
+
+const showEditTaskModal = ref(false);
+const editingTaskData = ref(null);
+const editTaskForm = ref({
+  title: "",
+  targetValue: 100,
+  unit: "%",
+  assignedTeamMemberId: "",
+  sprintMonth: "",
+  description: "",
+});
+
+const showEditIniModal = ref(false);
+const editingIniData = ref(null);
+const editIniForm = ref({
+  title: "",
+  targetValue: 100,
+  unit: "%",
+  sprintMonth: "",
+  description: "",
+});
+
+function openEditTaskModal(task) {
+  if (!canEditTask(task)) return;
+  editingTaskData.value = task;
+  editTaskForm.value = {
+    title: task.title || "",
+    targetValue: task.targetValue ?? 100,
+    unit: task.unit || "%",
+    assignedTeamMemberId: task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
+    sprintMonth: task.sprintMonth || "",
+    description: task.description || "",
+  };
+  modalError.value = "";
+  showEditTaskModal.value = true;
+}
+
+async function submitEditTask() {
+  if (!editingTaskData.value) return;
+  if (!editTaskForm.value.title?.trim()) {
+    modalError.value = "Judul Task wajib diisi";
+    return;
+  }
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const cleanId = String(editingTaskData.value.id).replace(/^task-/, "");
+    const res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        title: editTaskForm.value.title.trim(),
+        targetValue: editTaskForm.value.targetValue,
+        unit: editTaskForm.value.unit,
+        assignedTeamMemberId: editTaskForm.value.assignedTeamMemberId || undefined,
+        sprintMonth: editTaskForm.value.sprintMonth || undefined,
+        description: editTaskForm.value.description,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal memperbarui task");
+    }
+    successMsg.value = "Task berhasil diperbarui";
+    setTimeout(() => (successMsg.value = ""), 3000);
+    showEditTaskModal.value = false;
+    await fetchMyWork();
+  } catch (err) {
+    modalError.value = err.message || "Gagal memperbarui task";
+  } finally {
+    saving.value = false;
+  }
+}
+
+function openEditIniModal(ini) {
+  if (!canEditInitiative(ini)) return;
+  editingIniData.value = ini;
+  editIniForm.value = {
+    title: ini.title || "",
+    targetValue: ini.targetValue ?? 100,
+    unit: ini.unit || "%",
+    sprintMonth: ini.sprintMonth || "",
+    description: ini.description || "",
+  };
+  modalError.value = "";
+  showEditIniModal.value = true;
+}
+
+async function submitEditIni() {
+  if (!editingIniData.value) return;
+  if (!editIniForm.value.title?.trim()) {
+    modalError.value = "Judul Inisiatif wajib diisi";
+    return;
+  }
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const cleanId = String(editingIniData.value.id).replace(/^task-/, "");
+    const res = await fetch(`${API}/initiatives/${cleanId}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        title: editIniForm.value.title.trim(),
+        targetValue: editIniForm.value.targetValue,
+        unit: editIniForm.value.unit,
+        sprintMonth: editIniForm.value.sprintMonth || undefined,
+        description: editIniForm.value.description,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal memperbarui inisiatif");
+    }
+    successMsg.value = "Inisiatif berhasil diperbarui";
+    setTimeout(() => (successMsg.value = ""), 3000);
+    showEditIniModal.value = false;
+    await fetchMyWork();
+  } catch (err) {
+    modalError.value = err.message || "Gagal memperbarui inisiatif";
+  } finally {
+    saving.value = false;
+  }
+}
+
 
 function openUpdateModal(task) {
   if (!canReportTask(task) || isTaskDone(task)) return;
@@ -3799,5 +4343,54 @@ function getGroupedInitiatives(initiatives) {
 }
 .btn-remove-row:hover:not(:disabled) {
   background: #fee2e2;
+}
+
+/* KPI Section */
+.kpi-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  background: #f0f9ff;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.kpi-toggle:hover {
+  background: #e0f2fe;
+}
+.kpi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-left: 2px solid #bae6fd;
+  margin-top: 4px;
+}
+.kpi-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  color: #475569;
+  font-size: 12px;
+}
+.kpi-title {
+  font-weight: 600;
+}
+.kpi-value {
+  color: #64748b;
+  white-space: nowrap;
+}
+.task-kpi-toggle {
+  max-width: 240px;
+}
+.task-kpi-list {
+  max-width: 420px;
 }
 </style>

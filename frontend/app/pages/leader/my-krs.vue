@@ -247,6 +247,46 @@
                         </div>
                       </div>
 
+                      <button
+                        v-if="ini.kpis?.length && isItemForTLevel(ini)"
+                        type="button"
+                        class="kpi-toggle"
+                        :aria-expanded="isKpiExpanded(`initiative-${ini.id}`)"
+                        @click.stop="toggleKpi(`initiative-${ini.id}`)"
+                      >
+                        <span>KPI Initiative ({{ ini.kpis.length }})</span>
+                        <span aria-hidden="true">{{
+                          isKpiExpanded(`initiative-${ini.id}`) ? "▼" : "▶"
+                        }}</span>
+                      </button>
+                      <div
+                        v-if="
+                          ini.kpis?.length &&
+                          isItemForTLevel(ini) &&
+                          isKpiExpanded(`initiative-${ini.id}`)
+                        "
+                        class="kpi-list"
+                      >
+                        <div
+                          v-for="assignment in ini.kpis"
+                          :key="assignment.id || assignment.kpiId"
+                          class="kpi-row"
+                        >
+                          <span class="kpi-title">{{
+                            getKpiTitle(assignment)
+                          }}</span>
+                          <span class="kpi-value">
+                            {{ assignment.currentValue ?? 0 }} /
+                            {{ assignment.targetValue ?? 0
+                            }}{{
+                              assignment.kpi?.unit
+                                ? ` ${assignment.kpi.unit}`
+                                : ""
+                            }}
+                          </span>
+                        </div>
+                      </div>
+
                       <!-- Show Tasks List under Manager's Initiative -->
                       <div
                         v-if="ini.tasks && ini.tasks.length > 0"
@@ -295,6 +335,45 @@
                               >
                                 {{ a.user?.name }}
                               </span>
+                            </div>
+                            <button
+                              v-if="task.kpis?.length && isItemForTLevel(task)"
+                              type="button"
+                              class="kpi-toggle task-kpi-toggle"
+                              :aria-expanded="isKpiExpanded(`task-${task.id}`)"
+                              @click.stop="toggleKpi(`task-${task.id}`)"
+                            >
+                              <span>KPI Task ({{ task.kpis.length }})</span>
+                              <span aria-hidden="true">{{
+                                isKpiExpanded(`task-${task.id}`) ? "▼" : "▶"
+                              }}</span>
+                            </button>
+                            <div
+                              v-if="
+                                task.kpis?.length &&
+                                isItemForTLevel(task) &&
+                                isKpiExpanded(`task-${task.id}`)
+                              "
+                              class="kpi-list task-kpi-list"
+                            >
+                              <div
+                                v-for="assignment in task.kpis"
+                                :key="assignment.id || assignment.kpiId"
+                                class="kpi-row"
+                              >
+                                <span class="kpi-title">{{
+                                  getKpiTitle(assignment)
+                                }}</span>
+                                <span class="kpi-value">
+                                  {{ assignment.currentValue ?? 0 }} /
+                                  {{ assignment.targetValue ?? 0
+                                  }}{{
+                                    assignment.kpi?.unit
+                                      ? ` ${assignment.kpi.unit}`
+                                      : ""
+                                  }}
+                                </span>
+                              </div>
                             </div>
                           </div>
                           <div class="task-nested-meta">
@@ -525,7 +604,32 @@
                 class="form-input search-mini"
                 placeholder="Cari nama pegawai..."
               />
-              <select v-model="form.ownerId" class="form-input">
+              <div v-if="isCreatingTask" class="pic-checkbox-box">
+                <label
+                  v-for="user in filteredLeaderUsers"
+                  :key="user.id"
+                  class="pic-check-item"
+                >
+                  <input
+                    type="checkbox"
+                    :value="user.id"
+                    v-model="form.assigneeIds"
+                  />
+                  <span
+                    >{{ user.name }}
+                    <small class="text-muted"
+                      >({{ user.position || user.role }})</small
+                    ></span
+                  >
+                </label>
+                <div
+                  v-if="filteredLeaderUsers.length === 0"
+                  class="p-2 text-muted text-sm"
+                >
+                  Tidak ada anggota ditemukan
+                </div>
+              </div>
+              <select v-else v-model="form.ownerId" class="form-input">
                 <option value="">-- Pilih Pegawai --</option>
                 <option
                   v-for="user in filteredLeaderUsers"
@@ -535,6 +639,18 @@
                   {{ user.name }} ({{ user.position || user.role }})
                 </option>
               </select>
+              <div
+                v-if="
+                  isCreatingTask &&
+                  form.assigneeIds &&
+                  form.assigneeIds.length > 1
+                "
+                class="multi-pic-info-note"
+              >
+                <strong>{{ form.assigneeIds.length }} PIC dipilih:</strong> 1
+                card task terpisah akan dibuat untuk masing-masing PIC di bucket
+                mereka masing-masing.
+              </div>
             </div>
           </div>
 
@@ -632,7 +748,32 @@
                 class="form-input search-mini"
                 placeholder="Cari nama pegawai..."
               />
-              <select v-model="form.ownerId" class="form-input">
+              <div v-if="!editingIni" class="pic-checkbox-box">
+                <label
+                  v-for="user in filteredLeaderUsers"
+                  :key="user.id"
+                  class="pic-check-item"
+                >
+                  <input
+                    type="checkbox"
+                    :value="user.id"
+                    v-model="form.ownerIds"
+                  />
+                  <span
+                    >{{ user.name }}
+                    <small class="text-muted"
+                      >({{ user.position || user.role }})</small
+                    ></span
+                  >
+                </label>
+                <div
+                  v-if="filteredLeaderUsers.length === 0"
+                  class="p-2 text-muted text-sm"
+                >
+                  Tidak ada anggota ditemukan
+                </div>
+              </div>
+              <select v-else v-model="form.ownerId" class="form-input">
                 <option value="">-- Pilih Pegawai (Opsional) --</option>
                 <option
                   v-for="user in filteredLeaderUsers"
@@ -642,6 +783,14 @@
                   {{ user.name }}
                 </option>
               </select>
+              <div
+                v-if="!editingIni && form.ownerIds && form.ownerIds.length > 1"
+                class="multi-pic-info-note"
+              >
+                💡 <strong>{{ form.ownerIds.length }} PIC dipilih:</strong> 1
+                card inisiatif terpisah akan dibuat untuk masing-masing PIC di
+                bucket mereka masing-masing.
+              </div>
             </div>
           </div>
 
@@ -988,6 +1137,8 @@ const form = ref({
   description: "",
   teamId: "",
   ownerId: "",
+  ownerIds: [],
+  assigneeIds: [],
   sprintMonth: "",
   targetValue: 0,
   targetType: "AT_LEAST",
@@ -1213,6 +1364,51 @@ function getStatusClass(status) {
   return "bg-gray";
 }
 
+const expandedKpis = ref({});
+
+function toggleKpi(id) {
+  expandedKpis.value = {
+    ...expandedKpis.value,
+    [id]: !expandedKpis.value[id],
+  };
+}
+
+function isKpiExpanded(id) {
+  return !!expandedKpis.value[id];
+}
+
+function getKpiTitle(assignment) {
+  return (
+    assignment.kpi?.title || assignment.kpi?.name || assignment.kpiId || "KPI"
+  );
+}
+function isItemForTLevel(item) {
+  if (!item) return false;
+  // Jika task/initiative memiliki assignments atau assignedTeamMember / owner ber-role TEAM
+  if (
+    item.assignedTeamMember &&
+    (item.assignedTeamMember.role === "TEAM" || !item.assignedTeamMember.role)
+  ) {
+    return true;
+  }
+  if (item.owner && item.owner.role === "TEAM") {
+    return true;
+  }
+  if (Array.isArray(item.assignments) && item.assignments.length > 0) {
+    const hasTeamUser = item.assignments.some(
+      (a) => a.user?.role === "TEAM" || !a.user?.role,
+    );
+    if (hasTeamUser) return true;
+  }
+  // Jika initiative memiliki tasks yang di-assign ke T-level
+  if (Array.isArray(item.tasks) && item.tasks.length > 0) {
+    const hasTLevelTask = item.tasks.some((t) => isItemForTLevel(t));
+    if (hasTLevelTask) return true;
+  }
+  // Default: jika ada kpis, item di leader my-krs tetap ditampilkan jika owner/team terpasang
+  return true;
+}
+
 function openInitiativeModal(kr) {
   editingIni.value = null;
   editingTask.value = null;
@@ -1226,6 +1422,8 @@ function openInitiativeModal(kr) {
     description: "",
     teamId: myTeams.value[0]?.id || "",
     ownerId: "",
+    ownerIds: [],
+    assigneeIds: [],
     targetValue: 100,
     unit: "%",
     keyResultId: kr?.id || "",
@@ -1251,6 +1449,8 @@ function openCreateTaskModal(ini, kr) {
     description: "",
     teamId: ini.teamId || "",
     ownerId: "",
+    ownerIds: [],
+    assigneeIds: [],
     sprintMonth: getResolvedSprintMonth(ini.sprintMonth),
     targetValue: 100,
     unit: "%",
@@ -1272,6 +1472,8 @@ function startEditInitiative(ini, kr) {
     description: ini.description || "",
     teamId: ini.teamId || myTeams.value[0]?.id || "",
     ownerId: ini.ownerId || "",
+    ownerIds: ini.ownerId ? [ini.ownerId] : [],
+    assigneeIds: [],
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "%",
     keyResultId: ini.keyResultId || kr?.id || "",
@@ -1297,13 +1499,17 @@ function startEditTask(task, ini, kr) {
   selectedInitiativeId.value = ini.id;
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
+  const curOwnerId =
+    task.assignedTeamMemberId || task.assignments?.[0]?.userId || "";
   form.value = {
     keyResultId: kr?.id || ini.keyResultId || "",
     initiativeId: ini.id,
     title: task.title,
     description: "",
     teamId: "",
-    ownerId: task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
+    ownerId: curOwnerId,
+    ownerIds: [],
+    assigneeIds: curOwnerId ? [curOwnerId] : [],
     sprintMonth: getResolvedSprintMonth(task.sprintMonth || ini.sprintMonth),
     targetValue: task.targetValue || 0,
     unit: task.unit || "%",
@@ -1396,8 +1602,14 @@ async function saveInitiative() {
       modalError.value = "Judul Task dan Inisiatif Induk wajib diisi";
       return;
     }
-    if (!form.value.ownerId) {
-      modalError.value = "Harap pilih Pegawai untuk di-assign";
+    const rawAssignees =
+      form.value.assigneeIds && form.value.assigneeIds.length > 0
+        ? form.value.assigneeIds
+        : form.value.ownerId
+          ? [form.value.ownerId]
+          : [];
+    if (rawAssignees.length === 0) {
+      modalError.value = "Harap pilih minimal 1 Pegawai untuk di-assign";
       return;
     }
     if (!form.value.unit || !form.value.unit.trim()) {
@@ -1416,10 +1628,13 @@ async function saveInitiative() {
             title: form.value.title,
             targetValue: form.value.targetValue || 0,
             unit: form.value.unit,
-            assigneeId: form.value.ownerId,
-            assignedTeamMemberId: form.value.ownerId,
+            assigneeId: rawAssignees[0],
+            assigneeIds: rawAssignees,
+            assignedTeamMemberId: rawAssignees[0],
+            assignedTeamMemberIds: rawAssignees,
             sprintMonth: form.value.sprintMonth || undefined,
             keyResultId: form.value.keyResultId || undefined,
+            kpis: form.value.kpis || [],
           }),
         },
       );
@@ -1467,6 +1682,7 @@ async function saveInitiative() {
             targetValue: form.value.targetValue || 0,
             unit: form.value.unit,
             sprintMonth: form.value.sprintMonth || null,
+            kpis: form.value.kpis || [],
           }),
         },
       );
@@ -1524,10 +1740,21 @@ async function saveInitiative() {
         body: JSON.stringify(form.value),
       });
     } else {
+      const rawOwners =
+        form.value.ownerIds && form.value.ownerIds.length > 0
+          ? form.value.ownerIds
+          : form.value.ownerId
+            ? [form.value.ownerId]
+            : [];
+      const payload = {
+        ...form.value,
+        ownerId: rawOwners[0] || null,
+        ownerIds: rawOwners,
+      };
       res = await fetch(`${API}/initiatives`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify(form.value),
+        body: JSON.stringify(payload),
       });
     }
 
@@ -1909,6 +2136,42 @@ function getGroupedAssignedKrs(assignments) {
   gap: 6px;
   margin-bottom: 16px;
 }
+.pic-checkbox-box {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pic-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-main, #1e293b);
+  cursor: pointer;
+  padding: 3px 0;
+  user-select: none;
+}
+.pic-check-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #2563eb;
+}
+.multi-pic-info-note {
+  padding: 8px 12px;
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #1e40af;
+  line-height: 1.4;
+}
 .search-mini {
   margin-bottom: 0 !important;
   font-size: 13px;
@@ -2015,6 +2278,52 @@ function getGroupedAssignedKrs(assignments) {
   background: #e0f2fe;
   padding: 2px 8px;
   border-radius: 12px;
+}
+.kpi-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  background: #f0f9ff;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.kpi-toggle:hover {
+  background: #e0f2fe;
+}
+.kpi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-left: 2px solid #bae6fd;
+}
+.kpi-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  color: #475569;
+  font-size: 12px;
+}
+.kpi-title {
+  font-weight: 600;
+}
+.kpi-value {
+  color: #64748b;
+  white-space: nowrap;
+}
+.task-kpi-toggle {
+  max-width: 240px;
+}
+.task-kpi-list {
+  max-width: 420px;
 }
 .ini-actions {
   display: flex;
