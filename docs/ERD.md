@@ -28,7 +28,8 @@ erDiagram
         string email UK
         string password
         string role "ADMIN, MANAGER, C_LEVEL, LEADER, TEAM"
-        string department "nullable, soft ref Department.value"
+        string department "nullable, backward-compat ref"
+        string departmentId FK "nullable, relasi manajemen"
         string position "nullable"
         string teamId FK "nullable"
         datetime createdAt
@@ -38,7 +39,8 @@ erDiagram
         string name
         string managerId "nullable, soft ref User.id"
         string leaderId FK "nullable"
-        string department "nullable, soft ref Department.value"
+        string department "nullable, backward-compat ref"
+        string departmentId FK "nullable, relasi Department.id"
     }
     Department {
         string id PK
@@ -184,10 +186,10 @@ erDiagram
     Team       ||--o{ Initiative       : "menjalankan"
     User       ||--o{ Initiative       : "memiliki (ownerId)"
     User       ||--o{ Department       : "memanajeri"
+    Department ||--o{ Team             : "departmentId FK"
+    Department ||--o{ User             : "departmentId FK (manajemen)"
     User       ||..o{ Objective        : "ownerId tanpa FK"
     User       ||..o{ Team             : "managerId tanpa FK"
-    Department ||..o{ User             : "value tanpa FK"
-    Department ||..o{ Team             : "value tanpa FK"
     Department ||..o{ KrDepartment     : "value tanpa FK"
 ```
 

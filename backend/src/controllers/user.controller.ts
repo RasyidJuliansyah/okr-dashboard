@@ -20,7 +20,16 @@ export async function getAllUsers(req: AuthRequest, res: Response) {
   try {
     const { department, role, teamId, includeInactive } = req.query;
     const where: any = {};
-    if (department) where.department = department as string;
+    if (department) {
+      where.OR = [
+        { departmentId: department as string },
+        { department: department as string },
+        { departmentRel: { value: department as string } },
+        { team: { departmentId: department as string } },
+        { team: { department: department as string } },
+        { team: { departmentRel: { value: department as string } } },
+      ];
+    }
     if (role) where.role = role as string;
     if (teamId) where.teamId = teamId as string;
     if (includeInactive !== "true") {
@@ -35,15 +44,48 @@ export async function getAllUsers(req: AuthRequest, res: Response) {
         email: true,
         role: true,
         department: true,
+        departmentId: true,
         position: true,
         teamId: true,
         isActive: true,
         createdAt: true,
+        departmentRel: {
+          select: { id: true, name: true, value: true },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            department: true,
+            departmentId: true,
+            departmentRel: {
+              select: { id: true, name: true, value: true },
+            },
+          },
+        },
       },
       orderBy: { name: "asc" },
     });
 
-    return res.status(200).json(users);
+    // Backward-compatible DTO: ensure user.department returns resolved relational department string
+    const sanitizedUsers = users.map((u) => {
+      const resolvedDept =
+        u.team?.departmentRel?.value ||
+        u.team?.department ||
+        u.departmentRel?.value ||
+        u.department ||
+        null;
+
+      const resolvedDeptId = u.departmentId || u.team?.departmentId || null;
+
+      return {
+        ...u,
+        department: resolvedDept,
+        departmentId: resolvedDeptId,
+      };
+    });
+
+    return res.status(200).json(sanitizedUsers);
   } catch (error) {
     console.error("Get users error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -60,23 +102,52 @@ export async function createEmployee(req: AuthRequest, res: Response) {
     }
 
     let normalizedDept: string | null = null;
+    let deptId: string | null = null;
     let teamId = req.body.teamId || null;
 
     if (department) {
-      normalizedDept = department.trim().toUpperCase();
-      const validDepts = await getValidDepartmentValues();
-      if (!validDepts.includes(normalizedDept as string)) {
+      const val = department.trim().toUpperCase();
+      normalizedDept = val;
+      const deptRecord = await prisma.department.findFirst({
+        where: {
+          OR: [{ value: val }, { id: department }],
+        },
+      });
+
+      if (!deptRecord) {
+        const validDepts = await getValidDepartmentValues();
         return res.status(400).json({
           message: `Department tidak valid: ${department}. Pilihan valid: ${validDepts.join(", ")}`,
         });
       }
 
+      normalizedDept = deptRecord.value;
+      deptId = deptRecord.id;
+
       if (!teamId) {
         const team = await prisma.team.findFirst({
-          where: { department: normalizedDept },
+          where: {
+            OR: [
+              { departmentId: deptRecord.id },
+              { department: normalizedDept },
+            ],
+          },
         });
         if (team) {
           teamId = team.id;
+        }
+      }
+    }
+
+    if (teamId && !deptId) {
+      const team = await prisma.team.findUnique({
+        where: { id: teamId },
+        include: { departmentRel: true },
+      });
+      if (team) {
+        deptId = team.departmentId || null;
+        if (!normalizedDept) {
+          normalizedDept = team.departmentRel?.value || team.department || null;
         }
       }
     }
@@ -98,6 +169,7 @@ export async function createEmployee(req: AuthRequest, res: Response) {
             name,
             position: position || null,
             department: normalizedDept,
+            departmentId: deptId,
             teamId,
             role: targetRole,
             isActive: true,
@@ -108,6 +180,7 @@ export async function createEmployee(req: AuthRequest, res: Response) {
             email: true,
             role: true,
             department: true,
+            departmentId: true,
             position: true,
             teamId: true,
             isActive: true,
@@ -145,6 +218,7 @@ export async function createEmployee(req: AuthRequest, res: Response) {
         password: hashedPassword,
         position: position || null,
         department: normalizedDept,
+        departmentId: deptId,
         teamId,
         role: targetRole,
       },
@@ -154,6 +228,7 @@ export async function createEmployee(req: AuthRequest, res: Response) {
         email: true,
         role: true,
         department: true,
+        departmentId: true,
         position: true,
         teamId: true,
         createdAt: true,
@@ -190,29 +265,59 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
     const { name, position, department, role } = req.body;
 
     let normalizedDept: string | null | undefined = undefined;
+    let deptId: string | null | undefined = undefined;
     let newTeamId: string | null | undefined =
       req.body.teamId !== undefined ? req.body.teamId : undefined;
 
     if (department !== undefined) {
       if (department) {
-        normalizedDept = department.trim().toUpperCase();
-        const validDepts = await getValidDepartmentValues();
-        if (!validDepts.includes(normalizedDept as string)) {
+        const val = department.trim().toUpperCase();
+        normalizedDept = val;
+        const deptRecord = await prisma.department.findFirst({
+          where: {
+            OR: [{ value: val }, { id: department }],
+          },
+        });
+
+        if (!deptRecord) {
+          const validDepts = await getValidDepartmentValues();
           return res.status(400).json({
             message: `Department tidak valid: ${department}. Pilihan valid: ${validDepts.join(", ")}`,
           });
         }
 
+        normalizedDept = deptRecord.value;
+        deptId = deptRecord.id;
+
         if (newTeamId === undefined) {
           const team = await prisma.team.findFirst({
-            where: { department: normalizedDept },
+            where: {
+              OR: [
+                { departmentId: deptRecord.id },
+                { department: normalizedDept },
+              ],
+            },
           });
           newTeamId = team ? team.id : null;
         }
       } else {
         normalizedDept = null;
+        deptId = null;
         if (newTeamId === undefined) {
           newTeamId = null;
+        }
+      }
+    }
+
+    if (newTeamId && deptId === undefined) {
+      const team = await prisma.team.findUnique({
+        where: { id: newTeamId },
+        include: { departmentRel: true },
+      });
+      if (team) {
+        deptId = team.departmentId || null;
+        if (normalizedDept === undefined) {
+          normalizedDept = team.departmentRel?.value || team.department || null;
         }
       }
     }
@@ -236,6 +341,7 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
         ...(name !== undefined && { name }),
         ...(position !== undefined && { position: position || null }),
         ...(normalizedDept !== undefined && { department: normalizedDept }),
+        ...(deptId !== undefined && { departmentId: deptId }),
         ...(newTeamId !== undefined && { teamId: newTeamId }),
         ...(role !== undefined && { role: newRole }),
       },
@@ -245,6 +351,7 @@ export async function updateEmployee(req: AuthRequest, res: Response) {
         email: true,
         role: true,
         department: true,
+        departmentId: true,
         position: true,
         teamId: true,
         createdAt: true,
@@ -360,13 +467,23 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
 
     const results = { success: 0, updated: 0, errors: [] as any[] };
     const hashedPassword = await bcrypt.hash("SkollaEdu", 10);
-    const validDepts = await getValidDepartmentValues();
-    const allTeams = await prisma.team.findMany({
-      select: { id: true, department: true },
+    const depts = await prisma.department.findMany({
+      select: { id: true, value: true },
     });
-    const teamMap = new Map<string, string>();
+    const deptMap = new Map<string, string>();
+    depts.forEach((d) => deptMap.set(d.value.toUpperCase(), d.id));
+    const validDepts = depts.map((d) => d.value);
+
+    const allTeams = await prisma.team.findMany({
+      select: { id: true, department: true, departmentId: true },
+    });
+    const teamMap = new Map<string, { id: string; departmentId: string | null }>();
     allTeams.forEach((t) => {
-      if (t.department) teamMap.set(t.department.toUpperCase(), t.id);
+      if (t.department)
+        teamMap.set(t.department.toUpperCase(), {
+          id: t.id,
+          departmentId: t.departmentId,
+        });
     });
 
     for (const [index, emp] of employees.entries()) {
@@ -392,6 +509,7 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
       }
 
       let empDept: string | null = null;
+      let empDeptId: string | null = null;
       if (emp.department) {
         empDept = emp.department.trim().toUpperCase();
         if (!validDepts.includes(empDept as string)) {
@@ -402,9 +520,14 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
           });
           continue;
         }
+        empDeptId = deptMap.get(empDept!) || null;
       }
 
-      const resolvedTeamId = empDept ? teamMap.get(empDept) || null : null;
+      const matchedTeam = empDept ? teamMap.get(empDept) || null : null;
+      const resolvedTeamId = matchedTeam ? matchedTeam.id : null;
+      if (!empDeptId && matchedTeam?.departmentId) {
+        empDeptId = matchedTeam.departmentId;
+      }
 
       if (emp.role && !VALID_ROLES.includes(emp.role.toUpperCase())) {
         results.errors.push({
@@ -427,6 +550,7 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
               name: emp.name,
               position: emp.position || null,
               department: empDept,
+              departmentId: empDeptId,
               ...(resolvedTeamId !== null ? { teamId: resolvedTeamId } : {}),
               ...(emp.role && { role: emp.role.toUpperCase() }),
               isActive: true,
@@ -442,6 +566,7 @@ export async function bulkUploadEmployees(req: AuthRequest, res: Response) {
               role: emp.role ? emp.role.toUpperCase() : "TEAM",
               position: emp.position || null,
               department: empDept,
+              departmentId: empDeptId,
               teamId: resolvedTeamId,
             },
           });
@@ -475,10 +600,20 @@ export async function getTeams(req: AuthRequest, res: Response) {
         users: {
           select: { id: true, name: true, email: true, role: true },
         },
+        departmentRel: {
+          select: { id: true, name: true, value: true },
+        },
       },
       orderBy: { name: "asc" },
     });
-    return res.status(200).json(teams);
+
+    const sanitizedTeams = teams.map((t) => ({
+      ...t,
+      department: t.departmentRel?.value || t.department || null,
+      departmentId: t.departmentId || null,
+    }));
+
+    return res.status(200).json(sanitizedTeams);
   } catch (error) {
     console.error("Get teams error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -508,18 +643,49 @@ export async function updateTeam(req: AuthRequest, res: Response) {
       }
     }
 
+    let deptId: string | null | undefined = undefined;
+    let deptValue: string | null | undefined = undefined;
+
+    if (department !== undefined) {
+      if (department) {
+        const deptRecord = await prisma.department.findFirst({
+          where: {
+            OR: [
+              { id: department },
+              { value: department.trim().toUpperCase() },
+            ],
+          },
+        });
+        if (deptRecord) {
+          deptId = deptRecord.id;
+          deptValue = deptRecord.value;
+        } else {
+          deptValue = department.trim().toUpperCase();
+        }
+      } else {
+        deptId = null;
+        deptValue = null;
+      }
+    }
+
     const updated = await prisma.team.update({
       where: { id },
       data: {
         ...(leaderId !== undefined && { leaderId: leaderId || null }),
-        ...(department !== undefined && { department: department || null }),
+        ...(deptValue !== undefined && { department: deptValue }),
+        ...(deptId !== undefined && { departmentId: deptId }),
       },
       include: {
         leader: { select: { id: true, name: true } },
+        departmentRel: { select: { id: true, name: true, value: true } },
       },
     });
 
-    return res.status(200).json(updated);
+    return res.status(200).json({
+      ...updated,
+      department: updated.departmentRel?.value || updated.department || null,
+      departmentId: updated.departmentId || null,
+    });
   } catch (error) {
     console.error("Update team error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -532,7 +698,10 @@ export async function getTeamMembers(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { role, id: userId } = req.user!;
 
-    const team = await prisma.team.findUnique({ where: { id } });
+    const team = await prisma.team.findUnique({
+      where: { id },
+      include: { departmentRel: true },
+    });
     if (!team) {
       return res.status(404).json({ message: "Tim tidak ditemukan" });
     }
@@ -541,11 +710,12 @@ export async function getTeamMembers(req: AuthRequest, res: Response) {
     if (role === "LEADER") {
       const dbUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { teamId: true, department: true },
+        select: { teamId: true, department: true, departmentId: true },
       });
       const isAllowed =
         team.leaderId === userId ||
         team.id === dbUser?.teamId ||
+        (dbUser?.departmentId && team.departmentId === dbUser.departmentId) ||
         (dbUser?.department && team.department === dbUser.department);
       if (!isAllowed) {
         return res
@@ -559,6 +729,7 @@ export async function getTeamMembers(req: AuthRequest, res: Response) {
         isActive: true,
         OR: [
           { teamId: id },
+          ...(team.departmentId ? [{ departmentId: team.departmentId }] : []),
           ...(team.department ? [{ department: team.department }] : []),
         ],
       },

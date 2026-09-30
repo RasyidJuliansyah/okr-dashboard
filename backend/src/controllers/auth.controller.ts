@@ -38,6 +38,20 @@ export async function login(req: AuthRequest, res: Response) {
         strategicDepartments: {
           select: { id: true, name: true, value: true },
         },
+        departmentRel: {
+          select: { id: true, name: true, value: true, isActive: true },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            department: true,
+            departmentId: true,
+            departmentRel: {
+              select: { id: true, name: true, value: true, isActive: true },
+            },
+          },
+        },
       },
     });
 
@@ -54,6 +68,15 @@ export async function login(req: AuthRequest, res: Response) {
       return res.status(403).json({ message: "Akun telah dinonaktifkan. Silakan hubungi admin." });
     }
 
+    const resolvedDept =
+      user.team?.departmentRel?.value ||
+      user.team?.department ||
+      user.departmentRel?.value ||
+      user.department ||
+      null;
+
+    const resolvedDeptId = user.departmentId || user.team?.departmentId || null;
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -61,8 +84,8 @@ export async function login(req: AuthRequest, res: Response) {
         role: user.role,
         name: user.name,
         position: user.position,
-        department: user.department,
-        activeDepartment: user.department,
+        department: resolvedDept,
+        activeDepartment: resolvedDept,
         originalRole: user.role,
       },
       JWT_SECRET,
@@ -70,9 +93,13 @@ export async function login(req: AuthRequest, res: Response) {
     );
 
     let isDepartmentActive = true;
-    if (user.department) {
+    if (user.team?.departmentRel) {
+      isDepartmentActive = user.team.departmentRel.isActive;
+    } else if (user.departmentRel) {
+      isDepartmentActive = user.departmentRel.isActive;
+    } else if (resolvedDept) {
       const dept = await prisma.department.findUnique({
-        where: { value: user.department },
+        where: { value: resolvedDept },
         select: { isActive: true },
       });
       if (dept) {
@@ -90,8 +117,9 @@ export async function login(req: AuthRequest, res: Response) {
         originalRole: user.role,
         position: user.position,
         teamId: user.teamId,
-        department: user.department,
-        activeDepartment: user.department,
+        department: resolvedDept,
+        departmentId: resolvedDeptId,
+        activeDepartment: resolvedDept,
         isDepartmentActive,
         managedDepartments: user.managedDepartments.map((d) => d.value),
         strategicDepartments: user.strategicDepartments,
@@ -119,6 +147,7 @@ export async function getMe(req: AuthRequest, res: Response) {
         position: true,
         teamId: true,
         department: true,
+        departmentId: true,
         isActive: true,
         managedDepartments: {
           select: {
@@ -132,6 +161,30 @@ export async function getMe(req: AuthRequest, res: Response) {
             value: true,
           },
         },
+        departmentRel: {
+          select: {
+            id: true,
+            name: true,
+            value: true,
+            isActive: true,
+          },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            department: true,
+            departmentId: true,
+            departmentRel: {
+              select: {
+                id: true,
+                name: true,
+                value: true,
+                isActive: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -139,7 +192,16 @@ export async function getMe(req: AuthRequest, res: Response) {
       return res.status(401).json({ message: "User not found or inactive" });
     }
 
-    const activeDepartment = req.user.activeDepartment || user.department;
+    const resolvedDept =
+      user.team?.departmentRel?.value ||
+      user.team?.department ||
+      user.departmentRel?.value ||
+      user.department ||
+      null;
+
+    const resolvedDeptId = user.departmentId || user.team?.departmentId || null;
+
+    const activeDepartment = req.user.activeDepartment || resolvedDept;
     let isDepartmentActive = true;
     if (activeDepartment) {
       const dept = await prisma.department.findUnique({
@@ -157,6 +219,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       originalRole: req.user.originalRole || user.role,
       activeDepartment,
       department: activeDepartment,
+      departmentId: resolvedDeptId,
       isDepartmentActive,
       managedDepartments: user.managedDepartments.map((d) => d.value),
       strategicDepartments: user.strategicDepartments,

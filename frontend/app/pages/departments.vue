@@ -13,7 +13,7 @@
 
           <!-- Scope Notice Badge -->
           <div class="scope-banner" :class="userRoleClass">
-            <span class="scope-icon">{{ roleIcon }}</span>
+            <!-- <span class="scope-icon">{{ roleIcon }}</span> -->
             <span class="scope-text">
               <strong>Scope Akses ({{ auth.user?.role }}):</strong>
               {{ scopeDescription }}

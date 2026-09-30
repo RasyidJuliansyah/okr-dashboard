@@ -10,7 +10,7 @@
         </div>
       </div>
 
-      <div class="tabs mb-4">
+      <!-- <div class="tabs mb-4">
         <button
           class="tab-btn"
           :class="{ active: activeTab === 'overview' }"
@@ -18,13 +18,13 @@
         >
           OKR Overview
         </button>
-        <!-- <button
+        <button
           class="tab-btn"
           :class="{ active: activeTab === 'annualProgress' }"
           @click="activeTab = 'annualProgress'"
         >
           Annual KR Progress
-        </button> -->
+        </button>
         <button
           class="tab-btn"
           :class="{ active: activeTab === 'pending' }"
@@ -35,7 +35,7 @@
             pendingCount
           }}</span>
         </button>
-      </div>
+      </div> -->
 
       <div v-if="loading" class="alert alert-info">Memuat data...</div>
       <div v-else-if="errorMsg" class="alert alert-error">{{ errorMsg }}</div>
@@ -923,7 +923,12 @@ function getProgressPercent(item) {
     item.achievedValue !== null && item.achievedValue !== undefined
       ? item.achievedValue
       : item.currentValue;
-  return calculateProgressPercent(val, item.targetValue, item.targetType, item.baselineValue);
+  return calculateProgressPercent(
+    val,
+    item.targetValue,
+    item.targetType,
+    item.baselineValue,
+  );
 }
 
 function getStatusClass(status) {
@@ -1267,6 +1272,7 @@ function getGroupedKrs(keyResults) {
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
+}
 
 /* Modal */
 .modal-overlay {
@@ -1311,8 +1317,6 @@ function getGroupedKrs(keyResults) {
   color: #64748b;
   cursor: pointer;
   line-height: 1;
-}
-
 }
 .secondary-btn.small {
   padding: 4px 12px;

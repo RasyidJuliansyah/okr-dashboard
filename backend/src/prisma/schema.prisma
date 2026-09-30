@@ -14,6 +14,8 @@ model User {
   password            String
   role                String           @default("TEAM") // ADMIN, MANAGER, C_LEVEL, LEADER, TEAM
   department          String?
+  departmentId        String?          @map("department_id")
+  departmentRel       Department?      @relation("UserDepartment", fields: [departmentId], references: [id], map: "User_departmentId_fkey")
   position            String?
   isActive            Boolean          @default(true) @map("is_active")
   teamId              String?          @map("team_id")
@@ -34,21 +36,25 @@ model User {
   createdAt           DateTime         @default(now()) @map("created_at")
 
   @@index([teamId], map: "User_teamId_idx")
+  @@index([departmentId], map: "User_departmentId_idx")
   @@map("user")
 }
 
 model Team {
-  id          String       @id @default(uuid())
-  name        String
-  managerId   String?      @map("manager_id")
-  leaderId    String?      @map("leader_id")
-  leader      User?        @relation("TeamLeader", fields: [leaderId], references: [id], map: "Team_leaderId_fkey")
-  department  String?
-  isActive    Boolean      @default(true) @map("is_active")
-  users       User[]       @relation("TeamMembers")
-  initiatives Initiative[]
+  id            String       @id @default(uuid())
+  name          String
+  managerId     String?      @map("manager_id")
+  leaderId      String?      @map("leader_id")
+  leader        User?        @relation("TeamLeader", fields: [leaderId], references: [id], map: "Team_leaderId_fkey")
+  department    String?
+  departmentId  String?      @map("department_id")
+  departmentRel Department?  @relation("TeamDepartment", fields: [departmentId], references: [id], map: "Team_departmentId_fkey")
+  isActive      Boolean      @default(true) @map("is_active")
+  users         User[]       @relation("TeamMembers")
+  initiatives   Initiative[]
 
   @@index([leaderId], map: "Team_leaderId_idx")
+  @@index([departmentId], map: "Team_departmentId_idx")
   @@map("team")
 }
 
@@ -327,6 +333,8 @@ model Department {
   manager   User?    @relation("DepartmentManager", fields: [managerId], references: [id], map: "Department_managerId_fkey")
   cLevelId  String?  @map("c_level_id")
   cLevel    User?    @relation("DepartmentCLevel", fields: [cLevelId], references: [id], map: "Department_cLevelId_fkey")
+  teams     Team[]   @relation("TeamDepartment")
+  users     User[]   @relation("UserDepartment")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([managerId], map: "Department_managerId_fkey")

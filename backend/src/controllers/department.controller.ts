@@ -70,13 +70,16 @@ export async function createDepartment(req: AuthRequest, res: Response) {
 
     // Otomatis buat default Team untuk departemen baru agar pegawai bisa langsung di-assign
     const existingTeam = await prisma.team.findFirst({
-      where: { department: deptVal },
+      where: {
+        OR: [{ departmentId: newDept.id }, { department: deptVal }],
+      },
     });
     if (!existingTeam) {
       await prisma.team.create({
         data: {
           name: deptName,
           department: deptVal,
+          departmentId: newDept.id,
           isActive: true,
         },
       });
@@ -120,7 +123,9 @@ export async function assignManager(req: AuthRequest, res: Response) {
 
     // Sinkronisasi manager_id pada Team yang bersangkutan
     await prisma.team.updateMany({
-      where: { department: dept.value },
+      where: {
+        OR: [{ departmentId: dept.id }, { department: dept.value }],
+      },
       data: { managerId: newManagerId },
     });
 
@@ -231,7 +236,9 @@ export async function toggleDepartmentStatus(req: AuthRequest, res: Response) {
 
     // Sinkronisasi status aktif team
     await prisma.team.updateMany({
-      where: { department: dept.value },
+      where: {
+        OR: [{ departmentId: dept.id }, { department: dept.value }],
+      },
       data: { isActive: nextStatus },
     });
 
