@@ -33,7 +33,14 @@
             :class="{ active: viewMode === 'mindmap' }"
             @click="viewMode = 'mindmap'"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <rect x="3" y="3" width="7" height="7" />
               <rect x="14" y="3" width="7" height="7" />
               <rect x="14" y="14" width="7" height="7" />
@@ -47,7 +54,14 @@
             :class="{ active: viewMode === 'matrix' }"
             @click="viewMode = 'matrix'"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
@@ -58,41 +72,95 @@
 
         <!-- Zoom Controls (Mind Map) -->
         <div v-if="viewMode === 'mindmap'" class="zoom-controls-group">
-          <button type="button" class="zoom-btn" title="Zoom Out" @click="zoomOut">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button
+            type="button"
+            class="zoom-btn"
+            title="Zoom Out"
+            @click="zoomOut"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
               <line x1="8" y1="11" x2="14" y2="11" />
             </svg>
           </button>
           <span class="zoom-text">{{ zoomLevel }}%</span>
-          <button type="button" class="zoom-btn" title="Zoom In" @click="zoomIn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button
+            type="button"
+            class="zoom-btn"
+            title="Zoom In"
+            @click="zoomIn"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
               <line x1="11" y1="8" x2="11" y2="14" />
               <line x1="8" y1="11" x2="14" y2="11" />
             </svg>
           </button>
-          <button type="button" class="zoom-btn" title="Reset Zoom" @click="resetZoom">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button
+            type="button"
+            class="zoom-btn"
+            title="Reset Zoom"
+            @click="resetZoom"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
             </svg>
           </button>
         </div>
 
         <!-- Expand / Collapse All -->
-        <button type="button" class="action-btn-outline" @click="toggleExpandAll">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button
+          type="button"
+          class="action-btn-outline"
+          @click="toggleExpandAll"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <polyline points="7 13 12 18 17 13" />
             <polyline points="7 6 12 11 17 6" />
           </svg>
-          <span>{{ isAllExpanded ? 'Collapse All' : 'Expand All' }}</span>
+          <span>{{ isAllExpanded ? "Collapse All" : "Expand All" }}</span>
         </button>
 
         <!-- Export -->
         <button type="button" class="action-btn-primary" @click="exportView">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
@@ -106,7 +174,15 @@
     <div class="filter-toolbar">
       <!-- Search Input -->
       <div class="search-input-box">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          class="search-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -117,7 +193,16 @@
           class="search-input"
           @input="debouncedFetch"
         />
-        <button v-if="filters.search" class="clear-search-btn" @click="filters.search = ''; fetchCascadingData()">✕</button>
+        <button
+          v-if="filters.search"
+          class="clear-search-btn"
+          @click="
+            filters.search = '';
+            fetchCascadingData();
+          "
+        >
+          ✕
+        </button>
       </div>
 
       <!-- Filters Dropdowns -->
@@ -125,7 +210,11 @@
         <!-- Perspektif BSC -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">PERSPEKTIF:</span>
-          <select v-model="filters.perspective" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.perspective"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="ALL">All Perspectives (4)</option>
             <option value="FINANCIAL">Finance</option>
             <option value="CUSTOMER">Customer</option>
@@ -137,7 +226,11 @@
         <!-- Tahun -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">TAHUN:</span>
-          <select v-model="filters.year" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.year"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="FY 2026">FY 2026 (Annual)</option>
             <option value="2026">2026</option>
             <option value="Q3-2026">Q3-2026</option>
@@ -148,7 +241,11 @@
         <!-- Kuartal (Requested) -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">KUARTAL:</span>
-          <select v-model="filters.quarter" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.quarter"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="ALL">Semua Kuartal</option>
             <option value="Q1">Q1</option>
             <option value="Q2">Q2</option>
@@ -161,9 +258,17 @@
         <!-- Sprint (Requested) -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">SPRINT:</span>
-          <select v-model="filters.sprintId" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.sprintId"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="ALL">Semua Sprint</option>
-            <option v-for="sp in filterOptions.sprints" :key="sp.id" :value="sp.id">
+            <option
+              v-for="sp in filterOptions.sprints"
+              :key="sp.id"
+              :value="sp.id"
+            >
               {{ sp.name }}
             </option>
           </select>
@@ -172,7 +277,11 @@
         <!-- Team (Requested) -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">TEAM:</span>
-          <select v-model="filters.teamId" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.teamId"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="ALL">Semua Tim</option>
             <option v-for="t in filterOptions.teams" :key="t.id" :value="t.id">
               {{ t.name }}
@@ -183,9 +292,17 @@
         <!-- Nama Employee (Requested) -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">EMPLOYEE:</span>
-          <select v-model="filters.employeeId" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.employeeId"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="ALL">Semua Karyawan</option>
-            <option v-for="emp in filterOptions.employees" :key="emp.id" :value="emp.id">
+            <option
+              v-for="emp in filterOptions.employees"
+              :key="emp.id"
+              :value="emp.id"
+            >
               {{ emp.name }}
             </option>
           </select>
@@ -194,7 +311,11 @@
         <!-- Status -->
         <div class="filter-dropdown">
           <span class="dropdown-prefix">STATUS:</span>
-          <select v-model="filters.status" class="select-control" @change="fetchCascadingData">
+          <select
+            v-model="filters.status"
+            class="select-control"
+            @change="fetchCascadingData"
+          >
             <option value="ALL">Semua Status</option>
             <option value="ON_TRACK">On Track</option>
             <option value="AT_RISK">At Risk</option>
@@ -208,8 +329,6 @@
         </div>
       </div>
     </div>
-
-
 
     <!-- 3. Hierarchy Path Legend Helper -->
     <div class="hierarchy-legend-bar">
@@ -230,7 +349,14 @@
         </div>
       </div>
       <div class="legend-hint">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
         </svg>
         <span>Klik kartu node untuk preview detail lineage</span>
@@ -303,29 +429,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useAuthStore } from '../stores/auth';
-import CascadingMindMap from '../components/CascadingMindMap.vue';
-import CascadingMatrixTable from '../components/CascadingMatrixTable.vue';
-import CascadingInspector from '../components/CascadingInspector.vue';
+import { ref, reactive, onMounted } from "vue";
+import { useAuthStore } from "../stores/auth";
+import CascadingMindMap from "../components/CascadingMindMap.vue";
+import CascadingMatrixTable from "../components/CascadingMatrixTable.vue";
+import CascadingInspector from "../components/CascadingInspector.vue";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
-const API = config.public?.apiBase || 'http://localhost:3001/api';
+const API = config.public?.apiBase || "http://localhost:3001/api";
 
-const viewMode = ref<'mindmap' | 'matrix'>('mindmap');
+const viewMode = ref<"mindmap" | "matrix">("mindmap");
 const zoomLevel = ref<number>(100);
 const isAllExpanded = ref<boolean>(true);
 const isLoading = ref<boolean>(false);
-const lastSyncTime = ref<string>('Baru saja');
+const lastSyncTime = ref<string>("Baru saja");
 const mindMapRef = ref<any>(null);
 
 const selectedNode = ref<any>(null);
 
 const rootData = reactive({
-  title: 'BSC-OKR Suite',
-  subtitle: 'SKOLLA STRATEGY 2026',
-  year: 'FY 2026',
+  title: "BSC-OKR Suite",
+  subtitle: "SKOLLA STRATEGY 2026",
+  year: "FY 2026",
 });
 
 const perspectives = ref<any[]>([]);
@@ -337,20 +463,20 @@ const filterOptions = reactive({
   sprints: [] as any[],
   teams: [] as any[],
   employees: [] as any[],
-  quarters: ['ALL', 'Q1', 'Q2', 'Q3', 'Q4', 'Annual'],
-  years: ['FY 2026', '2026', 'Q3-2026', 'ALL'],
+  quarters: ["ALL", "Q1", "Q2", "Q3", "Q4", "Annual"],
+  years: ["FY 2026", "2026", "Q3-2026", "ALL"],
   statuses: [] as any[],
 });
 
 const filters = reactive({
-  search: '',
-  perspective: 'ALL',
-  year: 'FY 2026',
-  quarter: 'ALL',
-  sprintId: 'ALL',
-  teamId: 'ALL',
-  employeeId: 'ALL',
-  status: 'ALL',
+  search: "",
+  perspective: "ALL",
+  year: "FY 2026",
+  quarter: "ALL",
+  sprintId: "ALL",
+  teamId: "ALL",
+  employeeId: "ALL",
+  status: "ALL",
 });
 
 let debounceTimer: any = null;
@@ -366,18 +492,18 @@ async function fetchCascadingData() {
   isLoading.value = true;
   try {
     const params = new URLSearchParams();
-    if (filters.search) params.append('search', filters.search);
-    if (filters.perspective) params.append('perspective', filters.perspective);
-    if (filters.year) params.append('year', filters.year);
-    if (filters.quarter) params.append('quarter', filters.quarter);
-    if (filters.sprintId) params.append('sprintId', filters.sprintId);
-    if (filters.teamId) params.append('teamId', filters.teamId);
-    if (filters.employeeId) params.append('employeeId', filters.employeeId);
-    if (filters.status) params.append('status', filters.status);
+    if (filters.search) params.append("search", filters.search);
+    if (filters.perspective) params.append("perspective", filters.perspective);
+    if (filters.year) params.append("year", filters.year);
+    if (filters.quarter) params.append("quarter", filters.quarter);
+    if (filters.sprintId) params.append("sprintId", filters.sprintId);
+    if (filters.teamId) params.append("teamId", filters.teamId);
+    if (filters.employeeId) params.append("employeeId", filters.employeeId);
+    if (filters.status) params.append("status", filters.status);
 
     const res = await fetch(`${API}/bsc/cascading-tree?${params.toString()}`, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${auth.token}`,
       },
     });
@@ -396,7 +522,11 @@ async function fetchCascadingData() {
         filterOptions.teams = data.filterOptions.teams || [];
         filterOptions.employees = data.filterOptions.employees || [];
       }
-      lastSyncTime.value = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      lastSyncTime.value =
+        new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }) + " WIB";
 
       if (!selectedNode.value && perspectives.value.length > 0) {
         for (const p of perspectives.value) {
@@ -406,13 +536,13 @@ async function fetchCascadingData() {
                 const firstKr = obj.keyResults[0];
                 selectedNode.value = {
                   ...firstKr,
-                  type: 'KR',
+                  type: "KR",
                   perspective: p.name,
                   objectiveTitle: obj.title,
                   lineage: {
-                    pillar: p.name + ' Pillar',
+                    pillar: p.name + " Pillar",
                     objective: obj.title,
-                    team: firstKr.departments?.[0] || 'Business Team',
+                    team: firstKr.departments?.[0] || "Business Team",
                     kr: firstKr.title,
                   },
                 };
@@ -425,7 +555,7 @@ async function fetchCascadingData() {
       }
     }
   } catch (err) {
-    console.error('Fetch cascading tree error:', err);
+    console.error("Fetch cascading tree error:", err);
   } finally {
     isLoading.value = false;
   }
@@ -458,7 +588,7 @@ function toggleExpandAll() {
 }
 
 function exportView() {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     window.print();
   }
 }
@@ -499,8 +629,12 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
-.crumb-separator { color: #cbd5e1; }
-.crumb-active { color: #0284c7; }
+.crumb-separator {
+  color: #cbd5e1;
+}
+.crumb-active {
+  color: #0284c7;
+}
 
 .title-row {
   display: flex;
@@ -593,8 +727,16 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-.zoom-btn:hover { background: #f1f5f9; color: #1e293b; }
-.zoom-text { font-size: 0.75rem; font-weight: 700; color: #334155; padding: 0 6px; }
+.zoom-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.zoom-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
+  padding: 0 6px;
+}
 
 .action-btn-outline {
   display: flex;
@@ -610,7 +752,10 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.action-btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+.action-btn-outline:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
 
 .action-btn-primary {
   display: flex;
@@ -626,14 +771,16 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.action-btn-primary:hover { background: #0369a1; }
+.action-btn-primary:hover {
+  background: #0369a1;
+}
 
 .filter-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 24px;
+  padding: 24px 24px;
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
@@ -651,7 +798,9 @@ onMounted(() => {
   min-width: 260px;
 }
 
-.search-icon { color: #94a3b8; }
+.search-icon {
+  color: #94a3b8;
+}
 .search-input {
   border: none;
   background: transparent;
@@ -681,7 +830,7 @@ onMounted(() => {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 8px;
 }
 
 .dropdown-prefix {
@@ -722,7 +871,6 @@ onMounted(() => {
   background: #10b981;
 }
 
-
 .hierarchy-legend-bar {
   display: flex;
   align-items: center;
@@ -741,8 +889,17 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.flow-title { font-weight: 800; color: #475569; letter-spacing: 0.4px; }
-.flow-steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.flow-title {
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.4px;
+}
+.flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 
 .flow-step {
   padding: 2px 8px;
@@ -751,15 +908,42 @@ onMounted(() => {
   font-size: 0.7rem;
 }
 
-.flow-step.suite { background: #1e3a5f; color: #fff; }
-.flow-step.bsc { background: #1e293b; color: #fff; }
-.flow-step.obj { background: #e0f2fe; color: #0369a1; }
-.flow-step.kr { background: #0284c7; color: #fff; }
-.flow-step.init { background: #7c3aed; color: #fff; }
+.flow-step.suite {
+  background: #1e3a5f;
+  color: #fff;
+}
+.flow-step.bsc {
+  background: #1e293b;
+  color: #fff;
+}
+.flow-step.obj {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.flow-step.kr {
+  background: #0284c7;
+  color: #fff;
+}
+.flow-step.init {
+  background: #7c3aed;
+  color: #fff;
+}
 .flow-step.task,
-.flow-step.kpi { background: #10b981; color: #fff; }
-.step-arrow { color: #94a3b8; font-weight: 700; }
-.legend-hint { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 0.72rem; }
+.flow-step.kpi {
+  background: #10b981;
+  color: #fff;
+}
+.step-arrow {
+  color: #94a3b8;
+  font-weight: 700;
+}
+.legend-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.72rem;
+}
 
 .cascading-workspace {
   flex: 1;
@@ -796,7 +980,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .visual-canvas-wrapper {
@@ -836,9 +1022,15 @@ onMounted(() => {
   border-radius: 50%;
 }
 
-.legend-dot.on-track { background: #10b981; }
-.legend-dot.at-risk { background: #8b5cf6; }
-.legend-dot.off-track { background: #ef4444; }
+.legend-dot.on-track {
+  background: #10b981;
+}
+.legend-dot.at-risk {
+  background: #8b5cf6;
+}
+.legend-dot.off-track {
+  background: #ef4444;
+}
 
 .footer-engine-sync {
   display: flex;
@@ -846,40 +1038,14 @@ onMounted(() => {
   gap: 6px;
 }
 
-.sync-dot { color: #cbd5e1; }
+.sync-dot {
+  color: #cbd5e1;
+}
 </style>
 
-}
-
-.select-control {
-  border: none;
-  background: transparent;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #0f172a;
-  outline: none;
-  cursor: pointer;
-  padding-right: 18px !important;
-}
-
-.active-krs-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.dot-green {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #10b981;
-}
-
-
+} .select-control { border: none; background: transparent; font-size: 0.78rem;
+font-weight: 600; color: #0f172a; outline: none; cursor: pointer; padding-right:
+18px !important; } .active-krs-pill { display: flex; align-items: center; gap:
+6px; padding: 5px 12px; background: #f8fafc; border: 1px solid #e2e8f0;
+border-radius: 999px; font-size: 0.76rem; font-weight: 700; color: #0f172a; }
+.dot-green { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }

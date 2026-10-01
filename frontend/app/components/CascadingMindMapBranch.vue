@@ -203,7 +203,7 @@ const statusClass = computed(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 24px;
+  gap: var(--row-gap, 24px);
 }
 
 .child {
@@ -213,14 +213,14 @@ const statusClass = computed(() => {
   padding-left: var(--gap, 36px);
 }
 
-/* garis vertikal */
+/* garis vertikal: sambung antar child menembus gap */
 .child::before {
   content: "";
   position: absolute;
   left: 0;
   width: var(--line-w, 2.5px);
   top: 0;
-  bottom: 0;
+  bottom: calc(-1 * var(--row-gap, 24px));
   background: var(--line, #2742e0);
 }
 

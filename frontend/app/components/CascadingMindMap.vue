@@ -36,7 +36,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import CascadingMindMapBranch, { type MindMapNode } from "./CascadingMindMapBranch.vue";
+import CascadingMindMapBranch, {
+  type MindMapNode,
+} from "./CascadingMindMapBranch.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -120,73 +122,75 @@ const treeData = computed<MindMapNode | null>(() => {
     const objChildren: MindMapNode[] = (p.objectives || []).map((obj: any) => {
       const objLineage = { ...pLineage, objective: obj.title };
 
-      const krChildren: MindMapNode[] = (obj.keyResults || []).map((kr: any) => {
-        const dept = formatTeam(kr);
-        const krLineage = { ...objLineage, team: dept, kr: kr.title };
+      const krChildren: MindMapNode[] = (obj.keyResults || []).map(
+        (kr: any) => {
+          const dept = formatTeam(kr);
+          const krLineage = { ...objLineage, team: dept, kr: kr.title };
 
-        const initChildren: MindMapNode[] = (kr.initiatives || []).map(
-          (init: any) => {
-            const initLineage = { ...krLineage, initiative: init.title };
+          const initChildren: MindMapNode[] = (kr.initiatives || []).map(
+            (init: any) => {
+              const initLineage = { ...krLineage, initiative: init.title };
 
-            const taskList = init.tasks || init.kpis || [];
-            const kpiChildren: MindMapNode[] = taskList.map((task: any) => {
-              const taskLineage = {
-                ...initLineage,
-                task: task.title,
-                kpi: task.title,
-              };
+              const taskList = init.tasks || init.kpis || [];
+              const kpiChildren: MindMapNode[] = taskList.map((task: any) => {
+                const taskLineage = {
+                  ...initLineage,
+                  task: task.title,
+                  kpi: task.title,
+                };
+
+                return {
+                  id: `kpi-${task.id}`,
+                  type: "KPI",
+                  title: task.title,
+                  tag: "KPI",
+                  color: "#10b981",
+                  pic:
+                    task.assignedTeamMember?.name ||
+                    task.assignedUser?.name ||
+                    "PIC",
+                  status: task.kanbanStatus || task.status || "TODO",
+                  target: task.targetValue
+                    ? `${formatVal(task.currentValue, task.unit)} / ${formatVal(task.targetValue, task.unit)}`
+                    : undefined,
+                  lineage: taskLineage,
+                  raw: task,
+                  children: [],
+                };
+              });
 
               return {
-                id: `kpi-${task.id}`,
-                type: "KPI",
-                title: task.title,
-                tag: "KPI",
-                color: "#10b981",
-                pic:
-                  task.assignedTeamMember?.name ||
-                  task.assignedUser?.name ||
-                  "PIC",
-                status: task.kanbanStatus || task.status || "TODO",
-                target: task.targetValue
-                  ? `${formatVal(task.currentValue, task.unit)} / ${formatVal(task.targetValue, task.unit)}`
-                  : undefined,
-                lineage: taskLineage,
-                raw: task,
-                children: [],
+                id: `init-${init.id}`,
+                type: "INITIATIVE",
+                title: init.title,
+                tag: "Inisiatif",
+                color: "#7c3aed",
+                pic: init.owner?.name || init.assignedLeader?.name,
+                progress: init.progress,
+                status: init.kanbanStatus || init.status || "TODO",
+                lineage: initLineage,
+                raw: init,
+                children: kpiChildren,
               };
-            });
+            },
+          );
 
-            return {
-              id: `init-${init.id}`,
-              type: "INITIATIVE",
-              title: init.title,
-              tag: "Inisiatif",
-              color: "#7c3aed",
-              pic: init.owner?.name || init.assignedLeader?.name,
-              progress: init.progress,
-              status: init.kanbanStatus || init.status || "TODO",
-              lineage: initLineage,
-              raw: init,
-              children: kpiChildren,
-            };
-          },
-        );
-
-        return {
-          id: `kr-${kr.id}`,
-          type: "KR",
-          title: kr.title,
-          tag: "Key Result",
-          badge: dept,
-          color: p.color || "#0284c7",
-          progress: kr.progress,
-          status: kr.status,
-          target: `${formatVal(kr.currentValue, kr.unit)} / ${formatVal(kr.targetValue, kr.unit)}`,
-          lineage: krLineage,
-          raw: kr,
-          children: initChildren,
-        };
-      });
+          return {
+            id: `kr-${kr.id}`,
+            type: "KR",
+            title: kr.title,
+            tag: "Key Result",
+            badge: dept,
+            color: p.color || "#0284c7",
+            progress: kr.progress,
+            status: kr.status,
+            target: `${formatVal(kr.currentValue, kr.unit)} / ${formatVal(kr.targetValue, kr.unit)}`,
+            lineage: krLineage,
+            raw: kr,
+            children: initChildren,
+          };
+        },
+      );
 
       return {
         id: `obj-${obj.id}`,
@@ -317,7 +321,6 @@ function onWheel(e: WheelEvent) {
   background-size: 24px 24px;
   cursor: grab;
   user-select: none;
-  font-family: "Raleway", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Global Mind Map CSS variables matching user template */
   --bg: #ffffff;
@@ -326,6 +329,7 @@ function onWheel(e: WheelEvent) {
   --line: #2742e0;
   --line-w: 2.5px;
   --gap: 36px;
+  --row-gap: 24px;
   --elbow-y: 20px;
   --pill-bg: #ffffff;
   --pill-bd: #e3e3e3;
