@@ -1043,9 +1043,3 @@ onMounted(() => {
 }
 </style>
 
-} .select-control { border: none; background: transparent; font-size: 0.78rem;
-font-weight: 600; color: #0f172a; outline: none; cursor: pointer; padding-right:
-18px !important; } .active-krs-pill { display: flex; align-items: center; gap:
-6px; padding: 5px 12px; background: #f8fafc; border: 1px solid #e2e8f0;
-border-radius: 999px; font-size: 0.76rem; font-weight: 700; color: #0f172a; }
-.dot-green { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
