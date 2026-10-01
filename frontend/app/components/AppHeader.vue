@@ -288,6 +288,7 @@ function getMenuTitleByPath(path) {
   if (path.startsWith("/departments") || path.startsWith("/admin/departments"))
     return "Struktur Departemen";
   if (path.startsWith("/admin/objectives")) return "OKR Builder";
+  if (path.startsWith("/okr-cascading")) return "OKR Cascading";
   if (
     path.startsWith("/admin/initiatives-kanban") ||
     path.startsWith("/admin/initiatives")

@@ -39,4 +39,11 @@ export default defineNuxtRouteMiddleware((to, from) => {
   ) {
     return navigateTo("/dashboard");
   }
+
+  if (
+    to.path.startsWith("/okr-cascading") &&
+    !["ADMIN", "C_LEVEL", "MANAGER", "LEADER"].includes(auth.user?.role || "")
+  ) {
+    return navigateTo("/dashboard");
+  }
 });

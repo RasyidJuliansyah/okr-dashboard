@@ -144,8 +144,8 @@
               @dragstart="handleDragStart(ini)"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span
                   v-if="ini.keyResult?.bscPerspective"
@@ -287,8 +287,8 @@
               @dragstart="handleDragStart(ini)"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span
                   v-if="ini.keyResult?.bscPerspective"
@@ -438,8 +438,8 @@
               @dragstart="handleDragStart(ini)"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span class="completed-checkmark-badge">Selesai</span>
               </div>
@@ -560,8 +560,8 @@
               @dragstart="handleDragStart(ini)"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span class="dropped-badge">Drop</span>
               </div>
@@ -686,9 +686,9 @@
               placeholder="Catatan dan ruang lingkup inisiatif..."
             ></textarea>
 
-            <label>Parent Key Result *</label>
+            <label>Parent Key Result (Opsional)</label>
             <select v-model="initiativeForm.keyResultId" class="form-input">
-              <option value="">-- Pilih Key Result --</option>
+              <option value="">-- Tidak Terhubung KR (Opsional) --</option>
               <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
                 {{ kr.title }}
               </option>
@@ -1084,10 +1084,6 @@ async function saveInitiative() {
   }
   if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
     errorMessage.value = "Satuan (Unit) wajib diisi";
-    return;
-  }
-  if (!initiativeForm.value.keyResultId) {
-    errorMessage.value = "Key Result wajib dipilih";
     return;
   }
   if (!initiativeForm.value.teamId) {
