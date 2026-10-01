@@ -106,15 +106,17 @@ export async function bulkUploadKRs(req: AuthRequest, res: Response) {
           continue;
         }
 
-        // Resolve objectiveId
+        // Resolve objectiveId by title or id
         let resolvedObjId = '';
-        if (row.objectiveId) {
-          const key = String(row.objectiveId).toLowerCase().trim();
+        const objectiveIdentifier = row.objectiveTitle || row.objective || row.objectiveId;
+        if (objectiveIdentifier) {
+          const key = String(objectiveIdentifier).toLowerCase().trim();
           resolvedObjId = objLookup.get(key) || '';
           if (!resolvedObjId) {
             // Partial / substring match
             for (const o of allObjectives) {
-              if (o.title.toLowerCase().includes(key) || key.includes(o.title.toLowerCase())) {
+              const oTitle = o.title.toLowerCase().trim();
+              if (oTitle === key || oTitle.includes(key) || key.includes(oTitle)) {
                 resolvedObjId = o.id;
                 break;
               }
@@ -123,8 +125,20 @@ export async function bulkUploadKRs(req: AuthRequest, res: Response) {
         }
 
         if (!resolvedObjId) {
-          // If at least one objective exists in database, fallback to the first/latest objective
-          if (allObjectives.length > 0) {
+          if (objectiveIdentifier) {
+            // If user specified an objective title that doesn't exist yet, create it
+            const newObj = await prisma.objective.create({
+              data: {
+                title: String(objectiveIdentifier).trim(),
+                year: '2026',
+              }
+            });
+            allObjectives.push(newObj);
+            objLookup.set(newObj.id.toLowerCase().trim(), newObj.id);
+            objLookup.set(newObj.title.toLowerCase().trim(), newObj.id);
+            resolvedObjId = newObj.id;
+          } else if (allObjectives.length > 0) {
+            // If at least one objective exists in database, fallback to the first/latest objective
             resolvedObjId = allObjectives[0].id;
           } else {
             // Create a default objective if database has 0 objectives
@@ -135,8 +149,8 @@ export async function bulkUploadKRs(req: AuthRequest, res: Response) {
               }
             });
             allObjectives.push(newObj);
-            objLookup.set(newObj.id.toLowerCase(), newObj.id);
-            objLookup.set(newObj.title.toLowerCase(), newObj.id);
+            objLookup.set(newObj.id.toLowerCase().trim(), newObj.id);
+            objLookup.set(newObj.title.toLowerCase().trim(), newObj.id);
             resolvedObjId = newObj.id;
           }
         }

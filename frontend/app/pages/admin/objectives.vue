@@ -115,15 +115,28 @@
           </div>
 
           <template v-else>
-            <div class="form-group">
-              <label for="obj-title">Judul Objective *</label>
-              <input
-                id="obj-title"
-                v-model="newObjective.title"
-                type="text"
-                placeholder="Contoh: Meningkatkan Efisiensi Operasional Tim Dev"
-                required
-              />
+            <div class="form-row">
+              <div class="form-group" style="flex: 2">
+                <label for="obj-title">Judul Objective *</label>
+                <input
+                  id="obj-title"
+                  v-model="newObjective.title"
+                  type="text"
+                  placeholder="Contoh: Meningkatkan Efisiensi Operasional Tim Dev"
+                  required
+                />
+              </div>
+
+              <div class="form-group" style="flex: 1">
+                <label for="obj-year">Tahun / Periode *</label>
+                <input
+                  id="obj-year"
+                  v-model="newObjective.year"
+                  type="text"
+                  placeholder="Contoh: 2026 atau Q3-2026"
+                  required
+                />
+              </div>
             </div>
 
             <div class="form-group">
@@ -1154,7 +1167,7 @@ async function fetchDepartments() {
 const newObjective = ref({
   title: "",
   description: "",
-  year: "",
+  year: "2026",
   keyResults: [
     {
       title: "",
@@ -1303,6 +1316,11 @@ async function submitObjective() {
     return;
   }
 
+  if (!isExistingObjective.value && !newObjective.value.year.trim()) {
+    errorMessage.value = "Tahun / Periode Objective wajib diisi";
+    return;
+  }
+
   if (newObjective.value.keyResults.length === 0) {
     errorMessage.value = "Minimal harus membuat 1 Key Result";
     return;
@@ -1422,7 +1440,7 @@ async function submitObjective() {
     newObjective.value = {
       title: "",
       description: "",
-      year: "Q3-2026",
+      year: "2026",
       keyResults: [
         {
           title: "",

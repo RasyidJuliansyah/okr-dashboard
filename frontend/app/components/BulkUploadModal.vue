@@ -93,13 +93,13 @@
             <template v-if="isKr">
               <p><strong>Format Kolom CSV untuk Key Result:</strong></p>
               <code
-                >objectiveId, title, targetValue, unit, bscPerspective, R, A, C,
+                >objectiveTitle, title, targetValue, unit, bscPerspective, R, A, C,
                 I, departments</code
               >
               <p class="text-sub">
-                * Kolom <strong>objectiveId</strong> bisa diisi ID atau Judul
-                Objective. * Kolom <strong>R, A, C, I</strong> diisi nama
-                pegawai terdaftar (pisahkan koma untuk multi-nama).
+                * Kolom <strong>objectiveTitle</strong> diisi Judul Objective.
+                * Kolom <strong>R, A, C, I</strong> diisi nama pegawai terdaftar
+                (pisahkan koma untuk multi-nama).
               </p>
             </template>
             <template v-else-if="!isObjective && !isKr">
@@ -133,7 +133,7 @@
             "
           >
             Target Objective Default (Otomatis digunakan jika baris CSV tidak
-            mencantumkan objectiveId):
+            mencantumkan objectiveTitle):
           </label>
           <select
             v-model="targetObjectiveId"
@@ -259,6 +259,7 @@
               <tr v-else-if="isKr">
                 <th>#</th>
                 <th>Status</th>
+                <th>Objective</th>
                 <th>Judul KR</th>
                 <th>Target</th>
                 <th>Perspective</th>
@@ -316,6 +317,9 @@
 
                 <!-- KR Columns -->
                 <template v-else-if="isKr">
+                  <td class="col-obj" :title="getObjectiveTitle(row)">
+                    <span class="obj-chip">{{ getObjectiveTitle(row) }}</span>
+                  </td>
                   <td class="col-title" :title="row.title">
                     {{ row.title || "-" }}
                   </td>
@@ -549,14 +553,19 @@ function downloadTemplate() {
   } else if (isKr.value) {
     fileName = "template_bulk_kr.csv";
     headers =
-      "objectiveId,title,targetValue,unit,bscPerspective,R,A,C,I,departments";
-    const sampleObjId =
-      targetObjectiveId.value || availableObjectives.value[0]?.title || "obj-1";
+      "objectiveTitle,title,targetValue,unit,bscPerspective,R,A,C,I,departments";
+    const selectedObj = availableObjectives.value.find(
+      (o) => o.id === targetObjectiveId.value,
+    );
+    const sampleObjTitle =
+      selectedObj?.title ||
+      availableObjectives.value[0]?.title ||
+      "Meningkatkan Pertumbuhan Bisnis & Operasional 2026";
     sampleContent = [
       headers,
-      `"${sampleObjId}","Meningkatkan Revenue Q3 2026",2.5,"M USD",FINANCIAL,"Budi Santoso","Sarah Smith","John Doe","Jane Doe","FINANCE,BUSINESS"`,
-      `"${sampleObjId}","Menurunkan Customer Churn Rate",2.0,"%","CUSTOMER","Sarah Smith","John Doe","","","PRODUCT_SERVICE"`,
-      `"${sampleObjId}","Meningkatkan Uptime Server",99.9,"%","INTERNAL_PROCESS","John Doe","Bob Johnson","","","TECHOPS"`,
+      `"${sampleObjTitle}","Meningkatkan Revenue Q3 2026",2.5,"M USD",FINANCIAL,"Budi Santoso","Sarah Smith","John Doe","Jane Doe","FINANCE,BUSINESS"`,
+      `"${sampleObjTitle}","Menurunkan Customer Churn Rate",2.0,"%","CUSTOMER","Sarah Smith","John Doe","","","PRODUCT_SERVICE"`,
+      `"${sampleObjTitle}","Meningkatkan Uptime Server",99.9,"%","INTERNAL_PROCESS","John Doe","Bob Johnson","","","TECHOPS"`,
     ].join("\n");
   } else {
     fileName = "template_bulk_inisiatif.csv";
@@ -577,6 +586,26 @@ function downloadTemplate() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function getObjectiveTitle(row: any): string {
+  if (row.objectiveTitle && String(row.objectiveTitle).trim()) {
+    return String(row.objectiveTitle).trim();
+  }
+  if (row.objectiveId && String(row.objectiveId).trim()) {
+    const raw = String(row.objectiveId).trim();
+    const found = availableObjectives.value.find(
+      (o) =>
+        o.id === raw ||
+        o.title.toLowerCase().trim() === raw.toLowerCase(),
+    );
+    if (found) return found.title;
+    return raw;
+  }
+  const defaultObj = availableObjectives.value.find(
+    (o) => o.id === targetObjectiveId.value,
+  );
+  return defaultObj?.title || "-";
 }
 
 // ─── CSV File Handling ───
@@ -659,7 +688,10 @@ function parseCSVText(rawText: string) {
       const val = values[colIdx] || "";
       row[header] = val;
       // Also map standard headers
-      if (header.includes("objective")) row.objectiveId = val;
+      if (header.includes("objective") || header.includes("objektif")) {
+        row.objectiveTitle = val;
+        row.objectiveId = val;
+      }
       if (header.includes("keyresult") || header === "krid")
         row.keyResultId = val;
       if (header === "title" || header === "judul" || header === "nama")
@@ -684,7 +716,11 @@ function parseCSVText(rawText: string) {
     });
 
     // Fallbacks from props or selected targetObjectiveId
-    if (isKr.value && !row.objectiveId) {
+    if (isKr.value && !row.objectiveTitle && !row.objectiveId) {
+      const selectedObj = availableObjectives.value.find(
+        (o) => o.id === targetObjectiveId.value,
+      );
+      row.objectiveTitle = selectedObj?.title || "";
       row.objectiveId = targetObjectiveId.value || props.defaultObjectiveId;
     }
     if (!isKr.value && !row.keyResultId && props.defaultKeyResultId) {
@@ -772,11 +808,16 @@ async function submitBulkUpload() {
       return;
     }
 
-    // Ensure fallback objectiveId
+    // Ensure fallback objective
     if (isKr.value) {
+      const selectedObj = availableObjectives.value.find(
+        (o) => o.id === targetObjectiveId.value,
+      );
       validRows.forEach((r) => {
-        if (!r.objectiveId)
+        if (!r.objectiveTitle && !r.objectiveId) {
+          r.objectiveTitle = selectedObj?.title || "";
           r.objectiveId = targetObjectiveId.value || props.defaultObjectiveId;
+        }
       });
     }
 
@@ -1140,6 +1181,24 @@ function finishImport() {
   font-weight: 600;
   color: var(--text-muted, #94a3b8);
   width: 35px;
+}
+
+.col-obj {
+  max-width: 170px;
+}
+
+.obj-chip {
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #1e293b;
+  font-weight: 500;
+  display: inline-block;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .col-title {

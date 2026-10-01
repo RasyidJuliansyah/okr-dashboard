@@ -9,8 +9,12 @@ export async function createObjective(req: AuthRequest, res: Response) {
   try {
     const { title, description, year, ownerId, keyResults } = req.body;
 
-    if (!title || !year) {
-      return res.status(400).json({ message: "Title and year are required" });
+    const trimmedTitle = title && String(title).trim();
+    const effectiveYear =
+      (year && String(year).trim()) || new Date().getFullYear().toString();
+
+    if (!trimmedTitle) {
+      return res.status(400).json({ message: "Title is required" });
     }
 
     // Prepare nested key results creation if provided
@@ -43,9 +47,9 @@ export async function createObjective(req: AuthRequest, res: Response) {
 
     const newObjective = await prisma.objective.create({
       data: {
-        title,
-        description,
-        year,
+        title: trimmedTitle,
+        description: description ? String(description).trim() : null,
+        year: effectiveYear,
         ownerId: ownerId || req.user?.id || null,
         keyResults: {
           create: keyResultsData,
@@ -204,8 +208,11 @@ export async function updateObjective(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { title, description, year } = req.body;
 
-    if (!title || !year) {
-      return res.status(400).json({ message: "Title and year are required" });
+    const trimmedTitle = title && String(title).trim();
+    const effectiveYear = year && String(year).trim();
+
+    if (!trimmedTitle) {
+      return res.status(400).json({ message: "Title is required" });
     }
 
     const objective = await prisma.objective.findFirst({
@@ -217,7 +224,11 @@ export async function updateObjective(req: AuthRequest, res: Response) {
 
     const updated = await prisma.objective.update({
       where: { id },
-      data: { title, description: description || null, year },
+      data: {
+        title: trimmedTitle,
+        description: description ? String(description).trim() : null,
+        ...(effectiveYear ? { year: effectiveYear } : {}),
+      },
     });
 
     await logAudit(prisma, {
