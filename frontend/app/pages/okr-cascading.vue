@@ -3,27 +3,49 @@
     <!-- 1. Top Header Bar -->
     <header class="page-top-header">
       <div class="header-left">
-        <!-- Breadcrumbs -->
-        <nav class="breadcrumb-trail">
-          <span>SKOLLA FY 2026 STRATEGY</span>
-          <span class="crumb-separator">›</span>
-          <span>ALIGNMENT ENGINE</span>
-          <span class="crumb-separator">›</span>
-          <span class="crumb-active">CASCADING TREE MAP</span>
-        </nav>
         <!-- Title & Live Cascade Badge -->
         <div class="title-row">
-          <h1 class="page-main-title">
-            Cascading BSC → Objectives → Key Results → Initiatives → KPI
-          </h1>
-          <span class="live-cascade-badge">
-            <span class="pulse-dot"></span>
-            Live Cascade
-          </span>
+          <h1 class="page-main-title">Cascading BSC</h1>
         </div>
       </div>
 
       <!-- Header Action Controls -->
+    </header>
+
+    <!-- 2. Filter & Search Bar -->
+    <div class="filter-toolbar">
+      <!-- Search Input -->
+      <div class="search-input-box">
+        <svg
+          class="search-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          v-model="filters.search"
+          type="text"
+          placeholder="Cari Objective, Team, atau Key Result (e.g..."
+          class="search-input"
+          @input="debouncedFetch"
+        />
+        <button
+          v-if="filters.search"
+          class="clear-search-btn"
+          @click="
+            filters.search = '';
+            fetchCascadingData();
+          "
+        >
+          ✕
+        </button>
+      </div>
       <div class="header-right">
         <!-- View Switcher -->
         <div class="view-switch-group">
@@ -168,43 +190,6 @@
           <span>Export SVG / PDF</span>
         </button>
       </div>
-    </header>
-
-    <!-- 2. Filter & Search Bar -->
-    <div class="filter-toolbar">
-      <!-- Search Input -->
-      <div class="search-input-box">
-        <svg
-          class="search-icon"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          v-model="filters.search"
-          type="text"
-          placeholder="Cari Objective, Team, atau Key Result (e.g..."
-          class="search-input"
-          @input="debouncedFetch"
-        />
-        <button
-          v-if="filters.search"
-          class="clear-search-btn"
-          @click="
-            filters.search = '';
-            fetchCascadingData();
-          "
-        >
-          ✕
-        </button>
-      </div>
-
       <!-- Filters Dropdowns -->
       <div class="dropdowns-row">
         <!-- Perspektif BSC -->
@@ -398,6 +383,7 @@
         v-if="selectedNode"
         :selectedNode="selectedNode"
         :teamDistribution="teamDistribution"
+        :perspectives="perspectives"
         @close="selectedNode = null"
         @select-node="handleNodeSelect"
       />
@@ -405,20 +391,6 @@
 
     <!-- 5. Bottom Status Footer -->
     <footer class="cascading-footer">
-      <div class="footer-legend">
-        <div class="legend-item">
-          <span class="legend-dot on-track"></span>
-          <span>On Track (&gt;70%)</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot at-risk"></span>
-          <span>At Risk (40% – 70%)</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-dot off-track"></span>
-          <span>Off Track (&lt;40%)</span>
-        </div>
-      </div>
       <div class="footer-engine-sync">
         <span>Skolla BSC Sync Engine v4.2</span>
         <span class="sync-dot">•</span>
@@ -566,11 +538,19 @@ function handleNodeSelect(node: any) {
 }
 
 function zoomIn() {
-  zoomLevel.value = Math.min(180, zoomLevel.value + 10);
+  if (mindMapRef.value?.zoomIn) {
+    mindMapRef.value.zoomIn();
+  } else {
+    zoomLevel.value = Math.min(180, zoomLevel.value + 10);
+  }
 }
 
 function zoomOut() {
-  zoomLevel.value = Math.max(40, zoomLevel.value - 10);
+  if (mindMapRef.value?.zoomOut) {
+    mindMapRef.value.zoomOut();
+  } else {
+    zoomLevel.value = Math.max(40, zoomLevel.value - 10);
+  }
 }
 
 function resetZoom() {
@@ -594,6 +574,11 @@ function exportView() {
 }
 
 onMounted(() => {
+  const allowedRoles = ["ADMIN", "C_LEVEL", "MANAGER", "LEADER"];
+  if (auth.user?.role && !allowedRoles.includes(auth.user.role)) {
+    navigateTo("/dashboard");
+    return;
+  }
   fetchCascadingData();
 });
 </script>
@@ -794,8 +779,8 @@ onMounted(() => {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 6px 12px;
-  min-width: 260px;
+  padding: 8px;
+  width: 800px;
 }
 
 .search-icon {

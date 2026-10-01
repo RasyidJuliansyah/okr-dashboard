@@ -1346,17 +1346,10 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       teamId = firstTeam.id;
     }
 
-    // Validasi relasi KR wajib bagi role TEAM
-    if (role === "TEAM" && !keyResultId) {
-      return res.status(400).json({
-        message: "Inisiatif yang dibuat oleh tim wajib memiliki relasi ke Key Result (KR) yang telah dibuat",
-      });
-    }
-
-    // KR lookup & validasi integritas hierarki BSC
-    if (keyResultId) {
+    // KR lookup & validasi integritas hierarki BSC (opsional jika keyResultId diisi)
+    if (keyResultId && String(keyResultId).trim()) {
       const kr = await prisma.keyResult.findUnique({
-        where: { id: keyResultId },
+        where: { id: String(keyResultId).trim() },
         include: { objective: true },
       });
       if (!kr)
@@ -1523,6 +1516,7 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
     }
 
     const {
+      keyResultId,
       title,
       description,
       ownerId,
@@ -1613,6 +1607,20 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
     }
 
     // Non-restricted initiative editing
+    const effectiveKeyResultId =
+      keyResultId !== undefined
+        ? (keyResultId && String(keyResultId).trim() ? String(keyResultId).trim() : null)
+        : undefined;
+
+    if (effectiveKeyResultId) {
+      const kr = await prisma.keyResult.findUnique({
+        where: { id: effectiveKeyResultId },
+      });
+      if (!kr) {
+        return res.status(404).json({ message: "KeyResult tidak ditemukan" });
+      }
+    }
+
     const effectiveOwnerId =
       ownerId !== undefined
         ? (ownerId && String(ownerId).trim()) || null
@@ -1645,6 +1653,9 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
     const updated = await prisma.initiative.update({
       where: { id },
       data: {
+        ...(effectiveKeyResultId !== undefined && {
+          keyResultId: effectiveKeyResultId,
+        }),
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
         ...(ownerId !== undefined &&

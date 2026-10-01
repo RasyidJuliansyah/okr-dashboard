@@ -33,7 +33,7 @@
               <h3>{{ initiative.title }}</h3>
               <span class="team-badge">Tim: {{ initiative.team?.name }}</span>
               <span class="kr-badge"
-                >KR: {{ initiative.keyResult?.title }}</span
+                >KR: {{ initiative.keyResult?.title || "Tanpa KR" }}</span
               >
             </div>
             <div class="init-progress-badge">
@@ -251,9 +251,9 @@
             placeholder="Nama inisiatif..."
           />
 
-          <label class="form-label">Parent Key Result *</label>
+          <label class="form-label">Parent Key Result (Opsional)</label>
           <select v-model="initiativeForm.keyResultId" class="form-input mb-3">
-            <option value="">-- Pilih Key Result --</option>
+            <option value="">-- Tidak Terhubung KR (Opsional) --</option>
             <option v-for="kr in availableKrs" :key="kr.id" :value="kr.id">
               {{ kr.objective?.title ? `[${kr.objective.title}] ` : ""
               }}{{ kr.title }}
@@ -498,7 +498,7 @@ async function saveTaskAssignment() {
 function openAddInitiativeModal() {
   initiativeForm.value = {
     title: "",
-    keyResultId: availableKrs.value[0]?.id || "",
+    keyResultId: "",
     teamId: leaderTeams.value[0]?.id || "",
     targetValue: 0,
     unit: "",
@@ -514,10 +514,6 @@ async function saveInitiative() {
   }
   if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {
     alert("Satuan (Unit) wajib diisi");
-    return;
-  }
-  if (!initiativeForm.value.keyResultId) {
-    alert("Key Result wajib dipilih");
     return;
   }
   if (!initiativeForm.value.teamId) {

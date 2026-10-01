@@ -154,7 +154,15 @@ const treeData = computed<MindMapNode | null>(() => {
                     ? `${formatVal(task.currentValue, task.unit)} / ${formatVal(task.targetValue, task.unit)}`
                     : undefined,
                   lineage: taskLineage,
-                  raw: task,
+                  raw: {
+                    ...task,
+                    parentKr: kr,
+                    parentInit: init,
+                    objectiveId: obj.id,
+                    objectiveTitle: obj.title,
+                    perspective: p.name,
+                    siblingKrs: (obj.keyResults || []).filter((s: any) => s.id !== kr.id),
+                  },
                   children: [],
                 };
               });
@@ -169,7 +177,14 @@ const treeData = computed<MindMapNode | null>(() => {
                 progress: init.progress,
                 status: init.kanbanStatus || init.status || "TODO",
                 lineage: initLineage,
-                raw: init,
+                raw: {
+                  ...init,
+                  parentKr: kr,
+                  objectiveId: obj.id,
+                  objectiveTitle: obj.title,
+                  perspective: p.name,
+                  siblingKrs: (obj.keyResults || []).filter((s: any) => s.id !== kr.id),
+                },
                 children: kpiChildren,
               };
             },
@@ -186,7 +201,13 @@ const treeData = computed<MindMapNode | null>(() => {
             status: kr.status,
             target: `${formatVal(kr.currentValue, kr.unit)} / ${formatVal(kr.targetValue, kr.unit)}`,
             lineage: krLineage,
-            raw: kr,
+            raw: {
+              ...kr,
+              objectiveId: obj.id,
+              objectiveTitle: obj.title,
+              perspective: p.name,
+              siblingKrs: (obj.keyResults || []).filter((s: any) => s.id !== kr.id),
+            },
             children: initChildren,
           };
         },
@@ -276,10 +297,47 @@ function resetZoom() {
   emit("update:zoomLevel", 100);
 }
 
+function applyZoom(newZoomLevel: number, focalX: number, focalY: number) {
+  const clampedZoom = Math.min(180, Math.max(40, Math.round(newZoomLevel)));
+  const oldZoom = (props.zoomLevel || 100) / 100;
+  const newZoom = clampedZoom / 100;
+
+  if (oldZoom !== newZoom) {
+    const ratio = newZoom / oldZoom;
+    panX.value = focalX - (focalX - panX.value) * ratio;
+    panY.value = focalY - (focalY - panY.value) * ratio;
+    emit("update:zoomLevel", clampedZoom);
+  }
+}
+
+function zoomIn(focalX?: number, focalY?: number) {
+  if (containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect();
+    const fx = focalX !== undefined ? focalX : rect.width / 2;
+    const fy = focalY !== undefined ? focalY : rect.height / 2;
+    applyZoom((props.zoomLevel || 100) + 10, fx, fy);
+  } else {
+    emit("update:zoomLevel", Math.min(180, (props.zoomLevel || 100) + 10));
+  }
+}
+
+function zoomOut(focalX?: number, focalY?: number) {
+  if (containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect();
+    const fx = focalX !== undefined ? focalX : rect.width / 2;
+    const fy = focalY !== undefined ? focalY : rect.height / 2;
+    applyZoom((props.zoomLevel || 100) - 10, fx, fy);
+  } else {
+    emit("update:zoomLevel", Math.max(40, (props.zoomLevel || 100) - 10));
+  }
+}
+
 defineExpose({
   expandAll,
   collapseAll,
   resetZoom,
+  zoomIn,
+  zoomOut,
 });
 
 function startPan(e: MouseEvent) {
@@ -302,9 +360,13 @@ function endPan() {
 }
 
 function onWheel(e: WheelEvent) {
-  const delta = e.deltaY < 0 ? 5 : -5;
-  const newZoom = Math.min(180, Math.max(40, (props.zoomLevel || 100) + delta));
-  emit("update:zoomLevel", newZoom);
+  if (!containerRef.value) return;
+  const rect = containerRef.value.getBoundingClientRect();
+  const focalX = e.clientX - rect.left;
+  const focalY = e.clientY - rect.top;
+
+  const delta = e.deltaY < 0 ? 6 : -6;
+  applyZoom((props.zoomLevel || 100) + delta, focalX, focalY);
 }
 </script>
 
@@ -347,7 +409,6 @@ function onWheel(e: WheelEvent) {
   min-width: 3200px;
   min-height: 2400px;
   padding: 80px 100px;
-  transition: transform 0.05s ease-out;
 }
 
 .tree-root-container {

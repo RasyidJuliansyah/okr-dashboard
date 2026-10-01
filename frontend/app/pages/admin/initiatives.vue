@@ -64,7 +64,7 @@
           <div>
             <h3>{{ initiative.title }}</h3>
             <span class="team-badge">Tim: {{ initiative.team?.name }}</span>
-            <span class="kr-badge">KR: {{ initiative.keyResult?.title }}</span>
+            <span class="kr-badge">KR: {{ initiative.keyResult?.title || "Tanpa KR" }}</span>
           </div>
           <div class="initiative-actions">
             <button class="secondary-btn" @click="openAddTaskModal(initiative)">
@@ -219,9 +219,9 @@
             class="form-input"
             rows="3"
           ></textarea>
-          <label>Key Result *</label>
+          <label>Parent Key Result (Opsional)</label>
           <select v-model="initiativeForm.keyResultId" class="form-input">
-            <option value="">-- Pilih Key Result --</option>
+            <option value="">-- Tidak Terhubung KR (Opsional) --</option>
             <option v-for="kr in allKrs" :key="kr.id" :value="kr.id">
               {{ kr.title }}
             </option>
@@ -512,10 +512,9 @@ function openEditInitiativeModal(ini: any) {
 async function saveInitiative() {
   if (
     !initiativeForm.value.title ||
-    !initiativeForm.value.keyResultId ||
     !initiativeForm.value.teamId
   ) {
-    errorMessage.value = "Judul, Key Result, dan Tim wajib diisi";
+    errorMessage.value = "Judul dan Tim wajib diisi";
     return;
   }
   if (!initiativeForm.value.unit || !initiativeForm.value.unit.trim()) {

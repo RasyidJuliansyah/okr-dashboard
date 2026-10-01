@@ -263,8 +263,8 @@
                 >
                   {{ ini.keyResult.bscPerspective }}
                 </span>
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
               </div>
 
@@ -582,8 +582,8 @@
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span
                   v-if="ini.keyResult?.bscPerspective"
@@ -910,8 +910,8 @@
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span class="completed-checkmark-badge">Selesai</span>
               </div>
@@ -1271,8 +1271,8 @@
               @dragstart="canMoveCards ? handleDragStart(ini) : null"
             >
               <div class="card-top-meta">
-                <span class="card-kr-badge" :title="ini.keyResult?.title">
-                  {{ ini.keyResult?.title || "Key Result" }}
+                <span class="card-kr-badge" :title="ini.keyResult?.title || 'Tanpa KR'">
+                  {{ ini.keyResult?.title || "Tanpa KR" }}
                 </span>
                 <span class="dropped-badge">Drop</span>
               </div>

@@ -426,6 +426,44 @@ export async function getCascadingTree(req: AuthRequest, res: Response) {
           },
           include: {
             departments: true,
+            sourceLinksA: {
+              where: { isActive: true },
+              include: {
+                targetKr: {
+                  select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    bscPerspective: true,
+                    departments: true,
+                    initiatives: {
+                      select: {
+                        team: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            sourceLinksB: {
+              where: { isActive: true },
+              include: {
+                sourceKr: {
+                  select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    bscPerspective: true,
+                    departments: true,
+                    initiatives: {
+                      select: {
+                        team: { select: { id: true, name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
             assignments: {
               include: {
                 user: {
@@ -567,6 +605,28 @@ export async function getCascadingTree(req: AuthRequest, res: Response) {
             month: kr.month,
             departments: depts,
             owner: primaryOwner,
+            causalLinks: {
+              outbound: (kr.sourceLinksA || []).map((l: any) => ({
+                id: l.id,
+                relationship: l.relationship,
+                targetKrId: l.targetKr?.id,
+                targetKrTitle: l.targetKr?.title,
+                targetPerspective: l.targetKr?.bscPerspective,
+                targetTeams: (l.targetKr?.departments || []).map((d: any) => d.department).length
+                  ? l.targetKr.departments.map((d: any) => d.department)
+                  : (l.targetKr?.initiatives || []).map((i: any) => i.team?.name).filter(Boolean),
+              })),
+              inbound: (kr.sourceLinksB || []).map((l: any) => ({
+                id: l.id,
+                relationship: l.relationship,
+                sourceKrId: l.sourceKr?.id,
+                sourceKrTitle: l.sourceKr?.title,
+                sourcePerspective: l.sourceKr?.bscPerspective,
+                sourceTeams: (l.sourceKr?.departments || []).map((d: any) => d.department).length
+                  ? l.sourceKr.departments.map((d: any) => d.department)
+                  : (l.sourceKr?.initiatives || []).map((i: any) => i.team?.name).filter(Boolean),
+              })),
+            },
             initiatives: kr.initiatives.map((init) => {
               const initProg =
                 init.targetValue > 0

@@ -183,6 +183,7 @@
         </NuxtLink> -->
 
         <NuxtLink
+          v-if="isAdmin || isCLevel || isManager || isLeader"
           to="/okr-cascading"
           title="OKR Cascading"
           :style="navItemStyle('/okr-cascading')"
