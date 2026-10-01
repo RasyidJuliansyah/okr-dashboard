@@ -1,11 +1,14 @@
 import { Router } from 'express';
-import { getBscOverview, getCLevelBscDashboard } from '../controllers/bsc.controller';
+import { getBscOverview, getCLevelBscDashboard, getCascadingTree } from '../controllers/bsc.controller';
 import { authMiddleware, roleGuard } from '../middleware/auth.middleware';
 
 const router = Router();
 
 // Route for getting BSC 4-quadrant grouped overview (all roles)
 router.get('/overview', authMiddleware, getBscOverview);
+
+// OKR Cascading Tree & Matrix Map (all roles)
+router.get('/cascading-tree', authMiddleware, getCascadingTree);
 
 // C-Level Executive BSC Dashboard (C_LEVEL + ADMIN only)
 router.get('/c-level-dashboard', authMiddleware, roleGuard(['C_LEVEL', 'ADMIN']), getCLevelBscDashboard);

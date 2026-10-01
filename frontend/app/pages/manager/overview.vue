@@ -1548,7 +1548,7 @@ function getGroupedKrs(keyResults) {
   transition: width 0.6s ease-in-out;
 }
 .dept-group-header {
-  background: var(--c;
+  background: var(--card-bg, #f8fafc);
   padding: 12px 24px;
   border-bottom: 1px solid #f1f5f9;
   border-top: 1px solid #f1f5f9;

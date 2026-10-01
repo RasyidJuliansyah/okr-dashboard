@@ -1346,13 +1346,33 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       teamId = firstTeam.id;
     }
 
-    // KR lookup hanya jika keyResultId diberikan
+    // Validasi relasi KR wajib bagi role TEAM
+    if (role === "TEAM" && !keyResultId) {
+      return res.status(400).json({
+        message: "Inisiatif yang dibuat oleh tim wajib memiliki relasi ke Key Result (KR) yang telah dibuat",
+      });
+    }
+
+    // KR lookup & validasi integritas hierarki BSC
     if (keyResultId) {
       const kr = await prisma.keyResult.findUnique({
         where: { id: keyResultId },
+        include: { objective: true },
       });
       if (!kr)
         return res.status(404).json({ message: "KeyResult tidak ditemukan" });
+
+      if (!kr.objectiveId || !kr.objective) {
+        return res.status(400).json({
+          message: "Key Result harus memiliki relasi dengan Corporate Objective yang valid",
+        });
+      }
+
+      if (!kr.bscPerspective) {
+        return res.status(400).json({
+          message: "Key Result harus memiliki relasi dengan 4 aspek BSC",
+        });
+      }
 
       // Auto-heal kr.month if it is null/empty to allow initiative creation
       if (!kr.month) {
@@ -2661,6 +2681,12 @@ export async function createTask(req: AuthRequest, res: Response) {
     if (!initiative)
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
 
+    if (role === "TEAM" && !initiative.keyResultId) {
+      return res.status(400).json({
+        message: "Task tim hanya dapat dibuat pada Inisiatif yang telah terhubung ke Key Result (KR)",
+      });
+    }
+
     // Validate Cascade KR if provided
     try {
       await validateCascadeKR(initiativeId, keyResultId);
@@ -2852,6 +2878,12 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
     });
     if (!initiative) {
       return res.status(404).json({ message: "Initiative tidak ditemukan" });
+    }
+
+    if (role === "TEAM" && !initiative.keyResultId) {
+      return res.status(400).json({
+        message: "Task tim hanya dapat dibuat pada Inisiatif yang telah terhubung ke Key Result (KR)",
+      });
     }
 
     if (initiative.keyResultId) {

@@ -366,3 +366,344 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+// ─── OKR Cascading Tree & Matrix Data ──────────────────────────────────────
+
+export async function getCascadingTree(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+    const {
+      quarter,
+      sprintId,
+      teamId,
+      employeeId,
+      perspective,
+      year,
+      status,
+      search,
+    } = req.query as Record<string, string | undefined>;
+
+    // 1. Fetch reference lists for filters
+    const [allSprints, allTeams, allUsers] = await Promise.all([
+      prisma.sprint.findMany({
+        where: { isActive: true },
+        orderBy: { orderIndex: "asc" },
+        select: { id: true, name: true, status: true, year: true, startDate: true, endDate: true },
+      }),
+      prisma.team.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, department: true },
+      }),
+      prisma.user.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, role: true, department: true, position: true, teamId: true },
+      }),
+    ]);
+
+    // 2. Fetch full hierarchy of Objectives -> KeyResults -> Initiatives -> Tasks
+    const objectives = await prisma.objective.findMany({
+      where: {
+        isActive: true,
+        ...(year && year !== "ALL" ? { year: { contains: year.replace("FY ", "") } } : {}),
+        ...(quarter && quarter !== "ALL"
+          ? {
+              OR: [
+                { quarter: { equals: quarter } },
+                { year: { contains: quarter } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        keyResults: {
+          where: {
+            isActive: true,
+            ...(perspective && perspective !== "ALL" ? { bscPerspective: perspective } : {}),
+            ...(status && status !== "ALL" ? { status } : {}),
+          },
+          include: {
+            departments: true,
+            assignments: {
+              include: {
+                user: {
+                  select: { id: true, name: true, email: true, department: true, position: true, role: true },
+                },
+              },
+            },
+            initiatives: {
+              where: {
+                isActive: true,
+                ...(sprintId && sprintId !== "ALL" ? { sprintId } : {}),
+                ...(teamId && teamId !== "ALL" ? { teamId } : {}),
+              },
+              include: {
+                team: { select: { id: true, name: true } },
+                owner: { select: { id: true, name: true, email: true, position: true } },
+                assignedLeader: { select: { id: true, name: true, email: true } },
+                sprint: { select: { id: true, name: true } },
+                tasks: {
+                  where: {
+                    isActive: true,
+                    ...(sprintId && sprintId !== "ALL" ? { sprintId } : {}),
+                    ...(employeeId && employeeId !== "ALL" ? { assignedTeamMemberId: employeeId } : {}),
+                  },
+                  include: {
+                    assignedTeamMember: {
+                      select: { id: true, name: true, email: true, position: true },
+                    },
+                    sprint: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+
+    // 3. Perspectives metadata and filtering
+    const perspectiveMeta: Record<string, { label: string; code: string; color: string }> = {
+      FINANCIAL: { label: "Finance", code: "FIN", color: "#10b981" },
+      CUSTOMER: { label: "Customer", code: "CUS", color: "#3b82f6" },
+      INTERNAL_PROCESS: { label: "Internal Process", code: "PRC", color: "#8b5cf6" },
+      LEARNING_GROWTH: { label: "Learning & Growth", code: "LRN", color: "#f59e0b" },
+    };
+
+    const treePerspectives: any[] = [];
+    const teamCounts: Record<string, { name: string; count: number }> = {};
+    allTeams.forEach((t) => {
+      teamCounts[t.id] = { name: t.name, count: 0 };
+    });
+
+    const searchLower = (search || "").toLowerCase().trim();
+
+    PERSPECTIVES.forEach((pKey) => {
+      if (perspective && perspective !== "ALL" && perspective !== pKey) {
+        return;
+      }
+
+      const pMeta = perspectiveMeta[pKey] || { label: pKey, code: pKey.slice(0, 3), color: "#38bdf8" };
+      const pObjectives: any[] = [];
+      let pTotalKrs = 0;
+      let pOnTrack = 0;
+      let pAtRisk = 0;
+      let pOffTrack = 0;
+      let pProgressSum = 0;
+
+      objectives.forEach((obj) => {
+        const krsForP = obj.keyResults.filter((kr) => kr.bscPerspective === pKey);
+        if (krsForP.length === 0) return;
+
+        const processedKrs: any[] = [];
+
+        krsForP.forEach((kr) => {
+          if (employeeId && employeeId !== "ALL") {
+            const isAssignedKr = kr.assignments.some((a) => a.userId === employeeId);
+            const isInitiativeOwner = kr.initiatives.some((i) => i.ownerId === employeeId);
+            const isTaskAssignee = kr.initiatives.some((i) =>
+              i.tasks.some((t) => t.assignedTeamMemberId === employeeId),
+            );
+            if (!isAssignedKr && !isInitiativeOwner && !isTaskAssignee) return;
+          }
+
+          if (teamId && teamId !== "ALL") {
+            const hasTeamInit = kr.initiatives.some((i) => i.teamId === teamId);
+            const hasTeamDept = kr.departments.some((d) => {
+              const matchedTeam = allTeams.find((t) => t.department === d.department);
+              return matchedTeam?.id === teamId;
+            });
+            if (!hasTeamInit && !hasTeamDept) return;
+          }
+
+          if (searchLower) {
+            const matchesObj = obj.title.toLowerCase().includes(searchLower);
+            const matchesKr = kr.title.toLowerCase().includes(searchLower);
+            const matchesInit = kr.initiatives.some((i) => i.title.toLowerCase().includes(searchLower));
+            const matchesTask = kr.initiatives.some((i) =>
+              i.tasks.some((t) => t.title.toLowerCase().includes(searchLower)),
+            );
+            const matchesTeam = kr.initiatives.some((i) => i.team?.name?.toLowerCase().includes(searchLower));
+            if (!matchesObj && !matchesKr && !matchesInit && !matchesTask && !matchesTeam) return;
+          }
+
+          const progress =
+            kr.targetValue > 0
+              ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
+              : 0;
+          const roundedProgress = Math.round(progress * 10) / 10;
+
+          kr.initiatives.forEach((i) => {
+            if (teamCounts[i.teamId]) teamCounts[i.teamId].count++;
+          });
+
+          const primaryAssignment = kr.assignments.find((a) => a.raciRole === "RESPONSIBLE") || kr.assignments[0];
+          const primaryOwner = primaryAssignment?.user || null;
+
+          let depts = kr.departments.map((d) => d.department);
+          if (depts.length === 0) {
+            const titleMatch = kr.title.match(/^\[([^\]]+)\]/);
+            if (titleMatch) {
+              depts = [titleMatch[1]];
+            } else if (kr.initiatives.length > 0 && kr.initiatives[0].team?.name) {
+              depts = [kr.initiatives[0].team.name];
+            }
+          }
+
+          processedKrs.push({
+            id: kr.id,
+            title: kr.title,
+            targetValue: kr.targetValue,
+            currentValue: kr.currentValue,
+            unit: kr.unit,
+            status: kr.status,
+            progress: roundedProgress,
+            targetType: kr.targetType,
+            bscPerspective: kr.bscPerspective,
+            month: kr.month,
+            departments: depts,
+            owner: primaryOwner,
+            initiatives: kr.initiatives.map((init) => {
+              const initProg =
+                init.targetValue > 0
+                  ? Math.min(100, Math.max(0, (init.currentValue / init.targetValue) * 100))
+                  : init.kanbanStatus === "DONE"
+                  ? 100
+                  : 0;
+
+              const mappedTasks = init.tasks.map((task) => {
+                const taskProg =
+                  task.targetValue && task.targetValue > 0
+                    ? Math.min(100, Math.max(0, (task.currentValue / task.targetValue) * 100))
+                    : task.kanbanStatus === "DONE"
+                    ? 100
+                    : 0;
+                return {
+                  id: task.id,
+                  title: task.title,
+                  description: task.description,
+                  targetValue: task.targetValue,
+                  currentValue: task.currentValue,
+                  unit: task.unit,
+                  status: task.status,
+                  kanbanStatus: task.kanbanStatus,
+                  progress: Math.round(taskProg * 10) / 10,
+                  assignedTeamMember: task.assignedTeamMember,
+                  assignedUser: task.assignedTeamMember,
+                  sprint: task.sprint,
+                };
+              });
+
+              return {
+                id: init.id,
+                title: init.title,
+                description: init.description,
+                targetValue: init.targetValue,
+                currentValue: init.currentValue,
+                unit: init.unit,
+                status: init.status,
+                kanbanStatus: init.kanbanStatus,
+                progress: Math.round(initProg * 10) / 10,
+                sprintMonth: init.sprintMonth,
+                sprint: init.sprint,
+                team: init.team,
+                owner: init.owner,
+                tasks: mappedTasks,
+                kpis: mappedTasks,
+              };
+            }),
+          });
+
+          pTotalKrs++;
+          pProgressSum += roundedProgress;
+          if (kr.status === "ON_TRACK") pOnTrack++;
+          else if (kr.status === "AT_RISK") pAtRisk++;
+          else if (kr.status === "OFF_TRACK") pOffTrack++;
+        });
+
+        if (processedKrs.length > 0) {
+          const objProgress =
+            Math.round(
+              (processedKrs.reduce((sum, k) => sum + k.progress, 0) / processedKrs.length) * 10,
+            ) / 10;
+
+          pObjectives.push({
+            id: obj.id,
+            title: obj.title,
+            description: obj.description,
+            quarter: obj.quarter,
+            year: obj.year,
+            progress: objProgress,
+            status: objProgress >= 70 ? "ON_TRACK" : objProgress >= 40 ? "AT_RISK" : "OFF_TRACK",
+            keyResults: processedKrs,
+          });
+        }
+      });
+
+      if (pObjectives.length > 0 || !perspective || perspective === "ALL") {
+        treePerspectives.push({
+          id: pKey,
+          key: pKey,
+          name: pMeta.label,
+          code: pMeta.code,
+          color: pMeta.color,
+          totalKrs: pTotalKrs,
+          totalObjectives: pObjectives.length,
+          averageProgress: pTotalKrs > 0 ? Math.round((pProgressSum / pTotalKrs) * 10) / 10 : 0,
+          onTrackCount: pOnTrack,
+          atRiskCount: pAtRisk,
+          offTrackCount: pOffTrack,
+          objectives: pObjectives,
+        });
+      }
+    });
+
+    const totalActiveKrs = treePerspectives.reduce((sum, p) => sum + p.totalKrs, 0);
+    const totalTeamHits = Object.values(teamCounts).reduce((s, t) => s + t.count, 0) || 1;
+    const teamDistribution = Object.values(teamCounts)
+      .filter((t) => t.count > 0)
+      .map((t) => ({
+        name: t.name,
+        krCount: t.count,
+        percentage: Math.round((t.count / totalTeamHits) * 100),
+      }))
+      .sort((a, b) => b.krCount - a.krCount);
+
+    return res.status(200).json({
+      root: {
+        title: "BSC-OKR Suite",
+        subtitle: "SKOLLA STRATEGY 2026",
+        year: year || "FY 2026",
+      },
+      perspectives: treePerspectives,
+      totalActiveKrs,
+      teamDistribution,
+      filterOptions: {
+        perspectives: PERSPECTIVES.map((p) => ({
+          value: p,
+          label: perspectiveMeta[p]?.label || p,
+        })),
+        sprints: allSprints,
+        teams: allTeams,
+        employees: allUsers,
+        quarters: ["ALL", "Q1", "Q2", "Q3", "Q4", "Annual"],
+        years: ["FY 2026", "2026", "Q3-2026"],
+        statuses: [
+          { value: "ALL", label: "Semua Status" },
+          { value: "ON_TRACK", label: "On Track (>70%)" },
+          { value: "AT_RISK", label: "At Risk (40% - 70%)" },
+          { value: "OFF_TRACK", label: "Off Track (<40%)" },
+        ],
+      },
+    });
+  } catch (error) {
+    console.error("Get cascading tree error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
