@@ -245,7 +245,12 @@
                       v-if="canEditInitiative(ini)"
                       class="action-btn"
                       title="Edit Inisiatif"
-                      style="padding: 2px 6px; font-size: 11px; cursor: pointer; color: #475569;"
+                      style="
+                        padding: 2px 6px;
+                        font-size: 11px;
+                        cursor: pointer;
+                        color: #475569;
+                      "
                       @click="openEditIniModal(ini)"
                     >
                       <svg
@@ -258,8 +263,12 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                       >
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
                       </svg>
                     </button>
                     <button
@@ -303,7 +312,10 @@
                 </div>
 
                 <!-- KPI Inisiatif -->
-                <div v-if="ini.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+                <div
+                  v-if="ini.kpis?.length"
+                  style="margin-top: 10px; margin-bottom: 6px"
+                >
                   <button
                     type="button"
                     class="kpi-toggle"
@@ -311,16 +323,28 @@
                     @click.stop="toggleKpi(`initiative-${ini.id}`)"
                   >
                     <span>KPI Initiative ({{ ini.kpis.length }})</span>
-                    <span aria-hidden="true">{{ isKpiExpanded(`initiative-${ini.id}`) ? '▼' : '▶' }}</span>
+                    <span aria-hidden="true">{{
+                      isKpiExpanded(`initiative-${ini.id}`) ? "▼" : "▶"
+                    }}</span>
                   </button>
                   <div
                     v-show="isKpiExpanded(`initiative-${ini.id}`)"
                     class="kpi-list"
                   >
-                    <div v-for="assignment in ini.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
-                      <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                    <div
+                      v-for="assignment in ini.kpis"
+                      :key="assignment.id || assignment.kpiId"
+                      class="kpi-row"
+                    >
+                      <span class="kpi-title">{{
+                        getKpiTitle(assignment)
+                      }}</span>
                       <span class="kpi-value">
-                        {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                        {{ assignment.currentValue ?? 0 }} /
+                        {{ assignment.targetValue ?? 0
+                        }}{{
+                          assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : ""
+                        }}
                       </span>
                     </div>
                   </div>
@@ -560,7 +584,7 @@
                         ></div>
                       </div>
                       <!-- KPI Task -->
-                      <div v-if="task.kpis?.length" style="margin-top: 4px;">
+                      <div v-if="task.kpis?.length" style="margin-top: 4px">
                         <button
                           type="button"
                           class="kpi-toggle task-kpi-toggle"
@@ -568,16 +592,30 @@
                           @click.stop="toggleKpi(`ini-task-${task.id}`)"
                         >
                           <span>KPI Task ({{ task.kpis.length }})</span>
-                          <span aria-hidden="true">{{ isKpiExpanded(`ini-task-${task.id}`) ? '▼' : '▶' }}</span>
+                          <span aria-hidden="true">{{
+                            isKpiExpanded(`ini-task-${task.id}`) ? "▼" : "▶"
+                          }}</span>
                         </button>
                         <div
                           v-show="isKpiExpanded(`ini-task-${task.id}`)"
                           class="kpi-list task-kpi-list"
                         >
-                          <div v-for="assignment in task.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
-                            <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                          <div
+                            v-for="assignment in task.kpis"
+                            :key="assignment.id || assignment.kpiId"
+                            class="kpi-row"
+                          >
+                            <span class="kpi-title">{{
+                              getKpiTitle(assignment)
+                            }}</span>
                             <span class="kpi-value">
-                              {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                              {{ assignment.currentValue ?? 0 }} /
+                              {{ assignment.targetValue ?? 0
+                              }}{{
+                                assignment.kpi?.unit
+                                  ? ` ${assignment.kpi.unit}`
+                                  : ""
+                              }}
                             </span>
                           </div>
                         </div>
@@ -680,7 +718,14 @@
                 formatDate(assign.task.finishDate || assign.task.dueDate)
               }}</strong>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-top: 8px;
+              "
+            >
               <!-- Selector Stage Kanban Task -->
               <select
                 :value="
@@ -712,24 +757,57 @@
                 v-if="canEditTask(assign.task)"
                 class="action-btn"
                 title="Edit Task"
-                style="padding: 8px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; color: #475569;"
+                style="
+                  padding: 8px 10px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  display: inline-flex;
+                  align-items: center;
+                  color: #475569;
+                "
                 @click.stop="openEditTaskModal(assign.task)"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                  />
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                  />
                 </svg>
               </button>
               <button
                 v-if="canDeleteTask(assign.task)"
                 class="action-btn danger"
                 title="Hapus Task"
-                style="padding: 8px 10px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center;"
+                style="
+                  padding: 8px 10px;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  display: inline-flex;
+                  align-items: center;
+                "
                 @click.stop="deleteTask(assign.task.id)"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
                   <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <path
+                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                  />
                 </svg>
               </button>
             </div>
@@ -746,7 +824,10 @@
           </div>
 
           <!-- KPI Task -->
-          <div v-if="assign.task.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+          <div
+            v-if="assign.task.kpis?.length"
+            style="margin-top: 10px; margin-bottom: 6px"
+          >
             <button
               type="button"
               class="kpi-toggle"
@@ -754,16 +835,24 @@
               @click.stop="toggleKpi(`my-task-${assign.task.id}`)"
             >
               <span>KPI Task ({{ assign.task.kpis.length }})</span>
-              <span aria-hidden="true">{{ isKpiExpanded(`my-task-${assign.task.id}`) ? '▼' : '▶' }}</span>
+              <span aria-hidden="true">{{
+                isKpiExpanded(`my-task-${assign.task.id}`) ? "▼" : "▶"
+              }}</span>
             </button>
             <div
               v-show="isKpiExpanded(`my-task-${assign.task.id}`)"
               class="kpi-list"
             >
-              <div v-for="assignment in assign.task.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
+              <div
+                v-for="assignment in assign.task.kpis"
+                :key="assignment.id || assignment.kpiId"
+                class="kpi-row"
+              >
                 <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
                 <span class="kpi-value">
-                  {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                  {{ assignment.currentValue ?? 0 }} /
+                  {{ assignment.targetValue ?? 0
+                  }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : "" }}
                 </span>
               </div>
             </div>
@@ -1082,7 +1171,12 @@
                           v-if="canEditInitiative(ini)"
                           class="action-btn"
                           title="Edit Inisiatif"
-                          style="padding: 2px 6px; font-size: 11px; cursor: pointer; color: #475569;"
+                          style="
+                            padding: 2px 6px;
+                            font-size: 11px;
+                            cursor: pointer;
+                            color: #475569;
+                          "
                           @click="openEditIniModal(ini)"
                         >
                           <svg
@@ -1095,8 +1189,12 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                           >
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            <path
+                              d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                            />
+                            <path
+                              d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                            />
                           </svg>
                         </button>
                         <button
@@ -1135,7 +1233,10 @@
                     </div>
 
                     <!-- KPI Inisiatif Tim -->
-                    <div v-if="ini.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+                    <div
+                      v-if="ini.kpis?.length"
+                      style="margin-top: 10px; margin-bottom: 6px"
+                    >
                       <button
                         type="button"
                         class="kpi-toggle"
@@ -1143,16 +1244,30 @@
                         @click.stop="toggleKpi(`team-ini-${ini.id}`)"
                       >
                         <span>KPI Initiative ({{ ini.kpis.length }})</span>
-                        <span aria-hidden="true">{{ isKpiExpanded(`team-ini-${ini.id}`) ? '▼' : '▶' }}</span>
+                        <span aria-hidden="true">{{
+                          isKpiExpanded(`team-ini-${ini.id}`) ? "▼" : "▶"
+                        }}</span>
                       </button>
                       <div
                         v-show="isKpiExpanded(`team-ini-${ini.id}`)"
                         class="kpi-list"
                       >
-                        <div v-for="assignment in ini.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
-                          <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                        <div
+                          v-for="assignment in ini.kpis"
+                          :key="assignment.id || assignment.kpiId"
+                          class="kpi-row"
+                        >
+                          <span class="kpi-title">{{
+                            getKpiTitle(assignment)
+                          }}</span>
                           <span class="kpi-value">
-                            {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                            {{ assignment.currentValue ?? 0 }} /
+                            {{ assignment.targetValue ?? 0
+                            }}{{
+                              assignment.kpi?.unit
+                                ? ` ${assignment.kpi.unit}`
+                                : ""
+                            }}
                           </span>
                         </div>
                       </div>
@@ -1419,7 +1534,14 @@
                       formatDate(assign.task.finishDate || assign.task.dueDate)
                     }}</strong>
                   </div>
-                  <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      align-items: center;
+                      margin-top: 4px;
+                    "
+                  >
                     <!-- Selector Stage Kanban Task -->
                     <select
                       :value="
@@ -1455,24 +1577,57 @@
                       v-if="canEditTask(assign.task)"
                       class="action-btn"
                       title="Edit Task"
-                      style="padding: 4px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; color: #475569;"
+                      style="
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                        color: #475569;
+                      "
                       @click.stop="openEditTaskModal(assign.task)"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                        />
                       </svg>
                     </button>
                     <button
                       v-if="canDeleteTask(assign.task)"
                       class="action-btn danger"
                       title="Hapus Task"
-                      style="padding: 4px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center;"
+                      style="
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                      "
                       @click.stop="deleteTask(assign.task.id)"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
                         <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <path
+                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -1489,24 +1644,43 @@
                   </div>
 
                   <!-- KPI Task Tim -->
-                  <div v-if="assign.task.kpis?.length" style="margin-top: 10px; margin-bottom: 6px;">
+                  <div
+                    v-if="assign.task.kpis?.length"
+                    style="margin-top: 10px; margin-bottom: 6px"
+                  >
                     <button
                       type="button"
                       class="kpi-toggle"
-                      :aria-expanded="isKpiExpanded(`team-task-${assign.task.id}`)"
+                      :aria-expanded="
+                        isKpiExpanded(`team-task-${assign.task.id}`)
+                      "
                       @click.stop="toggleKpi(`team-task-${assign.task.id}`)"
                     >
                       <span>KPI Task ({{ assign.task.kpis.length }})</span>
-                      <span aria-hidden="true">{{ isKpiExpanded(`team-task-${assign.task.id}`) ? '▼' : '▶' }}</span>
+                      <span aria-hidden="true">{{
+                        isKpiExpanded(`team-task-${assign.task.id}`) ? "▼" : "▶"
+                      }}</span>
                     </button>
                     <div
                       v-show="isKpiExpanded(`team-task-${assign.task.id}`)"
                       class="kpi-list"
                     >
-                      <div v-for="assignment in assign.task.kpis" :key="assignment.id || assignment.kpiId" class="kpi-row">
-                        <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                      <div
+                        v-for="assignment in assign.task.kpis"
+                        :key="assignment.id || assignment.kpiId"
+                        class="kpi-row"
+                      >
+                        <span class="kpi-title">{{
+                          getKpiTitle(assignment)
+                        }}</span>
                         <span class="kpi-value">
-                          {{ assignment.currentValue ?? 0 }} / {{ assignment.targetValue ?? 0 }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : '' }}
+                          {{ assignment.currentValue ?? 0 }} /
+                          {{ assignment.targetValue ?? 0
+                          }}{{
+                            assignment.kpi?.unit
+                              ? ` ${assignment.kpi.unit}`
+                              : ""
+                          }}
                         </span>
                       </div>
                     </div>
@@ -1848,11 +2022,11 @@
               &times;
             </button>
           </div>
-          <p class="mb-4">
+          <label class="label">
             Inisiatif: <strong>{{ selectedIni?.title }}</strong>
-          </p>
+          </label>
 
-          <div class="info-box mb-4">
+          <div class="info-box margin-top-8">
             Target:
             {{
               formatTargetValue(
@@ -1869,11 +2043,11 @@
                 "%",
               )
             }}<br />
-            Status Kanban:
+            <label class="label">Status Kanban: </label>
             <strong>{{ selectedIni?.kanbanStatus || "TODO" }}</strong>
           </div>
 
-          <label>Status Pekerjaan (Kanban)</label>
+          <label class="label">Status Pekerjaan (Kanban)</label>
           <select v-model="iniForm.kanbanStatus" class="form-input">
             <option value="TODO">Todo</option>
             <option value="IN_PROGRESS">In Progress</option>
@@ -1881,14 +2055,14 @@
             <option value="DROP">Drop</option>
           </select>
 
-          <label>Nilai Realisasi Saat Ini *</label>
+          <label class="label">Nilai Realisasi Saat Ini *</label>
           <input
             v-model.number="iniForm.newValue"
             type="number"
             class="form-input"
           />
 
-          <label>Catatan Progress / Notes *</label>
+          <label class="label">Catatan Progress / Notes *</label>
           <textarea
             v-model="iniForm.note"
             class="form-input"
@@ -1896,7 +2070,7 @@
             placeholder="Informasi detail pekerjaan, kendala, atau note penting..."
           ></textarea>
 
-          <label>Link Dokumentasi Hasil (opsional)</label>
+          <label class="label">Link Dokumentasi Hasil (opsional)</label>
           <input
             v-model="iniForm.link"
             type="url"
@@ -1911,7 +2085,7 @@
             :showCurrentValue="true"
           />
 
-          <div class="info-box mb-4">
+          <div class="info-box margin-top-8">
             Catatan progress inisiatif ini akan langsung disimpan ke history
             tanpa proses approval.
           </div>
@@ -2263,7 +2437,15 @@
           {{ modalError }}
         </div>
         <div class="form-group mb-3">
-          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Judul Inisiatif *</label>
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Judul Inisiatif *</label
+          >
           <input
             v-model="editIniForm.title"
             type="text"
@@ -2273,7 +2455,15 @@
           />
         </div>
         <div class="form-group mb-3">
-          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Deskripsi</label>
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Deskripsi</label
+          >
           <textarea
             v-model="editIniForm.description"
             class="form-input"
@@ -2289,7 +2479,15 @@
           :required="true"
         />
         <div class="form-group mb-4">
-          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Bulan Sprint</label>
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Bulan Sprint</label
+          >
           <input
             v-model="editIniForm.sprintMonth"
             type="month"
@@ -2333,7 +2531,15 @@
           {{ modalError }}
         </div>
         <div class="form-group mb-3">
-          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Judul Task *</label>
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Judul Task *</label
+          >
           <input
             v-model="editTaskForm.title"
             type="text"
@@ -2343,7 +2549,15 @@
           />
         </div>
         <div class="form-group mb-3">
-          <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Deskripsi</label>
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Deskripsi</label
+          >
           <textarea
             v-model="editTaskForm.description"
             class="form-input"
@@ -2358,25 +2572,40 @@
           labelUnit="Satuan (Unit)"
           :required="true"
         />
-        <div class="form-row-2 mb-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div
+          class="form-row-2 mb-4"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+        >
           <div>
-            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Assignee</label>
+            <label
+              style="
+                display: block;
+                margin-bottom: 4px;
+                font-weight: 500;
+                font-size: 13px;
+              "
+              >Assignee</label
+            >
             <select
               v-model="editTaskForm.assignedTeamMemberId"
               class="form-input"
             >
               <option value="">-- Diri Sendiri / Tidak Diubah --</option>
-              <option
-                v-for="u in availableAssignees"
-                :key="u.id"
-                :value="u.id"
-              >
+              <option v-for="u in availableAssignees" :key="u.id" :value="u.id">
                 {{ u.name }}
               </option>
             </select>
           </div>
           <div>
-            <label style="display: block; margin-bottom: 4px; font-weight: 500; font-size: 13px;">Bulan Sprint</label>
+            <label
+              style="
+                display: block;
+                margin-bottom: 4px;
+                font-weight: 500;
+                font-size: 13px;
+              "
+              >Bulan Sprint</label
+            >
             <input
               v-model="editTaskForm.sprintMonth"
               type="month"
@@ -2448,7 +2677,9 @@ function isKpiExpanded(id) {
 }
 
 function getKpiTitle(assignment) {
-  return assignment.kpi?.title || assignment.kpi?.name || assignment.kpiId || "KPI";
+  return (
+    assignment.kpi?.title || assignment.kpi?.name || assignment.kpiId || "KPI"
+  );
 }
 
 const showUpdateModal = ref(false);
@@ -2550,7 +2781,9 @@ const userRole = computed(() => authStore.user?.role || "");
 const isAutoApproveRole = computed(() =>
   ["LEADER", "MANAGER", "ADMIN"].includes(userRole.value),
 );
-const isAdmin = computed(() => userRole.value === "ADMIN" || authStore.user?.originalRole === "ADMIN");
+const isAdmin = computed(
+  () => userRole.value === "ADMIN" || authStore.user?.originalRole === "ADMIN",
+);
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
@@ -2588,19 +2821,25 @@ async function deleteInitiative(id) {
     if (res.ok) {
       successMsg.value = "Inisiatif berhasil dihapus";
       setTimeout(() => (successMsg.value = ""), 3000);
-      teamInitiatives.value = teamInitiatives.value.filter((i) => i.id !== cleanId && i.id !== id);
+      teamInitiatives.value = teamInitiatives.value.filter(
+        (i) => i.id !== cleanId && i.id !== id,
+      );
       taskAssignments.value = taskAssignments.value.filter((a) => {
         const parentId = a.task?.initiativeId || a.task?.initiative?.id;
         return parentId !== cleanId && parentId !== id;
       });
       if (teamMembersWork.value.initiatives) {
-        teamMembersWork.value.initiatives = teamMembersWork.value.initiatives.filter((i) => i.id !== cleanId && i.id !== id);
+        teamMembersWork.value.initiatives =
+          teamMembersWork.value.initiatives.filter(
+            (i) => i.id !== cleanId && i.id !== id,
+          );
       }
       if (teamMembersWork.value.taskAssignments) {
-        teamMembersWork.value.taskAssignments = teamMembersWork.value.taskAssignments.filter((a) => {
-          const parentId = a.task?.initiativeId || a.task?.initiative?.id;
-          return parentId !== cleanId && parentId !== id;
-        });
+        teamMembersWork.value.taskAssignments =
+          teamMembersWork.value.taskAssignments.filter((a) => {
+            const parentId = a.task?.initiativeId || a.task?.initiative?.id;
+            return parentId !== cleanId && parentId !== id;
+          });
       }
       await fetchMyWork();
     } else {
@@ -2637,10 +2876,11 @@ async function deleteTask(id) {
         return tId !== cleanId && tId !== id;
       });
       if (teamMembersWork.value.taskAssignments) {
-        teamMembersWork.value.taskAssignments = teamMembersWork.value.taskAssignments.filter((a) => {
-          const tId = a.task?.id || a.taskId || a.id;
-          return tId !== cleanId && tId !== id;
-        });
+        teamMembersWork.value.taskAssignments =
+          teamMembersWork.value.taskAssignments.filter((a) => {
+            const tId = a.task?.id || a.taskId || a.id;
+            return tId !== cleanId && tId !== id;
+          });
       }
       await fetchMyWork();
     } else {
@@ -2885,7 +3125,9 @@ const filteredTeamMembersTasks = computed(() => {
 onMounted(async () => {
   if (
     !authStore.isAuthenticated ||
-    !["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(authStore.user?.role)
+    !["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(
+      authStore.user?.role,
+    )
   ) {
     router.push("/login");
     return;
@@ -3251,11 +3493,14 @@ function canEditTask(task) {
   if (!userId) return false;
   if (role === "MANAGER") {
     const userDept = authStore.user?.department;
-    const taskDept = task.initiative?.team?.department || task.targetDept || task.creatorDept;
+    const taskDept =
+      task.initiative?.team?.department || task.targetDept || task.creatorDept;
     return !taskDept || taskDept === userDept;
   }
   if (role === "LEADER") {
-    const isAssigned = task.assignments?.some((a) => a.userId === userId || a.user?.id === userId);
+    const isAssigned = task.assignments?.some(
+      (a) => a.userId === userId || a.user?.id === userId,
+    );
     return (
       task.assignedTeamMemberId === userId ||
       task.assignedTeamMember?.id === userId ||
@@ -3265,7 +3510,9 @@ function canEditTask(task) {
       task.initiative?.teamId === authStore.user?.teamId
     );
   }
-  const isAssigned = task.assignments?.some((a) => a.userId === userId || a.user?.id === userId);
+  const isAssigned = task.assignments?.some(
+    (a) => a.userId === userId || a.user?.id === userId,
+  );
   return (
     task.assignedTeamMemberId === userId ||
     task.assignedTeamMember?.id === userId ||
@@ -3306,7 +3553,8 @@ function openEditTaskModal(task) {
     title: task.title || "",
     targetValue: task.targetValue ?? 100,
     unit: task.unit || "%",
-    assignedTeamMemberId: task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
+    assignedTeamMemberId:
+      task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
     sprintMonth: task.sprintMonth || "",
     description: task.description || "",
   };
@@ -3331,7 +3579,8 @@ async function submitEditTask() {
         title: editTaskForm.value.title.trim(),
         targetValue: editTaskForm.value.targetValue,
         unit: editTaskForm.value.unit,
-        assignedTeamMemberId: editTaskForm.value.assignedTeamMemberId || undefined,
+        assignedTeamMemberId:
+          editTaskForm.value.assignedTeamMemberId || undefined,
         sprintMonth: editTaskForm.value.sprintMonth || undefined,
         description: editTaskForm.value.description,
       }),
@@ -3400,7 +3649,6 @@ async function submitEditIni() {
     saving.value = false;
   }
 }
-
 
 function openUpdateModal(task) {
   if (!canReportTask(task) || isTaskDone(task)) return;
@@ -3904,6 +4152,7 @@ function getGroupedInitiatives(initiatives) {
   border-radius: 8px;
   font-size: 14px;
   border: 1px solid var(--card-border);
+  margin-top: 12px;
 }
 .form-input {
   width: 100%;
@@ -4148,8 +4397,25 @@ function getGroupedInitiatives(initiatives) {
   background: #e0f2fe;
   color: #075985;
 }
+.mb-1 {
+  margin-bottom: 4px;
+}
+.mb-2 {
+  margin-bottom: 8px;
+}
+.mb-3 {
+  margin-bottom: 12px;
+}
 .mb-4 {
   margin-bottom: 16px;
+}
+.label {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 8px;
+  margin-bottom: 4px;
 }
 .dept-group-header {
   display: flex;

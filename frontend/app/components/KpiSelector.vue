@@ -307,7 +307,9 @@ const availableKpisForPicker = computed(() => {
       !pickerSearch.value ||
       kpi.name.toLowerCase().includes(pickerSearch.value.toLowerCase()) ||
       (kpi.description &&
-        kpi.description.toLowerCase().includes(pickerSearch.value.toLowerCase()));
+        kpi.description
+          .toLowerCase()
+          .includes(pickerSearch.value.toLowerCase()));
 
     const matchDept =
       !pickerDept.value ||
@@ -413,7 +415,7 @@ onMounted(() => {
   border-radius: 8px;
   padding: 1rem;
   background: #f8fafc;
-  margin-top: 0.5rem;
+  margin-top: 18px;
   margin-bottom: 0.5rem;
 }
 .kpi-selector-header {
