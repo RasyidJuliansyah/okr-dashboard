@@ -2165,6 +2165,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         include: {
           keyResult: { include: { objective: true, departments: true } },
           team: true,
+          owner: { select: { id: true, name: true } },
         },
       },
       creator: {
@@ -2399,22 +2400,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         include: {
           user: { select: { id: true, name: true } },
           task: {
-            include: {
-              initiative: {
-                include: {
-                  keyResult: {
-                    include: { objective: true, departments: true },
-                  },
-                  team: true,
-                },
-              },
-              kpis: {
-                include: {
-                  kpi: true,
-                },
-              },
-              updates: { orderBy: { createdAt: "desc" } },
-            },
+            include: taskIncludeCommon,
           },
         },
       });
@@ -2432,21 +2418,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
             none: {},
           },
         },
-        include: {
-          initiative: {
-            include: {
-              keyResult: { include: { objective: true, departments: true } },
-              team: true,
-              owner: { select: { id: true, name: true } },
-            },
-          },
-          kpis: {
-            include: {
-              kpi: true,
-            },
-          },
-          updates: { orderBy: { createdAt: "desc" } },
-        },
+        include: taskIncludeCommon,
       });
 
       const memberUnassignedAssignments = memberUnassignedTasks.map((t) => ({
@@ -2500,6 +2472,65 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         taskAssignments: combinedMemberTaskAssignments,
         initiatives: memberInitiatives,
       };
+    }
+
+    // Resolve creators for tasks and initiatives
+    const userIdsToFetch = new Set<string>();
+    const addId = (id: any) => {
+      if (typeof id === "string" && id.length > 5) userIdsToFetch.add(id);
+    };
+
+    const allTasks: any[] = [
+      ...combinedTaskAssignments.map((a: any) => a.task),
+      ...(teamMembersWork.taskAssignments || []).map((a: any) => a.task),
+      ...myInitiatives.flatMap((i: any) => i.tasks || []),
+      ...(teamMembersWork.initiatives || []).flatMap((i: any) => i.tasks || []),
+    ].filter(Boolean);
+
+    const allInis: any[] = [
+      ...myInitiatives,
+      ...(teamMembersWork.initiatives || []),
+      ...allTasks.map((t: any) => t.initiative).filter(Boolean),
+    ].filter(Boolean);
+
+    allTasks.forEach((t: any) => {
+      if (!t.creator) {
+        if (t.creatorId) addId(t.creatorId);
+        if (t.assignedBy) addId(t.assignedBy);
+      }
+    });
+
+    allInis.forEach((i: any) => {
+      if (!i.creator) {
+        if (i.assignedBy) addId(i.assignedBy);
+        if (i.ownerId) addId(i.ownerId);
+      }
+    });
+
+    if (userIdsToFetch.size > 0) {
+      const fetchedUsers = await prisma.user.findMany({
+        where: { id: { in: Array.from(userIdsToFetch) } },
+        select: { id: true, name: true, department: true, role: true },
+      });
+      const userMap = new Map<string, any>(fetchedUsers.map((u) => [u.id, u]));
+
+      allTasks.forEach((t: any) => {
+        if (!t.creator) {
+          t.creator =
+            (t.creatorId && userMap.get(t.creatorId)) ||
+            (t.assignedBy && userMap.get(t.assignedBy)) ||
+            (t.initiative?.owner ? { id: t.initiative.owner.id, name: t.initiative.owner.name } : null);
+        }
+      });
+
+      allInis.forEach((i: any) => {
+        if (!i.creator) {
+          i.creator =
+            (i.assignedBy && userMap.get(i.assignedBy)) ||
+            (i.ownerId && userMap.get(i.ownerId)) ||
+            (i.owner ? { id: i.owner.id, name: i.owner.name } : null);
+        }
+      });
     }
 
     return res.status(200).json({
@@ -2796,6 +2827,7 @@ export async function createTask(req: AuthRequest, res: Response) {
           targetType: targetTypeVal,
           kanbanStatus: kanbanStatus || "TODO",
           assignedTeamMemberId: curAssigneeId,
+          creatorId: userId,
           assignedBy: userId,
           sprintMonth: finalSprintMonth,
           sprintId: finalSprintId,
@@ -2978,6 +3010,7 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
             targetType: itemTargetType,
             kanbanStatus: item.kanbanStatus || "TODO",
             assignedTeamMemberId: targetAssigneeId,
+            creatorId: userId,
             assignedBy: userId,
             sprintMonth: finalSprintMonth,
             sprintId: finalSprintId,

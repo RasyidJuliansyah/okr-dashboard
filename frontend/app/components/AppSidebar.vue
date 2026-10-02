@@ -815,7 +815,7 @@ function navItemStyle(path) {
       height: "44px",
       borderRadius: "12px",
       textDecoration: "none",
-      color: active ? "var(--color-primary-contrast)" : "var(--text-secondary)",
+      color: active ? "#ffffff" : "var(--text-secondary)",
       backgroundColor: active ? "var(--color-primary)" : "transparent",
       transition: "background-color 150ms ease-out, color 150ms ease-out",
       cursor: "pointer",
@@ -834,7 +834,7 @@ function navItemStyle(path) {
     fontFamily: "'Rubik', sans-serif",
     fontSize: "16px",
     fontWeight: active ? "600" : "500",
-    color: active ? "var(--input-bg)" : "var(--text-secondary)",
+    color: active ? "#ffffff" : "var(--text-secondary)",
     backgroundColor: active ? "var(--color-primary)" : "transparent",
     transition: "background-color 150ms ease-out, color 150ms ease-out",
     cursor: "pointer",
@@ -848,6 +848,22 @@ function handleLogout() {
 </script>
 
 <style scoped>
+.app-sidebar {
+  background-color: var(--card-bg) !important;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)),
+    url("/asset/supergraphic.png") !important;
+  background-size: cover !important;
+  background-position: right center !important;
+  background-repeat: no-repeat !important;
+}
+
+:root.dark .app-sidebar {
+  background-image:
+    linear-gradient(rgba(19, 26, 44, 0.85), rgba(19, 26, 44, 0.85)),
+    url("/asset/supergraphic.png") !important;
+}
+
 .app-sidebar :deep(svg),
 .app-sidebar svg {
   flex-shrink: 0 !important;

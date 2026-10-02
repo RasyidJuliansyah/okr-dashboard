@@ -25,7 +25,13 @@
               <span class="list-title-text">{{ ini.title }}</span>
             </td>
             <td class="col-type">
-              <span class="type-badge" :class="getTypeBadgeClass(ini)">
+              <span
+                class="type-badge"
+                :class="getTypeBadgeClass(ini)"
+                :style="ini.isCrossDept ? 'cursor: pointer;' : ''"
+                :title="ini.isCrossDept ? 'Klik untuk diskusi Lintas Dept' : ''"
+                @click.stop="ini.isCrossDept ? $emit('open-cross-dept', ini) : null"
+              >
                 {{ getTypeLabel(ini) }}
               </span>
             </td>
@@ -67,6 +73,10 @@ import { calculateProgressPercent } from "~/utils/formatters";
 
 const props = defineProps<{
   initiatives: any[];
+}>();
+
+const emit = defineEmits<{
+  (e: "open-cross-dept", ini: any): void;
 }>();
 
 function getTypeLabel(ini: any): string {

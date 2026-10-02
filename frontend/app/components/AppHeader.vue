@@ -480,7 +480,13 @@ onUnmounted(() => {
 .app-header {
   height: 72px;
   min-height: 72px;
-  background: var(--header-bg);
+  background-color: var(--header-bg);
+  /* background-image:
+    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)),
+    url("/asset/supergraphic.png"); */
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
   border-bottom: 1px solid var(--card-border);
   padding: 0 32px;
   display: flex;
@@ -492,30 +498,18 @@ onUnmounted(() => {
   z-index: 50;
 }
 
+:root.dark .app-header {
+  /* background-image:
+    linear-gradient(rgba(19, 26, 44, 0.85), rgba(19, 26, 44, 0.85)),
+    url("/asset/supergraphic.png"); */
+}
+
 .header-left {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.hamburger-btn {
-  display: flex;
-  background: transparent;
-  border: 1px solid var(--input-border);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 6px;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.hamburger-btn:hover {
-  background-color: var(--bg-page);
-  color: var(--color-primary);
-  border-color: var(--input-border);
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 1024px) {
@@ -544,6 +538,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 /* Dynamic Context Switcher */
 .context-switcher-wrapper {

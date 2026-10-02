@@ -99,8 +99,8 @@
                         <th
                           style="
                             padding: 10px 12px;
-                            width: 110px;
-                            text-align: right;
+                            width: 140px;
+                            text-align: center;
                           "
                         >
                           Aksi
@@ -119,33 +119,6 @@
                                 gap: 8px;
                               "
                             >
-                              <button
-                                v-if="kr.initiatives?.length > 0"
-                                @click="toggleKrExpand(kr.id)"
-                                class="btn-expand"
-                                style="
-                                  background: var(--bg-page);
-                                  border: 1px solid #cbd5e1;
-                                  border-radius: 4px;
-                                  cursor: pointer;
-                                  font-size: 11px;
-                                  color: #475569;
-                                  padding: 2px 6px;
-                                "
-                                :title="
-                                  isKrExpanded(kr.id)
-                                    ? 'Sembunyikan Inisiatif'
-                                    : 'Tampilkan Inisiatif'
-                                "
-                              >
-                                {{
-                                  isKrExpanded(kr.id)
-                                    ? "▼ Sembunyikan"
-                                    : "▶ Expand (" +
-                                      kr.initiatives.length +
-                                      " Inisiatif)"
-                                }}
-                              </button>
                               <span style="font-weight: 600; color: #1e293b">{{
                                 kr.title
                               }}</span>
@@ -189,20 +162,35 @@
                               )
                             }}
                           </td>
-                          <td style="padding: 10px 12px; text-align: right">
+                          <td style="padding: 10px 12px; text-align: center">
                             <button
-                              class="secondary-btn small"
-                              @click="openDelegateModal(kr)"
+                              v-if="kr.initiatives?.length > 0"
+                              @click="toggleKrExpand(kr.id)"
+                              class="btn-expand"
                               style="
-                                padding: 4px 8px;
-                                font-size: 12px;
-                                background-color: #f1f5f9;
+                                background: transparent;
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
                                 border: 1px solid #cbd5e1;
                                 border-radius: 4px;
                                 cursor: pointer;
+                                font-size: 11px;
+                                color: #475569;
+                                padding: 4px 8px;
+                                margin: 0 auto;
+                              "
+                              :title="
+                                isKrExpanded(kr.id)
+                                  ? 'Sembunyikan Inisiatif'
+                                  : 'Tampilkan Inisiatif'
                               "
                             >
-                              Delegasikan
+                              {{
+                                isKrExpanded(kr.id)
+                                  ? "▼ Sembunyikan"
+                                  : "▶ Lihat Inisiatif"
+                              }}
                             </button>
                           </td>
                         </tr>

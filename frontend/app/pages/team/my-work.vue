@@ -254,20 +254,18 @@
                       @click="openEditIniModal(ini)"
                     >
                       <svg
-                        width="12"
-                        height="12"
+                        width="16px"
+                        height="16px"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
                         <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
                         />
                       </svg>
                     </button>
@@ -279,20 +277,20 @@
                       @click="deleteInitiative(ini.id)"
                     >
                       <svg
-                        width="12"
-                        height="12"
+                        width="16px"
+                        height="16px"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        xmlns="http://www.w3.org/2000/svg"
+                        color="red"
                       >
-                        <polyline points="3 6 5 6 21 6" />
                         <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
                         />
-                        <line x1="10" y1="11" x2="10" y2="17" />
                       </svg>
                     </button>
                   </div>
@@ -308,6 +306,10 @@
                       >(PIC: <strong>{{ ini.owner.name }}</strong
                       >)</span
                     >
+                  </p>
+                  <p>
+                    <strong>Created By:</strong>
+                    {{ getIniCreatorName(ini) }}
                   </p>
                 </div>
 
@@ -692,13 +694,13 @@
                 ⚠️ NEED INFO
               </span>
             </div>
-            <span
-              class="status-badge"
-              :class="getStatusClass(assign.task.status)"
-              >{{ assign.task.status }}</span
-            >
             <div class="task-header">
               <h3>{{ assign.task.title }}</h3>
+              <span
+                class="status-badge"
+                :class="getStatusClass(assign.task.status)"
+                >{{ assign.task.status }}</span
+              >
             </div>
             <p
               v-if="assign.task.isCrossDept && assign.task.description"
@@ -713,7 +715,7 @@
               "
               class="cross-dept-deadline-tag"
             >
-              📅 Tenggat:
+              Tenggat:
               <strong>{{
                 formatDate(assign.task.finishDate || assign.task.dueDate)
               }}</strong>
@@ -758,7 +760,6 @@
                 class="action-btn"
                 title="Edit Task"
                 style="
-                  padding: 8px 10px;
                   border-radius: 6px;
                   cursor: pointer;
                   display: inline-flex;
@@ -768,18 +769,18 @@
                 @click.stop="openEditTaskModal(assign.task)"
               >
                 <svg
-                  width="14"
-                  height="14"
+                  width="16px"
+                  height="16px"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                  />
-                  <path
-                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   />
                 </svg>
               </button>
@@ -797,16 +798,19 @@
                 @click.stop="deleteTask(assign.task.id)"
               >
                 <svg
-                  width="14"
-                  height="14"
+                  width="16px"
+                  height="16px"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  color="red"
                 >
-                  <polyline points="3 6 5 6 21 6" />
                   <path
-                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   />
                 </svg>
               </button>
@@ -814,12 +818,16 @@
           </div>
 
           <div class="task-context">
-            <p>
+            <p v-if="assign.task.initiative?.keyResult?.title">
               <strong>KR:</strong>
               {{ assign.task.initiative?.keyResult?.title }}
             </p>
-            <p>
+            <p v-if="assign.task.initiative?.title">
               <strong>Inisiatif:</strong> {{ assign.task.initiative?.title }}
+            </p>
+            <p>
+              <strong>Created By:</strong>
+              {{ getTaskCreatorName(assign.task) }}
             </p>
           </div>
 
@@ -861,15 +869,15 @@
           <div class="task-progress-section">
             <div class="progress-labels">
               <span
-                >Target:
+                >Saat ini:
                 <strong>{{
-                  formatTargetValue(assign.task.targetValue, assign.task.unit)
+                  formatTargetValue(task.currentValue, task.unit)
                 }}</strong></span
               >
               <span
-                >Saat ini:
+                >Target:
                 <strong>{{
-                  formatTargetValue(assign.task.currentValue, assign.task.unit)
+                  formatTargetValue(task.targetValue, task.unit)
                 }}</strong></span
               >
             </div>
@@ -1172,7 +1180,8 @@
                           class="action-btn"
                           title="Edit Inisiatif"
                           style="
-                            padding: 2px 6px;
+                            background-color: transparent;
+                            border-color: transparent;
                             font-size: 11px;
                             cursor: pointer;
                             color: #475569;
@@ -1180,20 +1189,18 @@
                           @click="openEditIniModal(ini)"
                         >
                           <svg
-                            width="12"
-                            height="12"
+                            width="16px"
+                            height="16px"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            xmlns="http://www.w3.org/2000/svg"
                           >
                             <path
-                              d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                            />
-                            <path
-                              d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                              d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
                             />
                           </svg>
                         </button>
@@ -1202,6 +1209,8 @@
                           class="action-btn danger"
                           title="Hapus Inisiatif"
                           style="
+                            background-color: transparent;
+                            border-color: transparent;
                             padding: 2px 6px;
                             font-size: 11px;
                             cursor: pointer;
@@ -1209,20 +1218,20 @@
                           @click="deleteInitiative(ini.id)"
                         >
                           <svg
-                            width="12"
-                            height="12"
+                            width="16px"
+                            height="16px"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            xmlns="http://www.w3.org/2000/svg"
+                            color="red"
                           >
-                            <polyline points="3 6 5 6 21 6" />
                             <path
-                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                              d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
                             />
-                            <line x1="10" y1="11" x2="10" y2="17" />
                           </svg>
                         </button>
                       </div>
@@ -1230,6 +1239,10 @@
                     <div class="ini-context">
                       <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
                       <p><strong>PIC:</strong> {{ ini.owner?.name || "-" }}</p>
+                      <p>
+                        <strong>Created By:</strong>
+                        {{ getIniCreatorName(ini) }}
+                      </p>
                     </div>
 
                     <!-- KPI Inisiatif Tim -->
@@ -1529,7 +1542,7 @@
                     "
                     class="cross-dept-deadline-tag"
                   >
-                    📅 Tenggat:
+                    Tenggat:
                     <strong>{{
                       formatDate(assign.task.finishDate || assign.task.dueDate)
                     }}</strong>
@@ -1578,28 +1591,27 @@
                       class="action-btn"
                       title="Edit Task"
                       style="
-                        padding: 4px 8px;
-                        border-radius: 6px;
+                        background-color: transparent;
+                        border-color: transparent;
                         cursor: pointer;
                         display: inline-flex;
                         align-items: center;
-                        color: #475569;
                       "
                       @click.stop="openEditTaskModal(assign.task)"
                     >
                       <svg
-                        width="14"
-                        height="14"
+                        width="16px"
+                        height="16px"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
                         <path
-                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        />
-                        <path
-                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
                         />
                       </svg>
                     </button>
@@ -1608,7 +1620,8 @@
                       class="action-btn danger"
                       title="Hapus Task"
                       style="
-                        padding: 4px 8px;
+                        background-color: transparent;
+                        border-color: transparent;
                         border-radius: 6px;
                         cursor: pointer;
                         display: inline-flex;
@@ -1617,29 +1630,36 @@
                       @click.stop="deleteTask(assign.task.id)"
                     >
                       <svg
-                        width="14"
-                        height="14"
+                        width="16px"
+                        height="16px"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
+                        xmlns="http://www.w3.org/2000/svg"
+                        color="red"
                       >
-                        <polyline points="3 6 5 6 21 6" />
                         <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
                         />
                       </svg>
                     </button>
                   </div>
 
                   <div class="task-context">
-                    <p>
+                    <p v-if="assign.task.initiative?.keyResult?.title">
                       <strong>KR:</strong>
                       {{ assign.task.initiative?.keyResult?.title }}
                     </p>
-                    <p>
+                    <p v-if="assign.task.initiative?.title">
                       <strong>Inisiatif:</strong>
                       {{ assign.task.initiative?.title }}
+                    </p>
+                    <p>
+                      <strong>Created By:</strong>
+                      {{ getTaskCreatorName(assign.task) }}
                     </p>
                   </div>
 
@@ -1701,23 +1721,23 @@
                       class="cross-dept-work-btn"
                       @click="openCrossDeptModal(assign.task.id)"
                     >
-                      🔍 Detail & Diskusi
+                      Detail & Diskusi
                     </button>
                   </div>
 
                   <div class="task-progress-section">
                     <div class="progress-labels">
                       <span
-                        >Target:
+                        >Saat ini:
                         <strong
-                          >{{ assign.task.targetValue }}
+                          >{{ assign.task.currentValue }}
                           {{ assign.task.unit }}</strong
                         ></span
                       >
                       <span
-                        >Saat ini:
+                        >Target:
                         <strong
-                          >{{ assign.task.currentValue }}
+                          >{{ assign.task.targetValue }}
                           {{ assign.task.unit }}</strong
                         ></span
                       >
@@ -3339,6 +3359,32 @@ function toggleIniHistory(id) {
   else expandedIniIds.value.splice(idx, 1);
 }
 
+function getTaskCreatorName(task) {
+  if (!task) return "-";
+  return (
+    task.creator?.name ||
+    task.assignedByUser?.name ||
+    (task.assignedBy && !task.assignedBy.includes("-")
+      ? task.assignedBy
+      : "") ||
+    task.initiative?.owner?.name ||
+    task.initiative?.assignedLeader?.name ||
+    "-"
+  );
+}
+
+function getIniCreatorName(ini) {
+  if (!ini) return "-";
+  return (
+    ini.creator?.name ||
+    ini.assignedByUser?.name ||
+    ini.owner?.name ||
+    ini.assignedLeader?.name ||
+    (ini.assignedBy && !ini.assignedBy.includes("-") ? ini.assignedBy : "") ||
+    "-"
+  );
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", {
@@ -3869,14 +3915,28 @@ function getGroupedInitiatives(initiatives) {
 }
 
 .task-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .task-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .task-card {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  overflow: hidden;
 }
 .task-card.cross-dept-task-card {
   background: #fffdf5 !important;
@@ -3885,8 +3945,8 @@ function getGroupedInitiatives(initiatives) {
   box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1) !important;
 }
 .cross-dept-tag-row {
-  grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
@@ -3900,6 +3960,10 @@ function getGroupedInitiatives(initiatives) {
   padding: 3px 8px;
   border-radius: 6px;
   cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cross-dept-badge:hover {
   background: #fde68a;
@@ -3963,28 +4027,37 @@ function getGroupedInitiatives(initiatives) {
   width: fit-content;
 }
 .title-wrapper {
-  display: grid;
-  align-items: center;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
 }
 .task-header {
-  display: table-column;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 8px;
-  align-items: right;
+  width: 100%;
+  min-width: 0;
 }
 .task-header h3 {
-  font-size: 16px;
-  margin: 8px;
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
   color: #0f172a;
   flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .status-badge {
-  font-size: 12px;
-  padding: 6px 8px;
+  font-size: 11px;
+  padding: 4px 8px;
   border-radius: 6px;
   font-weight: 600;
-  gap: 12px;
-  display: flex;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .task-context {

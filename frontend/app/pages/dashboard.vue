@@ -172,15 +172,15 @@
             <div class="task-progress-section">
               <div class="progress-labels">
                 <span
-                  >Target:
-                  <strong>{{
-                    formatTargetValue(task.targetValue, task.unit)
-                  }}</strong></span
-                >
-                <span
                   >Saat ini:
                   <strong>{{
                     formatTargetValue(task.currentValue, task.unit)
+                  }}</strong></span
+                >
+                <span
+                  >Target:
+                  <strong>{{
+                    formatTargetValue(task.targetValue, task.unit)
                   }}</strong></span
                 >
               </div>
@@ -2035,28 +2035,48 @@ async function handleReject() {
 
 /* Task Cards Grid (matching Pekerjaan Saya / my-work.vue) */
 .task-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .task-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .task-card {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  overflow: hidden;
 }
 .task-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .task-header h3 {
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.4;
   margin: 0;
   color: var(--text-color, #0f172a);
   flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .status-badge {
@@ -2064,6 +2084,8 @@ async function handleReject() {
   padding: 4px 8px;
   border-radius: 6px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .task-context {

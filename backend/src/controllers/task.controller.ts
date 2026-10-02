@@ -312,8 +312,9 @@ export async function getCrossDeptTasks(req: AuthRequest, res: Response) {
 export async function getTaskById(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const cleanId = id?.startsWith("task-") ? id.replace(/^task-/, "") : id;
     const task = await prisma.task.findUnique({
-      where: { id },
+      where: { id: cleanId },
       include: {
         creator: {
           select: { id: true, name: true, department: true, role: true },
@@ -352,6 +353,7 @@ export async function getTaskById(req: AuthRequest, res: Response) {
 export async function updateCrossDeptStatus(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const cleanId = id?.startsWith("task-") ? id.replace(/^task-/, "") : id;
     const { status: targetStatus } = req.body;
     const { id: userId, role } = req.user!;
     const dbUser = await prisma.user.findUnique({
@@ -474,6 +476,7 @@ export async function updateCrossDeptStatus(req: AuthRequest, res: Response) {
 export async function reassignCrossDeptTask(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const cleanId = id?.startsWith("task-") ? id.replace(/^task-/, "") : id;
     const { assignedTeamMemberId } = req.body;
     const { id: userId, role } = req.user!;
     const dbUser = await prisma.user.findUnique({
@@ -487,7 +490,7 @@ export async function reassignCrossDeptTask(req: AuthRequest, res: Response) {
     }
 
     const task = await prisma.task.findUnique({
-      where: { id },
+      where: { id: cleanId },
       include: { creator: true },
     });
 
@@ -594,9 +597,10 @@ export async function reassignCrossDeptTask(req: AuthRequest, res: Response) {
 export async function getTaskComments(req: AuthRequest, res: Response) {
   try {
     const { id: taskId } = req.params;
+    const cleanId = taskId?.startsWith("task-") ? taskId.replace(/^task-/, "") : taskId;
 
     const comments = await prisma.taskComment.findMany({
-      where: { taskId },
+      where: { taskId: cleanId },
       include: {
         user: {
           select: { id: true, name: true, role: true, department: true },
@@ -616,6 +620,7 @@ export async function getTaskComments(req: AuthRequest, res: Response) {
 export async function addTaskComment(req: AuthRequest, res: Response) {
   try {
     const { id: taskId } = req.params;
+    const cleanId = taskId?.startsWith("task-") ? taskId.replace(/^task-/, "") : taskId;
     const { message, attachmentLink } = req.body;
     const { id: userId, name: userName } = req.user!;
 
@@ -624,7 +629,7 @@ export async function addTaskComment(req: AuthRequest, res: Response) {
     }
 
     const task = await prisma.task.findUnique({
-      where: { id: taskId },
+      where: { id: cleanId },
       include: { creator: true, assignedTeamMember: true },
     });
 
@@ -634,7 +639,7 @@ export async function addTaskComment(req: AuthRequest, res: Response) {
 
     const comment = await prisma.taskComment.create({
       data: {
-        taskId,
+        taskId: cleanId,
         userId,
         message: message.trim(),
         attachmentLink: attachmentLink ? attachmentLink.trim() : null,

@@ -366,10 +366,12 @@ const targetTeamName = computed(() => {
 
 async function fetchTaskDetails() {
   if (!props.taskId) return;
+  const cleanId = String(props.taskId).replace(/^task-/, "").trim();
+  if (!cleanId) return;
   loading.value = true;
   statusError.value = "";
   try {
-    const res = await fetch(`${API}/tasks/${props.taskId}`, {
+    const res = await fetch(`${API}/tasks/${cleanId}`, {
       headers: getHeaders(),
     });
     if (res.ok) {
