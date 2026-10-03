@@ -851,7 +851,7 @@ function handleLogout() {
 .app-sidebar {
   background-color: var(--card-bg) !important;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)),
+    linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
     url("/asset/supergraphic.png") !important;
   background-size: cover !important;
   background-position: right center !important;
