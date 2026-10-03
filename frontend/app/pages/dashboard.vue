@@ -959,8 +959,9 @@
           </div>
         </div>
       </div>
-    </div>
 
+    <!-- Objectives Grid (Hidden sementara / tidak digunakan) -->
+    <template v-if="false">
     <div v-if="loading" class="skeleton-grid">
       <div class="skeleton-card card" v-for="i in 2" :key="i">
         <div class="skeleton-line title"></div>
@@ -983,45 +984,73 @@
     </div>
 
     <div v-else class="objectives-grid">
-      <!-- Objective Card 
-          <div
-            v-for="(obj, index) in summaryData.objectives"
-            :key="obj.id"
-            class="objective-card card"
-            draggable="true"
-            @dragstart="onDragStart(index, $event)"
-            @dragover.prevent
-            @dragenter.prevent
-            @drop="onDrop(index, $event)"
-            @dragend="onDragEnd"
-            :class="{ 'is-dragging': draggedIndex === index }"
-            style="cursor: grab"
-          >
-            <div class="obj-card-header">
-              <div>
-                <span class="obj-year">{{ obj.year }}</span>
-                <h3>{{ obj.title }}</h3>
-                <p v-if="obj.description" class="obj-desc">
-                  {{ obj.description }}
-                </p>
-              </div>
-              <div class="obj-progress-badge">
-                <span>{{ Math.round(obj.progress || 0) }}%</span>
-                <span class="progress-lbl">Progres</span>
-              </div>
+      <!-- Objective Card -->
+      <div
+        v-for="(obj, index) in summaryData.objectives"
+        :key="obj.id"
+        class="objective-card card"
+        draggable="true"
+        @dragstart="onDragStart(index, $event)"
+        @dragover.prevent
+        @dragenter.prevent
+        @drop="onDrop(index, $event)"
+        @dragend="onDragEnd"
+        :class="{ 'is-dragging': draggedIndex === index }"
+        style="cursor: grab"
+      >
+        <div
+          class="obj-card-header is-clickable"
+          @click="toggleObjective(obj.id)"
+        >
+          <div class="obj-header-left">
+            <span class="obj-year">{{ obj.year }}</span>
+            <h3>{{ obj.title }}</h3>
+            <p v-if="obj.description" class="obj-desc">
+              {{ obj.description }}
+            </p>
+          </div>
+          <div class="obj-header-right">
+            <div class="obj-progress-badge">
+              <span>{{ Math.round(obj.progress || 0) }}%</span>
+              <span class="progress-lbl">Progres</span>
             </div>
+            <button
+              type="button"
+              class="obj-toggle-btn"
+              @click.stop="toggleObjective(obj.id)"
+              :aria-expanded="isObjectiveExpanded(obj.id)"
+              :title="isObjectiveExpanded(obj.id) ? 'Collapse' : 'Expand'"
+            >
+              <svg
+                class="obj-toggle-icon"
+                :class="{ 'is-expanded': isObjectiveExpanded(obj.id) }"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
 
-            <!-- Objective Progress Bar
-            <div class="obj-progress-track">
-              <div
-                class="obj-progress-bar"
-                :style="{ width: (obj.progress || 0) + '%' }"
-              ></div>
-            </div>
+        <div v-show="isObjectiveExpanded(obj.id)" class="obj-card-body">
+          <!-- Objective Progress Bar -->
+          <div class="obj-progress-track">
+            <div
+              class="obj-progress-bar"
+              :style="{ width: (obj.progress || 0) + '%' }"
+            ></div>
+          </div>
 
-            Key Results nested list 
-            <div class="krs-section">
-              <h4>Key Results (Indikator Capaian):</h4>
+          <!-- Key Results nested list -->
+          <div class="krs-section">
+            <h4>Key Results (Indikator Capaian):</h4>
               <div class="krs-list">
                 <div v-for="kr in obj.keyResults" :key="kr.id" class="kr-item">
                   <div class="kr-header-row">
@@ -1048,7 +1077,7 @@
                     >
                   </div>
 
-                  <!-- Details
+                  <!-- Details -->
                   <div class="kr-details-row">
                     <span class="kr-values">
                       Nilai:
@@ -1066,7 +1095,7 @@
                     </span>
                   </div>
 
-                  <!-- RACI Row
+                  <!-- RACI Row -->
                   <div
                     v-if="
                       (kr.assignments && kr.assignments.length > 0) ||
@@ -1074,7 +1103,7 @@
                     "
                     class="kr-raci-row"
                   >
-                    <!-- Accountable 
+                    <!-- Accountable -->
                     <div
                       class="raci-mini-group"
                       v-if="
@@ -1093,7 +1122,7 @@
                         {{ a.user.name }}
                       </span>
                     </div>
-                    <!-- Responsible 
+                    <!-- Responsible -->
                     <div
                       class="raci-mini-group"
                       v-if="
@@ -1115,7 +1144,7 @@
                         >
                       </span>
                     </div>
-                    <!-- Departemen Terlibat 
+                    <!-- Departemen Terlibat -->
                     <div
                       class="kr-dept-row"
                       v-if="kr.departments && kr.departments.length > 0"
@@ -1130,7 +1159,7 @@
                     </div>
                   </div>
 
-                  <!-- KR History Link
+                  <!-- KR History Link -->
                   <div class="kr-history-link">
                     <NuxtLink
                       :to="`/kr-history?krId=${kr.id}&krTitle=${encodeURIComponent(kr.title)}&krTarget=${kr.targetValue}&krUnit=${encodeURIComponent(kr.unit)}`"
@@ -1144,7 +1173,8 @@
             </div>
           </div>
         </div>
-      </section> -->
+      </div>
+    </template>
 
       <!-- Cross Department Discussion & Lifecycle Modal -->
       <CrossDeptCommentModal
@@ -1366,6 +1396,21 @@ function formatMonthLabel(monthStr) {
     "Desember",
   ];
   return `${monthNames[monthNum - 1]} ${year}`;
+}
+
+// State expand / collapse per Objective Card (default: collapsed)
+const expandedObjIds = ref({});
+
+function toggleObjective(objId) {
+  if (!objId) return;
+  expandedObjIds.value = {
+    ...expandedObjIds.value,
+    [objId]: !expandedObjIds.value[objId],
+  };
+}
+
+function isObjectiveExpanded(objId) {
+  return !!expandedObjIds.value[objId];
 }
 
 // State & Computed untuk Initiative Progress (Leader, Manager, C-Level, Admin)
@@ -2382,6 +2427,58 @@ async function handleReject() {
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
+}
+
+.obj-card-header.is-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.obj-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.obj-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.obj-toggle-btn {
+  background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.obj-toggle-btn:hover {
+  background: var(--card-bg-hover, rgba(0, 102, 255, 0.1));
+  color: var(--color-primary, #0066ff);
+  border-color: var(--color-primary, #0066ff);
+}
+
+.obj-toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.obj-toggle-icon.is-expanded {
+  transform: rotate(180deg);
+}
+
+.obj-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .obj-year {

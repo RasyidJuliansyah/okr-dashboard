@@ -155,9 +155,6 @@
           <!-- Key Results Section -->
           <div class="kr-builder-header">
             <h3>Key Results (KR)</h3>
-            <button type="button" @click="addKrRow" class="add-kr-btn">
-              + Tambah KR
-            </button>
           </div>
 
           <div
@@ -364,6 +361,10 @@
               </div>
             </div>
           </div>
+
+          <button type="button" @click="addKrRow" class="add-kr-btn">
+            + Tambah KR
+          </button>
 
           <!-- Form Actions -->
           <div class="form-actions">
@@ -2136,11 +2137,12 @@ select:focus {
 
 .add-kr-btn {
   background: transparent;
-  border: 1.5px solid var(--card-border);
+  border: 3px solid var(--color-primary);
   color: var(--color-primary-shade);
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
 }

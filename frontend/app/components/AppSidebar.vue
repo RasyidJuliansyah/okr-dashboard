@@ -674,7 +674,7 @@ import { useNotificationStore } from "../stores/notification";
 const props = defineProps({
   isOpen: {
     type: Boolean,
-    default: true,
+    default: false,
   },
 });
 const emit = defineEmits(["close", "toggle"]);

@@ -871,13 +871,13 @@
               <span
                 >Saat ini:
                 <strong>{{
-                  formatTargetValue(task.currentValue, task.unit)
+                  formatTargetValue(assign.task.currentValue, assign.task.unit)
                 }}</strong></span
               >
               <span
                 >Target:
                 <strong>{{
-                  formatTargetValue(task.targetValue, task.unit)
+                  formatTargetValue(assign.task.targetValue, assign.task.unit)
                 }}</strong></span
               >
             </div>

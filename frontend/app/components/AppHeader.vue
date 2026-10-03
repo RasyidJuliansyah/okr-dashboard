@@ -275,7 +275,7 @@ const props = defineProps({
   },
   isSidebarOpen: {
     type: Boolean,
-    default: true,
+    default: false,
   },
 });
 

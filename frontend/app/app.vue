@@ -66,14 +66,14 @@ const auth = useAuthStore();
 const route = useRoute();
 const config = useRuntimeConfig();
 
-const isSidebarOpen = ref(true);
+const isSidebarOpen = ref(false);
 
 onMounted(() => {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem("sidebar_open");
     if (saved !== null) {
       isSidebarOpen.value = saved === "true";
-    } else if (window.innerWidth <= 1024) {
+    } else {
       isSidebarOpen.value = false;
     }
   }
