@@ -129,7 +129,6 @@
             style="
               font-size: 12px;
               padding: 6px 12px;
-              margin-bottom: 16px;
               height: 36px;
               min-width: 100px;
             "
