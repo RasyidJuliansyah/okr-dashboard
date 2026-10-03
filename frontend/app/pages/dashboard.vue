@@ -239,6 +239,9 @@
               <div class="text-sm text-gray mb-4">
                 <strong>Tim Pelaksana:</strong>
                 {{ upd.initiative?.team?.name || "-" }}
+                <span v-if="upd.submitter?.name" class="ml-2">
+                  | <strong>Diajukan oleh:</strong> {{ upd.submitter.name }}
+                </span>
               </div>
 
               <div class="update-details">
@@ -285,7 +288,7 @@
                       upd.initiative?.title,
                       upd.type === 'TASK' ? 'Task' : 'Inisiatif',
                       upd,
-                      '—',
+                      upd.submitter?.name || upd.submittedBy,
                     )
                   "
                 >
@@ -1740,21 +1743,30 @@ const detailData = ref({
 });
 
 function openDetailModal(title, type, update, submitterName) {
+  const resolvedSubmitter =
+    (submitterName && submitterName !== "—" ? submitterName : null) ||
+    update?.submitter?.name ||
+    update?.submittedByName ||
+    update?.submittedBy ||
+    "Anggota Tim";
+
   detailData.value = {
     title,
     type,
-    oldValue: update.oldValue,
-    newValue: update.newValue,
-    note: update.note || "Tidak ada catatan.",
-    link: update.link || "",
-    date: new Date(update.createdAt).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    submittedBy: submitterName || "Anggota Tim",
+    oldValue: update?.oldValue ?? 0,
+    newValue: update?.newValue ?? 0,
+    note: update?.note || "Tidak ada catatan.",
+    link: update?.link || "",
+    date: update?.createdAt
+      ? new Date(update.createdAt).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—",
+    submittedBy: resolvedSubmitter,
   };
   showDetailModal.value = true;
 }

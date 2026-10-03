@@ -296,9 +296,33 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           })
         : [];
 
+      const pendingSubmitterIds = new Set<string>();
+      pendingInitiativeApprovals.forEach((u) => {
+        if (u.submittedBy) pendingSubmitterIds.add(u.submittedBy);
+      });
+      pendingTaskApprovals.forEach((t) => {
+        if (t.submittedBy) pendingSubmitterIds.add(t.submittedBy);
+      });
+
+      const submitterUsers =
+        pendingSubmitterIds.size > 0
+          ? await prisma.user.findMany({
+              where: { id: { in: Array.from(pendingSubmitterIds) } },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                position: true,
+                role: true,
+              },
+            })
+          : [];
+      const submitterMap = new Map(submitterUsers.map((u) => [u.id, u]));
+
       const mappedPendingInitiativeApprovals = pendingInitiativeApprovals.map(
         (u: any) => ({
           ...u,
+          submitter: submitterMap.get(u.submittedBy) || null,
           type: "INITIATIVE",
         }),
       );
@@ -318,6 +342,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         note: t.note,
         link: t.link,
         status: t.status,
+        submittedBy: t.submittedBy,
+        submitter: submitterMap.get(t.submittedBy) || null,
         createdAt: t.createdAt,
         type: "TASK",
       }));
