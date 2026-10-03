@@ -691,7 +691,7 @@
                 "
                 class="badge-need-info"
               >
-                ⚠️ NEED INFO
+                NEED INFO
               </span>
             </div>
             <div class="task-header">
@@ -760,11 +760,12 @@
                 class="action-btn"
                 title="Edit Task"
                 style="
+                  background-color: transparent;
+                  border-color: transparent;
                   border-radius: 6px;
                   cursor: pointer;
                   display: inline-flex;
                   align-items: center;
-                  color: #475569;
                 "
                 @click.stop="openEditTaskModal(assign.task)"
               >
@@ -789,7 +790,8 @@
                 class="action-btn danger"
                 title="Hapus Task"
                 style="
-                  padding: 8px 10px;
+                  background-color: transparent;
+                  border-color: transparent;
                   border-radius: 6px;
                   cursor: pointer;
                   display: inline-flex;
