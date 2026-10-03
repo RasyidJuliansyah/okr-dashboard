@@ -2015,7 +2015,10 @@
           </div>
 
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showUpdateModal = false">
+            <button
+              class="secondary-btn btn-cancel-danger"
+              @click="showUpdateModal = false"
+            >
               Batal
             </button>
             <button
@@ -2115,7 +2118,10 @@
           </div>
 
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showIniModal = false">
+            <button
+              class="secondary-btn btn-cancel-danger"
+              @click="showIniModal = false"
+            >
               Batal
             </button>
             <button
@@ -2420,7 +2426,7 @@
 
             <div class="modal-actions mt-4">
               <button
-                class="secondary-btn"
+                class="secondary-btn btn-cancel-danger"
                 @click="showMyWorkTaskModal = false"
               >
                 Batal
@@ -2517,7 +2523,7 @@
         <div class="modal-actions">
           <button
             type="button"
-            class="secondary-btn"
+            class="secondary-btn btn-cancel-danger"
             @click="showEditIniModal = false"
           >
             Batal
@@ -2636,7 +2642,7 @@
         <div class="modal-actions">
           <button
             type="button"
-            class="secondary-btn"
+            class="secondary-btn btn-cancel-danger"
             @click="showEditTaskModal = false"
           >
             Batal
@@ -2807,7 +2813,7 @@ const isAdmin = computed(
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
-const { confirm: confirmDialog } = useConfirm();
+const { confirm: confirmDialog, alert: alertDialog } = useConfirm();
 
 function getHeaders() {
   const token =
@@ -2865,11 +2871,21 @@ async function deleteInitiative(id) {
     } else {
       const err = await res.json().catch(() => ({}));
       errorMsg.value = err.message || "Gagal menghapus inisiatif";
-      alert(errorMsg.value);
+      await alertDialog({
+        title: "Gagal",
+        message: errorMsg.value,
+        danger: true,
+        confirmText: "Tutup",
+      });
     }
   } catch (err) {
     errorMsg.value = err.message || "Terjadi kesalahan jaringan";
-    alert(errorMsg.value);
+    await alertDialog({
+      title: "Gagal",
+      message: errorMsg.value,
+      danger: true,
+      confirmText: "Tutup",
+    });
   }
 }
 
@@ -2906,11 +2922,21 @@ async function deleteTask(id) {
     } else {
       const err = await res.json().catch(() => ({}));
       errorMsg.value = err.message || "Gagal menghapus Task";
-      alert(errorMsg.value);
+      await alertDialog({
+        title: "Gagal",
+        message: errorMsg.value,
+        danger: true,
+        confirmText: "Tutup",
+      });
     }
   } catch (err) {
     errorMsg.value = err.message || "Terjadi kesalahan jaringan";
-    alert(errorMsg.value);
+    await alertDialog({
+      title: "Gagal",
+      message: errorMsg.value,
+      danger: true,
+      confirmText: "Tutup",
+    });
   }
 }
 
@@ -3730,6 +3756,16 @@ async function submitUpdate() {
     return;
   }
 
+  const ok = await confirmDialog({
+    title: "Konfirmasi",
+    message: `Kirim update progress untuk task "${selectedTask.value.title}"?`,
+    confirmText: "Ya, Lanjutkan",
+    cancelText: "Batal",
+    type: "info",
+    danger: false,
+  });
+  if (!ok) return;
+
   saving.value = true;
   modalError.value = "";
   try {
@@ -3751,10 +3787,17 @@ async function submitUpdate() {
     showUpdateModal.value = false;
     await fetchMyWork(); // refresh
 
-    successMsg.value = data.message || "Update berhasil dikirim!";
+    const msg = data.message || "Update berhasil dikirim!";
+    successMsg.value = msg;
     setTimeout(() => {
       successMsg.value = "";
     }, 4000);
+    await alertDialog({
+      title: "Berhasil",
+      message: msg,
+      confirmText: "OK",
+      type: "success",
+    });
   } catch (err) {
     modalError.value = err.message;
   } finally {
@@ -3766,6 +3809,25 @@ async function submitIniUpdate() {
   if (iniForm.value.newValue === undefined || iniForm.value.newValue === null) {
     modalError.value = "Nilai realisasi wajib diisi";
     return;
+  }
+
+  // Jika inisiatif memiliki tasks, konfirmasi sebelum override agregasi task
+  if (selectedIni.value?.tasks && selectedIni.value.tasks.length > 0) {
+    const ok = await confirmDialog(
+      `Inisiatif ini memiliki ${selectedIni.value.tasks.length} Task dengan progress otomatis. ` +
+        "Apakah Anda yakin ingin menimpa (override) nilai progres inisiatif ini secara manual?",
+    );
+    if (!ok) return;
+  } else {
+    const ok = await confirmDialog({
+      title: "Konfirmasi",
+      message: `Kirim update progress untuk inisiatif "${selectedIni.value.title}"?`,
+      confirmText: "Ya, Lanjutkan",
+      cancelText: "Batal",
+      type: "info",
+      danger: false,
+    });
+    if (!ok) return;
   }
 
   saving.value = true;
@@ -3789,10 +3851,17 @@ async function submitIniUpdate() {
     showIniModal.value = false;
     await fetchMyWork(); // refresh
 
-    successMsg.value = data.message || "Laporan progress berhasil disimpan!";
+    const msg = data.message || "Laporan progress berhasil disimpan!";
+    successMsg.value = msg;
     setTimeout(() => {
       successMsg.value = "";
     }, 4000);
+    await alertDialog({
+      title: "Berhasil",
+      message: msg,
+      confirmText: "OK",
+      type: "success",
+    });
   } catch (err) {
     modalError.value = err.message;
   } finally {
@@ -4194,6 +4263,20 @@ function getGroupedInitiatives(initiatives) {
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.btn-cancel-danger {
+  color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
+  background-color: transparent !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-danger:hover {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
 }
 
 .modal-overlay {

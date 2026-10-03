@@ -722,14 +722,21 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
         return { ...task, progressPercent: Math.round(pct * 10) / 10 };
       });
 
-      const val =
-        init.achievedValue !== null && init.achievedValue !== undefined
-          ? init.achievedValue
-          : init.currentValue || 0;
-      const avgProgress =
-        init.targetValue > 0
-          ? calculateProgressPercent(val, init.targetValue, init.targetType)
-          : 0;
+      // Simple average across all tasks under initiative; fallback to own target/actual when no tasks
+      let avgProgress = 0;
+      if (taskProgress.length > 0) {
+        const sumTaskPct = taskProgress.reduce((sum, t) => sum + (t.progressPercent || 0), 0);
+        avgProgress = Math.round((sumTaskPct / taskProgress.length) * 10) / 10;
+      } else {
+        const val =
+          init.achievedValue !== null && init.achievedValue !== undefined
+            ? init.achievedValue
+            : init.currentValue || 0;
+        avgProgress =
+          init.targetValue > 0
+            ? calculateProgressPercent(val, init.targetValue, init.targetType)
+            : 0;
+      }
 
       const completedTasks = taskProgress.filter(
         (k) => k.progressPercent >= 100,
@@ -3561,16 +3568,30 @@ export async function cascadeInitiativeToMonthlyKr(
   let newKrValue = 0;
 
   if (isPercentUnit) {
-    // Untuk KR berbasis persentase ('%'), gunakan simple average percentage
+    // Untuk KR berbasis persentase ('%'), gunakan simple average percentage inisiatif
+    // Jika inisiatif memiliki task, gunakan simple average progress task; jika tidak, gunakan progress inisiatif itu sendiri
     const avgPercent =
       allInitiatives.reduce((sum, init) => {
         let initProgress = 0;
-        const val =
-          init.achievedValue !== null && init.achievedValue !== undefined
-            ? init.achievedValue
-            : (init.currentValue || 0);
-        if (init.targetValue > 0) {
-          initProgress = calculateProgressPercent(val, init.targetValue, init.targetType) / 100;
+        const activeTasks = init.tasks || [];
+        if (activeTasks.length > 0) {
+          const sumTaskPct = activeTasks.reduce((tSum, t) => {
+            const tTgt = t.targetValue || 0;
+            const pct =
+              tTgt > 0
+                ? calculateProgressPercent(t.currentValue, tTgt, t.targetType, t.baselineValue || 0)
+                : 0;
+            return tSum + pct;
+          }, 0);
+          initProgress = (sumTaskPct / activeTasks.length) / 100;
+        } else {
+          const val =
+            init.achievedValue !== null && init.achievedValue !== undefined
+              ? init.achievedValue
+              : (init.currentValue || 0);
+          if (init.targetValue > 0) {
+            initProgress = calculateProgressPercent(val, init.targetValue, init.targetType) / 100;
+          }
         }
         return sum + initProgress;
       }, 0) / allInitiatives.length;

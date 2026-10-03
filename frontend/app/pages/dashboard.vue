@@ -1,6 +1,10 @@
 <template>
   <div class="dashboard-root">
     <div class="dashboard-container">
+      <!-- Alert Messages -->
+      <div v-if="errorMsg" class="alert alert-error mb-4">{{ errorMsg }}</div>
+      <div v-if="successMsg" class="alert alert-success mb-4">{{ successMsg }}</div>
+
       <!-- Controls & Filter Row -->
       <section class="controls-card card">
         <div class="controls-content">
@@ -41,7 +45,7 @@
       </section>
 
       <!-- Task Summary Cards -->
-      <section class="task-grid">
+      <section class="task-grid task-summary-grid">
         <!-- Average Progress -->
         <div class="task-card card">
           <span class="task-label">Rata-Rata Progres</span>
@@ -623,6 +627,7 @@
           <div class="modal-header">
             <h3>Submit Update Progress Task</h3>
             <button
+              type="button"
               class="modal-close-btn"
               @click="showTaskSubmitModal = false"
             >
@@ -635,43 +640,19 @@
 
           <div class="info-box mb-4">
             Target:
-            <strong
-              >{{ selectedTask?.targetValue }}
-              {{ selectedTask?.unit || "" }}</strong
-            ><br />
+            <strong>{{ formatTargetValue(selectedTask?.targetValue, selectedTask?.unit) }}</strong><br />
             Saat ini:
-            <strong
-              >{{ selectedTask?.currentValue }}
-              {{ selectedTask?.unit || "" }}</strong
-            >
+            <strong>{{ formatTargetValue(selectedTask?.currentValue, selectedTask?.unit) }}</strong>
           </div>
 
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              font-weight: 500;
-              margin-bottom: 4px;
-              color: #475569;
-            "
-            >Nilai Baru (Kumulatif) *</label
-          >
+          <label class="modal-label">Nilai Baru (Kumulatif) *</label>
           <input
             v-model.number="submitNewValue"
             type="number"
             class="form-input"
           />
 
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              font-weight: 500;
-              margin-bottom: 4px;
-              color: #475569;
-            "
-            >Catatan Progress</label
-          >
+          <label class="modal-label">Catatan Progress</label>
           <textarea
             v-model="submitNote"
             class="form-input"
@@ -679,21 +660,19 @@
             placeholder="Apa yang sudah dikerjakan?"
           ></textarea>
 
-          <label
-            style="
-              display: block;
-              font-size: 13px;
-              font-weight: 500;
-              margin-bottom: 4px;
-              color: #475569;
-            "
-            >Link Dokumentasi Hasil (opsional)</label
-          >
+          <label class="modal-label">Link Dokumentasi Hasil (opsional)</label>
           <input
             v-model="submitLink"
             type="url"
             class="form-input"
             placeholder="https://example.com/..."
+          />
+
+          <!-- KpiSelector jika task memiliki KPI terlampir -->
+          <KpiSelector
+            v-if="selectedTask?.kpis?.length"
+            v-model="selectedTask.kpis"
+            :showCurrentValue="true"
           />
 
           <div
@@ -707,6 +686,10 @@
           <div v-else class="info-box mb-4">
             Update akan dikirim ke Leader/Manager untuk disetujui terlebih
             dahulu.
+          </div>
+
+          <div v-if="taskSubmitError" class="alert alert-error mb-4">
+            {{ taskSubmitError }}
           </div>
 
           <!-- Riwayat Task updates sebelumnya jika ada -->
@@ -763,11 +746,20 @@
           </div>
 
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showTaskSubmitModal = false">
+            <button
+              type="button"
+              class="secondary-btn btn-cancel-danger"
+              @click="showTaskSubmitModal = false"
+            >
               Batal
             </button>
-            <button class="primary-btn" @click="submitTaskUpdate">
-              Kirim Update
+            <button
+              type="button"
+              class="primary-btn"
+              :disabled="submittingTask"
+              @click="submitTaskUpdate"
+            >
+              {{ submittingTask ? "Mengirim..." : "Kirim Update" }}
             </button>
           </div>
         </div>
@@ -887,7 +879,11 @@
             placeholder="Alasan penolakan (wajib diisi)..."
           ></textarea>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showRejectModal = false">
+            <button
+              type="button"
+              class="secondary-btn btn-cancel-danger"
+              @click="showRejectModal = false"
+            >
               Batal
             </button>
             <button class="danger-btn" @click="handleReject">
@@ -946,7 +942,11 @@
             ></textarea>
           </div>
           <div class="modal-actions">
-            <button class="secondary-btn" @click="showLeaderKrModal = false">
+            <button
+              type="button"
+              class="secondary-btn btn-cancel-danger"
+              @click="showLeaderKrModal = false"
+            >
               Batal
             </button>
             <button
@@ -1161,10 +1161,14 @@
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "../stores/auth";
 import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
+import { formatTargetValue } from "~/utils/formatters";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
-const { confirm: confirmDialog } = useConfirm();
+const { confirm: confirmDialog, alert: alertDialog } = useConfirm();
+
+const successMsg = ref("");
+const errorMsg = ref("");
 
 // Ambil role dari auth store
 const userRole = computed(() => auth.user?.role || "");
@@ -1675,6 +1679,8 @@ const selectedTask = ref(null);
 const submitNewValue = ref(0);
 const submitNote = ref("");
 const submitLink = ref("");
+const submittingTask = ref(false);
+const taskSubmitError = ref("");
 
 const showDetailModal = ref(false);
 const detailData = ref({
@@ -1711,37 +1717,73 @@ function openDetailModal(title, type, update, submitterName) {
 function openTaskSubmitModal(task) {
   if (isTaskDone(task)) return;
   selectedTask.value = task;
-  submitNewValue.value = task.currentValue;
+  submitNewValue.value = task.currentValue || 0;
   submitNote.value = "";
   submitLink.value = "";
+  taskSubmitError.value = "";
   showTaskSubmitModal.value = true;
 }
 
 async function submitTaskUpdate() {
   if (!selectedTask.value) return;
-  const token = auth.token || localStorage.getItem("token");
-  const res = await fetch(
-    `${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+  if (submitNewValue.value === undefined || submitNewValue.value === null) {
+    taskSubmitError.value = "Nilai baru wajib diisi";
+    return;
+  }
+
+  const ok = await confirmDialog({
+    title: "Konfirmasi",
+    message: `Kirim update progress untuk task "${selectedTask.value.title}"?`,
+    confirmText: "Ya, Lanjutkan",
+    cancelText: "Batal",
+    type: "info",
+    danger: false,
+  });
+  if (!ok) return;
+
+  submittingTask.value = true;
+  taskSubmitError.value = "";
+  try {
+    const token = auth.token || localStorage.getItem("token");
+    const res = await fetch(
+      `${config.public.apiBase}/initiatives/tasks/${selectedTask.value.id}/updates`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          newValue: submitNewValue.value,
+          note: submitNote.value,
+          link: submitLink.value,
+        }),
       },
-      body: JSON.stringify({
-        newValue: submitNewValue.value,
-        note: submitNote.value,
-        link: submitLink.value,
-      }),
-    },
-  );
-  if (res.ok) {
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal mengirim update");
+    }
+    const data = await res.json().catch(() => ({}));
     showTaskSubmitModal.value = false;
-    alert("Update berhasil dikirim, menunggu persetujuan Manager.");
+    const msg =
+      data?.message || "Update berhasil dikirim, menunggu persetujuan Manager.";
+    successMsg.value = msg;
+    setTimeout(() => {
+      successMsg.value = "";
+    }, 4000);
     await fetchDashboardData();
-  } else {
-    const err = await res.json();
-    alert(err.message || "Gagal mengirim update");
+    await alertDialog({
+      title: "Berhasil",
+      message: msg,
+      confirmText: "OK",
+      type: "success",
+    });
+  } catch (err) {
+    taskSubmitError.value =
+      err.message || "Terjadi kesalahan saat mengirim update";
+  } finally {
+    submittingTask.value = false;
   }
 }
 
@@ -2040,6 +2082,10 @@ async function handleReject() {
   gap: 16px;
 }
 
+.task-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @media (max-width: 1200px) {
   .task-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2047,7 +2093,8 @@ async function handleReject() {
 }
 
 @media (max-width: 768px) {
-  .task-grid {
+  .task-grid,
+  .task-summary-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -3596,6 +3643,67 @@ button.task-count-mini {
 
 .approvals-section .secondary-btn.small:hover {
   background-color: #e2e8f0;
+}
+
+.secondary-btn {
+  background: white;
+  color: #475569;
+  border: 1px solid var(--card-border, #cbd5e1);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+  background-color: var(--bg-page, #f8fafc);
+}
+
+.btn-cancel-danger {
+  color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  background-color: transparent !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-danger:hover {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.modal-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  color: #475569;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.alert-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 /* Cross Department Dashboard Widget Styles */

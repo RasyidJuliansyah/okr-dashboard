@@ -27,6 +27,20 @@
             <line x1="14" y1="11" x2="14" y2="17"></line>
           </svg>
         </div>
+        <div v-else-if="modalOptions.type === 'success'" class="confirm-icon-wrapper success">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
         <div v-else class="confirm-icon-wrapper info">
           <svg
             width="28"
@@ -54,6 +68,7 @@
 
         <div class="confirm-modal-actions">
           <button
+            v-if="modalOptions.cancelText"
             type="button"
             class="confirm-btn cancel"
             @click="onCancel"
@@ -63,10 +78,17 @@
           <button
             type="button"
             class="confirm-btn"
-            :class="modalOptions.danger ? 'danger' : 'primary'"
+            :class="[
+              modalOptions.danger
+                ? 'danger'
+                : modalOptions.type === 'success'
+                  ? 'success'
+                  : 'primary',
+              { 'single-btn': !modalOptions.cancelText }
+            ]"
             @click="onConfirm"
           >
-            {{ modalOptions.confirmText }}
+            {{ modalOptions.confirmText || 'OK' }}
           </button>
         </div>
       </div>
@@ -127,6 +149,11 @@ const { isVisible, modalOptions, onConfirm, onCancel } = useConfirm();
   color: #0284c7;
 }
 
+.confirm-icon-wrapper.success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
 .confirm-modal-title {
   margin: 0 0 8px;
   font-size: 18px;
@@ -185,6 +212,20 @@ const { isVisible, modalOptions, onConfirm, onCancel } = useConfirm();
 
 .confirm-btn.primary:hover {
   background: #1d4ed8;
+}
+
+.confirm-btn.success {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.confirm-btn.success:hover {
+  background: #15803d;
+}
+
+.confirm-btn.single-btn {
+  max-width: 180px;
+  margin: 0 auto;
 }
 
 @keyframes fadeIn {
