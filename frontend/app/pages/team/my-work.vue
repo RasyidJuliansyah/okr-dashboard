@@ -245,10 +245,12 @@
                       class="action-btn"
                       title="Edit Inisiatif"
                       style="
-                        padding: 2px 6px;
-                        font-size: 11px;
+                        background-color: transparent;
+                        border-color: transparent;
+                        border-radius: 6px;
                         cursor: pointer;
-                        color: #475569;
+                        display: inline-flex;
+                        align-items: center;
                       "
                       @click="openEditIniModal(ini)"
                     >
@@ -272,7 +274,14 @@
                       v-if="canDeleteInitiative(ini)"
                       class="action-btn danger"
                       title="Hapus Inisiatif"
-                      style="padding: 2px 6px; font-size: 11px; cursor: pointer"
+                      style="
+                        background-color: transparent;
+                        border-color: transparent;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                      "
                       @click="deleteInitiative(ini.id)"
                     >
                       <svg
@@ -1594,6 +1603,7 @@
                       style="
                         background-color: transparent;
                         border-color: transparent;
+                        border-radius: 6px;
                         cursor: pointer;
                         display: inline-flex;
                         align-items: center;

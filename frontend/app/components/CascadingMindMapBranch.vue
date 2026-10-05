@@ -1,5 +1,11 @@
 <template>
-  <div class="branch" :class="{ collapsed: isCollapsed }">
+  <div
+    class="branch"
+    :class="[
+      { collapsed: isCollapsed },
+      isDimmed ? 'is-dimmed' : 'is-focused',
+    ]"
+  >
     <button
       type="button"
       class="card"
@@ -79,6 +85,7 @@
           :node="child"
           :is-root="false"
           :selected-node-id="selectedNodeId"
+          :active-pillar-name="activePillarName"
           :collapsed-map="collapsedMap"
           @select-node="$emit('select-node', $event)"
           @toggle-node="$emit('toggle-node', $event)"
@@ -114,11 +121,13 @@ const props = withDefaults(
     node: MindMapNode;
     isRoot?: boolean;
     selectedNodeId?: string | null;
+    activePillarName?: string | null;
     collapsedMap?: Record<string, boolean>;
   }>(),
   {
     isRoot: false,
     selectedNodeId: null,
+    activePillarName: null,
     collapsedMap: () => ({}),
   },
 );
@@ -138,6 +147,13 @@ const isCollapsed = computed(() => {
     return props.collapsedMap[props.node.id];
   }
   return false;
+});
+
+const isDimmed = computed(() => {
+  if (!props.activePillarName) return false;
+  if (props.node.type === "ROOT") return false;
+  const pillar = props.node.lineage?.pillar;
+  return pillar !== props.activePillarName;
 });
 
 function handleCardClick() {
@@ -190,6 +206,15 @@ const statusClass = computed(() => {
   display: flex;
   align-items: center;
   width: max-content;
+  transition: opacity 0.25s ease;
+}
+
+.branch.is-dimmed {
+  opacity: 0.4;
+}
+
+.branch.is-focused {
+  opacity: 1;
 }
 
 .stub {

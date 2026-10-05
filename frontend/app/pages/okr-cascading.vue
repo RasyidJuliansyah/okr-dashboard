@@ -365,6 +365,7 @@
           :rootData="rootData"
           :perspectives="perspectives"
           :selectedNodeId="selectedNode?.id"
+          :activePillarName="activePillarName"
           :zoomLevel="zoomLevel"
           @update:zoomLevel="zoomLevel = $event"
           @select-node="handleNodeSelect"
@@ -413,12 +414,20 @@ const API = config.public?.apiBase || "http://localhost:3001/api";
 
 const viewMode = ref<"mindmap" | "matrix">("mindmap");
 const zoomLevel = ref<number>(100);
-const isAllExpanded = ref<boolean>(true);
+const isAllExpanded = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
 const lastSyncTime = ref<string>("Baru saja");
 const mindMapRef = ref<any>(null);
 
 const selectedNode = ref<any>(null);
+
+const activePillarName = computed(() => {
+  if (!selectedNode.value) return null;
+  if (selectedNode.value.type === "PILLAR") {
+    return selectedNode.value.title || selectedNode.value.name || null;
+  }
+  return selectedNode.value.lineage?.pillar || selectedNode.value.perspective || null;
+});
 
 const rootData = reactive({
   title: "BSC-OKR Suite",
