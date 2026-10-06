@@ -1715,10 +1715,10 @@ onMounted(async () => {
 }
 
 .card {
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   border-radius: 14px;
   padding: 1.5rem;
-  border: 1px solid #f0f3f9;
+  border: 1px solid var(--card-border, #f0f3f9);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 

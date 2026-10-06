@@ -187,6 +187,8 @@
         </svg>
       </button>
 
+      <ThemeToggle />
+
       <div v-if="auth.user" class="notif-wrapper">
         <button
           class="notif-bell-btn"
@@ -477,8 +479,8 @@ onUnmounted(() => {
 .app-header {
   height: 72px;
   min-height: 72px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f3f9;
+  background: var(--header-bg, #ffffff);
+  border-bottom: 1px solid var(--border-color, #f0f3f9);
   padding: 0 32px;
   display: flex;
   align-items: center;
@@ -487,6 +489,7 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 50;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .header-left {
@@ -498,9 +501,9 @@ onUnmounted(() => {
 .hamburger-btn {
   display: flex;
   background: transparent;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 8px;
-  color: #5e718d;
+  color: var(--text-body, #5e718d);
   cursor: pointer;
   padding: 6px;
   align-items: center;
@@ -510,9 +513,9 @@ onUnmounted(() => {
 }
 
 .hamburger-btn:hover {
-  background-color: #f8fafc;
+  background-color: var(--color-field, #f8fafc);
   color: #0e97d6;
-  border-color: #cbd5e1;
+  border-color: var(--border-color, #cbd5e1);
 }
 
 @media (max-width: 1024px) {
@@ -526,7 +529,7 @@ onUnmounted(() => {
   font-weight: 600;
   font-size: 27px;
   line-height: 32px;
-  color: #2d3643;
+  color: var(--text-heading, #2d3643);
   margin: 0;
 }
 
@@ -551,8 +554,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  background: var(--card-bg, #f8fafc);
+  border: 1.5px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
   padding: 6px 14px;
   cursor: pointer;
@@ -561,8 +564,8 @@ onUnmounted(() => {
 }
 
 .context-switcher-btn:hover {
-  background: #ffffff;
-  border-color: #cbd5e1;
+  background: var(--color-field, #ffffff);
+  border-color: var(--border-color, #cbd5e1);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -593,7 +596,7 @@ onUnmounted(() => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   line-height: 1.1;
 }
 
@@ -604,12 +607,12 @@ onUnmounted(() => {
 .context-text {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
   line-height: 1.2;
 }
 
 .chevron-icon {
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   transition: transform 0.2s;
   flex-shrink: 0;
 }
@@ -625,9 +628,9 @@ onUnmounted(() => {
   width: 340px;
   max-height: 480px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
   box-shadow:
     0 10px 25px -5px rgba(0, 0, 0, 0.1),
     0 8px 10px -6px rgba(0, 0, 0, 0.05);
@@ -637,8 +640,8 @@ onUnmounted(() => {
 
 .context-dropdown-header {
   padding: 14px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+  background: var(--bg-page, #f8fafc);
   border-radius: 14px 14px 0 0;
 }
 
@@ -651,7 +654,7 @@ onUnmounted(() => {
 .dropdown-title {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-heading, #0f172a);
 }
 
 .switching-indicator {
@@ -663,7 +666,7 @@ onUnmounted(() => {
 
 .dropdown-sub {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   margin: 3px 0 0;
   line-height: 1.3;
 }
@@ -681,7 +684,7 @@ onUnmounted(() => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
 }
 
 .context-option-item {
@@ -699,7 +702,7 @@ onUnmounted(() => {
 }
 
 .context-option-item:hover {
-  background: #f1f5f9;
+  background: var(--color-field, #f1f5f9);
 }
 
 .context-option-item.active {
@@ -748,15 +751,15 @@ onUnmounted(() => {
   font-size: 9px;
   font-weight: 700;
   padding: 1px 5px;
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--color-field, #e2e8f0);
+  color: var(--text-body, #475569);
   border-radius: 4px;
 }
 
 .option-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -764,7 +767,7 @@ onUnmounted(() => {
 
 .option-desc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   line-height: 1.2;
 }
 
@@ -781,7 +784,7 @@ onUnmounted(() => {
 
 .empty-context-hint {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   padding: 10px;
   text-align: center;
 }
@@ -793,22 +796,22 @@ onUnmounted(() => {
 .notif-bell-btn {
   position: relative;
   background: transparent;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 50%;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5e718d;
+  color: var(--text-body, #5e718d);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .notif-bell-btn:hover {
-  background: #f8fafc;
+  background: var(--color-field, #f8fafc);
   color: #0e97d6;
-  border-color: #cbd5e1;
+  border-color: var(--border-color, #cbd5e1);
 }
 
 .notif-badge {
@@ -831,8 +834,8 @@ onUnmounted(() => {
   right: 0;
   top: 48px;
   width: 320px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   z-index: 100;
@@ -844,14 +847,14 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+  background: var(--bg-page, #f8fafc);
 }
 
 .notif-header-title {
   font-weight: 600;
   font-size: 14px;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
 }
 
 .notif-mark-all-btn {
@@ -875,42 +878,42 @@ onUnmounted(() => {
 .notif-empty {
   padding: 24px 16px;
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
   font-size: 13px;
 }
 
 .notif-item {
   padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
   cursor: pointer;
   transition: background-color 0.15s;
 }
 
 .notif-item:hover {
-  background-color: #f8fafc;
+  background-color: var(--color-field, #f8fafc);
 }
 
 .notif-item.unread {
-  background-color: #f0f9ff;
+  background-color: rgba(14, 151, 214, 0.08);
   border-left: 3px solid #0e97d6;
 }
 
 .notif-item-title {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
   margin-bottom: 2px;
 }
 
 .notif-item-text {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   margin-bottom: 4px;
 }
 
 .notif-item-time {
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
 }
 
 .user-info {
@@ -950,6 +953,6 @@ onUnmounted(() => {
   font-family: "Rubik", sans-serif;
   font-size: 17px;
   font-weight: 500;
-  color: #5e718d;
+  color: var(--text-heading, #5e718d);
 }
 </style>

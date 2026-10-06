@@ -255,7 +255,7 @@
       <!-- Admin divider when collapsed -->
       <div
         v-if="!isOpen && isAdmin"
-        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
+        style="width: 24px; height: 1px; background: var(--border-color, #e2e8f0); margin: 4px auto"
       ></div>
 
       <!-- Admin menu - hanya muncul setelah login sebagai admin -->
@@ -447,7 +447,7 @@
       <!-- Manager divider when collapsed -->
       <div
         v-if="!isOpen && (isManager || isAdmin || isCLevel)"
-        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
+        style="width: 24px; height: 1px; background: var(--border-color, #e2e8f0); margin: 4px auto"
       ></div>
 
       <!-- Manager menu -->
@@ -533,7 +533,7 @@
         v-if="
           !isOpen && (isTeam || isLeader || isManager || isAdmin || isCLevel)
         "
-        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
+        style="width: 24px; height: 1px; background: var(--border-color, #e2e8f0); margin: 4px auto"
       ></div>
 
       <!-- Team menu -->
@@ -662,8 +662,8 @@ const sidebarContainerStyle = computed(() => {
     position: "sticky",
     left: "0",
     top: "0",
-    background: "#ffffff",
-    borderRight: "1px solid #f0f3f9",
+    background: "var(--sidebar-bg, #ffffff)",
+    borderRight: "1px solid var(--border-color, #f0f3f9)",
     boxShadow: "0 0 10px rgba(0, 0, 0, 0.05)",
     display: "flex",
     flexDirection: "column",
@@ -674,7 +674,7 @@ const sidebarContainerStyle = computed(() => {
     visibility: "visible",
     opacity: "1",
     transition:
-      "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+      "width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease",
   };
 });
 
@@ -720,7 +720,7 @@ const navGroupLabelStyle = computed(() => ({
   fontFamily: "'Rubik', sans-serif",
   fontSize: "11px",
   fontWeight: "600",
-  color: "#8897ae",
+  color: "var(--text-muted, #8897ae)",
   letterSpacing: "0.8px",
   margin: "0 0 6px 4px",
 }));
@@ -728,7 +728,7 @@ const navGroupLabelStyle = computed(() => ({
 const sidebarFooterStyle = computed(() => ({
   flexShrink: "0",
   padding: props.isOpen ? "16px" : "14px 8px",
-  borderTop: "1px solid #f0f3f9",
+  borderTop: "1px solid var(--border-color, #f0f3f9)",
   display: "flex",
   alignItems: "center",
   justifyContent: props.isOpen ? "space-between" : "center",
@@ -747,7 +747,7 @@ const footerActionStyle = computed(() => {
       borderRadius: "12px",
       border: "none",
       background: "none",
-      color: "#5e718d",
+      color: "var(--text-body, #5e718d)",
       cursor: "pointer",
       textDecoration: "none",
       transition: "background-color 150ms ease-out, color 150ms ease-out",
@@ -764,7 +764,7 @@ const footerActionStyle = computed(() => {
     borderRadius: "8px",
     border: "none",
     background: "none",
-    color: "#5e718d",
+    color: "var(--text-body, #5e718d)",
     fontFamily: "'Rubik', sans-serif",
     fontSize: "14px",
     fontWeight: "500",
@@ -789,7 +789,7 @@ function navItemStyle(path) {
       height: "44px",
       borderRadius: "12px",
       textDecoration: "none",
-      color: active ? "#ffffff" : "#5e718d",
+      color: active ? "#ffffff" : "var(--text-body, #5e718d)",
       backgroundColor: active ? "#0e97d6" : "transparent",
       transition: "background-color 150ms ease-out, color 150ms ease-out",
       cursor: "pointer",
@@ -808,7 +808,7 @@ function navItemStyle(path) {
     fontFamily: "'Rubik', sans-serif",
     fontSize: "16px",
     fontWeight: "500",
-    color: active ? "#ffffff" : "#5e718d",
+    color: active ? "#ffffff" : "var(--text-body, #5e718d)",
     backgroundColor: active ? "#0e97d6" : "transparent",
     transition: "background-color 150ms ease-out, color 150ms ease-out",
     cursor: "pointer",

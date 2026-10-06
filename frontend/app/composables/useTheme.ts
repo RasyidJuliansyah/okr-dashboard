@@ -16,10 +16,14 @@ export function useTheme() {
 
   onMounted(() => {
     const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    isDark.value = saved ? saved === "dark" : prefersDark;
+    if (saved !== null) {
+      isDark.value = saved === "dark";
+    } else {
+      isDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
     applyTheme(isDark.value);
   });
 
   return { isDark, toggleTheme };
 }
+

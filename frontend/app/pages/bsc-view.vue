@@ -404,12 +404,13 @@ onMounted(() => {
 }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e4e4e4);
   border-radius: 16px;
   padding: 24px;
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* Intro */
@@ -417,12 +418,12 @@ onMounted(() => {
   font-size: 23px;
   margin: 0 0 6px 0;
   font-weight: 600;
-  color: var(--color-gamma-150);
+  color: var(--text-heading, #1e293b);
 }
 
 .section-desc {
   font-size: 17px;
-  color: #5e718d;
+  color: var(--text-body, #5e718d);
   margin: 0;
   line-height: 1.5;
 }
@@ -491,14 +492,14 @@ onMounted(() => {
   font-size: 21px;
   font-weight: 600;
   margin: 0;
-  color: var(--color-gamma-150);
+  color: var(--text-heading, #1e293b);
 }
 
 .q-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
   padding-top: 16px;
 }
 
@@ -511,14 +512,14 @@ onMounted(() => {
 .q-label {
   font-size: 14px;
   text-transform: uppercase;
-  color: #5e718d;
+  color: var(--text-muted, #5e718d);
   font-weight: 500;
 }
 
 .q-val {
   font-size: 23px;
   font-weight: 700;
-  color: #5e718d;
+  color: var(--text-heading, #5e718d);
 }
 
 /* Theme value highlights */
@@ -540,8 +541,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 15px;
-  color: #5e718d;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, #5e718d);
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.04));
   padding-top: 12px;
   margin-top: auto;
 }
@@ -580,7 +581,7 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   padding-bottom: 20px;
 }
 
@@ -598,7 +599,7 @@ onMounted(() => {
   font-size: 21px;
   font-weight: 600;
   margin: 0;
-  color: var(--color-gamma-150);
+  color: var(--text-heading, #1e293b);
 }
 
 .dd-metrics-summary {
@@ -613,7 +614,7 @@ onMounted(() => {
   border-radius: 12px;
   background: var(--color-black-badge);
   color: var(--color-white);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
 }
 
 .status-count-pill.ontrack strong {
@@ -633,10 +634,11 @@ onMounted(() => {
 }
 
 .kr-drilldown-item {
-  background: #ffffff;
-  border: 1px solid #d7dfe9;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #d7dfe9);
   border-radius: 12px;
   padding: 16px 20px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .kr-dd-top {
@@ -649,7 +651,7 @@ onMounted(() => {
 
 .kr-parent-obj {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted, #8897ae);
   display: block;
   margin-bottom: 4px;
   font-weight: 500;
@@ -659,7 +661,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
-  color: #5e718d;
+  color: var(--text-heading, #1e293b);
 }
 
 /* Progress bar */
@@ -668,13 +670,13 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
-  color: #5e718d;
+  color: var(--text-body, #5e718d);
 }
 
 .kr-progress-track {
   height: 6px;
-  background: #f0f3f9;
-  border-radius: 3px #f0f3f9;
+  background: var(--color-field, #f0f3f9);
+  border-radius: 3px;
   flex-grow: 1;
   overflow: hidden;
 }
@@ -704,13 +706,13 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   font-size: 15px;
-  color: #5e718d;
-  border-top: 1px dashed rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, #5e718d);
+  border-top: 1px dashed var(--border-color, rgba(255, 255, 255, 0.04));
   padding-top: 10px;
 }
 
 .kr-dd-footer strong {
-  color: #5e718d;
+  color: var(--text-heading, #5e718d);
 }
 
 /* Badges */
@@ -730,7 +732,6 @@ onMounted(() => {
 .status-badge.atrisk {
   background: var(--color-yellow-badge);
   color: var(--color-yellow);
-  color: #ffcc66;
 }
 
 .status-badge.offtrack {
@@ -743,7 +744,7 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 40px;
-  color: #5e718d;
+  color: var(--text-muted, #5e718d);
   font-size: 17px;
 }
 </style>

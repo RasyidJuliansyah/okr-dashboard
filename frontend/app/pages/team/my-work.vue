@@ -149,9 +149,9 @@
         class="team-initiatives-section mb-6 card"
         style="
           padding: 16px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--card-border, #e2e8f0);
           border-radius: 12px;
-          background: #fff;
+          background: var(--card-bg, #fff);
         "
       >
         <div
@@ -221,10 +221,10 @@
                         font-size: 11px;
                         padding: 2px 8px;
                         border-radius: 6px;
-                        border: 1px solid #cbd5e1;
-                        background: #f8fafc;
+                        border: 1px solid var(--border-color, #cbd5e1);
+                        background: var(--card-bg, #f8fafc);
                         font-weight: 600;
-                        color: #334155;
+                        color: var(--text-heading, #334155);
                         cursor: pointer;
                       "
                       @change="
@@ -338,7 +338,7 @@
                   v-if="ini.progressUpdates?.length > 0"
                   class="ini-updates"
                   style="
-                    background: #f8fafc;
+                    background: var(--bg-page, #f8fafc);
                     padding: 10px;
                     border-radius: 8px;
                     font-size: 12px;
@@ -624,10 +624,10 @@
                   font-size: 14px;
                   padding: 8px 12px;
                   border-radius: 6px;
-                  border: 1px solid #cbd5e1;
-                  background: #f8fafc;
+                  border: 1px solid var(--border-color, #cbd5e1);
+                  background: var(--card-bg, #f8fafc);
                   font-weight: 600;
-                  color: #334155;
+                  color: var(--text-heading, #334155);
                   cursor: pointer;
                   flex: 1;
                 "
@@ -867,9 +867,9 @@
             class="mb-6 card"
             style="
               padding: 16px;
-              border: 1px solid #e2e8f0;
+              border: 1px solid var(--card-border, #e2e8f0);
               border-radius: 12px;
-              background: #fff;
+              background: var(--card-bg, #fff);
             "
           >
             <div
@@ -954,10 +954,10 @@
                             font-size: 11px;
                             padding: 2px 8px;
                             border-radius: 6px;
-                            border: 1px solid #cbd5e1;
-                            background: #f8fafc;
+                            border: 1px solid var(--border-color, #cbd5e1);
+                            background: var(--card-bg, #f8fafc);
                             font-weight: 600;
-                            color: #334155;
+                            color: var(--text-heading, #334155);
                             cursor: pointer;
                           "
                           @change="
@@ -1064,7 +1064,7 @@
                     <div
                       class="ini-updates"
                       style="
-                        background: #f8fafc;
+                        background: var(--bg-page, #f8fafc);
                         padding: 10px;
                         border-radius: 8px;
                         font-size: 12px;
@@ -1282,10 +1282,10 @@
                         font-size: 14px;
                         padding: 4px 8px;
                         border-radius: 6px;
-                        border: 1px solid #cbd5e1;
-                        background: #f8fafc;
+                        border: 1px solid var(--border-color, #cbd5e1);
+                        background: var(--card-bg, #f8fafc);
                         font-weight: 600;
-                        color: #334155;
+                        color: var(--text-heading, #334155);
                         cursor: pointer;
                         flex: 1;
                       "
@@ -1798,11 +1798,11 @@
               class="val"
               style="
                 display: block;
-                background: #f8fafc;
+                background: var(--bg-page, #f8fafc);
                 padding: 10px;
                 border-radius: 8px;
                 font-style: italic;
-                border: 1px solid #e2e8f0;
+                border: 1px solid var(--border-color, #e2e8f0);
                 white-space: pre-line;
               "
             >
@@ -3015,7 +3015,7 @@ function getGroupedInitiatives(initiatives) {
 .admin-root {
   min-height: 100vh;
   padding: 32px;
-  background: var(--bg-color, #f8fafc);
+  background: var(--bg-page, #f8fafc);
 }
 .admin-content {
   max-width: 1000px;
@@ -3025,10 +3025,10 @@ function getGroupedInitiatives(initiatives) {
   gap: 24px;
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   border-radius: 16px;
   padding: 24px;
-  border: 2px solid var(--border-color, #e2e8f0);
+  border: 1px solid var(--card-border, #e2e8f0);
 }
 .header-section {
   display: flex;
@@ -3038,12 +3038,12 @@ function getGroupedInitiatives(initiatives) {
 .header-title h2 {
   font-size: 24px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
   margin: 0 0 8px 0;
 }
 .section-desc {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
   margin: 0;
 }
 
@@ -3154,7 +3154,7 @@ function getGroupedInitiatives(initiatives) {
 .task-header h3 {
   font-size: 16px;
   margin: 8px;
-  color: #0f172a;
+  color: var(--text-heading, #0f172a);
   flex: 1;
 }
 .status-badge {
@@ -3167,11 +3167,11 @@ function getGroupedInitiatives(initiatives) {
 }
 
 .task-context {
-  background: #f8fafc;
+  background: var(--bg-page, #f8fafc);
   padding: 12px;
   border-radius: 8px;
   font-size: 13px;
-  color: #475569;
+  color: var(--text-body, #475569);
 }
 .task-context p {
   margin: 0 0 4px 0;
@@ -3189,11 +3189,11 @@ function getGroupedInitiatives(initiatives) {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #475569;
+  color: var(--text-body, #475569);
 }
 .progress-bar-container {
   height: 8px;
-  background: #e2e8f0;
+  background: var(--border-color, #e2e8f0);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -3206,25 +3206,25 @@ function getGroupedInitiatives(initiatives) {
 .task-updates h4 {
   margin: 0 0 8px 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-muted, #64748b);
 }
 .recent-update {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 6px;
   font-size: 12px;
 }
 .update-date {
-  color: #94a3b8;
+  color: var(--text-muted, #94a3b8);
 }
 .update-val {
   display: flex;
   margin: 4px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-heading, #1e293b);
 }
 .update-status {
   font-weight: 600;
@@ -3293,9 +3293,9 @@ function getGroupedInitiatives(initiatives) {
   margin-top: auto;
 }
 .secondary-btn {
-  background: white;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: var(--card-bg, white);
+  color: var(--text-body, #475569);
+  border: 1px solid var(--border-color, #cbd5e1);
   padding: 8px 16px;
   border-radius: 8px;
   font-weight: 500;
@@ -3315,7 +3315,7 @@ function getGroupedInitiatives(initiatives) {
   z-index: 1000;
 }
 .modal-box {
-  background: white;
+  background: var(--card-bg, white);
   border-radius: 16px;
   padding: 24px;
   width: 100%;
@@ -3326,11 +3326,11 @@ function getGroupedInitiatives(initiatives) {
   box-sizing: border-box;
 }
 .info-box {
-  background: #f8fafc;
+  background: var(--bg-page, #f8fafc);
   padding: 12px;
   border-radius: 8px;
   font-size: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
 }
 .form-input {
   width: 100%;
@@ -3676,8 +3676,8 @@ function getGroupedInitiatives(initiatives) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 8px;
   padding: 10px 12px;
   box-sizing: border-box;

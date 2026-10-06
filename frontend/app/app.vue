@@ -66,6 +66,15 @@ const auth = useAuthStore();
 const route = useRoute();
 const config = useRuntimeConfig();
 
+useHead({
+  script: [
+    {
+      children: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark-theme");}}catch(e){}})();`,
+      tagPosition: "head",
+    },
+  ],
+});
+
 const isSidebarOpen = ref(true);
 
 onMounted(() => {
@@ -268,6 +277,8 @@ const pageTitle = computed(() => {
   --card-bg: #ffffff;
   --card-border: #e4e4e4;
   --content-bg: #fafcff;
+  --bg-color: #f8fafc;
+  --bg-primary: #f8fafc;
   --color-green: #009c29;
   --color-purple: #02219e;
   --color-red: #eb3123;
@@ -316,6 +327,15 @@ const pageTitle = computed(() => {
   --color-text-regular: var(--color-gamma-150);
   --color-text-subtle: var(--color-gamma-250);
   --color-text-accent: var(--color-primary-tone);
+
+  /* Layout Theme Tokens (Light Default) */
+  --bg-page: #f8fafc;
+  --header-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --text-heading: #1e293b;
+  --text-body: #475569;
+  --text-muted: #8897ae;
 }
 
 :root {
@@ -397,38 +417,55 @@ const pageTitle = computed(() => {
 }
 
 /* Dark Theme Override */
-/* .dark-theme {
-  --bg-primary: #0b0f19;
-  --bg-secondary: #131a2c;
-  --bg-card: rgba(22, 30, 49, 0.85);
-  --bg-input: rgba(255, 255, 255, 0.04);
-  --border-color: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+html.dark-theme,
+.dark-theme {
+  --bg-page: #0b1322;
+  --bg-color: #0b1322;
+  --bg-primary: #0b1322;
+  --header-bg: #0f172a;
+  --sidebar-bg: #0b1322;
+  --card-bg: #131d31;
+  --card-border: #1e293b;
+  --content-bg: #0b1322;
+  --border-color: #1e293b;
+  --text-heading: #f8fafc;
+  --text-body: #94a3b8;
   --text-muted: #64748b;
+  --color-field: #162035;
 
-  --primary: #38b6f0;
-  --primary-dark: #0e97d6;
-  --primary-glow: rgba(56, 182, 240, 0.15);
-  --primary-light: rgba(56, 182, 240, 0.08);
-  --purple: #a78bfa;
-  --purple-glow: rgba(167, 139, 250, 0.15);
+  /* Inverted gamma tokens */
+  --color-gamma-900: #1a2234;
+  --color-gamma-850: #1e293b;
+  --color-gamma-750: #334155;
+  --color-gamma-700: #475569;
+  --color-gamma-650: #64748b;
+  --color-gamma-600: #8897ae;
+  --color-gamma-550: #94a3b8;
+  --color-gamma-500: #a1a1a1;
+  --color-gamma-450: #cbd5e1;
+  --color-gamma-400: #e2e8f0;
+  --color-gamma-350: #e4e4e4;
+  --color-gamma-300: #eaeaea;
+  --color-gamma-250: #f1f5f9;
+  --color-gamma-200: #f8fafc;
+  --color-gamma-150: #f8fafc;
+  --color-gamma-100: #ffffff;
+  --color-gamma-050: #ffffff;
 
-  --green: #34d399;
-  --green-glow: rgba(52, 211, 153, 0.1);
-  --green-light: rgba(52, 211, 153, 0.1);
-  --orange: #fbbf24;
-  --orange-glow: rgba(251, 191, 36, 0.1);
-  --orange-light: rgba(251, 191, 36, 0.1);
-  --red: #f87171;
-  --red-glow: rgba(248, 113, 113, 0.1);
-  --red-light: rgba(248, 113, 113, 0.1);
+  --color-text-strong: #f8fafc;
+  --color-text-regular: #cbd5e1;
+  --color-text-subtle: #94a3b8;
 
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-} */
+  --color-purple-badge: #1e2238;
+  --color-green-badge: #132a22;
+  --color-yellow-badge: #2a2512;
+  --color-black-badge: #1e293b;
+  --color-red-badge: #2e171b;
+
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}
 
 * {
   box-sizing: border-box;
@@ -443,10 +480,11 @@ textarea {
 }
 
 body {
-  background: inherit;
-  color: var(--text-heading);
+  background: var(--bg-page, #f8fafc);
+  color: var(--text-heading, #1e293b);
   margin: 0;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 p {
@@ -520,6 +558,7 @@ p {
   .sidebar-overlay {
     display: none !important;
   }
+}
 
 /* Responsive vertical scroll for all modal boxes */
 .modal-box {
@@ -536,5 +575,141 @@ p {
   }
 }
 
+/* ─── Global Dark Theme Overrides for All Containers ─── */
+html.dark-theme .admin-root,
+html.dark-theme .dept-root,
+html.dark-theme .audit-root,
+html.dark-theme .history-root,
+html.dark-theme .bsc-root {
+  background-color: var(--bg-page, #0b1322) !important;
+  color: var(--text-heading, #f8fafc);
+}
+
+html.dark-theme .card,
+html.dark-theme .modal-box,
+html.dark-theme .modal-card,
+html.dark-theme .confirm-modal-card,
+html.dark-theme .kpi-item-card,
+html.dark-theme .error-item-card,
+html.dark-theme .scorecard-row,
+html.dark-theme .kr-drilldown-item,
+html.dark-theme .filter-card,
+html.dark-theme .member-card,
+html.dark-theme .stat-card,
+html.dark-theme .summary-card,
+html.dark-theme .health-card,
+html.dark-theme .akr-card,
+html.dark-theme .akr-card-header,
+html.dark-theme .comment-card,
+html.dark-theme .export-btn,
+html.dark-theme .secondary-btn,
+html.dark-theme .icon-btn,
+html.dark-theme .page-btn {
+  background-color: var(--card-bg, #131d31) !important;
+  border-color: var(--card-border, #1e293b) !important;
+  color: var(--text-heading, #f8fafc) !important;
+}
+
+html.dark-theme .secondary-btn:hover,
+html.dark-theme .icon-btn:hover,
+html.dark-theme .export-btn:hover,
+html.dark-theme .page-btn:hover {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark-theme .card h1,
+html.dark-theme .card h2,
+html.dark-theme .card h3,
+html.dark-theme .card h4,
+html.dark-theme .modal-box h1,
+html.dark-theme .modal-box h2,
+html.dark-theme .modal-box h3,
+html.dark-theme .modal-box h4,
+html.dark-theme .header-title h2,
+html.dark-theme .header-title h3,
+html.dark-theme .dept-name,
+html.dark-theme .kr-title-text,
+html.dark-theme .pic-name,
+html.dark-theme .perspective-name,
+html.dark-theme .summary-big-num {
+  color: var(--text-heading, #f8fafc) !important;
+}
+
+html.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+html.dark-theme select,
+html.dark-theme textarea,
+html.dark-theme .month-select,
+html.dark-theme .dept-filter-select {
+  background-color: var(--card-bg, #131d31) !important;
+  border-color: var(--border-color, #1e293b) !important;
+  color: var(--text-heading, #f8fafc) !important;
+}
+
+html.dark-theme input::placeholder,
+html.dark-theme textarea::placeholder {
+  color: var(--text-muted, #94a3b8) !important;
+}
+
+html.dark-theme table,
+html.dark-theme thead,
+html.dark-theme tbody,
+html.dark-theme tr {
+  background-color: transparent !important;
+}
+
+html.dark-theme th {
+  background-color: var(--card-bg, #131d31) !important;
+  color: var(--text-muted, #94a3b8) !important;
+  border-color: var(--border-color, #1e293b) !important;
+}
+
+html.dark-theme td {
+  border-color: var(--border-color, #1e293b) !important;
+  color: var(--text-body, #cbd5e1) !important;
+}
+
+html.dark-theme tr:hover td,
+html.dark-theme .critical-row:hover td,
+html.dark-theme .scorecard-row:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark-theme .bar-track,
+html.dark-theme .dept-bar-track,
+html.dark-theme .inline-bar,
+html.dark-theme .kr-progress-track {
+  background-color: var(--border-color, #1e293b) !important;
+}
+
+html.dark-theme .pill.ontrack,
+html.dark-theme .health-label.green,
+html.dark-theme .persp-badge.learning {
+  background-color: #132a22 !important;
+  color: #4ade80 !important;
+}
+html.dark-theme .pill.atrisk,
+html.dark-theme .health-label.yellow {
+  background-color: #2a2512 !important;
+  color: #facc15 !important;
+}
+html.dark-theme .pill.offtrack,
+html.dark-theme .health-label.red,
+html.dark-theme .critical-count-badge {
+  background-color: #2e171b !important;
+  color: #f87171 !important;
+}
+html.dark-theme .persp-badge.financial {
+  background-color: #0c2b42 !important;
+  color: #38bdf8 !important;
+}
+html.dark-theme .persp-badge.customer {
+  background-color: #1e1b4b !important;
+  color: #a5b4fc !important;
+}
+html.dark-theme .persp-badge.internal {
+  background-color: #2e1065 !important;
+  color: #d8b4fe !important;
 }
 </style>

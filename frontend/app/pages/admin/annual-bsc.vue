@@ -684,13 +684,14 @@ onMounted(async () => {
   padding: 1.5rem;
   background: var(--bg-page, #f8fafc);
   font-family: inherit;
-  color: #374151;
+  color: var(--text-heading, #374151);
 }
 .card {
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   border-radius: 8px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--border-color, #e5e7eb);
   padding: 1.25rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 .okr-form .form-group {
   display: flex;

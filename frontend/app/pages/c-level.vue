@@ -744,13 +744,13 @@ onMounted(fetchData);
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: #f8fafc;
-  border: 1px solid #d7dfe9;
+  background: var(--card-bg, #f8fafc);
+  border: 1px solid var(--border-color, #d7dfe9);
   border-radius: 10px;
   font-family: "Rubik", sans-serif;
   font-size: 14px;
   font-weight: 500;
-  color: #3d536e;
+  color: var(--text-body, #3d536e);
   cursor: pointer;
   transition:
     background 0.15s,
@@ -920,13 +920,13 @@ onMounted(fetchData);
   gap: 20px;
   padding: 16px 20px;
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--card-bg, #f8fafc);
   border-left: 4px solid transparent;
   transition: background 0.15s;
 }
 
 .scorecard-row:hover {
-  background: #f0f4f8;
+  background: var(--border-color, #f0f4f8);
 }
 .scorecard-row.financial {
   border-left-color: #0e97d6;
@@ -1436,10 +1436,10 @@ onMounted(fetchData);
 
 .month-select {
   padding: 8px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 8px;
-  background-color: white;
-  color: #1e293b;
+  background-color: var(--card-bg, white);
+  color: var(--text-heading, #1e293b);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
