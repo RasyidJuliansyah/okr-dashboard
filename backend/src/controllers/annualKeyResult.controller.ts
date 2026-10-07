@@ -189,7 +189,7 @@ export async function createAnnualKeyResult(req: AuthRequest, res: Response) {
 export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { title, description, targetValue, unit, bscPerspective, status, targetType } =
+    const { title, description, targetValue, unit, bscPerspective, status, targetType, objectiveId } =
       req.body;
 
     const annualKr = await prisma.annualKeyResult.findUnique({
@@ -219,10 +219,28 @@ export async function updateAnnualKeyResult(req: AuthRequest, res: Response) {
       data.targetValue = valNum;
     }
 
+    if (objectiveId && objectiveId !== annualKr.objectiveId) {
+      const targetObj = await prisma.objective.findUnique({
+        where: { id: objectiveId },
+      });
+      if (!targetObj) {
+        return res.status(404).json({ message: "Objective target tidak ditemukan" });
+      }
+      data.objectiveId = objectiveId;
+    }
+
     const updated = await prisma.annualKeyResult.update({
       where: { id },
       data,
     });
+
+    // Sinkronisasi objectiveId ke seluruh child KeyResult jika objektif berubah
+    if (objectiveId && objectiveId !== annualKr.objectiveId) {
+      await prisma.keyResult.updateMany({
+        where: { annualKeyResultId: id },
+        data: { objectiveId },
+      });
+    }
 
     // Recalculate values if targetValue or targetType was changed
     if (targetValue !== undefined || targetType !== undefined) {

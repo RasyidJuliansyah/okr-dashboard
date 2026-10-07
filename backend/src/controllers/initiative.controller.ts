@@ -3631,15 +3631,47 @@ export async function cascadeTaskValueUpdate(
   initiativeId?: string | null,
 ): Promise<void> {
   if (!initiativeId) return;
-  // Task update does NOT mutate Initiative.currentValue, because task progress
-  // and initiative achievement are decoupled.
   const initiative = await prisma.initiative.findUnique({
     where: { id: initiativeId },
+    include: { tasks: { where: { isActive: true } } },
   });
 
   if (initiative) {
+    const activeTasks = initiative.tasks || [];
+    if (activeTasks.length > 0 && initiative.targetValue > 0) {
+      const isPercentUnit = !initiative.unit || initiative.unit.trim() === "%";
+      if (isPercentUnit) {
+        const sumTaskPct = activeTasks.reduce((tSum, t) => {
+          const tTgt = t.targetValue || 0;
+          const pct =
+            tTgt > 0
+              ? calculateProgressPercent(
+                  t.currentValue,
+                  tTgt,
+                  t.targetType,
+                  t.baselineValue || 0,
+                )
+              : 0;
+          return tSum + pct;
+        }, 0);
+        const avgTaskPct = sumTaskPct / activeTasks.length;
+        const newInitVal =
+          Math.round((avgTaskPct / 100) * initiative.targetValue * 100) / 100;
+        const newInitStatus = calculateAutoStatus(avgTaskPct);
+        await prisma.initiative.update({
+          where: { id: initiativeId },
+          data: {
+            currentValue: newInitVal,
+            status: newInitStatus,
+          },
+        });
+      }
+    }
+
     // Recalculate KR progress if needed
-    if (initiative.keyResultId) await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
+    if (initiative.keyResultId) {
+      await cascadeInitiativeToMonthlyKr(initiative.keyResultId);
+    }
   }
 }
 

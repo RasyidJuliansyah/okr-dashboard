@@ -381,6 +381,7 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
       monthWeight,
       annualKeyResultId,
       targetType,
+      objectiveId,
     } = req.body;
 
     if (!title || targetValue === undefined || !bscPerspective) {
@@ -409,11 +410,36 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "Key Result not found" });
     }
 
+    // Validate target objective if moving
+    if (objectiveId && objectiveId !== kr.objectiveId) {
+      const targetObj = await prisma.objective.findUnique({
+        where: { id: objectiveId },
+      });
+      if (!targetObj) {
+        return res.status(404).json({ message: "Objective target tidak ditemukan" });
+      }
+    }
+
     const targetTypeVal = targetType || kr.targetType || "AT_LEAST";
     const progressPct = calculateProgressPercent(kr.currentValue, parseFloat(targetValue), targetTypeVal);
     const newStatus = calculateAutoStatus(progressPct);
 
     const originalAnnualId = kr.annualKeyResultId;
+
+    let targetAnnualKeyResultId = annualKeyResultId;
+    if (objectiveId && objectiveId !== kr.objectiveId) {
+      if (targetAnnualKeyResultId) {
+        const akr = await prisma.annualKeyResult.findUnique({
+          where: { id: targetAnnualKeyResultId },
+        });
+        if (!akr || akr.objectiveId !== objectiveId) {
+          targetAnnualKeyResultId = null;
+        }
+      } else if (targetAnnualKeyResultId === undefined && kr.annualKeyResultId) {
+        // Pindah objektif tanpa annualKeyResultId baru -> lepas dari annual KR objektif lama
+        targetAnnualKeyResultId = null;
+      }
+    }
 
     const updatedKR = await prisma.keyResult.update({
       where: { id },
@@ -424,12 +450,13 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
         bscPerspective,
         status: newStatus,
         targetType: targetTypeVal,
+        ...(objectiveId && { objectiveId }),
         ...(month !== undefined && { month: month || null }),
         ...(monthWeight !== undefined && {
           monthWeight: parseFloat(monthWeight),
         }),
-        ...(annualKeyResultId !== undefined && {
-          annualKeyResultId: annualKeyResultId || null,
+        ...(targetAnnualKeyResultId !== undefined && {
+          annualKeyResultId: targetAnnualKeyResultId || null,
         }),
       },
     });
@@ -442,6 +469,25 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
     for (const annualId of annualIdsToNormalize) {
       await normalizeMonthlyKrWeights(annualId);
     }
+
+    await logAudit(prisma, {
+      userId: req.user?.id,
+      action: "UPDATE",
+      entityType: "KEY_RESULT",
+      entityId: id,
+      oldValues: {
+        title: kr.title,
+        targetValue: kr.targetValue,
+        unit: kr.unit,
+        objectiveId: kr.objectiveId,
+      },
+      newValues: {
+        title,
+        targetValue: parseFloat(targetValue),
+        unit: unit || "%",
+        objectiveId: objectiveId || kr.objectiveId,
+      },
+    });
 
     const finalKR = await prisma.keyResult.findUnique({
       where: { id: updatedKR.id },

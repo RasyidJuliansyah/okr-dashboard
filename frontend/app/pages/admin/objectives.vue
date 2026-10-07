@@ -550,7 +550,7 @@
                       </div>
                       <div class="kr-action-buttons">
                         <button
-                          @click="startEditKr(kr)"
+                          @click="startEditKr(kr, obj.id)"
                           class="edit-kr-btn"
                           title="Edit Metric (Key Result)"
                         >
@@ -675,6 +675,14 @@
         </div>
         <form @submit.prevent="submitEditKr" class="okr-form">
           <div class="form-group">
+            <label>Objektif Induk *</label>
+            <select v-model="editKrData.objectiveId" required>
+              <option v-for="o in objectives" :key="o.id" :value="o.id">
+                {{ o.title }} ({{ o.year || "Semua Periode" }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
             <label>Deskripsi Key Result *</label>
             <input
               v-model="editKrData.title"
@@ -697,9 +705,9 @@
             <div class="form-group third">
               <label>Tipe Target</label>
               <select v-model="editKrData.targetType">
-                <option value="AT_LEAST">Minimal (≥)</option>
-                <option value="AT_MOST">Maksimal (≤)</option>
-                <option value="EXACT">Tepat (=)</option>
+                <option value="AT_LEAST">Minimal</option>
+                <option value="AT_MOST">Maksimal</option>
+                <option value="EXACT">Tepat</option>
               </select>
             </div>
             <div class="form-group third">
@@ -1535,6 +1543,7 @@ async function confirmDeleteObjective() {
 const editingKr = ref(null);
 const editKrData = ref({
   id: "",
+  objectiveId: "",
   title: "",
   targetValue: null,
   targetType: "AT_LEAST",
@@ -1544,10 +1553,11 @@ const editKrData = ref({
 const editKrRaciAssignments = ref([]);
 const savingKr = ref(false);
 
-function startEditKr(kr) {
+function startEditKr(kr, objId = null) {
   editingKr.value = kr.id;
   editKrData.value = {
     id: kr.id,
+    objectiveId: kr.objectiveId || objId || "",
     title: kr.title,
     targetValue: kr.targetValue,
     targetType: kr.targetType || "AT_LEAST",
@@ -1596,6 +1606,7 @@ async function submitEditKr() {
           "Content-Type": "application/json",
         },
         body: {
+          objectiveId: editKrData.value.objectiveId,
           title: editKrData.value.title,
           targetValue: editKrData.value.targetValue,
           targetType: editKrData.value.targetType || "AT_LEAST",
@@ -2112,7 +2123,7 @@ select:focus {
 }
 
 .form-group.third {
-  width: 33.33%;
+  width: 30%;
 }
 
 .divider {
