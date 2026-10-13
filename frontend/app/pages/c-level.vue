@@ -137,48 +137,163 @@
         </div>
       </section>
 
-      <!-- Row 2: BSC Scorecard Strips -->
+      <!-- Row 2: BSC Scorecard Strips (Expandable) -->
       <section class="bsc-scorecard card">
         <div class="scorecard-header">
-          <h2>BSC Scorecard — 4 Perspektif</h2>
-          <p class="section-sub">
-            Progress agregat per perspektif Balanced Scorecard
-          </p>
+          <div>
+            <h2>BSC Scorecard — 4 Perspektif</h2>
+            <p class="section-sub">
+              Progress agregat per perspektif Balanced Scorecard. Klik kartu untuk melihat capaian Key Results.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="toggle-all-btn"
+            @click="toggleAllPerspectives"
+          >
+            {{ allExpanded ? "Tutup Semua" : "Buka Semua" }}
+          </button>
         </div>
         <div class="scorecard-list">
           <div
             v-for="(pdata, pkey) in data.bscByPerspective"
             :key="pkey"
-            class="scorecard-row"
-            :class="perspectiveClass(pkey)"
+            class="scorecard-item"
+            :class="[perspectiveClass(pkey), { expanded: isExpanded(pkey) }]"
           >
-            <div class="scorecard-left">
-              <span class="perspective-icon">{{ perspectiveIcon(pkey) }}</span>
-              <div>
-                <p class="perspective-name">{{ perspectiveLabel(pkey) }}</p>
-                <p class="perspective-sub">
-                  {{ pdata.totalCount }} Key Results
-                </p>
+            <div
+              class="scorecard-row"
+              :class="perspectiveClass(pkey)"
+              role="button"
+              tabindex="0"
+              :aria-expanded="isExpanded(pkey)"
+              @click="togglePerspective(pkey)"
+              @keydown.enter.space.prevent="togglePerspective(pkey)"
+            >
+              <div class="scorecard-left">
+                <span class="perspective-icon">{{ perspectiveIcon(pkey) }}</span>
+                <div>
+                  <p class="perspective-name">{{ perspectiveLabel(pkey) }}</p>
+                  <p class="perspective-sub">
+                    {{ pdata.totalCount }} Key Results
+                  </p>
+                </div>
+              </div>
+              <div class="scorecard-bar-area">
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    :class="perspectiveClass(pkey)"
+                    :style="{ width: pdata.averageProgress + '%' }"
+                  ></div>
+                </div>
+                <span class="bar-pct">{{ pdata.averageProgress }}%</span>
+              </div>
+              <div class="scorecard-right">
+                <div class="scorecard-pills">
+                  <span class="pill ontrack"
+                    >{{ pdata.onTrackCount }} On Track</span
+                  >
+                  <span class="pill atrisk">{{ pdata.atRiskCount }} At Risk</span>
+                  <span class="pill offtrack"
+                    >{{ pdata.offTrackCount }} Off Track</span
+                  >
+                </div>
+                <div class="chevron-icon" :class="{ rotated: isExpanded(pkey) }">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
               </div>
             </div>
-            <div class="scorecard-bar-area">
-              <div class="bar-track">
+
+            <!-- Expanded Details Slot Placeholder -->
+            <div v-show="isExpanded(pkey)" class="scorecard-detail">
+              <div
+                v-if="!pdata.keyResults || pdata.keyResults.length === 0"
+                class="empty-kr-detail"
+              >
+                Belum ada Key Result terdaftar pada perspektif ini.
+              </div>
+              <div v-else class="kr-cards-list">
                 <div
-                  class="bar-fill"
-                  :class="perspectiveClass(pkey)"
-                  :style="{ width: pdata.averageProgress + '%' }"
-                ></div>
+                  v-for="kr in pdata.keyResults"
+                  :key="kr.id"
+                  class="kr-detail-card"
+                >
+                  <div class="kr-detail-main">
+                    <div class="kr-detail-info">
+                      <div class="kr-detail-title-line">
+                        <span class="kr-title">{{ kr.title }}</span>
+                        <span
+                          class="status-badge"
+                          :class="statusBadgeClass(kr.status)"
+                        >
+                          {{ statusLabel(kr.status) }}
+                        </span>
+                      </div>
+                      <div class="kr-meta-chips">
+                        <span
+                          v-if="kr.objectiveTitle"
+                          class="meta-chip obj-chip"
+                          :title="kr.objectiveTitle"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                          </svg>
+                          {{ kr.objectiveTitle }} {{ kr.year ? `(${kr.year})` : '' }}
+                        </span>
+                        <span
+                          v-if="kr.responsible"
+                          class="meta-chip"
+                          title="PIC Responsible"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                          PIC: {{ kr.responsible.name }}
+                        </span>
+                        <span
+                          v-for="dept in kr.departments"
+                          :key="dept"
+                          class="meta-chip"
+                        >
+                          {{ dept }}
+                        </span>
+                        <span
+                          v-if="kr.initiatives && kr.initiatives.length > 0"
+                          class="meta-chip inits-count-chip"
+                          title="Jumlah Inisiatif"
+                        >
+                          {{ kr.initiatives.length }} Inisiatif
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="kr-progress-box">
+                      <div class="kr-metric-nums">
+                        <span class="kr-cur-tgt">
+                          <strong>{{ kr.currentValue?.toLocaleString('id-ID') }}</strong> / {{ kr.targetValue?.toLocaleString('id-ID') }} {{ kr.unit || '' }}
+                        </span>
+                        <span
+                          class="kr-pct-badge"
+                          :class="progressClass(kr.progress)"
+                        >
+                          {{ kr.progress }}%
+                        </span>
+                      </div>
+                      <div class="kr-mini-track">
+                        <div
+                          class="kr-mini-fill"
+                          :class="progressClass(kr.progress)"
+                          :style="{ width: Math.min(100, Math.max(0, kr.progress)) + '%' }"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span class="bar-pct">{{ pdata.averageProgress }}%</span>
-            </div>
-            <div class="scorecard-pills">
-              <span class="pill ontrack"
-                >{{ pdata.onTrackCount }} On Track</span
-              >
-              <span class="pill atrisk">{{ pdata.atRiskCount }} At Risk</span>
-              <span class="pill offtrack"
-                >{{ pdata.offTrackCount }} Off Track</span
-              >
             </div>
           </div>
         </div>
@@ -566,6 +681,46 @@ function progressClass(pct) {
   return "offtrack";
 }
 
+const expandedPerspectives = ref({});
+
+function togglePerspective(key) {
+  expandedPerspectives.value[key] = !expandedPerspectives.value[key];
+}
+
+function isExpanded(key) {
+  return !!expandedPerspectives.value[key];
+}
+
+const allExpanded = computed(() => {
+  if (!data.value?.bscByPerspective) return false;
+  const keys = Object.keys(data.value.bscByPerspective);
+  return keys.length > 0 && keys.every((k) => expandedPerspectives.value[k]);
+});
+
+function toggleAllPerspectives() {
+  const target = !allExpanded.value;
+  if (!data.value?.bscByPerspective) return;
+  const next = {};
+  Object.keys(data.value.bscByPerspective).forEach((k) => {
+    next[k] = target;
+  });
+  expandedPerspectives.value = next;
+}
+
+function statusBadgeClass(status) {
+  if (status === "ON_TRACK") return "ontrack";
+  if (status === "AT_RISK") return "atrisk";
+  if (status === "OFF_TRACK") return "offtrack";
+  return "";
+}
+
+function statusLabel(status) {
+  if (status === "ON_TRACK") return "On Track";
+  if (status === "AT_RISK") return "At Risk";
+  if (status === "OFF_TRACK") return "Off Track";
+  return status || "-";
+}
+
 function hasTrendData(arr) {
   return arr.some((v) => v !== null);
 }
@@ -605,82 +760,84 @@ async function fetchData() {
 }
 
 function exportCsv() {
-  if (!data.value) return;
+  if (!data.value?.bscByPerspective) return;
 
-  const rows = [
-    [
-      `Balanced Scorecard Executive Dashboard - Periode: ${selectedMonth.value ? "Bulan " + selectedMonth.value : "YTD 2026"}`,
-    ],
-    [],
-    [
-      "Key Result",
-      "Perspektif",
-      "Objective",
-      "Year",
-      "PIC Responsible",
-      "Target",
-      "Current",
-      "Unit",
-      "Progress (%)",
-      "Status",
-    ],
+  const escapeCell = (val) => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val);
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
+  const headers = [
+    "Aspek BSC",
+    "Objektif Induk",
+    "Key Result",
+    "Target",
+    "Capaian Saat Ini",
+    "Satuan",
+    "Capaian (%)",
+    "Status",
+    "Active",
+    "Tipe Target",
+    "Bulan",
+    "Tahun",
+    "PIC Responsible",
+    "Departemen",
+    "Jumlah Inisiatif",
   ];
 
-  // All KRs from criticalKrs + we need all. Re-build from bscByPerspective is complex,
-  // so export critical KRs + summary sheet.
-  // Export criticalKrs
-  data.value.criticalKrs.forEach((kr) => {
-    rows.push([
-      `"${kr.title}"`,
-      perspectiveLabel(kr.bscPerspective),
-      `"${kr.objectiveTitle}"`,
-      kr.year,
-      kr.responsible ? kr.responsible.name : "",
-      kr.targetValue,
-      kr.currentValue,
-      kr.unit,
-      kr.progress,
-      kr.status,
-    ]);
-  });
+  const rows = [headers.map(escapeCell)];
 
-  // Summary rows
-  rows.push([]);
-  rows.push(["--- SUMMARY PER PERSPEKTIF ---"]);
-  rows.push([
-    "Perspektif",
-    "Total KR",
-    "On Track",
-    "At Risk",
-    "Off Track",
-    "Avg Progress (%)",
-  ]);
   Object.entries(data.value.bscByPerspective).forEach(([key, p]) => {
-    rows.push([
-      perspectiveLabel(key),
-      p.totalCount,
-      p.onTrackCount,
-      p.atRiskCount,
-      p.offTrackCount,
-      p.averageProgress,
-    ]);
+    const aspectName = perspectiveLabel(key);
+    (p.keyResults || [])
+      .filter(
+        (kr) =>
+          kr.isActive === undefined ||
+          kr.isActive === 1 ||
+          kr.isActive === true,
+      )
+      .forEach((kr) => {
+        const depts =
+          Array.isArray(kr.departments) && kr.departments.length > 0
+            ? kr.departments.join(", ")
+            : "-";
+        const picName = kr.responsible?.name || "-";
+        const initsCount = Array.isArray(kr.initiatives)
+          ? kr.initiatives.length
+          : 0;
+        const activeVal =
+          kr.isActive !== undefined ? (kr.isActive ? 1 : 0) : 1;
+
+        rows.push([
+          escapeCell(aspectName),
+          escapeCell(kr.objectiveTitle || "-"),
+          escapeCell(kr.title || "-"),
+          kr.targetValue ?? 0,
+          kr.currentValue ?? 0,
+          escapeCell(kr.unit || ""),
+          kr.progress ?? 0,
+          escapeCell(statusLabel(kr.status)),
+          activeVal,
+          escapeCell(kr.targetType || "AT_LEAST"),
+          escapeCell(kr.month || "-"),
+          escapeCell(kr.year || "-"),
+          escapeCell(picName),
+          escapeCell(depts),
+          initsCount,
+        ]);
+      });
   });
 
-  // Department progress
-  rows.push([]);
-  rows.push(["--- PROGRESS PER DEPARTEMEN ---"]);
-  rows.push(["Departemen", "Jumlah KR", "Avg Progress (%)"]);
-  data.value.byDepartment.forEach((d) => {
-    rows.push([d.department, d.krCount, d.averageProgress]);
-  });
-
-  const csv = rows.map((r) => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
+  const csv = rows.map((r) => r.join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `bsc-executive-dashboard-${selectedMonth.value ? selectedMonth.value + "-" : ""}${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `key-results-active-bsc-${selectedMonth.value ? selectedMonth.value + "-" : ""}${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
@@ -728,14 +885,14 @@ onMounted(fetchData);
 .header-title {
   font-size: 28px;
   font-weight: 700;
-  color: var(--color-gamma-150, #1a2335);
+  color: var(--text-heading, #1a2335);
   margin: 0 0 6px;
   letter-spacing: -0.5px;
 }
 
 .header-subtitle {
   font-size: 15px;
-  color: #5e718d;
+  color: var(--text-muted, #5e718d);
   margin: 0;
 }
 
@@ -868,7 +1025,7 @@ onMounted(fetchData);
 .summary-big-num {
   font-size: 40px;
   font-weight: 700;
-  color: #1a2335;
+  color: var(--text-heading, #1a2335);
   margin: 0;
   line-height: 1;
 }
@@ -891,13 +1048,18 @@ onMounted(fetchData);
 
 /* ─── BSC Scorecard ─────────────────────────────────────────────────────── */
 .scorecard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .scorecard-header h2 {
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-gamma-150, #1a2335);
+  color: var(--text-heading, #1a2335);
   margin: 0 0 4px;
 }
 
@@ -907,21 +1069,58 @@ onMounted(fetchData);
   margin: 0;
 }
 
+.toggle-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0e97d6;
+  background: rgba(14, 151, 214, 0.08);
+  border: 1px solid rgba(14, 151, 214, 0.25);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-all-btn:hover {
+  background: #0e97d6;
+  color: #ffffff;
+}
+
 .scorecard-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+.scorecard-item {
+  border-radius: 12px;
+  border: 1px solid var(--card-border, #e4e4e4);
+  background: var(--card-bg, #ffffff);
+  overflow: hidden;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.scorecard-item:hover {
+  border-color: rgba(14, 151, 214, 0.35);
+}
+
+.scorecard-item.expanded {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
 .scorecard-row {
   display: grid;
-  grid-template-columns: 220px 1fr 280px;
+  grid-template-columns: 220px 1fr auto;
   align-items: center;
   gap: 20px;
   padding: 16px 20px;
-  border-radius: 12px;
   background: var(--bg-page);
   border-left: 4px solid transparent;
+  cursor: pointer;
+  user-select: none;
   transition: background 0.15s;
 }
 
@@ -961,7 +1160,7 @@ onMounted(fetchData);
 .perspective-name {
   font-size: 15px;
   font-weight: 600;
-  color: #1a2335;
+  color: var(--text-heading, #1a2335);
   margin: 0;
 }
 
@@ -1007,9 +1206,37 @@ onMounted(fetchData);
 .bar-pct {
   font-size: 15px;
   font-weight: 700;
-  color: #1a2335;
+  color: var(--text-heading, #1a2335);
   min-width: 44px;
   text-align: right;
+}
+
+.scorecard-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chevron-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #8897ae;
+  background: rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s ease, background 0.15s, color 0.15s;
+}
+
+.scorecard-row:hover .chevron-icon {
+  color: #0e97d6;
+  background: rgba(14, 151, 214, 0.12);
+}
+
+.chevron-icon.rotated {
+  transform: rotate(180deg);
+  color: #0e97d6;
 }
 
 .scorecard-pills {
@@ -1037,6 +1264,182 @@ onMounted(fetchData);
 .pill.offtrack {
   background: #fee2e2;
   color: #dc2626;
+}
+
+/* ─── Scorecard Expandable Details ──────────────────────────────────────── */
+.scorecard-detail {
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--card-border, #e4e4e4);
+  background: var(--card-bg, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.empty-kr-detail {
+  padding: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted, #8897ae);
+  font-style: italic;
+}
+
+.kr-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kr-detail-card {
+  border-radius: 10px;
+  border: 1px solid var(--card-border, #e2e8f0);
+  background: var(--bg-page);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s;
+}
+
+.kr-detail-card:hover {
+  border-color: #cbd5e1;
+}
+
+.kr-detail-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .kr-detail-main {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.kr-detail-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kr-detail-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kr-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading, #1e293b);
+  line-height: 1.4;
+}
+
+.kr-meta-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  color: #64748b;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.meta-chip.obj-chip {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.2);
+}
+
+.kr-progress-box {
+  width: 210px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .kr-progress-box {
+    width: 100%;
+  }
+}
+
+.kr-metric-nums {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.kr-cur-tgt {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kr-pct-badge {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.kr-pct-badge.ontrack {
+  color: #16a34a;
+}
+.kr-pct-badge.atrisk {
+  color: #b45309;
+}
+.kr-pct-badge.offtrack {
+  color: #dc2626;
+}
+
+.kr-mini-track {
+  width: 100%;
+  height: 6px;
+  background: #e5eaf3;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.kr-mini-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.kr-mini-fill.ontrack {
+  background: #22c55e;
+}
+.kr-mini-fill.atrisk {
+  background: #f2af17;
+}
+.kr-mini-fill.offtrack {
+  background: #f97066;
+}
+
+.meta-chip.inits-count-chip {
+  color: #0e97d6;
+  background: rgba(14, 151, 214, 0.08);
+  border-color: rgba(14, 151, 214, 0.2);
 }
 
 /* ─── Two Column Row ────────────────────────────────────────────────────── */
@@ -1383,6 +1786,10 @@ onMounted(fetchData);
   text-transform: uppercase;
 }
 
+.status-badge.ontrack {
+  background: #dcfce7;
+  color: #15803d;
+}
 .status-badge.atrisk {
   background: #fef3c7;
   color: #b45309;
@@ -1447,5 +1854,93 @@ onMounted(fetchData);
 }
 .month-select:focus {
   border-color: #3b82f6;
+}
+
+/* ─── Dark Theme Overrides for BSC Scorecard Details ─────────────────────── */
+.dark-theme .scorecard-item {
+  border-color: var(--card-border);
+  background: var(--card-bg);
+}
+
+.dark-theme .scorecard-header h2,
+.dark-theme .perspective-name,
+.dark-theme .bar-pct {
+  color: var(--text-heading, #f8fafc);
+}
+
+.dark-theme .scorecard-row {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dark-theme .scorecard-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .scorecard-detail {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+.dark-theme .kr-detail-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--card-border);
+}
+
+.dark-theme .kr-detail-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark-theme .kr-title {
+  color: var(--text-heading);
+}
+
+.dark-theme .meta-chip {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-body);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme .meta-chip.obj-chip {
+  background: rgba(2, 132, 199, 0.15);
+  color: #38bdf8;
+  border-color: rgba(2, 132, 199, 0.3);
+}
+
+.dark-theme .meta-chip.inits-count-chip {
+  background: rgba(14, 151, 214, 0.15);
+  color: #38bdf8;
+  border-color: rgba(14, 151, 214, 0.3);
+}
+
+.dark-theme .kr-mini-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme .chevron-icon {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .status-badge.ontrack {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+.dark-theme .status-badge.atrisk {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+.dark-theme .status-badge.offtrack {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.dark-theme .toggle-all-btn {
+  background: rgba(14, 151, 214, 0.15);
+  border-color: rgba(14, 151, 214, 0.35);
+  color: #38bdf8;
+}
+
+.dark-theme .toggle-all-btn:hover {
+  background: #0e97d6;
+  color: #ffffff;
 }
 </style>

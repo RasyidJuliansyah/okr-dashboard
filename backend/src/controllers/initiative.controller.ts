@@ -1376,9 +1376,8 @@ export async function createInitiative(req: AuthRequest, res: Response) {
 
       // Auto-heal kr.month if it is null/empty to allow initiative creation
       if (!kr.month) {
-        const now = new Date();
-        const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-        const krMonth = sprintMonth || defaultMonth;
+        const activeSprint = await getActiveSprint();
+        const krMonth = finalSprintId || activeSprint?.id || sprintMonth || null;
         await prisma.keyResult.update({
           where: { id: keyResultId },
           data: { month: krMonth },
@@ -1431,7 +1430,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
           startDate: startDate ? new Date(startDate) : null,
           dueDate: dueDate ? new Date(dueDate) : null,
           finishDate: finishDate ? new Date(finishDate) : null,
-          sprintMonth: sprintMonth || null,
+          sprintMonth: finalSprintId || sprintMonth || null,
           ...(Array.isArray(kpis) &&
             kpis.length > 0 && {
               kpis: {

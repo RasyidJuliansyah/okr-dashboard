@@ -69,14 +69,30 @@ export async function toggleLock(req: AuthRequest, res: Response) {
 export async function closeSprint(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const { rolloverUnfinishedTasks } = req.body;
     const result = await sprintService.closeAndRolloverSprint(
       id,
       req.user?.id,
-      req
+      req,
+      { rolloverUnfinishedTasks: Boolean(rolloverUnfinishedTasks) }
     );
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Failed to close sprint" });
+  }
+}
+
+export async function getSprintReport(req: AuthRequest, res: Response) {
+  try {
+    const { id: sprintId } = req.params;
+    const { department } = req.query;
+    const report = await sprintService.getSprintReportData(
+      sprintId,
+      department as string | undefined
+    );
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to fetch sprint report" });
   }
 }
 

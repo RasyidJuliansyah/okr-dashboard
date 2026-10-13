@@ -8,6 +8,7 @@ import {
   toggleLock,
   closeSprint,
   getSprintMemberScores,
+  getSprintReport,
   upsertKrSprintTarget,
   backfillSprints,
 } from "../controllers/sprint.controller";
@@ -18,6 +19,7 @@ const router = Router();
 router.get("/", authMiddleware, getSprints);
 router.get("/active", authMiddleware, getActiveSprint);
 router.get("/:id/member-scores", authMiddleware, getSprintMemberScores);
+router.get("/:id/report", authMiddleware, getSprintReport);
 
 // Admin-only management routes
 router.post("/generate-yearly", authMiddleware, roleGuard(["ADMIN"]), generateYearly);

@@ -133,7 +133,7 @@
                   id="obj-year"
                   v-model="newObjective.year"
                   type="text"
-                  placeholder="Contoh: 2026 atau Q3-2026"
+                  placeholder="Contoh: 2026"
                   required
                 />
               </div>
@@ -394,11 +394,9 @@
               v-model="filterYear"
               @change="fetchObjectives"
             >
-              <option value="">Semua</option>
-              <option value="Q1-2026">Q1-2026</option>
-              <option value="Q2-2026">Q2-2026</option>
-              <option value="Q3-2026">Q3-2026</option>
-              <option value="Q4-2026">Q4-2026</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="">Semua Tahun</option>
             </select>
           </div>
         </div>
@@ -422,48 +420,246 @@
         </div>
 
         <div v-else>
-          <!-- Bulk Select All / Delete Action Bar -->
-          <div
-            v-if="allDisplayedKrs.length > 0"
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              padding: 12px 16px;
-              background: var(--bg-page);
-              border: 1px solid #cbd5e1;
-              border-radius: 8px;
-              margin-bottom: 16px;
-            "
-          >
-            <div style="display: flex; align-items: center; gap: 8px">
-              <input
-                type="checkbox"
-                :checked="isAllKrsSelected"
-                @change="toggleSelectAllKrs"
-                style="transform: scale(1.2); cursor: pointer"
-              />
-              <span style="font-size: 14px; font-weight: 500; color: #334155"
-                >Pilih Semua KR ({{ allDisplayedKrs.length }})</span
-              >
+          <!-- Bulk Toolbar & View Mode Switcher -->
+          <div v-if="allDisplayedKrs.length > 0" class="kr-toolbar">
+            <div class="toolbar-left">
+              <label class="select-all-label">
+                <input
+                  type="checkbox"
+                  :checked="isAllKrsSelected"
+                  @change="toggleSelectAllKrs"
+                />
+                <span>Pilih Semua KR ({{ allDisplayedKrs.length }})</span>
+              </label>
+
+              <div class="view-switch-pills">
+                <button
+                  type="button"
+                  class="view-pill-btn"
+                  :class="{ active: viewMode === 'list' }"
+                  @click="viewMode = 'list'"
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                  >
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  Tabel / List
+                </button>
+                <button
+                  type="button"
+                  class="view-pill-btn"
+                  :class="{ active: viewMode === 'card' }"
+                  @click="viewMode = 'card'"
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                  >
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                  Kartu Hirarki
+                </button>
+              </div>
             </div>
-            <button
-              v-if="selectedKrIds.length > 0"
-              class="save-kr-btn"
-              style="
-                background: #ff4b4b;
-                padding: 6px 12px;
-                font-size: 13px;
-                font-weight: bold;
-                border-radius: 6px;
-              "
-              @click="triggerBulkDelete"
-            >
-              Hapus Terpilih ({{ selectedKrIds.length }})
-            </button>
+
+            <div v-if="selectedKrIds.length > 0" class="toolbar-right">
+              <button
+                type="button"
+                class="bulk-reassign-btn"
+                @click="openBulkReassignModal"
+              >
+                Re-assign ({{ selectedKrIds.length }})
+              </button>
+              <button
+                type="button"
+                class="bulk-delete-btn"
+                @click="triggerBulkDelete"
+              >
+                Hapus Terpilih
+              </button>
+            </div>
           </div>
 
-          <div class="objectives-list">
+          <!-- TABLE / LIST VIEW PLACEHOLDER -->
+          <div v-if="viewMode === 'list'" class="kr-table-container">
+            <table class="kr-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 38px"></th>
+                  <th style="min-width: 170px">Objektif Induk</th>
+                  <th style="min-width: 220px">Key Result & Target</th>
+                  <th style="min-width: 110px">Perspektif</th>
+                  <th style="min-width: 130px">Departemen</th>
+                  <th style="min-width: 150px">PIC (RACI)</th>
+                  <th style="min-width: 190px; text-align: center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="{ obj, kr } in flatKrList"
+                  :key="kr.id"
+                  :id="'kr-row-' + kr.id"
+                  :data-kr-id="kr.id"
+                  class="kr-table-row"
+                  :class="{ 'highlighted-row': lastEditedKrId === kr.id }"
+                >
+                  <td>
+                    <input
+                      type="checkbox"
+                      :value="kr.id"
+                      v-model="selectedKrIds"
+                      style="transform: scale(1.15); cursor: pointer"
+                    />
+                  </td>
+                  <td>
+                    <div class="table-obj-cell">
+                      <span class="year-badge table-year-badge">{{
+                        obj.year
+                      }}</span>
+                      <div class="table-obj-info">
+                        <span class="table-obj-title" :title="obj.title">{{
+                          obj.title
+                        }}</span>
+                        <button
+                          type="button"
+                          class="table-obj-edit-btn"
+                          @click="startEditObjective(obj)"
+                          title="Edit Objective"
+                        >
+                          ✎
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="table-kr-cell">
+                      <span class="table-kr-title">{{ kr.title }}</span>
+                      <div
+                        class="kr-stats"
+                        style="margin-top: 4px; font-size: 12px"
+                      >
+                        Target:
+                        <strong>{{
+                          formatTargetValue(
+                            kr.targetValue,
+                            kr.unit,
+                            "",
+                            kr.targetType,
+                          )
+                        }}</strong>
+                        <span
+                          class="status-badge"
+                          :class="kr.status.toLowerCase().replace('_', '')"
+                          >{{ kr.status }}</span
+                        >
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span
+                      class="perspective-badge"
+                      :class="kr.bscPerspective.toLowerCase()"
+                    >
+                      {{ formatPerspective(kr.bscPerspective) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="table-dept-cell">
+                      <span
+                        v-for="d in getKrDepartments(kr)"
+                        :key="d"
+                        class="kr-dept-chip"
+                        >{{ d }}</span
+                      >
+                      <span
+                        v-if="getKrDepartments(kr).length === 0"
+                        style="color: rgba(255, 255, 255, 0.3); font-size: 12px"
+                        >-</span
+                      >
+                    </div>
+                  </td>
+                  <td>
+                    <div class="table-pic-cell">
+                      <span
+                        v-for="a in kr.assignments"
+                        :key="a.id || a.userId"
+                        class="pic-chip"
+                        :class="a.raciRole ? a.raciRole.toLowerCase() : ''"
+                        :title="`${getAssignmentUserName(a)} (${a.raciRole})`"
+                      >
+                        {{ getAssignmentUserName(a) }} ({{
+                          a.raciRole ? a.raciRole.charAt(0) : "?"
+                        }})
+                      </span>
+                      <span
+                        v-if="!kr.assignments?.length"
+                        style="color: rgba(255, 255, 255, 0.3); font-size: 12px"
+                        >-</span
+                      >
+                    </div>
+                  </td>
+                  <td style="text-align: right">
+                    <div class="table-actions-cell">
+                      <button
+                        @click.stop="startReassignDept(kr)"
+                        class="reassign-kr-btn table-action-btn"
+                        title="Re-assign Departemen"
+                      >
+                        Re-assign
+                      </button>
+                      <button
+                        @click="startEditKr(kr, obj.id)"
+                        class="edit-kr-btn table-action-btn"
+                        title="Edit KR"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        @click.stop="deleteKr(kr.id)"
+                        class="delete-kr-btn table-action-btn"
+                        title="Hapus KR"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="flatKrList.length === 0">
+                  <td
+                    colspan="7"
+                    style="
+                      text-align: center;
+                      padding: 30px;
+                      color: rgba(255, 255, 255, 0.4);
+                    "
+                  >
+                    Tidak ada Key Result yang cocok dengan pencarian / filter.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CARD VIEW (Existing) -->
+          <div v-else class="objectives-list">
             <div
               v-for="obj in filteredObjectives"
               :key="obj.id"
@@ -471,7 +667,16 @@
             >
               <div class="objective-item-header">
                 <div>
-                  <span class="year-badge">{{ obj.year }}</span>
+                  <div class="obj-header-meta">
+                    <span class="year-badge">{{ obj.year }}</span>
+                    <span
+                      v-for="dept in getObjectiveDepartments(obj)"
+                      :key="dept"
+                      class="dept-badge"
+                    >
+                      {{ dept }}
+                    </span>
+                  </div>
                   <h3>{{ obj.title }}</h3>
                   <p v-if="obj.description" class="obj-desc">
                     {{ obj.description }}
@@ -499,7 +704,10 @@
                 <div
                   v-for="kr in obj.filteredKrs"
                   :key="kr.id"
+                  :id="'kr-card-' + kr.id"
+                  :data-kr-id="kr.id"
                   class="kr-list-row"
+                  :class="{ 'highlighted-row': lastEditedKrId === kr.id }"
                 >
                   <div
                     class="kr-list-row-header"
@@ -538,6 +746,43 @@
                           >{{ kr.status }}</span
                         >
                       </div>
+                      <div
+                        v-if="
+                          getKrDepartments(kr).length > 0 ||
+                          (kr.assignments && kr.assignments.length > 0)
+                        "
+                        class="kr-meta-row"
+                      >
+                        <div
+                          v-if="getKrDepartments(kr).length > 0"
+                          class="meta-item"
+                        >
+                          <span class="meta-label">Dept:</span>
+                          <span
+                            v-for="d in getKrDepartments(kr)"
+                            :key="d"
+                            class="kr-dept-chip"
+                            >{{ d }}</span
+                          >
+                        </div>
+                        <div
+                          v-if="kr.assignments && kr.assignments.length > 0"
+                          class="meta-item"
+                        >
+                          <span class="meta-label">PIC:</span>
+                          <span
+                            v-for="a in kr.assignments"
+                            :key="a.id || a.userId"
+                            class="pic-chip"
+                            :class="a.raciRole ? a.raciRole.toLowerCase() : ''"
+                            :title="`${getAssignmentUserName(a)} (${a.raciRole})`"
+                          >
+                            {{ getAssignmentUserName(a) }} ({{
+                              a.raciRole ? a.raciRole.charAt(0) : "?"
+                            }})
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <div class="kr-actions-wrapper">
                       <div class="kr-perspective">
@@ -549,6 +794,13 @@
                         </span>
                       </div>
                       <div class="kr-action-buttons">
+                        <button
+                          @click.stop="startReassignDept(kr)"
+                          class="reassign-kr-btn"
+                          title="Re-assign Departemen"
+                        >
+                          Re-assign
+                        </button>
                         <button
                           @click="startEditKr(kr, obj.id)"
                           class="edit-kr-btn"
@@ -728,6 +980,24 @@
               <option value="INTERNAL_PROCESS">Internal Process</option>
               <option value="LEARNING_GROWTH">Learning & Growth</option>
             </select>
+          </div>
+          <div class="form-group" style="margin-top: 8px">
+            <label>Departemen Terkait</label>
+            <div class="dept-checkbox-grid">
+              <label
+                v-for="dept in availableDepartments"
+                :key="'editDept-' + dept.value"
+                class="dept-checkbox-item"
+                :class="{ selected: editKrDepartments.includes(dept.value) }"
+              >
+                <input
+                  type="checkbox"
+                  :value="dept.value"
+                  v-model="editKrDepartments"
+                />
+                <span class="dept-name">{{ dept.label }}</span>
+              </label>
+            </div>
           </div>
           <div class="raci-section" style="margin-top: 8px">
             <div class="raci-section-header">
@@ -1120,6 +1390,213 @@
       </div>
     </div>
 
+    <!-- Re-assign Department Modal -->
+    <div
+      v-if="reassignTargetKr"
+      class="modal-overlay"
+      @click.self="reassignTargetKr = null"
+    >
+      <div class="modal-card" style="max-width: 520px">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 2px;
+          "
+        >
+          <div>
+            <h3 style="margin: 0">Re-assign Departemen</h3>
+            <p class="modal-subtitle" style="font-size: 13px; color: #475569">
+              Pindahkan atau sesuaikan departemen penanggung jawab Key Result.
+            </p>
+          </div>
+          <button
+            class="modal-close-btn"
+            @click="reassignTargetKr = null"
+            title="Tutup Modal"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div
+          style="
+            margin: 16px 0;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+          "
+        >
+          <div
+            style="
+              font-size: 11px;
+              text-transform: uppercase;
+              color: #475569;
+              font-weight: 600;
+              margin-bottom: 4px;
+            "
+          >
+            Key Result:
+          </div>
+          <div style="font-size: 14px; font-weight: 600; color: #475569">
+            {{ reassignTargetKr.title }}
+          </div>
+          <div
+            v-if="getKrDepartments(reassignTargetKr).length > 0"
+            style="
+              margin-top: 8px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              flex-wrap: wrap;
+            "
+          >
+            <span style="font-size: 12px; color: #475569"
+              >Departemen Saat ini:</span
+            >
+            <span
+              v-for="d in getKrDepartments(reassignTargetKr)"
+              :key="d"
+              class="kr-dept-chip"
+              >{{ d }}</span
+            >
+          </div>
+        </div>
+
+        <form @submit.prevent="submitReassignDept" class="okr-form">
+          <div class="form-group">
+            <label>Pilih Departemen Baru / Tambahan</label>
+            <div class="dept-checkbox-grid">
+              <label
+                v-for="dept in availableDepartments"
+                :key="'reassign-' + dept.value"
+                class="dept-checkbox-item"
+                :class="{
+                  selected: reassignDeptSelection.includes(dept.value),
+                }"
+              >
+                <input
+                  type="checkbox"
+                  :value="dept.value"
+                  v-model="reassignDeptSelection"
+                />
+                <span class="dept-name">{{ dept.label }}</span>
+              </label>
+            </div>
+            <p
+              v-if="reassignDeptSelection.length === 0"
+              style="font-size: 12px; color: #f59e0b; margin-top: 6px"
+            >
+              Catatan: Jika tidak ada departemen dipilih, KR akan menjadi tanpa
+              departemen.
+            </p>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px">
+            <button
+              type="button"
+              class="cancel-btn"
+              @click="reassignTargetKr = null"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="save-kr-btn"
+              :disabled="savingReassign"
+            >
+              {{ savingReassign ? "Menyimpan..." : "Simpan Re-assign" }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bulk Re-assign Department Modal -->
+    <div
+      v-if="showBulkReassignModal"
+      class="modal-overlay"
+      @click.self="showBulkReassignModal = false"
+    >
+      <div class="modal-card" style="max-width: 520px">
+        <div class="modal-header">
+          <div>
+            <h3 style="margin: 0">Re-assign Departemen Massal</h3>
+            <p
+              class="modal-subtitle"
+              style="
+                margin: 4px 0 0 0;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.6);
+              "
+            >
+              Re-assign
+              <strong>{{ selectedKrIds.length }} Key Results</strong> sekaligus.
+            </p>
+          </div>
+          <button
+            class="modal-close-btn"
+            @click="showBulkReassignModal = false"
+            title="Tutup Modal"
+          >
+            &times;
+          </button>
+        </div>
+
+        <form
+          @submit.prevent="submitBulkReassignDept"
+          class="okr-form"
+          style="margin-top: 16px"
+        >
+          <div class="form-group">
+            <label>Pilih Departemen Tujuan *</label>
+            <div class="dept-checkbox-grid">
+              <label
+                v-for="dept in availableDepartments"
+                :key="'bulkReassign-' + dept.value"
+                class="dept-checkbox-item"
+                :class="{
+                  selected: bulkReassignDeptSelection.includes(dept.value),
+                }"
+              >
+                <input
+                  type="checkbox"
+                  :value="dept.value"
+                  v-model="bulkReassignDeptSelection"
+                />
+                <span class="dept-name">{{ dept.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px">
+            <button
+              type="button"
+              class="cancel-btn"
+              @click="showBulkReassignModal = false"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="save-kr-btn"
+              :disabled="
+                savingReassign || bulkReassignDeptSelection.length === 0
+              "
+            >
+              {{
+                savingReassign
+                  ? "Memproses..."
+                  : "Terapkan ke " + selectedKrIds.length + " KR"
+              }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Bulk Upload Modal -->
     <BulkUploadModal
       v-if="showBulkModal"
@@ -1131,7 +1608,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import { useAuthStore } from "../../stores/auth";
 import BulkUploadModal from "~/components/BulkUploadModal.vue";
 
@@ -1147,7 +1624,7 @@ function openBulkUpload(type) {
   showBulkModal.value = true;
 }
 const objectives = ref([]);
-const filterYear = ref("");
+const filterYear = ref("2026");
 const loading = ref(false);
 const loadingList = ref(false);
 const errorMessage = ref("");
@@ -1267,6 +1744,34 @@ function formatPerspective(p) {
     .join(" ");
 }
 
+function getKrDepartments(kr) {
+  if (kr.departments && kr.departments.length > 0) {
+    return kr.departments
+      .map((d) => (typeof d === "string" ? d : d.department || d.name || ""))
+      .filter(Boolean);
+  }
+  const match = kr.title?.match(/^\[([^\]]+)\]/);
+  if (match) return [match[1]];
+  return [];
+}
+
+function getObjectiveDepartments(obj) {
+  const set = new Set();
+  const krs = obj.filteredKrs || obj.keyResults || [];
+  for (const kr of krs) {
+    for (const d of getKrDepartments(kr)) {
+      if (d) set.add(d);
+    }
+  }
+  return Array.from(set);
+}
+
+function getAssignmentUserName(a) {
+  if (a.user?.name) return a.user.name;
+  const found = userList.value?.find((u) => u.id === (a.userId || a.user?.id));
+  return found?.name || "Pegawai";
+}
+
 async function fetchUserList() {
   try {
     const response = await $fetch(`${config.public.apiBase}/users`, {
@@ -1291,8 +1796,12 @@ async function fetchAllObjectivesForDropdown() {
   }
 }
 
-async function fetchObjectives() {
-  loadingList.value = true;
+async function fetchObjectives(options = {}) {
+  const isSilent =
+    typeof options === "object" && options !== null && options.silent === true;
+  if (!isSilent) {
+    loadingList.value = true;
+  }
   try {
     let url = `${config.public.apiBase}/objectives`;
     if (filterYear.value) {
@@ -1307,7 +1816,9 @@ async function fetchObjectives() {
   } catch (err) {
     console.error("Error fetching objectives:", err);
   } finally {
-    loadingList.value = false;
+    if (!isSilent) {
+      loadingList.value = false;
+    }
   }
 }
 
@@ -1507,7 +2018,7 @@ async function submitEditObjective() {
       },
     });
     editingObj.value = null;
-    fetchObjectives();
+    await fetchObjectives({ silent: true });
   } catch (err) {
     console.error("Update objective error:", err);
     alert(err.data?.message || "Gagal mengupdate Objective.");
@@ -1541,6 +2052,28 @@ async function confirmDeleteObjective() {
 
 // Edit & Delete individual Key Results/Metrics
 const editingKr = ref(null);
+const lastEditedKrId = ref(null);
+
+function scrollToKr(krId) {
+  if (!krId) return;
+  lastEditedKrId.value = krId;
+  nextTick(() => {
+    // ponytail: native scrollIntoView block nearest keeps target row in view without full container jump
+    const el =
+      document.getElementById(`kr-row-${krId}`) ||
+      document.getElementById(`kr-card-${krId}`) ||
+      document.querySelector(`[data-kr-id="${krId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+  setTimeout(() => {
+    if (lastEditedKrId.value === krId) {
+      lastEditedKrId.value = null;
+    }
+  }, 2500);
+}
+
 const editKrData = ref({
   id: "",
   objectiveId: "",
@@ -1551,6 +2084,7 @@ const editKrData = ref({
   bscPerspective: "",
 });
 const editKrRaciAssignments = ref([]);
+const editKrDepartments = ref([]);
 const savingKr = ref(false);
 
 function startEditKr(kr, objId = null) {
@@ -1568,6 +2102,9 @@ function startEditKr(kr, objId = null) {
     userId: a.userId || a.user?.id,
     raciRole: a.raciRole,
   }));
+  editKrDepartments.value = (kr.departments || [])
+    .map((d) => (typeof d === "string" ? d : d.department || d.name || ""))
+    .filter(Boolean);
 }
 
 async function submitEditKr() {
@@ -1616,20 +2153,29 @@ async function submitEditKr() {
       },
     );
 
-    if (editKrRaciAssignments.value.length > 0) {
+    if (
+      editKrRaciAssignments.value.length > 0 ||
+      editKrDepartments.value.length > 0
+    ) {
       await $fetch(
         `${config.public.apiBase}/key-results/${editKrData.value.id}/assign`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${auth.token}` },
-          body: { assignments: editKrRaciAssignments.value, departments: [] },
+          body: {
+            assignments: editKrRaciAssignments.value,
+            departments: editKrDepartments.value,
+          },
         },
       );
     }
 
+    const targetKrId = editKrData.value.id;
     editingKr.value = null;
     editKrRaciAssignments.value = [];
-    fetchObjectives();
+    editKrDepartments.value = [];
+    await fetchObjectives({ silent: true });
+    scrollToKr(targetKrId);
   } catch (err) {
     console.error("Edit KR error:", err);
     alert(err.data?.message || "Gagal mengubah Key Result.");
@@ -1660,6 +2206,94 @@ async function confirmDeleteKr() {
   } catch (err) {
     console.error("Delete KR error:", err);
     alert(err.data?.message || "Gagal menghapus Key Result.");
+  }
+}
+
+const viewMode = ref("list");
+
+const flatKrList = computed(() => {
+  const result = [];
+  for (const obj of filteredObjectives.value) {
+    for (const kr of obj.filteredKrs || []) {
+      result.push({ obj, kr });
+    }
+  }
+  return result;
+});
+
+const reassignTargetKr = ref(null);
+const reassignDeptSelection = ref([]);
+const showBulkReassignModal = ref(false);
+const bulkReassignDeptSelection = ref([]);
+const savingReassign = ref(false);
+
+function startReassignDept(kr) {
+  reassignTargetKr.value = kr;
+  reassignDeptSelection.value = [...getKrDepartments(kr)];
+}
+
+async function submitReassignDept() {
+  if (!reassignTargetKr.value) return;
+  savingReassign.value = true;
+  try {
+    const kr = reassignTargetKr.value;
+    const targetKrId = kr.id;
+    await $fetch(`${config.public.apiBase}/key-results/${kr.id}/assign`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${auth.token}` },
+      body: {
+        departments: reassignDeptSelection.value,
+      },
+    });
+
+    reassignTargetKr.value = null;
+    reassignDeptSelection.value = [];
+    await fetchObjectives({ silent: true });
+    scrollToKr(targetKrId);
+  } catch (err) {
+    console.error("Reassign dept error:", err);
+    alert(err.data?.message || "Gagal re-assign departemen.");
+  } finally {
+    savingReassign.value = false;
+  }
+}
+
+function openBulkReassignModal() {
+  if (selectedKrIds.value.length === 0) return;
+  bulkReassignDeptSelection.value = [];
+  showBulkReassignModal.value = true;
+}
+
+async function submitBulkReassignDept() {
+  if (
+    selectedKrIds.value.length === 0 ||
+    bulkReassignDeptSelection.value.length === 0
+  )
+    return;
+  savingReassign.value = true;
+  try {
+    const firstSelectedId = selectedKrIds.value[0];
+    for (const krId of selectedKrIds.value) {
+      await $fetch(`${config.public.apiBase}/key-results/${krId}/assign`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${auth.token}` },
+        body: {
+          departments: bulkReassignDeptSelection.value,
+        },
+      });
+    }
+    showBulkReassignModal.value = false;
+    bulkReassignDeptSelection.value = [];
+    selectedKrIds.value = [];
+    await fetchObjectives({ silent: true });
+    if (firstSelectedId) {
+      scrollToKr(firstSelectedId);
+    }
+  } catch (err) {
+    console.error("Bulk reassign error:", err);
+    alert(err.data?.message || "Gagal re-assign massal departemen.");
+  } finally {
+    savingReassign.value = false;
   }
 }
 
@@ -2274,11 +2908,143 @@ select:focus {
 }
 
 /* List Column Styles */
+.list-section.card {
+  color: #171c20;
+}
+
+.list-section.card,
+.list-section.card h2,
+.list-section.card h3,
+.list-section.card label,
+.list-section.card select,
+.list-section.card .kr-search-input,
+.list-section.card .select-all-label,
+.list-section.card .table-obj-title,
+.list-section.card .table-kr-title,
+.list-section.card .kr-title,
+.list-section.card .kr-stats,
+.list-section.card .kr-data-table th,
+.list-section.card .kr-data-table td,
+.list-section.card .year-badge,
+.list-section.card .dept-badge,
+.list-section.card .kr-dept-chip,
+.list-section.card .pic-chip,
+.list-section.card .perspective-badge,
+.list-section.card .status-badge {
+  color: #171c20;
+}
+
+/* Badge & Chip blend colors in .list-section.card */
+.list-section.card .year-badge,
+.list-section.card .table-year-badge {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  color: #171c20;
+}
+
+.list-section.card .dept-badge {
+  background: #ede9fe;
+  border: 1px solid #ddd6fe;
+  color: #171c20;
+}
+
+.list-section.card .kr-dept-chip {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #171c20;
+}
+
+.list-section.card .pic-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #171c20;
+}
+
+.list-section.card .pic-chip.responsible {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #171c20;
+}
+
+.list-section.card .pic-chip.accountable {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #171c20;
+}
+
+.list-section.card .pic-chip.consulted {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #171c20;
+}
+
+.list-section.card .pic-chip.informed {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #171c20;
+}
+
+.list-section.card .perspective-badge {
+  color: #171c20;
+  font-weight: 600;
+}
+
+.list-section.card .perspective-badge.financial {
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  color: #171c20;
+}
+
+.list-section.card .perspective-badge.customer {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #171c20;
+}
+
+.list-section.card .perspective-badge.internal_process {
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+  color: #171c20;
+}
+
+.list-section.card .perspective-badge.learning_growth {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #171c20;
+}
+
+.list-section.card .status-badge {
+  color: #171c20;
+  font-weight: 600;
+}
+
+.list-section.card .status-badge.ontrack {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #171c20;
+}
+
+.list-section.card .status-badge.atrisk {
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  color: #171c20;
+}
+
+.list-section.card .status-badge.offtrack {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #171c20;
+}
+
 .list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+}
+
+.list-header h2 {
+  color: #171c20;
 }
 
 .kr-search-bar {
@@ -2292,14 +3058,15 @@ select:focus {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  color: #f1f5f9;
+  color: #171c20;
   font-size: 14px;
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
 
 .kr-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: #171c20;
+  opacity: 0.45;
 }
 
 .kr-search-input:focus {
@@ -2312,7 +3079,8 @@ select:focus {
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.4);
+  color: #171c20;
+  opacity: 0.6;
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
@@ -2320,7 +3088,7 @@ select:focus {
 }
 
 .kr-search-clear:hover {
-  color: rgba(255, 255, 255, 0.8);
+  opacity: 1;
 }
 
 .filter-group {
@@ -2331,22 +3099,24 @@ select:focus {
 
 .filter-group label {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #171c20;
 }
 
 .filter-group select {
   padding: 6px 12px;
   font-size: 16px;
+  color: #171c20;
 }
 
 .loading-state,
 .empty-state {
   text-align: center;
   padding: 40px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #171c20;
+  opacity: 0.7;
   font-size: 17px;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px dashed rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px dashed rgba(0, 0, 0, 0.12);
   border-radius: 12px;
 }
 
@@ -2391,6 +3161,14 @@ select:focus {
   margin-bottom: 16px;
 }
 
+.obj-header-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
 .year-badge {
   background: rgba(0, 136, 255, 0.15);
   color: #8cc4ff;
@@ -2399,18 +3177,31 @@ select:focus {
   padding: 3px 8px;
   border-radius: 4px;
   display: inline-block;
-  margin-bottom: 6px;
+}
+
+.dept-badge {
+  background: rgba(147, 51, 234, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0.3px;
 }
 
 .objective-item-header h3 {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
+  color: #171c20;
 }
 
 .obj-desc {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #171c20;
+  opacity: 0.7;
   margin: 6px 0 0 0;
 }
 
@@ -2479,11 +3270,12 @@ select:focus {
 .kr-title {
   font-size: 14px;
   border: 1.5px solid var(--card-gamma-650);
+  color: #171c20;
 }
 
 .kr-stats {
   font-size: 14px;
-  color: var(--color-gamma-050);
+  color: #171c20;
 }
 
 .status-badge {
@@ -2970,6 +3762,38 @@ select:focus {
   gap: 6px;
 }
 
+.kr-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kr-dept-chip {
+  background: #cae6ff;
+  color: #001e30;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .pic-chip {
   font-size: 11px;
   padding: 2px 8px;
@@ -2977,6 +3801,18 @@ select:focus {
   border: 1px solid rgba(14, 151, 214, 0.3);
   color: #38bdf8;
   border-radius: 12px;
+}
+
+.pic-chip.responsible {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.pic-chip.accountable {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.3);
+  color: #c084fc;
 }
 
 .ini-actions-group {
@@ -3111,5 +3947,270 @@ select:focus {
   outline: none;
   border-color: var(--color-primary, #00d2ff);
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* Toolbar & View Switcher */
+.kr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #171c20;
+  cursor: pointer;
+}
+
+.view-switch-pills {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 2px;
+}
+
+.view-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #171c20;
+  opacity: 0.7;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-pill-btn:hover {
+  opacity: 1;
+}
+
+.view-pill-btn.active {
+  background: rgba(0, 210, 255, 0.18);
+  color: #0284c7;
+  opacity: 1;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.bulk-reassign-btn {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bulk-reassign-btn:hover {
+  background: rgba(168, 85, 247, 0.25);
+}
+
+.bulk-delete-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bulk-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* KR Table / List View */
+.kr-table-container {
+  overflow-x: auto;
+  border: 1.5px solid var(--color-gamma-850);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  max-height: 700px;
+  overflow-y: auto;
+}
+
+.kr-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+  color: #171c20;
+}
+
+.kr-data-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--color-field, #f1f5f9);
+  z-index: 2;
+}
+
+.kr-data-table th {
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #171c20;
+  opacity: 0.8;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.kr-table-row {
+  transition: background 0.15s ease;
+  color: #171c20;
+  scroll-margin-top: 50px;
+}
+
+.kr-table-row.highlighted-row {
+  background: rgba(0, 210, 255, 0.12) !important;
+  transition: background 0.5s ease;
+}
+
+.kr-list-row.highlighted-row {
+  border-color: #00d2ff !important;
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.25);
+  transition: all 0.5s ease;
+}
+
+.kr-table-row:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.kr-table-row td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  vertical-align: middle;
+  color: #171c20;
+}
+
+.table-obj-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.table-year-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  align-self: flex-start;
+}
+
+.table-obj-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-obj-title {
+  font-weight: 600;
+  color: #171c20;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.table-obj-edit-btn {
+  background: transparent;
+  border: none;
+  color: #171c20;
+  opacity: 0.6;
+  cursor: pointer;
+  padding: 1px 4px;
+  font-size: 12px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.table-obj-edit-btn:hover {
+  color: #38bdf8;
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.table-kr-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.table-kr-title {
+  font-weight: 600;
+  color: #171c20;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.table-dept-cell,
+.table-pic-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.table-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.table-action-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
+.reassign-kr-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.reassign-kr-btn:hover {
+  background: rgba(168, 85, 247, 0.22);
+  border-color: rgba(168, 85, 247, 0.6);
+  color: #2f0086;
 }
 </style>

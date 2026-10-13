@@ -284,6 +284,7 @@ function getMenuTitleByPath(path) {
   if (path.startsWith("/c-level")) return "Executive Dashboard";
   if (path.startsWith("/dashboard")) return "Dashboard";
   if (path.startsWith("/initiatives")) return "Inisiatif & Task";
+  if (path.startsWith("/sprint-report")) return "Laporan Capaian Sprint";
   if (path.startsWith("/member-achievement")) return "Capaian Task Member";
   if (path.startsWith("/departments") || path.startsWith("/admin/departments"))
     return "Struktur Departemen";

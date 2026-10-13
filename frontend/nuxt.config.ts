@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:3001/api",
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3001/api",
     },
   },
   // AppSidebar/AppHeader hanya render lewat v-if setelah auth-state client-side

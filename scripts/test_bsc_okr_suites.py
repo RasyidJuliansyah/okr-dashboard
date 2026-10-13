@@ -18,7 +18,7 @@ def run_tests():
             print("\n[Suite 1] Authentication & Login")
             page.goto(f"{BASE_URL}/login", wait_until="networkidle")
             page.wait_for_selector("#email", timeout=10000)
-            page.fill("#email", "admin@skolla.education")
+            page.fill("#email", "hrd@skolla.education")
             page.fill("#password", "SkollaEdu")
             page.click("button[type='submit']")
 

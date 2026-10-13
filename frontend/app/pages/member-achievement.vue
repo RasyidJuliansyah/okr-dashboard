@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-root">
+  <div v-if="isAdmin || isCLevel || isManager" class="admin-root">
     <div class="admin-content">
       <!-- Header Section -->
       <div class="header-section card">
@@ -488,6 +488,12 @@ async function fetchMemberProgress() {
 }
 
 onMounted(async () => {
+  if (!auth.isAuthenticated) {
+    return navigateTo("/login");
+  }
+  if (!isAdmin.value && !isCLevel.value && !isManager.value) {
+    return navigateTo("/dashboard");
+  }
   await fetchMemberProgress();
 });
 </script>

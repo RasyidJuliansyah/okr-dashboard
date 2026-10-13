@@ -89,7 +89,7 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
       fallbackToActive: true,
     });
     const finalSprintId = req.body.sprintId || matchedSprint?.id || null;
-    const finalSprintMonth = req.body.sprintMonth || matchedSprint?.name || null;
+    const finalSprintMonth = finalSprintId || req.body.sprintMonth || matchedSprint?.name || null;
 
     const task = await prisma.task.create({
       data: {

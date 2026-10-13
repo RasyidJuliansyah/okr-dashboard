@@ -63,7 +63,7 @@ model Objective {
   title            String
   description      String?           @db.Text
   quarter          String?
-  year             String            @default("Q3-2026")
+  year             String            @default("2026")
   ownerId          String?           @map("owner_id")
   isActive         Boolean           @default(true) @map("is_active")
   keyResults       KeyResult[]

@@ -1,6 +1,8 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { calculateProgressPercent } from "../utils/progress";
+import { resolveSprint } from "../services/sprint.service";
 
 const prisma = new PrismaClient();
 
@@ -93,11 +95,27 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-    const { month } = req.query;
-    const where: any = { isActive: true };
-    if (month) {
-      where.month = String(month);
+    const { month, year } = req.query;
+
+    // ponytail: Decouple KRs from sprint cycles. All active KRs remain visible (42 base count),
+    // while monthly parameter scopes the linked initiatives.
+    let matchedSprintId: string | null = null;
+    if (month && month !== "ALL") {
+      const sp = await resolveSprint({
+        sprintId: String(month),
+        sprintMonth: String(month),
+        fallbackToActive: false,
+      });
+      matchedSprintId = sp?.id || String(month);
     }
+
+    const where: any = {
+      isActive: true,
+      objective: {
+        isActive: true,
+        ...(year ? { year: String(year) } : {}),
+      },
+    };
 
     // 1. Fetch all KRs with context
     const keyResults = await prisma.keyResult.findMany({
@@ -115,6 +133,33 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
           orderBy: { updatedAt: "asc" },
           select: { newValue: true, updatedAt: true },
         },
+        initiatives: {
+          where: {
+            isActive: true,
+            ...(matchedSprintId
+              ? {
+                  OR: [
+                    { sprintId: matchedSprintId },
+                    { sprintMonth: matchedSprintId },
+                    { sprintMonth: String(month) },
+                  ],
+                }
+              : {}),
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            currentValue: true,
+            targetValue: true,
+            targetType: true,
+            unit: true,
+            status: true,
+            kanbanStatus: true,
+            team: { select: { id: true, name: true } },
+            owner: { select: { id: true, name: true } },
+          },
+        },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -130,6 +175,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         offTrackCount: 0,
         totalProgress: 0,
         averageProgress: 0,
+        keyResults: [],
       };
     });
 
@@ -178,6 +224,53 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       if (kr.status === "ON_TRACK") perspectiveMap[p].onTrackCount++;
       else if (kr.status === "AT_RISK") perspectiveMap[p].atRiskCount++;
       else if (kr.status === "OFF_TRACK") perspectiveMap[p].offTrackCount++;
+
+      const mappedInitiatives = (kr.initiatives || []).map((init: any) => {
+        let initProg = calculateProgressPercent(
+          init.currentValue,
+          init.targetValue,
+          init.targetType,
+        );
+        if (init.kanbanStatus === "DONE" && initProg < 100) {
+          initProg = 100;
+        }
+        return {
+          id: init.id,
+          title: init.title,
+          description: init.description,
+          currentValue: init.currentValue,
+          targetValue: init.targetValue,
+          targetType: init.targetType,
+          unit: init.unit,
+          status: init.status,
+          kanbanStatus: init.kanbanStatus,
+          progress: Math.round(initProg * 10) / 10,
+          team: init.team,
+          owner: init.owner,
+        };
+      });
+
+      const responsible = kr.assignments[0]?.user ?? null;
+      const krDepts = kr.departments.map((d: any) => d.department);
+
+      perspectiveMap[p].keyResults.push({
+        id: kr.id,
+        title: kr.title,
+        bscPerspective: kr.bscPerspective,
+        status: kr.status,
+        progress: progressRounded,
+        currentValue: kr.currentValue,
+        targetValue: kr.targetValue,
+        targetType: kr.targetType,
+        unit: kr.unit,
+        objectiveTitle: kr.objective.title,
+        year: kr.objective.year,
+        month: kr.month,
+        isActive: kr.isActive ? 1 : 0,
+        responsible,
+        departments: krDepts,
+        initiatives: mappedInitiatives,
+      });
 
       // Department aggregation
       kr.departments.forEach((d) => {

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { logAudit } from "../utils/auditLogger";
 
+import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
+
 const prisma = new PrismaClient();
 
 const MONTH_NAMES_ID = [
@@ -310,7 +312,8 @@ export async function toggleSprintLock(
 export async function closeAndRolloverSprint(
   sprintId: string,
   adminId?: string,
-  req?: any
+  req?: any,
+  options?: { rolloverUnfinishedTasks?: boolean }
 ) {
   const sprint = await prisma.sprint.findUnique({
     where: { id: sprintId },
@@ -489,6 +492,48 @@ export async function closeAndRolloverSprint(
         where: { id: nextSprint.id },
         data: { status: "ACTIVE", isLocked: false },
       });
+
+      if (options?.rolloverUnfinishedTasks) {
+        // Rollover incomplete tasks to next sprint, reset baseline to current value
+        const unfinishedTasks = await tx.task.findMany({
+          where: {
+            sprintId,
+            isActive: true,
+            kanbanStatus: { notIn: ["DONE", "CLOSED", "DROP"] },
+            status: { not: "DONE" },
+          },
+        });
+
+        for (const t of unfinishedTasks) {
+          await tx.task.update({
+            where: { id: t.id },
+            data: {
+              sprintId: nextSprint.id,
+              sprintMonth: nextSprint.name,
+              baselineValue: t.currentValue || 0,
+            },
+          });
+        }
+
+        // Rollover incomplete initiatives to next sprint
+        const unfinishedInis = await tx.initiative.findMany({
+          where: {
+            sprintId,
+            isActive: true,
+            kanbanStatus: { notIn: ["DONE", "DROP"] },
+          },
+        });
+
+        for (const ini of unfinishedInis) {
+          await tx.initiative.update({
+            where: { id: ini.id },
+            data: {
+              sprintId: nextSprint.id,
+              sprintMonth: nextSprint.name,
+            },
+          });
+        }
+      }
     }
   });
 
@@ -518,5 +563,550 @@ export async function checkAndAutoRollover() {
     console.log(`[AutoRollover] Closing expired sprint ${expiredActiveSprint.name} (${expiredActiveSprint.id})`);
     await closeAndRolloverSprint(expiredActiveSprint.id, "SYSTEM_CRON");
   }
+}
+
+
+
+function normalizeDept(deptStr: string | null | undefined): string {
+  if (!deptStr) return "";
+  return deptStr.trim().toUpperCase().replace(/&/g, "AND").replace(/[^A-Z0-9]/g, "");
+}
+
+function matchesDepartment(candidate: string | null | undefined, targetDept: string): boolean {
+  if (!candidate || !targetDept) return false;
+  const cNorm = normalizeDept(candidate);
+  const tNorm = normalizeDept(targetDept);
+  if (cNorm === tNorm) return true;
+
+  const groups: Record<string, string[]> = {
+    TECHOPS: ["TECHOPS", "OPERATION"],
+    SSC: ["SSC", "SHAREDSERVICECENTER", "FINANCE", "HR"],
+    SERVICEACCOUNT: ["SERVICEACCOUNT", "SERVICESACCOUNT"],
+    B2BCORPORATE: ["B2BCORPORATE", "B2B", "B2BEXPANSION", "B2BCORPORATION"],
+    PRODUCT: ["PRODUCT", "PRODUCTDATA", "PRODUCTANDDATA"],
+    TECHDEV: ["TECHDEV", "TECHDEVELOPMENT"],
+    TECHAUDITOR: ["TECHAUDITOR"],
+    EDUCATION: ["EDUCATION", "EDUCATIONACADEMIC"],
+    B2C: ["B2C", "B2CCONSUMER"],
+    B2S: ["B2S", "BUSINESSTOSCHOOL"],
+    STRATEGIC: ["STRATEGIC", "STRATEGICPLANNING"],
+  };
+
+  for (const [key, aliases] of Object.entries(groups)) {
+    const isTargetInGroup = key === tNorm || aliases.some((a) => normalizeDept(a) === tNorm);
+    const isCandidateInGroup = key === cNorm || aliases.some((a) => normalizeDept(a) === cNorm);
+    if (isTargetInGroup && isCandidateInGroup) return true;
+  }
+
+  return false;
+}
+
+export async function getSprintReportData(sprintId: string, department?: string) {
+  const sprint = await prisma.sprint.findUnique({
+    where: { id: sprintId },
+  });
+  if (!sprint) throw new Error("Sprint not found");
+
+  const allDepts = await prisma.department.findMany({
+    where: { isActive: true },
+  });
+  const targetDept = department
+    ? allDepts.find(
+        (d) =>
+          d.id === department ||
+          d.value.toUpperCase() === department.toUpperCase() ||
+          d.name.toLowerCase() === department.toLowerCase()
+      )
+    : undefined;
+  const targetDeptId = targetDept?.id;
+  const targetDeptValue = targetDept?.value || department;
+
+  // 1. Fetch Initiatives in this sprint
+  const initiativesRaw = await prisma.initiative.findMany({
+    where: {
+      sprintId,
+      isActive: true,
+    },
+    include: {
+      keyResult: {
+        select: {
+          id: true,
+          title: true,
+          bscPerspective: true,
+          unit: true,
+          targetType: true,
+          targetValue: true,
+          currentValue: true,
+          status: true,
+          objective: { select: { id: true, title: true } },
+        },
+      },
+      team: {
+        select: {
+          id: true,
+          name: true,
+          department: true,
+          departmentId: true,
+          departmentRel: { select: { id: true, name: true, value: true } },
+        },
+      },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          department: true,
+          departmentId: true,
+          departmentRel: { select: { id: true, name: true, value: true } },
+        },
+      },
+      assignedLeader: {
+        select: {
+          id: true,
+          name: true,
+          department: true,
+          departmentId: true,
+          departmentRel: { select: { id: true, name: true, value: true } },
+        },
+      },
+      tasks: {
+        where: { isActive: true },
+        select: {
+          id: true,
+          title: true,
+          targetValue: true,
+          currentValue: true,
+          baselineValue: true,
+          kanbanStatus: true,
+          status: true,
+          targetType: true,
+        },
+      },
+      kpis: {
+        include: { kpi: true },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const initiatives = targetDeptValue
+    ? initiativesRaw.filter((ini) => {
+        return (
+          ini.team?.departmentId === targetDeptId ||
+          matchesDepartment(ini.team?.department, targetDeptValue) ||
+          matchesDepartment(ini.team?.departmentRel?.value, targetDeptValue) ||
+          ini.owner?.departmentId === targetDeptId ||
+          matchesDepartment(ini.owner?.department, targetDeptValue) ||
+          matchesDepartment(ini.owner?.departmentRel?.value, targetDeptValue) ||
+          ini.assignedLeader?.departmentId === targetDeptId ||
+          matchesDepartment(ini.assignedLeader?.department, targetDeptValue) ||
+          matchesDepartment(ini.assignedLeader?.departmentRel?.value, targetDeptValue)
+        );
+      })
+    : initiativesRaw;
+
+  // 2. Fetch Tasks in this sprint
+  const tasksRaw = await prisma.task.findMany({
+    where: {
+      sprintId,
+      isActive: true,
+    },
+    include: {
+      initiative: {
+        select: {
+          id: true,
+          title: true,
+          keyResultId: true,
+          team: {
+            select: {
+              id: true,
+              name: true,
+              department: true,
+              departmentId: true,
+              departmentRel: { select: { id: true, name: true, value: true } },
+            },
+          },
+          keyResult: {
+            select: {
+              id: true,
+              title: true,
+              bscPerspective: true,
+              unit: true,
+              targetType: true,
+              targetValue: true,
+              currentValue: true,
+              objective: { select: { id: true, title: true } },
+            },
+          },
+        },
+      },
+      assignedTeamMember: {
+        select: {
+          id: true,
+          name: true,
+          department: true,
+          departmentId: true,
+          departmentRel: { select: { id: true, name: true, value: true } },
+        },
+      },
+      creator: {
+        select: {
+          id: true,
+          name: true,
+          department: true,
+          departmentId: true,
+          departmentRel: { select: { id: true, name: true, value: true } },
+        },
+      },
+      kpis: {
+        include: { kpi: true },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const tasks = targetDeptValue
+    ? tasksRaw.filter((t) => {
+        return (
+          t.assignedTeamMember?.departmentId === targetDeptId ||
+          matchesDepartment(t.assignedTeamMember?.department, targetDeptValue) ||
+          matchesDepartment(t.assignedTeamMember?.departmentRel?.value, targetDeptValue) ||
+          matchesDepartment(t.targetDept, targetDeptValue) ||
+          matchesDepartment(t.creatorDept, targetDeptValue) ||
+          t.initiative?.team?.departmentId === targetDeptId ||
+          matchesDepartment(t.initiative?.team?.department, targetDeptValue) ||
+          matchesDepartment(t.initiative?.team?.departmentRel?.value, targetDeptValue)
+        );
+      })
+    : tasksRaw;
+
+  // Process Task Report Items
+  const taskReportItems = tasks.map((t) => {
+    const tgt = t.targetValue || 0;
+    const base = t.baselineValue || 0;
+    const curr = t.currentValue || 0;
+    let sprintAchievementPct = 0;
+
+    if (t.status === "DONE" || t.kanbanStatus === "DONE" || t.kanbanStatus === "CLOSED") {
+      sprintAchievementPct = 100;
+    } else if (tgt > base) {
+      sprintAchievementPct = calculateProgressPercent(curr, tgt, t.targetType, base);
+    } else if (tgt > 0) {
+      sprintAchievementPct = calculateProgressPercent(curr, tgt, t.targetType, 0);
+    } else {
+      sprintAchievementPct = curr > 0 ? 100 : 0;
+    }
+
+    sprintAchievementPct = Math.min(100, Math.max(0, Math.round(sprintAchievementPct * 10) / 10));
+
+    return {
+      id: t.id,
+      title: t.title,
+      initiativeId: t.initiativeId,
+      initiativeTitle: t.initiative?.title || "(Standalone / Cross-Dept)",
+      assigneeName: t.assignedTeamMember?.name || "Unassigned",
+      department: t.assignedTeamMember?.department || t.targetDept || t.creatorDept || "-",
+      baselineValue: base,
+      targetValue: tgt,
+      currentValue: curr,
+      unit: t.unit || "",
+      sprintAchievementPct,
+      status: t.status,
+      kanbanStatus: t.kanbanStatus || "TODO",
+      isCrossDept: t.isCrossDept,
+    };
+  });
+
+  // Process Initiative Report Items
+  const initiativeReportItems = initiatives.map((ini) => {
+    let sprintAchievementPct = 0;
+    const activeTasks = ini.tasks || [];
+    const val = ini.achievedValue !== null && ini.achievedValue !== undefined ? ini.achievedValue : ini.currentValue || 0;
+
+    if (ini.kanbanStatus === "DONE") {
+      sprintAchievementPct = 100;
+    } else if (activeTasks.length > 0) {
+      const sumTaskPct = activeTasks.reduce((s, t) => {
+        const tTgt = t.targetValue || 0;
+        const tBase = t.baselineValue || 0;
+        const tCurr = t.currentValue || 0;
+        let pct = 0;
+        if (t.status === "DONE" || t.kanbanStatus === "DONE" || t.kanbanStatus === "CLOSED") {
+          pct = 100;
+        } else if (tTgt > tBase) {
+          pct = calculateProgressPercent(tCurr, tTgt, t.targetType, tBase);
+        } else if (tTgt > 0) {
+          pct = calculateProgressPercent(tCurr, tTgt, t.targetType, 0);
+        }
+        return s + Math.min(100, Math.max(0, pct));
+      }, 0);
+      sprintAchievementPct = sumTaskPct / activeTasks.length;
+    } else if (ini.targetValue > 0) {
+      sprintAchievementPct = calculateProgressPercent(val, ini.targetValue, ini.targetType);
+    }
+
+    sprintAchievementPct = Math.min(100, Math.max(0, Math.round(sprintAchievementPct * 10) / 10));
+
+    const completedTaskCount = activeTasks.filter(
+      (t) => t.status === "DONE" || t.kanbanStatus === "DONE" || t.kanbanStatus === "CLOSED"
+    ).length;
+
+    return {
+      id: ini.id,
+      title: ini.title,
+      keyResultId: ini.keyResultId,
+      keyResultTitle: ini.keyResult?.title || "-",
+      teamName: ini.team?.name || "-",
+      ownerName: ini.assignedLeader?.name || ini.owner?.name || "-",
+      department: ini.team?.department || ini.owner?.department || ini.assignedLeader?.department || "-",
+      sprintMonth: ini.sprintMonth,
+      targetValue: ini.targetValue,
+      currentValue: ini.currentValue,
+      achievedValue: ini.achievedValue,
+      sprintAchievementPct,
+      kanbanStatus: ini.kanbanStatus,
+      taskCount: activeTasks.length,
+      completedTaskCount,
+    };
+  });
+
+  // 3. Process Key Results
+  const allKrs = await prisma.keyResult.findMany({
+    where: {
+      isActive: true,
+      objective: {
+        isActive: true,
+        year: sprint.year || "2026",
+      },
+    },
+    include: {
+      objective: { select: { id: true, title: true, year: true } },
+      departments: true,
+      sprintTargets: { where: { sprintId } },
+    },
+  });
+
+  // ponytail: Decouple KRs from sprint cycles. All active KRs remain visible across sprints unless department filter is applied.
+  const keyResults = targetDeptValue
+    ? allKrs.filter(
+        (kr) =>
+          kr.departments.some((d) => matchesDepartment(d.department, targetDeptValue)) ||
+          initiatives.some((i) => i.keyResultId === kr.id) ||
+          tasks.some((t) => t.initiative?.keyResultId === kr.id)
+      )
+    : allKrs;
+
+  const krReportItems = keyResults.map((kr) => {
+    const st = kr.sprintTargets?.[0];
+    const relatedInis = initiativeReportItems.filter((i) => i.keyResultId === kr.id);
+
+    // Capaian Sprint (Periode Ini):
+    let sprintBaseline = 0;
+    let sprintTarget = 0;
+    let sprintCurrent = 0;
+    let sprintAchievementPct = 0;
+
+    if (st && st.targetValue > 0) {
+      sprintBaseline = st.baselineValue || 0;
+      sprintTarget = st.targetValue;
+      sprintCurrent = st.currentValue || 0;
+      sprintAchievementPct = calculateProgressPercent(
+        sprintCurrent,
+        sprintTarget,
+        kr.targetType,
+        sprintBaseline
+      );
+    } else if (relatedInis.length > 0) {
+      sprintBaseline = 0;
+      sprintTarget = 100;
+      const avgIni =
+        relatedInis.reduce((s, item) => s + item.sprintAchievementPct, 0) /
+        relatedInis.length;
+      sprintCurrent = Math.round(avgIni * 10) / 10;
+      sprintAchievementPct = sprintCurrent;
+    }
+
+    sprintAchievementPct = Math.min(100, Math.max(0, Math.round(sprintAchievementPct * 10) / 10));
+
+    // Capaian Kumulatif KR Berjalan:
+    const annualTarget = kr.targetValue;
+    const cumulativeCurrent = kr.currentValue || 0;
+    const cumulativeAchievementPct =
+      annualTarget > 0
+        ? calculateProgressPercent(cumulativeCurrent, annualTarget, kr.targetType)
+        : 0;
+
+    const deptNames = kr.departments?.map((d: any) => d.department).join(", ") || "-";
+
+    return {
+      keyResultId: kr.id,
+      title: kr.title,
+      objectiveTitle: kr.objective?.title || "-",
+      bscPerspective: kr.bscPerspective,
+      unit: kr.unit || "%",
+      targetType: kr.targetType,
+      department: deptNames,
+      sprintBaseline,
+      sprintTarget,
+      sprintCurrent,
+      sprintAchievementPct,
+      annualTarget,
+      cumulativeCurrent,
+      cumulativeAchievementPct: Math.round(cumulativeAchievementPct * 10) / 10,
+      status: calculateAutoStatus(cumulativeAchievementPct),
+    };
+  });
+
+
+  // 4. Process KPIs (Master KPI)
+  const kpiMap = new Map<
+    string,
+    {
+      kpiId: string;
+      name: string;
+      unit: string;
+      bscPerspective: string;
+      department: string | null;
+      sprintTarget: number;
+      sprintCurrent: number;
+      linkedTasksCount: number;
+      linkedInitiativesCount: number;
+    }
+  >();
+
+  const relevantInitiatives = targetDeptValue ? initiatives : initiativesRaw;
+  const relevantTasks = targetDeptValue ? tasks : tasksRaw;
+
+  relevantInitiatives.forEach((ini) => {
+    (ini.kpis || []).forEach((ik: any) => {
+      if (!ik.kpi) return;
+      const kId = ik.kpiId;
+      const existing = kpiMap.get(kId) || {
+        kpiId: kId,
+        name: ik.kpi.name,
+        unit: ik.kpi.unit,
+        bscPerspective: ik.kpi.bscPerspective,
+        department: ik.kpi.department || null,
+        sprintTarget: 0,
+        sprintCurrent: 0,
+        linkedTasksCount: 0,
+        linkedInitiativesCount: 0,
+      };
+      existing.sprintTarget += ik.targetValue || 0;
+      existing.sprintCurrent += ik.currentValue || 0;
+      existing.linkedInitiativesCount += 1;
+      kpiMap.set(kId, existing);
+    });
+  });
+
+  relevantTasks.forEach((t) => {
+    (t.kpis || []).forEach((tk: any) => {
+      if (!tk.kpi) return;
+      const kId = tk.kpiId;
+      const existing = kpiMap.get(kId) || {
+        kpiId: kId,
+        name: tk.kpi.name,
+        unit: tk.kpi.unit,
+        bscPerspective: tk.kpi.bscPerspective,
+        department: tk.kpi.department || null,
+        sprintTarget: 0,
+        sprintCurrent: 0,
+        linkedTasksCount: 0,
+        linkedInitiativesCount: 0,
+      };
+      existing.sprintTarget += tk.targetValue || 0;
+      existing.sprintCurrent += tk.currentValue || 0;
+      existing.linkedTasksCount += 1;
+      kpiMap.set(kId, existing);
+    });
+  });
+
+  if (targetDeptValue) {
+    const deptKpis = await prisma.kpi.findMany({
+      where: { isActive: true },
+    });
+    deptKpis
+      .filter((k) => matchesDepartment(k.department, targetDeptValue))
+      .forEach((k) => {
+        if (!kpiMap.has(k.id)) {
+          kpiMap.set(k.id, {
+            kpiId: k.id,
+            name: k.name,
+            unit: k.unit,
+            bscPerspective: k.bscPerspective,
+            department: k.department || null,
+            sprintTarget: k.defaultTarget || 0,
+            sprintCurrent: 0,
+            linkedTasksCount: 0,
+            linkedInitiativesCount: 0,
+          });
+        }
+      });
+  }
+
+  const kpiReportItems = Array.from(kpiMap.values()).map((k) => {
+    const tgt = k.sprintTarget;
+    const curr = k.sprintCurrent;
+    let sprintAchievementPct = 0;
+    if (tgt > 0) {
+      sprintAchievementPct = Math.min(100, Math.round(((curr / tgt) * 100) * 10) / 10);
+    } else {
+      sprintAchievementPct = curr > 0 ? 100 : 0;
+    }
+    return {
+      ...k,
+      sprintTarget: Math.round(tgt * 100) / 100,
+      sprintCurrent: Math.round(curr * 100) / 100,
+      sprintAchievementPct,
+    };
+  });
+
+  // 5. Overall Summaries
+  const totalInitiatives = initiativeReportItems.length;
+  const completedInitiatives = initiativeReportItems.filter(
+    (i) => i.kanbanStatus === "DONE"
+  ).length;
+
+  const totalTasks = taskReportItems.length;
+  const completedTasks = taskReportItems.filter(
+    (t) => t.status === "DONE" || t.kanbanStatus === "DONE" || t.kanbanStatus === "CLOSED"
+  ).length;
+
+  const allSprintPcts = [
+    ...initiativeReportItems.map((i) => i.sprintAchievementPct),
+    ...taskReportItems.map((t) => t.sprintAchievementPct),
+  ];
+  const avgSprintAchievementPct =
+    allSprintPcts.length > 0
+      ? Math.round((allSprintPcts.reduce((s, p) => s + p, 0) / allSprintPcts.length) * 10) / 10
+      : 0;
+
+  const avgCumulativeKrAchievementPct =
+    krReportItems.length > 0
+      ? Math.round(
+          (krReportItems.reduce((s, kr) => s + kr.cumulativeAchievementPct, 0) /
+            krReportItems.length) *
+            10
+        ) / 10
+      : 0;
+
+  return {
+    sprintId: sprint.id,
+    sprintName: sprint.name,
+    startDate: sprint.startDate,
+    endDate: sprint.endDate,
+    status: sprint.status,
+    isLocked: sprint.isLocked,
+    avgSprintAchievementPct,
+    avgCumulativeKrAchievementPct,
+    totalInitiatives,
+    completedInitiatives,
+    totalTasks,
+    completedTasks,
+    totalKpis: kpiReportItems.length,
+    krs: krReportItems,
+    initiatives: initiativeReportItems,
+    tasks: taskReportItems,
+    kpis: kpiReportItems,
+  };
 }
 

@@ -160,10 +160,16 @@
                       Tutup
                     </button>
                     <NuxtLink
+                      :to="`/sprint-report?sprintId=${sprint.id}`"
+                      class="action-btn report-btn"
+                    >
+                      Laporan
+                    </NuxtLink>
+                    <NuxtLink
                       :to="`/member-achievement?sprintId=${sprint.id}`"
                       class="action-btn view-btn"
                     >
-                      Lihat
+                      Member
                     </NuxtLink>
                   </div>
                 </td>
@@ -207,6 +213,46 @@
           </div>
         </div>
       </div>
+
+      <!-- Close & Rollover Sprint Modal -->
+      <div v-if="showCloseModal" class="modal-backdrop">
+        <div class="modal-card">
+          <h3 style="margin-bottom: 8px;">Tutup & Rollover Sprint</h3>
+          <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
+            Anda akan menutup sprint <strong>{{ sprintToClose?.name }}</strong>. Capaian member akan dibekukan, target KR diakumulasikan, dan sprint berikutnya akan diaktifkan.
+          </p>
+
+          <div style="background: var(--bg-page, #f8fafc); border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 20px;">
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
+              <input
+                v-model="rolloverUnfinishedTasks"
+                type="checkbox"
+                style="margin-top: 3px; accent-color: #0284c7; width: 16px; height: 16px;"
+              />
+              <span style="font-size: 13.5px; color: #1e293b; line-height: 1.4;">
+                <strong>Rollover task & inisiatif belum selesai ke sprint baru</strong>
+                <br />
+                <span style="color: #64748b; font-size: 12.5px;">
+                  Baseline otomatis diisi nilai terakhir sehingga capaian sprint baru me-reset dari 0%, sementara capaian KR tetap berjalan akumulatif.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button class="secondary-btn" :disabled="closingSprintId !== null" @click="showCloseModal = false">
+              Batal
+            </button>
+            <button
+              class="danger-btn"
+              :disabled="closingSprintId !== null"
+              @click="handleExecuteCloseSprint"
+            >
+              {{ closingSprintId ? "Memproses..." : "Konfirmasi Tutup Sprint" }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -244,6 +290,10 @@ const editForm = ref({
   startDate: "",
   endDate: "",
 });
+
+const showCloseModal = ref(false);
+const sprintToClose = ref<any>(null);
+const rolloverUnfinishedTasks = ref(true);
 
 function formatDate(isoStr: string) {
   if (!isoStr) return "-";
@@ -316,13 +366,15 @@ async function handleToggleLock(sprint: any) {
   }
 }
 
-async function confirmCloseSprint(sprint: any) {
-  const ok = await confirmDialog(
-    `Apakah Anda yakin ingin menutup "${sprint.name}"?\n\n` +
-      `Semua capaian member akan dibekukan ke arsip, target KR diakumulasikan, dan sprint berikutnya akan diaktifkan.`,
-  );
-  if (!ok) return;
+function confirmCloseSprint(sprint: any) {
+  sprintToClose.value = sprint;
+  rolloverUnfinishedTasks.value = true;
+  showCloseModal.value = true;
+}
 
+async function handleExecuteCloseSprint() {
+  if (!sprintToClose.value) return;
+  const sprint = sprintToClose.value;
   closingSprintId.value = sprint.id;
   errorMsg.value = "";
   successMsg.value = "";
@@ -330,8 +382,12 @@ async function confirmCloseSprint(sprint: any) {
     await $fetch<any>(`${API}/sprints/${sprint.id}/close`, {
       method: "POST",
       headers: getHeaders(),
+      body: {
+        rolloverUnfinishedTasks: rolloverUnfinishedTasks.value,
+      },
     });
-    successMsg.value = `Sprint ${sprint.name} berhasil ditutup dan capaian member telah di-snapshot!`;
+    successMsg.value = `Sprint ${sprint.name} berhasil ditutup! Capaian member dibekukan${rolloverUnfinishedTasks.value ? " & task belum selesai di-rollover ke sprint baru" : ""}.`;
+    showCloseModal.value = false;
     await fetchSprints();
   } catch (err: any) {
     errorMsg.value = err?.data?.error || err.message || "Gagal menutup sprint";
@@ -658,6 +714,12 @@ onMounted(() => {
   color: #0369a1;
   border-color: #bae6fd;
 }
+.report-btn {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
 .loading-state,
 .empty-state {
   padding: 2.5rem;

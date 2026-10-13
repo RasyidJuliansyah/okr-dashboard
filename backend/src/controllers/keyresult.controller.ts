@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { logAudit } from "../utils/auditLogger";
 import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
+import { getActiveSprint } from "../services/sprint.service";
 
 const prisma = new PrismaClient();
 
@@ -61,7 +62,8 @@ export async function createKeyResult(req: AuthRequest, res: Response) {
     }
 
     const now = new Date();
-    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const activeSprint = await getActiveSprint();
+    const defaultMonth = activeSprint?.id || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const targetTypeVal = targetType || "AT_LEAST";
     const currVal = currentValue !== undefined ? parseFloat(currentValue) : 0;
     const tgtVal = parseFloat(targetValue);
@@ -508,7 +510,7 @@ export async function assignUsersToKeyResult(req: AuthRequest, res: Response) {
     const { assignments, departments } = req.body;
 
     // --- Backward compatibility: support lama { userIds: string[] } ---
-    let normalizedAssignments: { userId: string; raciRole: string }[] = [];
+    let normalizedAssignments: { userId: string; raciRole: string }[] | null = null;
     if (Array.isArray(req.body.userIds)) {
       normalizedAssignments = req.body.userIds.map((uid: string) => ({
         userId: uid,
@@ -516,6 +518,9 @@ export async function assignUsersToKeyResult(req: AuthRequest, res: Response) {
       }));
     } else if (Array.isArray(assignments)) {
       normalizedAssignments = assignments;
+    } else if (assignments === undefined && departments !== undefined) {
+      // Re-assign hanya departemen tanpa mengubah assignments
+      normalizedAssignments = null;
     } else {
       return res
         .status(400)
@@ -526,8 +531,8 @@ export async function assignUsersToKeyResult(req: AuthRequest, res: Response) {
     const kr = await prisma.keyResult.findUnique({ where: { id } });
     if (!kr) return res.status(404).json({ message: "Key Result not found" });
 
-    // Jika ada assignments yang dipass (bukan array kosong)
-    if (normalizedAssignments.length > 0) {
+    // Jika ada assignments yang dipass (bukan array kosong dan bukan null)
+    if (normalizedAssignments && normalizedAssignments.length > 0) {
       // Validasi RACI: minimal 1 ACCOUNTABLE
       const accountables = normalizedAssignments.filter(
         (a) => a.raciRole === "ACCOUNTABLE",
@@ -576,33 +581,39 @@ export async function assignUsersToKeyResult(req: AuthRequest, res: Response) {
       }
     }
 
-    // Transaksi: replace assignments + departments
-    await prisma.$transaction([
-      prisma.krAssignment.deleteMany({ where: { keyResultId: id } }),
-      ...(normalizedAssignments.length > 0
-        ? [
-            prisma.krAssignment.createMany({
-              data: normalizedAssignments.map((a) => ({
-                keyResultId: id,
-                userId: a.userId,
-                raciRole: a.raciRole,
-                assignedBy: req.user?.id || "system",
-              })),
-            }),
-          ]
-        : []),
-      prisma.krDepartment.deleteMany({ where: { keyResultId: id } }),
-      ...(departments && Array.isArray(departments) && departments.length > 0
-        ? [
-            prisma.krDepartment.createMany({
-              data: departments.map((dept: string) => ({
-                keyResultId: id,
-                department: dept,
-              })),
-            }),
-          ]
-        : []),
-    ]);
+    // Transaksi: replace assignments dan/atau departments sesuai request
+    const txOps: any[] = [];
+    if (normalizedAssignments !== null) {
+      txOps.push(prisma.krAssignment.deleteMany({ where: { keyResultId: id } }));
+      if (normalizedAssignments.length > 0) {
+        txOps.push(
+          prisma.krAssignment.createMany({
+            data: normalizedAssignments.map((a) => ({
+              keyResultId: id,
+              userId: a.userId,
+              raciRole: a.raciRole,
+              assignedBy: req.user?.id || "system",
+            })),
+          }),
+        );
+      }
+    }
+
+    if (departments !== undefined && Array.isArray(departments)) {
+      txOps.push(prisma.krDepartment.deleteMany({ where: { keyResultId: id } }));
+      if (departments.length > 0) {
+        txOps.push(
+          prisma.krDepartment.createMany({
+            data: departments.map((dept: string) => ({
+              keyResultId: id,
+              department: dept,
+            })),
+          }),
+        );
+      }
+    }
+
+    await prisma.$transaction(txOps);
 
     const updated = await prisma.keyResult.findUnique({
       where: { id },
