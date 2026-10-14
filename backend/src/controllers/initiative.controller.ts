@@ -1886,9 +1886,6 @@ export async function updateInitiativeKanbanStatus(
           kanbanStatus:
             task.isCrossDept && kanbanStatus === "DONE" ? "CLOSED" : kanbanStatus,
           status: newStatus,
-          ...(kanbanStatus === "DONE"
-            ? { currentValue: task.targetValue || 1 }
-            : {}),
         },
       });
 

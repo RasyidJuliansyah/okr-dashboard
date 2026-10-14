@@ -421,9 +421,6 @@ export async function updateCrossDeptStatus(req: AuthRequest, res: Response) {
       data: {
         kanbanStatus: targetStatus,
         status: generalStatus,
-        ...(targetStatus === "CLOSED"
-          ? { currentValue: task.targetValue || 1 }
-          : {}),
       },
       include: {
         creator: {
