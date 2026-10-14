@@ -102,15 +102,15 @@ async function run() {
 
   // 5. Foreign Key and Sprint Month Normalization check
   console.log("\n5. Testing Data Normalization integrity...");
-  const inits = await prisma.initiative.findMany({ select: { sprintId: true, sprintMonth: true } });
-  const invalidInits = inits.filter((i) => i.sprintMonth !== i.sprintId).length;
-  console.log(`   Initiatives where sprintMonth != sprintId: ${invalidInits}`);
-  assert.strictEqual(invalidInits, 0, "All initiatives must have sprintMonth == sprintId");
+  const inits = await prisma.initiative.findMany({ select: { sprintId: true, sprintMonth: true, sprint: { select: { name: true } } } });
+  const invalidInits = inits.filter((i) => i.sprintMonth !== i.sprint?.name).length;
+  console.log(`   Initiatives where sprintMonth != sprint.name: ${invalidInits}`);
+  assert.strictEqual(invalidInits, 0, "All initiatives must have sprintMonth == sprint.name");
 
-  const tasks = await prisma.task.findMany({ select: { sprintId: true, sprintMonth: true } });
-  const invalidTasks = tasks.filter((t) => t.sprintMonth !== t.sprintId).length;
-  console.log(`   Tasks where sprintMonth != sprintId: ${invalidTasks}`);
-  assert.strictEqual(invalidTasks, 0, "All tasks must have sprintMonth == sprintId");
+  const tasks = await prisma.task.findMany({ select: { sprintId: true, sprintMonth: true, sprint: { select: { name: true } } } });
+  const invalidTasks = tasks.filter((t) => t.sprintMonth !== t.sprint?.name).length;
+  console.log(`   Tasks where sprintMonth != sprint.name: ${invalidTasks}`);
+  assert.strictEqual(invalidTasks, 0, "All tasks must have sprintMonth == sprint.name");
 
   const normalizedKrs = await prisma.keyResult.count({
     where: {

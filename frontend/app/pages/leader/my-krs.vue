@@ -385,18 +385,10 @@
                               }}
                             </span>
                             <span
-                              class="badge bg-grey"
-                              v-if="task.status === 'ON_TRACK'"
+                              class="badge"
+                              :class="getStatusClass(task.status)"
                               >{{ task.status }}</span
                             >
-                            <span
-                              class="badge bg-red"
-                              v-else-if="task.status === 'AT_RISK'"
-                              >{{ task.status }}</span
-                            >
-                            <span class="badge bg-green" v-else>{{
-                              task.status
-                            }}</span>
                             <button
                               v-if="
                                 authStore.user?.role === 'LEADER' ||
@@ -968,33 +960,7 @@ function formatDateShort(dateStr) {
 
 function getSprintMonthValue(sprint) {
   if (!sprint) return "";
-  if (sprint.endDate) {
-    const d = new Date(sprint.endDate);
-    const y = d.getUTCFullYear();
-    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-    return `${y}-${m}`;
-  }
-  const monthNames = [
-    "januari",
-    "februari",
-    "maret",
-    "april",
-    "mei",
-    "juni",
-    "juli",
-    "agustus",
-    "september",
-    "oktober",
-    "november",
-    "desember",
-  ];
-  for (let i = 0; i < monthNames.length; i++) {
-    if (sprint.name?.toLowerCase().includes(monthNames[i])) {
-      const year = sprint.year || new Date().getFullYear();
-      return `${year}-${String(i + 1).padStart(2, "0")}`;
-    }
-  }
-  return "";
+  return sprint.name || "";
 }
 
 function getCurrentRunningSprintMonth() {
@@ -1006,31 +972,21 @@ function getCurrentRunningSprintMonth() {
       const end = new Date(s.endDate);
       return now >= start && now <= end;
     });
-    if (matched) return getSprintMonthValue(matched);
+    if (matched) return matched.name;
   }
   if (activeSprint.value) {
-    return getSprintMonthValue(activeSprint.value);
+    return activeSprint.value.name;
   }
-  let y = now.getFullYear();
-  let m = now.getMonth() + 1;
-  if (now.getDate() >= 21) {
-    m += 1;
-    if (m > 12) {
-      m = 1;
-      y += 1;
-    }
-  }
-  return `${y}-${String(m).padStart(2, "0")}`;
+  return "";
 }
 
 function getResolvedSprintMonth(val) {
   if (!val) return getCurrentRunningSprintMonth();
-  if (/^\d{4}-\d{2}$/.test(val)) return val;
   const found = systemSprints.value.find(
     (s) => s.name?.toLowerCase() === val.toLowerCase() || s.id === val,
   );
   if (found) {
-    return getSprintMonthValue(found);
+    return found.name;
   }
   return val;
 }
@@ -1038,7 +994,7 @@ function getResolvedSprintMonth(val) {
 const sprintOptions = computed(() => {
   const now = new Date();
   return systemSprints.value.map((s) => {
-    const val = getSprintMonthValue(s);
+    const val = s.name;
     const startStr = formatDateShort(s.startDate);
     const endStr = formatDateShort(s.endDate);
     const isCurrent =
@@ -1352,7 +1308,8 @@ function getProgressPercent(kr) {
 }
 
 function getStatusClass(status) {
-  if (status === "ON_TRACK") return "bg-green";
+  if (status === "DONE") return "bg-green";
+  if (status === "ON_TRACK") return "bg-blue";
   if (status === "AT_RISK") return "bg-yellow";
   if (status === "OFF_TRACK") return "bg-red";
   return "bg-gray";

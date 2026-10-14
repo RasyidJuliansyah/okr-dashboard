@@ -36,37 +36,39 @@ async function run() {
     data: { quarter: "Q3" },
   });
 
-  // 2. Initiatives: Set sprintMonth to sprintId
-  const allInits = await prisma.initiative.findMany();
+  // 2. Initiatives: Set sprintMonth to sprint name
+  const allInits = await prisma.initiative.findMany({ include: { sprint: true } });
   let initsUpdated = 0;
   for (const init of allInits) {
     const targetSprintId = init.sprintId || activeSprint.id;
+    const targetSprint = init.sprint || (await prisma.sprint.findUnique({ where: { id: targetSprintId } })) || activeSprint;
     await prisma.initiative.update({
       where: { id: init.id },
       data: {
         sprintId: targetSprintId,
-        sprintMonth: targetSprintId,
+        sprintMonth: targetSprint.name,
       },
     });
     initsUpdated++;
   }
-  console.log(`Normalized Initiatives (sprintMonth = sprintId): ${initsUpdated} records`);
+  console.log(`Normalized Initiatives (sprintMonth = sprint.name): ${initsUpdated} records`);
 
-  // 3. Tasks: Set sprintMonth to sprintId
-  const allTasks = await prisma.task.findMany();
+  // 3. Tasks: Set sprintMonth to sprint name
+  const allTasks = await prisma.task.findMany({ include: { sprint: true } });
   let tasksUpdated = 0;
   for (const t of allTasks) {
     const targetSprintId = t.sprintId || activeSprint.id;
+    const targetSprint = t.sprint || (await prisma.sprint.findUnique({ where: { id: targetSprintId } })) || activeSprint;
     await prisma.task.update({
       where: { id: t.id },
       data: {
         sprintId: targetSprintId,
-        sprintMonth: targetSprintId,
+        sprintMonth: targetSprint.name,
       },
     });
     tasksUpdated++;
   }
-  console.log(`Normalized Tasks (sprintMonth = sprintId): ${tasksUpdated} records`);
+  console.log(`Normalized Tasks (sprintMonth = sprint.name): ${tasksUpdated} records`);
 
   // 4. KeyResults: Normalize month to active sprint UUID
   const activeKrs = await prisma.keyResult.findMany({
@@ -90,13 +92,13 @@ async function run() {
     where: { isActive: true, objective: { year: "2026" } },
   });
   const initsMatched = await prisma.initiative.count({
-    where: { sprintMonth: activeSprint.id },
+    where: { sprintMonth: activeSprint.name },
   });
 
   console.log("\n--- Verification Summary ---");
   console.log(`Objectives with year="2026": ${total2026Objs}`);
   console.log(`Active KRs under year="2026": ${totalActiveKrs}`);
-  console.log(`Initiatives with sprintMonth = activeSprint.id: ${initsMatched}`);
+  console.log(`Initiatives with sprintMonth = activeSprint.name: ${initsMatched}`);
   console.log("Database normalization complete!");
 }
 

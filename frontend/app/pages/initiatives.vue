@@ -387,7 +387,7 @@
                       }}</span>
                       <span
                         class="badge"
-                        :class="getTaskStatusClass(task.status)"
+                        :class="getStatusClass(task.status)"
                         style="
                           font-size: 9px;
                           padding: 1px 4px;
@@ -711,7 +711,7 @@
                       }}</span>
                       <span
                         class="badge"
-                        :class="getTaskStatusClass(task.status)"
+                        :class="getStatusClass(task.status)"
                         style="
                           font-size: 9px;
                           padding: 1px 4px;
@@ -1077,7 +1077,7 @@
                       }}</span>
                       <span
                         class="badge"
-                        :class="getTaskStatusClass(task.status)"
+                        :class="getStatusClass(task.status)"
                         style="
                           font-size: 9px;
                           padding: 1px 4px;
@@ -2982,10 +2982,15 @@ function getTaskAssigneeName(task: any): string {
   return "Belum di-assign";
 }
 
-function getTaskStatusClass(status: string) {
+function getStatusClass(status?: string | null) {
   if (status === "ON_TRACK") return "bg-green";
   if (status === "AT_RISK") return "bg-yellow";
-  return "bg-red";
+  if (status === "OFF_TRACK") return "bg-red";
+  return "bg-gray";
+}
+
+function getTaskStatusClass(status: string) {
+  return getStatusClass(status);
 }
 
 // ─── Drag & Drop Handlers ───
@@ -5119,5 +5124,22 @@ onMounted(async () => {
   color: #1e40af;
   line-height: 1.4;
   margin-bottom: 8px;
+}
+
+.bg-green {
+  background: #dcfce7;
+  color: #166534;
+}
+.bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+.bg-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.bg-gray {
+  background: var(--bg-page);
+  color: #475569;
 }
 </style>

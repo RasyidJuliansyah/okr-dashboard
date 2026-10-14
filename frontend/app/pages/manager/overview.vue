@@ -920,7 +920,8 @@ function getProgressPercent(item) {
 }
 
 function getStatusClass(status) {
-  if (status === "ON_TRACK") return "bg-green";
+  if (status === "DONE") return "bg-green";
+  if (status === "ON_TRACK") return "bg-blue";
   if (status === "AT_RISK") return "bg-yellow";
   if (status === "OFF_TRACK") return "bg-red";
   return "bg-gray";
@@ -1106,6 +1107,10 @@ function getGroupedKrs(keyResults) {
   padding: 2px 8px;
   border-radius: 6px;
   font-weight: 600;
+}
+.bg-blue {
+  background: #dbeafe;
+  color: #1e40af;
 }
 .bg-green {
   background: #dcfce7;

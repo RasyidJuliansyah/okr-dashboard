@@ -1462,7 +1462,8 @@ function getProgressColorClass(pct) {
 }
 
 function getStatusClass(status) {
-  if (status === "ON_TRACK") return "bg-green";
+  if (status === "DONE") return "bg-green";
+  if (status === "ON_TRACK") return "bg-blue";
   if (status === "AT_RISK") return "bg-yellow";
   if (status === "OFF_TRACK") return "bg-red";
   return "bg-gray";

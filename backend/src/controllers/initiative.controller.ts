@@ -1262,6 +1262,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
     }
 
     let finalSprintId = req.body.sprintId || null;
+    let finalSprintName: string | null = sprintMonth || null;
     if (!finalSprintId) {
       const matchedSprint = await resolveSprint({
         date: startDate || dueDate || null,
@@ -1270,9 +1271,15 @@ export async function createInitiative(req: AuthRequest, res: Response) {
       });
       if (matchedSprint) {
         finalSprintId = matchedSprint.id;
+        finalSprintName = matchedSprint.name;
         if (!sprintMonth) {
           sprintMonth = matchedSprint.name;
         }
+      }
+    } else {
+      const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+      if (sp) {
+        finalSprintName = sp.name;
       }
     }
 
@@ -1430,7 +1437,7 @@ export async function createInitiative(req: AuthRequest, res: Response) {
           startDate: startDate ? new Date(startDate) : null,
           dueDate: dueDate ? new Date(dueDate) : null,
           finishDate: finishDate ? new Date(finishDate) : null,
-          sprintMonth: finalSprintId || sprintMonth || null,
+          sprintMonth: finalSprintName || sprintMonth || null,
           ...(Array.isArray(kpis) &&
             kpis.length > 0 && {
               kpis: {
@@ -1641,13 +1648,20 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
       weight !== undefined ? parseFloat(weight) : existing.weight;
 
     let targetSprintId = req.body.sprintId !== undefined ? (req.body.sprintId || null) : existing.sprintId;
-    if (!targetSprintId && (effectiveSprintMonth || startDate || dueDate || existing.startDate || existing.dueDate)) {
+    let targetSprintName: string | null = effectiveSprintMonth;
+    if (targetSprintId) {
+      const sp = await prisma.sprint.findUnique({ where: { id: targetSprintId } });
+      if (sp) targetSprintName = sp.name;
+    } else if (effectiveSprintMonth || startDate || dueDate || existing.startDate || existing.dueDate) {
       const sp = await resolveSprint({
         date: startDate || dueDate || existing.startDate || existing.dueDate,
         sprintMonth: effectiveSprintMonth,
         fallbackToActive: false,
       });
-      if (sp) targetSprintId = sp.id;
+      if (sp) {
+        targetSprintId = sp.id;
+        targetSprintName = sp.name;
+      }
     }
 
     const targetTypeVal = req.body.targetType !== undefined ? req.body.targetType : existing.targetType;
@@ -1691,7 +1705,7 @@ export async function updateInitiative(req: AuthRequest, res: Response): Promise
         ...(finishDate !== undefined && {
           finishDate: finishDate ? new Date(finishDate) : null,
         }),
-        ...(sprintMonth !== undefined && { sprintMonth: sprintMonth || null }),
+        ...(targetSprintName !== undefined && { sprintMonth: targetSprintName || null }),
         ...(targetSprintId !== undefined && { sprintId: targetSprintId }),
       },
       include: {
@@ -2793,7 +2807,11 @@ export async function createTask(req: AuthRequest, res: Response) {
     const targetFinishDate = finishDate !== undefined ? finishDate : dueDate;
     const finalSprintMonth = sprintMonth || initiative.sprintMonth || null;
     let finalSprintId = req.body.sprintId || null;
-    if (!finalSprintId) {
+    let finalSprintName: string | null = finalSprintMonth;
+    if (finalSprintId) {
+      const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+      if (sp) finalSprintName = sp.name;
+    } else {
       const matchedSprint = await resolveSprint({
         date: startDate || targetFinishDate || null,
         sprintMonth: finalSprintMonth,
@@ -2801,8 +2819,13 @@ export async function createTask(req: AuthRequest, res: Response) {
       });
       if (matchedSprint) {
         finalSprintId = matchedSprint.id;
+        finalSprintName = matchedSprint.name;
       } else {
         finalSprintId = initiative.sprintId || (await getActiveSprint())?.id || null;
+        if (finalSprintId) {
+          const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+          if (sp) finalSprintName = sp.name;
+        }
       }
     }
     const finalBaselineValue = req.body.baselineValue !== undefined ? parseFloat(req.body.baselineValue) : 0;
@@ -2835,7 +2858,7 @@ export async function createTask(req: AuthRequest, res: Response) {
           assignedTeamMemberId: curAssigneeId,
           creatorId: userId,
           assignedBy: userId,
-          sprintMonth: finalSprintMonth,
+          sprintMonth: finalSprintName || finalSprintMonth,
           sprintId: finalSprintId,
           startDate: startDate ? new Date(startDate) : null,
           finishDate: targetFinishDate ? new Date(targetFinishDate) : null,
@@ -2985,7 +3008,11 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
       const finalSprintMonth =
         item.sprintMonth || initiative.sprintMonth || null;
       let finalSprintId = item.sprintId || null;
-      if (!finalSprintId) {
+      let finalSprintName: string | null = finalSprintMonth;
+      if (finalSprintId) {
+        const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+        if (sp) finalSprintName = sp.name;
+      } else {
         const matchedSprint = await resolveSprint({
           date: item.startDate || itemFinishDate || null,
           sprintMonth: finalSprintMonth,
@@ -2993,8 +3020,13 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
         });
         if (matchedSprint) {
           finalSprintId = matchedSprint.id;
+          finalSprintName = matchedSprint.name;
         } else {
           finalSprintId = initiative.sprintId || (await getActiveSprint())?.id || null;
+          if (finalSprintId) {
+            const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+            if (sp) finalSprintName = sp.name;
+          }
         }
       }
       const finalBaselineValue = item.baselineValue !== undefined ? parseFloat(item.baselineValue) : 0;
@@ -3018,7 +3050,7 @@ export async function createTasksBatch(req: AuthRequest, res: Response) {
             assignedTeamMemberId: targetAssigneeId,
             creatorId: userId,
             assignedBy: userId,
-            sprintMonth: finalSprintMonth,
+            sprintMonth: finalSprintName || finalSprintMonth,
             sprintId: finalSprintId,
             startDate: item.startDate ? new Date(item.startDate) : null,
             finishDate: itemFinishDate ? new Date(itemFinishDate) : null,
@@ -3205,13 +3237,20 @@ export async function updateTask(req: AuthRequest, res: Response) {
     const targetFinishDate = finishDate !== undefined ? finishDate : dueDate;
 
     let targetSprintId = req.body.sprintId !== undefined ? req.body.sprintId : existing.sprintId;
-    if (!targetSprintId && (sprintMonth || startDate || targetFinishDate || existing.startDate || existing.finishDate)) {
+    let targetSprintName: string | null = sprintMonth !== undefined ? sprintMonth : existing.sprintMonth;
+    if (targetSprintId) {
+      const sp = await prisma.sprint.findUnique({ where: { id: targetSprintId } });
+      if (sp) targetSprintName = sp.name;
+    } else if (sprintMonth || startDate || targetFinishDate || existing.startDate || existing.finishDate) {
       const sp = await resolveSprint({
         date: startDate || targetFinishDate || existing.startDate || existing.finishDate,
         sprintMonth: sprintMonth || existing.sprintMonth,
         fallbackToActive: false,
       });
-      if (sp) targetSprintId = sp.id;
+      if (sp) {
+        targetSprintId = sp.id;
+        targetSprintName = sp.name;
+      }
     }
 
     const targetTypeVal = req.body.targetType !== undefined ? req.body.targetType : existing.targetType;
@@ -3245,7 +3284,7 @@ export async function updateTask(req: AuthRequest, res: Response) {
         ...(finalStatus !== undefined && { status: finalStatus }),
         ...(kanbanStatus !== undefined && { kanbanStatus }),
         ...(assignedTeamMemberId !== undefined && { assignedTeamMemberId }),
-        ...(sprintMonth !== undefined && { sprintMonth }),
+        ...(targetSprintName !== undefined && { sprintMonth: targetSprintName }),
         ...(targetSprintId !== undefined && { sprintId: targetSprintId }),
         ...(startDate !== undefined && {
           startDate: startDate ? new Date(startDate) : null,

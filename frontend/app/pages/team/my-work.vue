@@ -3500,7 +3500,8 @@ function getProgressPercent(task) {
 }
 
 function getStatusClass(status) {
-  if (status === "ON_TRACK") return "bg-green";
+  if (status === "DONE") return "bg-green";
+  if (status === "ON_TRACK") return "bg-blue";
   if (status === "AT_RISK") return "bg-yellow";
   if (status === "OFF_TRACK") return "bg-red";
   return "bg-gray";
@@ -4232,6 +4233,10 @@ function getGroupedInitiatives(initiatives) {
 .bg-red {
   background: #fee2e2;
   color: #991b1b;
+}
+.bg-blue {
+  background: #dbeafe;
+  color: #1e40af;
 }
 .bg-gray {
   background: var(--bg-page);

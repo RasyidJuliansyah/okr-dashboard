@@ -155,3 +155,10 @@ export function calculateAutoStatus(
   if (progressPercent >= 50) return "AT_RISK";
   return "OFF_TRACK";
 }
+
+export function getStatusClass(status?: string | null): string {
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  if (status === "OFF_TRACK") return "bg-red";
+  return "bg-gray";
+}

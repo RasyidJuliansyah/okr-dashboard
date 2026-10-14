@@ -617,4 +617,22 @@ p {
 }
 
 }
+
+/* Global Status Badge Classes */
+.bg-green {
+  background: #dcfce7;
+  color: #166534;
+}
+.bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+.bg-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.bg-gray {
+  background: var(--bg-page, #f8fafc);
+  color: #475569;
+}
 </style>
