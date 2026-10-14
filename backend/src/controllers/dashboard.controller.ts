@@ -7,6 +7,48 @@ import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress
 const prisma = new PrismaClient();
 
 /**
+ * Helper: Hitung progress satu inisiatif berdasarkan active task atau currentValue / targetValue.
+ */
+function computeSingleInitiativeProgress(init: {
+  currentValue?: number | null;
+  achievedValue?: number | null;
+  targetValue: number;
+  targetType?: string | null;
+  tasks?: Array<{
+    currentValue: number;
+    targetValue: number;
+    targetType?: string | null;
+    baselineValue?: number | null;
+  }>;
+}): number {
+  const activeTasks = init.tasks || [];
+  if (activeTasks.length > 0) {
+    const sumTask = activeTasks.reduce((sum, t) => {
+      const tVal = t.targetValue || 0;
+      return (
+        sum +
+        (tVal > 0
+          ? calculateProgressPercent(
+              t.currentValue,
+              tVal,
+              t.targetType || undefined,
+              t.baselineValue || 0,
+            )
+          : 0)
+      );
+    }, 0);
+    return Math.round((sumTask / activeTasks.length) * 10) / 10;
+  }
+  const val =
+    init.achievedValue !== null && init.achievedValue !== undefined
+      ? init.achievedValue
+      : init.currentValue || 0;
+  return init.targetValue > 0
+    ? calculateProgressPercent(val, init.targetValue, init.targetType || undefined)
+    : 0;
+}
+
+/**
  * Helper: Hitung progress riil Key Result berdasarkan inisiatif & task aktif di dalamnya.
  * Jika tidak ada inisiatif, fallback ke currentValue / targetValue milik KR itu sendiri.
  */
@@ -28,33 +70,9 @@ function computeKrProgress(kr: {
   }>;
 }): number {
   if (kr.initiatives && kr.initiatives.length > 0) {
-    const initProgressList = kr.initiatives.map((init) => {
-      const activeTasks = init.tasks || [];
-      if (activeTasks.length > 0) {
-        const sumTask = activeTasks.reduce((sum, t) => {
-          const tVal = t.targetValue || 0;
-          return (
-            sum +
-            (tVal > 0
-              ? calculateProgressPercent(
-                  t.currentValue,
-                  tVal,
-                  t.targetType || undefined,
-                  t.baselineValue || 0,
-                )
-              : 0)
-          );
-        }, 0);
-        return Math.round((sumTask / activeTasks.length) * 10) / 10;
-      }
-      const val =
-        init.achievedValue !== null && init.achievedValue !== undefined
-          ? init.achievedValue
-          : init.currentValue || 0;
-      return init.targetValue > 0
-        ? calculateProgressPercent(val, init.targetValue, init.targetType || undefined)
-        : 0;
-    });
+    const initProgressList = kr.initiatives.map((init) =>
+      computeSingleInitiativeProgress(init),
+    );
     const avg =
       initProgressList.reduce((s, p) => s + p, 0) / initProgressList.length;
     return Math.round(avg * 10) / 10;
@@ -175,7 +193,19 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           scopedKrMap.set(assign.keyResult.id, assign.keyResult);
         }
       });
-      const scopedKrs = Array.from(scopedKrMap.values());
+      const scopedKrIds = Array.from(scopedKrMap.keys());
+      const scopedKrDetails =
+        scopedKrIds.length > 0
+          ? await prisma.keyResult.findMany({
+              where: { id: { in: scopedKrIds }, isActive: true },
+              include: {
+                initiatives: {
+                  where: { isActive: true },
+                  include: { tasks: { where: { isActive: true } } },
+                },
+              },
+            })
+          : [];
 
       let totalCount = 0,
         sumProgress = 0,
@@ -183,8 +213,22 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         atRiskCount = 0,
         offTrackCount = 0;
 
-      // Metrik TEAM dihitung dari rata-rata kartu Task Saya yang aktif
-      if (myTasks.length > 0) {
+      // Metrik TEAM dihitung dari agregat KR yang diampu jika ada, fallback ke Task / Initiative
+      let mappedScopedKrs: any[] = [];
+      if (scopedKrDetails.length > 0) {
+        totalCount = scopedKrDetails.length;
+        mappedScopedKrs = scopedKrDetails.map((kr: any) => {
+          const pct = computeKrProgress(kr);
+          sumProgress += pct;
+          const status = kr.isManualOverride
+            ? kr.status
+            : calculateAutoStatus(pct);
+          if (status === "ON_TRACK") onTrackCount++;
+          else if (status === "AT_RISK") atRiskCount++;
+          else if (status === "OFF_TRACK") offTrackCount++;
+          return { ...kr, progress: pct, status };
+        });
+      } else if (myTasks.length > 0) {
         totalCount = myTasks.length;
         myTasks.forEach((task: any) => {
           const tVal = task.targetValue || 0;
@@ -206,16 +250,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       } else if (initiatives.length > 0) {
         totalCount = initiatives.length;
         initiatives.forEach((ini: any) => {
-          const val =
-            ini.achievedValue !== null && ini.achievedValue !== undefined
-              ? ini.achievedValue
-              : ini.currentValue || 0;
-          const pct =
-            ini.targetValue > 0
-              ? calculateProgressPercent(val, ini.targetValue, ini.targetType || undefined)
-              : 0;
-          sumProgress += pct;
-          const status = calculateAutoStatus(pct);
+          const initProgress = computeSingleInitiativeProgress(ini);
+          sumProgress += initProgress;
+          const status = calculateAutoStatus(initProgress);
           if (status === "ON_TRACK") onTrackCount++;
           else if (status === "AT_RISK") atRiskCount++;
           else if (status === "OFF_TRACK") offTrackCount++;
@@ -237,7 +274,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         },
         initiatives,
         myTasks,
-        keyResults: scopedKrs,
+        keyResults: mappedScopedKrs.length > 0 ? mappedScopedKrs : Array.from(scopedKrMap.values()),
       });
     }
 
@@ -308,7 +345,19 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           leaderKrMap.set(assign.keyResult.id, assign.keyResult);
         }
       });
-      const leaderKrs = Array.from(leaderKrMap.values());
+      const leaderKrIds = Array.from(leaderKrMap.keys());
+      const leaderKrDetails =
+        leaderKrIds.length > 0
+          ? await prisma.keyResult.findMany({
+              where: { id: { in: leaderKrIds }, isActive: true },
+              include: {
+                initiatives: {
+                  where: { isActive: true },
+                  include: { tasks: { where: { isActive: true } } },
+                },
+              },
+            })
+          : [];
 
       let totalCount = 0,
         sumProgress = 0,
@@ -316,39 +365,25 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         atRiskCount = 0,
         offTrackCount = 0;
 
-      // Metrik LEADER dihitung dari rata-rata kartu Inisiatif tim
-      if (initiatives.length > 0) {
+      // Metrik LEADER dihitung dari agregat KR yang diampu jika ada, fallback ke Inisiatif tim
+      let mappedLeaderKrs: any[] = [];
+      if (leaderKrDetails.length > 0) {
+        totalCount = leaderKrDetails.length;
+        mappedLeaderKrs = leaderKrDetails.map((kr: any) => {
+          const pct = computeKrProgress(kr);
+          sumProgress += pct;
+          const status = kr.isManualOverride
+            ? kr.status
+            : calculateAutoStatus(pct);
+          if (status === "ON_TRACK") onTrackCount++;
+          else if (status === "AT_RISK") atRiskCount++;
+          else if (status === "OFF_TRACK") offTrackCount++;
+          return { ...kr, progress: pct, status };
+        });
+      } else if (initiatives.length > 0) {
         totalCount = initiatives.length;
         initiatives.forEach((ini: any) => {
-          let initProgress = 0;
-          const activeTasks = ini.tasks || [];
-          if (activeTasks.length > 0) {
-            const sumTask = activeTasks.reduce((s: number, t: any) => {
-              const tVal = t.targetValue || 0;
-              return (
-                s +
-                (tVal > 0
-                  ? calculateProgressPercent(
-                      t.currentValue,
-                      tVal,
-                      t.targetType || undefined,
-                      t.baselineValue || 0,
-                    )
-                  : 0)
-              );
-            }, 0);
-            initProgress = Math.round((sumTask / activeTasks.length) * 10) / 10;
-          } else {
-            const val =
-              ini.achievedValue !== null && ini.achievedValue !== undefined
-                ? ini.achievedValue
-                : ini.currentValue || 0;
-            initProgress =
-              ini.targetValue > 0
-                ? calculateProgressPercent(val, ini.targetValue, ini.targetType || undefined)
-                : 0;
-          }
-
+          const initProgress = computeSingleInitiativeProgress(ini);
           sumProgress += initProgress;
           const status = calculateAutoStatus(initProgress);
           if (status === "ON_TRACK") onTrackCount++;
@@ -372,7 +407,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         },
         leadingTeams,
         initiatives,
-        keyResults: leaderKrs,
+        keyResults: mappedLeaderKrs.length > 0 ? mappedLeaderKrs : Array.from(leaderKrMap.values()),
       });
     }
 
@@ -575,15 +610,19 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         ...mappedPendingTaskApprovals,
       ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-      // Hitung metrics berdasarkan rata-rata progress KR yang diampu Manager
+      // Hitung metrics KR & kumpulkan inisiatif untuk agregat progress inisiatif
       let totalKRs = 0,
         sumProgress = 0,
         onTrackCount = 0,
         atRiskCount = 0,
         offTrackCount = 0;
+      const allInitiatives: any[] = [];
       const detailedObjectives = objectives.map((obj) => {
         const keyResultsWithProgress = obj.keyResults.map((kr: any) => {
           totalKRs++;
+          if (kr.initiatives && kr.initiatives.length > 0) {
+            allInitiatives.push(...kr.initiatives);
+          }
           const progressPercent = computeKrProgress(kr);
           sumProgress += progressPercent;
           const status = kr.isManualOverride
@@ -612,6 +651,10 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         };
       });
 
+      // Agregat averageProgress: berdasarkan rata-rata progress KR yang diampu Manager
+      const avgProgress =
+        Math.round((totalKRs > 0 ? sumProgress / totalKRs : 0) * 10) / 10;
+
       return res.status(200).json({
         role,
         scope: "department",
@@ -619,8 +662,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         metrics: {
           totalObjectives: objectives.length,
           totalKeyResults: totalKRs,
-          averageProgress:
-            Math.round((totalKRs > 0 ? sumProgress / totalKRs : 0) * 10) / 10,
+          totalInitiatives: allInitiatives.length,
+          averageProgress: avgProgress,
           onTrackCount,
           atRiskCount,
           offTrackCount,
@@ -663,14 +706,19 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       orderBy: { createdAt: "desc" },
     });
 
+    // Hitung metrics KR & kumpulkan inisiatif untuk agregat progress inisiatif
     let totalKRs = 0,
       sumProgress = 0,
       onTrackCount = 0,
       atRiskCount = 0,
       offTrackCount = 0;
+    const allInitiatives: any[] = [];
     const detailedObjectives = objectives.map((obj) => {
       const keyResultsWithProgress = obj.keyResults.map((kr: any) => {
         totalKRs++;
+        if (kr.initiatives && kr.initiatives.length > 0) {
+          allInitiatives.push(...kr.initiatives);
+        }
         const progressPercent = computeKrProgress(kr);
         sumProgress += progressPercent;
         const status = kr.isManualOverride
@@ -696,14 +744,18 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       };
     });
 
+    // Agregat averageProgress: berdasarkan rata-rata progress seluruh KR perusahaan
+    const avgProgress =
+      Math.round((totalKRs > 0 ? sumProgress / totalKRs : 0) * 10) / 10;
+
     return res.status(200).json({
       role,
       scope: "company",
       metrics: {
         totalObjectives: objectives.length,
         totalKeyResults: totalKRs,
-        averageProgress:
-          Math.round((totalKRs > 0 ? sumProgress / totalKRs : 0) * 10) / 10,
+        totalInitiatives: allInitiatives.length,
+        averageProgress: avgProgress,
         onTrackCount,
         atRiskCount,
         offTrackCount,

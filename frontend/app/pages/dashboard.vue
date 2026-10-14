@@ -3,7 +3,9 @@
     <div class="dashboard-container">
       <!-- Alert Messages -->
       <div v-if="errorMsg" class="alert alert-error mb-4">{{ errorMsg }}</div>
-      <div v-if="successMsg" class="alert alert-success mb-4">{{ successMsg }}</div>
+      <div v-if="successMsg" class="alert alert-success mb-4">
+        {{ successMsg }}
+      </div>
 
       <!-- Controls & Filter Row -->
       <section class="controls-card card">
@@ -80,7 +82,7 @@
             {{ summaryData.previousMetrics.averageProgress }}%
           </p>
           <p v-else class="task-desc">
-            Agregat progres seluruh Key Results dalam scope terpilih.
+            Agregat progres seluruh Key Results yang diampu.
           </p>
         </div>
 
@@ -300,149 +302,6 @@
         </div>
       </section>
 
-      <!-- ─── SECTION: TASK LINTAS DEPARTEMEN (CROSS-DEPARTMENT) ─── -->
-      <section
-        v-if="
-          ['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER', 'TEAM'].includes(userRole)
-        "
-        class="role-section cross-dept-section"
-      >
-        <div class="section-title-row">
-          <div>
-            <div class="cross-dept-title-wrap">
-              <h3 class="section-title">Task Lintas Departemen (Cross-Dept)</h3>
-              <span class="count-badge-amber">
-                {{
-                  (crossDeptData.incoming?.length || 0) +
-                  (crossDeptData.outgoing?.length || 0)
-                }}
-                Task Aktif
-              </span>
-            </div>
-            <p class="section-sub-desc">
-              Koordinasi penugasan antar divisi dengan alur lifecycle status
-              terintegrasi & thread diskusi.
-            </p>
-          </div>
-        </div>
-
-        <!-- Metric Summary Cards -->
-        <div class="cross-dept-summary-grid mb-4">
-          <div class="cross-summary-card card">
-            <span class="cross-summary-val text-blue">
-              {{ crossDeptData.incoming?.length || 0 }}
-            </span>
-            <span class="cross-summary-lbl">Masuk (Target Dept Saya)</span>
-          </div>
-          <div class="cross-summary-card card">
-            <span class="cross-summary-val text-amber">
-              {{ crossDeptData.outgoing?.length || 0 }}
-            </span>
-            <span class="cross-summary-lbl">Keluar (Dibuat Dept Saya)</span>
-          </div>
-          <div class="cross-summary-card card">
-            <span class="cross-summary-val text-red">
-              {{ crossDeptNeedInfoCount }}
-            </span>
-            <span class="cross-summary-lbl">Butuh Info (Need Info)</span>
-          </div>
-          <div class="cross-summary-card card">
-            <span class="cross-summary-val text-green">
-              {{ crossDeptResolvedCount }}
-            </span>
-            <span class="cross-summary-lbl">Terselesaikan / Closed</span>
-          </div>
-        </div>
-
-        <!-- Tab Controls -->
-        <div class="cross-dept-tabs-nav mb-4">
-          <button
-            type="button"
-            class="cross-dept-tab-btn"
-            :class="{ active: activeCrossDeptTab === 'incoming' }"
-            @click="activeCrossDeptTab = 'incoming'"
-          >
-            Masuk ke Departemen Saya ({{ crossDeptData.incoming?.length || 0 }})
-          </button>
-          <button
-            type="button"
-            class="cross-dept-tab-btn"
-            :class="{ active: activeCrossDeptTab === 'outgoing' }"
-            @click="activeCrossDeptTab = 'outgoing'"
-          >
-            Dibuat oleh Departemen Saya ({{
-              crossDeptData.outgoing?.length || 0
-            }})
-          </button>
-        </div>
-
-        <!-- Tasks Content -->
-        <div v-if="loadingCrossDept" class="cross-dept-empty-card card">
-          Memuat data task lintas departemen...
-        </div>
-        <div
-          v-else-if="currentCrossDeptList.length === 0"
-          class="cross-dept-empty-card card"
-        >
-          {{
-            activeCrossDeptTab === "incoming"
-              ? "Tidak ada task lintas departemen yang masuk ke departemen Anda saat ini."
-              : "Departemen Anda belum membuat permintaan task ke departemen lain."
-          }}
-        </div>
-        <div v-else class="cross-dept-grid">
-          <div
-            v-for="task in currentCrossDeptList"
-            :key="task.id"
-            class="cross-dept-item-card card"
-          >
-            <div class="cross-dept-item-top">
-              <span class="cross-dept-route-badge">
-                {{ task.creatorDept || "?" }} → {{ task.targetDept || "?" }}
-              </span>
-              <span
-                class="cross-dept-status-pill current-status-pill"
-                :class="
-                  (task.kanbanStatus || task.status || 'todo').toLowerCase()
-                "
-              >
-                {{ formatCrossDeptStatus(task.kanbanStatus || task.status) }}
-              </span>
-            </div>
-
-            <h4 class="cross-dept-item-title">{{ task.title }}</h4>
-            <p v-if="task.description" class="cross-dept-item-desc">
-              {{ task.description }}
-            </p>
-
-            <div class="cross-dept-meta-row">
-              <span v-if="task.creator?.name" class="meta-sub">
-                Pemohon: <strong>{{ task.creator.name }}</strong>
-              </span>
-              <span v-if="task.assignedTeamMember?.name" class="meta-sub">
-                Assignee: <strong>{{ task.assignedTeamMember.name }}</strong>
-              </span>
-              <span v-if="task.dueDate || task.finishDate" class="meta-sub">
-                Tenggat:
-                <strong>{{
-                  formatDate(task.finishDate || task.dueDate)
-                }}</strong>
-              </span>
-            </div>
-
-            <div class="cross-dept-item-actions">
-              <button
-                type="button"
-                class="btn-open-cross-thread"
-                @click="openCrossDeptModal(task.id)"
-              >
-                Detail & Diskusi
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- ─── SECTION: INITIATIVE PROGRESS (Leader, Manager, C-Level, Admin) ─── -->
       <section v-if="showInitiativeProgress" class="role-section">
         <div class="section-title-row">
@@ -620,6 +479,149 @@
         </div>
       </section>
 
+      <!-- ─── SECTION: TASK LINTAS DEPARTEMEN (CROSS-DEPARTMENT) ─── -->
+      <section
+        v-if="
+          ['ADMIN', 'C_LEVEL', 'MANAGER', 'LEADER', 'TEAM'].includes(userRole)
+        "
+        class="role-section cross-dept-section"
+      >
+        <div class="section-title-row">
+          <div>
+            <div class="cross-dept-title-wrap">
+              <h3 class="section-title">Task Lintas Departemen (Cross-Dept)</h3>
+              <span class="count-badge-amber">
+                {{
+                  (crossDeptData.incoming?.length || 0) +
+                  (crossDeptData.outgoing?.length || 0)
+                }}
+                Task Aktif
+              </span>
+            </div>
+            <p class="section-sub-desc">
+              Koordinasi penugasan antar divisi dengan alur lifecycle status
+              terintegrasi & thread diskusi.
+            </p>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="cross-dept-summary-grid mb-4">
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-blue">
+              {{ crossDeptData.incoming?.length || 0 }}
+            </span>
+            <span class="cross-summary-lbl">Masuk (Target Dept Saya)</span>
+          </div>
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-amber">
+              {{ crossDeptData.outgoing?.length || 0 }}
+            </span>
+            <span class="cross-summary-lbl">Keluar (Dibuat Dept Saya)</span>
+          </div>
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-red">
+              {{ crossDeptNeedInfoCount }}
+            </span>
+            <span class="cross-summary-lbl">Butuh Info (Need Info)</span>
+          </div>
+          <div class="cross-summary-card card">
+            <span class="cross-summary-val text-green">
+              {{ crossDeptResolvedCount }}
+            </span>
+            <span class="cross-summary-lbl">Terselesaikan / Closed</span>
+          </div>
+        </div>
+
+        <!-- Tab Controls -->
+        <div class="cross-dept-tabs-nav mb-4">
+          <button
+            type="button"
+            class="cross-dept-tab-btn"
+            :class="{ active: activeCrossDeptTab === 'incoming' }"
+            @click="activeCrossDeptTab = 'incoming'"
+          >
+            Masuk ke Departemen Saya ({{ crossDeptData.incoming?.length || 0 }})
+          </button>
+          <button
+            type="button"
+            class="cross-dept-tab-btn"
+            :class="{ active: activeCrossDeptTab === 'outgoing' }"
+            @click="activeCrossDeptTab = 'outgoing'"
+          >
+            Dibuat oleh Departemen Saya ({{
+              crossDeptData.outgoing?.length || 0
+            }})
+          </button>
+        </div>
+
+        <!-- Tasks Content -->
+        <div v-if="loadingCrossDept" class="cross-dept-empty-card card">
+          Memuat data task lintas departemen...
+        </div>
+        <div
+          v-else-if="currentCrossDeptList.length === 0"
+          class="cross-dept-empty-card card"
+        >
+          {{
+            activeCrossDeptTab === "incoming"
+              ? "Tidak ada task lintas departemen yang masuk ke departemen Anda saat ini."
+              : "Departemen Anda belum membuat permintaan task ke departemen lain."
+          }}
+        </div>
+        <div v-else class="cross-dept-grid">
+          <div
+            v-for="task in currentCrossDeptList"
+            :key="task.id"
+            class="cross-dept-item-card card"
+          >
+            <div class="cross-dept-item-top">
+              <span class="cross-dept-route-badge">
+                {{ task.creatorDept || "?" }} → {{ task.targetDept || "?" }}
+              </span>
+              <span
+                class="cross-dept-status-pill current-status-pill"
+                :class="
+                  (task.kanbanStatus || task.status || 'todo').toLowerCase()
+                "
+              >
+                {{ formatCrossDeptStatus(task.kanbanStatus || task.status) }}
+              </span>
+            </div>
+
+            <h4 class="cross-dept-item-title">{{ task.title }}</h4>
+            <p v-if="task.description" class="cross-dept-item-desc">
+              {{ task.description }}
+            </p>
+
+            <div class="cross-dept-meta-row">
+              <span v-if="task.creator?.name" class="meta-sub">
+                Pemohon: <strong>{{ task.creator.name }}</strong>
+              </span>
+              <span v-if="task.assignedTeamMember?.name" class="meta-sub">
+                Assignee: <strong>{{ task.assignedTeamMember.name }}</strong>
+              </span>
+              <span v-if="task.dueDate || task.finishDate" class="meta-sub">
+                Tenggat:
+                <strong>{{
+                  formatDate(task.finishDate || task.dueDate)
+                }}</strong>
+              </span>
+            </div>
+
+            <div class="cross-dept-item-actions">
+              <button
+                type="button"
+                class="btn-open-cross-thread"
+                @click="openCrossDeptModal(task.id)"
+              >
+                Detail & Diskusi
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ─── MODAL: Submit Task Update (TEAM) ─── -->
       <div
         v-if="showTaskSubmitModal"
@@ -643,9 +645,14 @@
 
           <div class="info-box mb-4">
             Target:
-            <strong>{{ formatTargetValue(selectedTask?.targetValue, selectedTask?.unit) }}</strong><br />
+            <strong>{{
+              formatTargetValue(selectedTask?.targetValue, selectedTask?.unit)
+            }}</strong
+            ><br />
             Saat ini:
-            <strong>{{ formatTargetValue(selectedTask?.currentValue, selectedTask?.unit) }}</strong>
+            <strong>{{
+              formatTargetValue(selectedTask?.currentValue, selectedTask?.unit)
+            }}</strong>
           </div>
 
           <label class="modal-label">Nilai Baru (Kumulatif) *</label>
@@ -963,110 +970,116 @@
         </div>
       </div>
 
-    <!-- Objectives Grid (Hidden sementara / tidak digunakan) -->
-    <template v-if="false">
-    <div v-if="loading" class="skeleton-grid">
-      <div class="skeleton-card card" v-for="i in 2" :key="i">
-        <div class="skeleton-line title"></div>
-        <div class="skeleton-line desc"></div>
-        <div class="skeleton-line progress"></div>
-        <div class="skeleton-krs">
-          <div class="skeleton-kr-item" v-for="j in 2" :key="j">
-            <div class="skeleton-line title-sm"></div>
-            <div class="skeleton-line bar"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-else-if="!summaryData.objectives || summaryData.objectives.length === 0"
-      class="empty-state"
-    >
-      Belum ada OKR yang terdaftar pada lingkup ini.
-    </div>
-
-    <div v-else class="objectives-grid">
-      <!-- Objective Card -->
-      <div
-        v-for="(obj, index) in summaryData.objectives"
-        :key="obj.id"
-        class="objective-card card"
-        draggable="true"
-        @dragstart="onDragStart(index, $event)"
-        @dragover.prevent
-        @dragenter.prevent
-        @drop="onDrop(index, $event)"
-        @dragend="onDragEnd"
-        :class="{ 'is-dragging': draggedIndex === index }"
-        style="cursor: grab"
-      >
-        <div
-          class="obj-card-header is-clickable"
-          @click="toggleObjective(obj.id)"
-        >
-          <div class="obj-header-left">
-            <span class="obj-year">{{ obj.year }}</span>
-            <h3>{{ obj.title }}</h3>
-            <p v-if="obj.description" class="obj-desc">
-              {{ obj.description }}
-            </p>
-          </div>
-          <div class="obj-header-right">
-            <div class="obj-progress-badge">
-              <span>{{ Math.round(obj.progress || 0) }}%</span>
-              <span class="progress-lbl">Progres</span>
+      <!-- Objectives Grid (Hidden sementara / tidak digunakan) -->
+      <template v-if="false">
+        <div v-if="loading" class="skeleton-grid">
+          <div class="skeleton-card card" v-for="i in 2" :key="i">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line desc"></div>
+            <div class="skeleton-line progress"></div>
+            <div class="skeleton-krs">
+              <div class="skeleton-kr-item" v-for="j in 2" :key="j">
+                <div class="skeleton-line title-sm"></div>
+                <div class="skeleton-line bar"></div>
+              </div>
             </div>
-            <button
-              type="button"
-              class="obj-toggle-btn"
-              @click.stop="toggleObjective(obj.id)"
-              :aria-expanded="isObjectiveExpanded(obj.id)"
-              :title="isObjectiveExpanded(obj.id) ? 'Collapse' : 'Expand'"
-            >
-              <svg
-                class="obj-toggle-icon"
-                :class="{ 'is-expanded': isObjectiveExpanded(obj.id) }"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
           </div>
         </div>
 
-        <div v-show="isObjectiveExpanded(obj.id)" class="obj-card-body">
-          <!-- Objective Progress Bar -->
-          <div class="obj-progress-track">
+        <div
+          v-else-if="
+            !summaryData.objectives || summaryData.objectives.length === 0
+          "
+          class="empty-state"
+        >
+          Belum ada OKR yang terdaftar pada lingkup ini.
+        </div>
+
+        <div v-else class="objectives-grid">
+          <!-- Objective Card -->
+          <div
+            v-for="(obj, index) in summaryData.objectives"
+            :key="obj.id"
+            class="objective-card card"
+            draggable="true"
+            @dragstart="onDragStart(index, $event)"
+            @dragover.prevent
+            @dragenter.prevent
+            @drop="onDrop(index, $event)"
+            @dragend="onDragEnd"
+            :class="{ 'is-dragging': draggedIndex === index }"
+            style="cursor: grab"
+          >
             <div
-              class="obj-progress-bar"
-              :style="{ width: (obj.progress || 0) + '%' }"
-            ></div>
-          </div>
+              class="obj-card-header is-clickable"
+              @click="toggleObjective(obj.id)"
+            >
+              <div class="obj-header-left">
+                <span class="obj-year">{{ obj.year }}</span>
+                <h3>{{ obj.title }}</h3>
+                <p v-if="obj.description" class="obj-desc">
+                  {{ obj.description }}
+                </p>
+              </div>
+              <div class="obj-header-right">
+                <div class="obj-progress-badge">
+                  <span>{{ Math.round(obj.progress || 0) }}%</span>
+                  <span class="progress-lbl">Progres</span>
+                </div>
+                <button
+                  type="button"
+                  class="obj-toggle-btn"
+                  @click.stop="toggleObjective(obj.id)"
+                  :aria-expanded="isObjectiveExpanded(obj.id)"
+                  :title="isObjectiveExpanded(obj.id) ? 'Collapse' : 'Expand'"
+                >
+                  <svg
+                    class="obj-toggle-icon"
+                    :class="{ 'is-expanded': isObjectiveExpanded(obj.id) }"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-          <!-- Key Results nested list -->
-          <div class="krs-section">
-            <h4>Key Results (Indikator Capaian):</h4>
-              <div class="krs-list">
-                <div v-for="kr in obj.keyResults" :key="kr.id" class="kr-item">
-                  <div class="kr-header-row">
-                    <span class="kr-title">{{ kr.title }}</span>
-                    <span
-                      class="perspective-badge"
-                      :class="kr.bscPerspective.toLowerCase()"
-                    >
-                      {{ formatPerspective(kr.bscPerspective) }}
-                    </span>
-                  </div>
+            <div v-show="isObjectiveExpanded(obj.id)" class="obj-card-body">
+              <!-- Objective Progress Bar -->
+              <div class="obj-progress-track">
+                <div
+                  class="obj-progress-bar"
+                  :style="{ width: (obj.progress || 0) + '%' }"
+                ></div>
+              </div>
 
-                  <!-- KR Progress Bar
+              <!-- Key Results nested list -->
+              <div class="krs-section">
+                <h4>Key Results (Indikator Capaian):</h4>
+                <div class="krs-list">
+                  <div
+                    v-for="kr in obj.keyResults"
+                    :key="kr.id"
+                    class="kr-item"
+                  >
+                    <div class="kr-header-row">
+                      <span class="kr-title">{{ kr.title }}</span>
+                      <span
+                        class="perspective-badge"
+                        :class="kr.bscPerspective.toLowerCase()"
+                      >
+                        {{ formatPerspective(kr.bscPerspective) }}
+                      </span>
+                    </div>
+
+                    <!-- KR Progress Bar
                   <div class="kr-progress-container">
                     <div class="kr-progress-track">
                       <div
@@ -1081,103 +1094,107 @@
                   </div>
 
                   <!-- Details -->
-                  <div class="kr-details-row">
-                    <span class="kr-values">
-                      Nilai:
-                      <strong>{{
-                        formatTargetValue(kr.currentValue, kr.unit)
-                      }}</strong>
-                      /
-                      {{ formatTargetValue(kr.targetValue, kr.unit) }}
-                    </span>
-                    <span
-                      class="status-badge"
-                      :class="kr.status.toLowerCase().replace('_', '')"
-                    >
-                      {{ kr.status.replace("_", " ") }}
-                    </span>
-                  </div>
-
-                  <!-- RACI Row -->
-                  <div
-                    v-if="
-                      (kr.assignments && kr.assignments.length > 0) ||
-                      (kr.departments && kr.departments.length > 0)
-                    "
-                    class="kr-raci-row"
-                  >
-                    <!-- Accountable -->
-                    <div
-                      class="raci-mini-group"
-                      v-if="
-                        kr.assignments &&
-                        kr.assignments.some((x) => x.raciRole === 'ACCOUNTABLE')
-                      "
-                    >
-                      <span class="raci-mini-badge a-mini">A</span>
+                    <div class="kr-details-row">
+                      <span class="kr-values">
+                        Nilai:
+                        <strong>{{
+                          formatTargetValue(kr.currentValue, kr.unit)
+                        }}</strong>
+                        /
+                        {{ formatTargetValue(kr.targetValue, kr.unit) }}
+                      </span>
                       <span
-                        v-for="a in kr.assignments.filter(
-                          (x) => x.raciRole === 'ACCOUNTABLE',
-                        )"
-                        :key="a.id"
-                        class="raci-chip accountable-chip"
+                        class="status-badge"
+                        :class="kr.status.toLowerCase().replace('_', '')"
                       >
-                        {{ a.user.name }}
+                        {{ kr.status.replace("_", " ") }}
                       </span>
                     </div>
-                    <!-- Responsible -->
+
+                    <!-- RACI Row -->
                     <div
-                      class="raci-mini-group"
                       v-if="
-                        kr.assignments &&
-                        kr.assignments.some((x) => x.raciRole === 'RESPONSIBLE')
+                        (kr.assignments && kr.assignments.length > 0) ||
+                        (kr.departments && kr.departments.length > 0)
                       "
+                      class="kr-raci-row"
                     >
-                      <span class="raci-mini-badge r-mini">R</span>
-                      <span
-                        v-for="a in kr.assignments.filter(
-                          (x) => x.raciRole === 'RESPONSIBLE',
-                        )"
-                        :key="a.id"
-                        class="raci-chip responsible-chip"
+                      <!-- Accountable -->
+                      <div
+                        class="raci-mini-group"
+                        v-if="
+                          kr.assignments &&
+                          kr.assignments.some(
+                            (x) => x.raciRole === 'ACCOUNTABLE',
+                          )
+                        "
                       >
-                        {{ a.user.name }}
-                        <span v-if="a.user.department" class="chip-dept"
-                          >· {{ a.user.department }}</span
+                        <span class="raci-mini-badge a-mini">A</span>
+                        <span
+                          v-for="a in kr.assignments.filter(
+                            (x) => x.raciRole === 'ACCOUNTABLE',
+                          )"
+                          :key="a.id"
+                          class="raci-chip accountable-chip"
                         >
-                      </span>
-                    </div>
-                    <!-- Departemen Terlibat -->
-                    <div
-                      class="kr-dept-row"
-                      v-if="kr.departments && kr.departments.length > 0"
-                    >
-                      <span class="dept-mini-label">Dept:</span>
-                      <span
-                        v-for="d in kr.departments"
-                        :key="d.id"
-                        class="dept-mini-tag"
-                        >{{ d.department }}</span
+                          {{ a.user.name }}
+                        </span>
+                      </div>
+                      <!-- Responsible -->
+                      <div
+                        class="raci-mini-group"
+                        v-if="
+                          kr.assignments &&
+                          kr.assignments.some(
+                            (x) => x.raciRole === 'RESPONSIBLE',
+                          )
+                        "
                       >
+                        <span class="raci-mini-badge r-mini">R</span>
+                        <span
+                          v-for="a in kr.assignments.filter(
+                            (x) => x.raciRole === 'RESPONSIBLE',
+                          )"
+                          :key="a.id"
+                          class="raci-chip responsible-chip"
+                        >
+                          {{ a.user.name }}
+                          <span v-if="a.user.department" class="chip-dept"
+                            >· {{ a.user.department }}</span
+                          >
+                        </span>
+                      </div>
+                      <!-- Departemen Terlibat -->
+                      <div
+                        class="kr-dept-row"
+                        v-if="kr.departments && kr.departments.length > 0"
+                      >
+                        <span class="dept-mini-label">Dept:</span>
+                        <span
+                          v-for="d in kr.departments"
+                          :key="d.id"
+                          class="dept-mini-tag"
+                          >{{ d.department }}</span
+                        >
+                      </div>
                     </div>
-                  </div>
 
-                  <!-- KR History Link -->
-                  <div class="kr-history-link">
-                    <NuxtLink
-                      :to="`/kr-history?krId=${kr.id}&krTitle=${encodeURIComponent(kr.title)}&krTarget=${kr.targetValue}&krUnit=${encodeURIComponent(kr.unit)}`"
-                      class="history-btn"
-                    >
-                      Lihat History
-                    </NuxtLink>
+                    <!-- KR History Link -->
+                    <div class="kr-history-link">
+                      <NuxtLink
+                        :to="`/kr-history?krId=${kr.id}&krTitle=${encodeURIComponent(kr.title)}&krTarget=${kr.targetValue}&krUnit=${encodeURIComponent(kr.unit)}`"
+                        class="history-btn"
+                      >
+                        Lihat History
+                      </NuxtLink>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
 
       <!-- Cross Department Discussion & Lifecycle Modal -->
       <CrossDeptCommentModal

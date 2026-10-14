@@ -95,15 +95,18 @@ Ditemukan tampilan ringkasan **28.3%**, sementara nilai KR adalah **25%** dan **
 
 ---
 
-### B. Hero Card Dashboard Utama (`GET /api/dashboard/summary`)
-Agregasi progress pada kartu utama paling atas disesuaikan dengan peran (*Role-Based Metric*):
+### B. Hero Card Dashboard Utama (`GET /api/dashboard/summary` & `dashboard.vue`)
+Agregasi progress pada kartu hero utama "Rata-Rata Progres" (`.task-value` pada `dashboard.vue`) dihitung berbasis agregat rata-rata **Key Result (KR)** yang diampu oleh employee / scope tersebut:
 
-| Role User | Dasar Agregasi Hero Card | Keterangan |
+| Role User | Dasar Agregasi Hero Card (`.task-value`) | Keterangan |
 | :--- | :--- | :--- |
-| **TEAM** | Rata-rata progress Task mandiri | Fokus pada eksekusi tugas harian |
-| **LEADER** | Rata-rata progress Initiative tim | Fokus pada penyelesaian program tim |
-| **MANAGER** | Rata-rata rollup Key Result departemen | Fokus pada target capaian departemen |
-| **C_LEVEL / ADMIN** | Rata-rata rollup seluruh Key Result perusahaan | Fokus pada target strategis bisnis |
+| **TEAM** | Rata-rata progress Key Result yang diampu / terkait (fallback ke Task mandiri / Inisiatif tim) | Fokus pada KR yang diampu atau tugas aktif |
+| **LEADER** | Rata-rata progress Key Result yang diampu / terkait tim (fallback ke Inisiatif tim) | Fokus pada ketercapaian KR yang diampu oleh timnya |
+| **MANAGER** | Rata-rata progress seluruh Key Result dalam departemen yang dikelola | Dihitung dari seluruh KR aktif di bawah departemen Manager |
+| **C_LEVEL / ADMIN** | Rata-rata progress seluruh Key Result aktif di perusahaan | Dihitung dari rata-rata seluruh KR aktif perusahaan |
+
+> **Keputusan Produk (Confirmed)**:
+> Nilai agregat hero card `.task-value` di dashboard dihitung berdasarkan **rata-rata per Key Result (KR) yang diampu oleh employee/lingkup tersebut**, bukan agregat dari inisiatif. Agregat inisiatif ditampilkan khusus pada section *Progress Capaian Initiative* (`.summary-val`).
 
 ---
 
@@ -123,8 +126,8 @@ Status kesehatan dihitung otomatis berdasarkan persentase progress:
 
 ## 5. Rekomendasi Evolusi Produk
 
-1. **Konsistensi Label**:
-   - Jika card tetap menampilkan rata-rata inisiatif (28.3%), beri label mikro teks: `Rata-rata dari 3 Inisiatif`.
-   - Jika pengguna mengharapkan ringkasan mencerminkan level Key Result (30.0%), ubah agregasi summary card di controller menjadi rata-rata capaian grup KR (`avgKRProgress`).
+1. **Konsistensi Label & Card Separation**:
+   - Card `.task-value` menampilkan agregat rata-rata Key Result yang diampu (`Agregat progres seluruh Key Results yang diampu.`).
+   - Card `.summary-val` pada section *Progress Capaian Initiative* menampilkan agregasi rata-rata inisiatif secara terpisah.
 2. **Pembobotan (Weighted Average)**:
    - Saat ini sistem menggunakan *unweighted simple average*. Di masa mendatang, inisiatif dan task dapat diberi bobot (*weight*) jika ada inisiatif dengan dampak strategis lebih besar.
