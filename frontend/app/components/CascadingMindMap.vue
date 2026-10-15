@@ -327,6 +327,14 @@ const treeData = computed<MindMapNode | null>(() => {
             },
           );
 
+          const krPics =
+            Array.isArray(kr.assignments) && kr.assignments.length > 0
+              ? kr.assignments
+                  .map((a: any) => `${a.user?.name || ""}${a.raciRole ? ` (${a.raciRole[0]})` : ""}`)
+                  .filter((s: string) => Boolean(s.trim()))
+                  .join(", ")
+              : kr.owner?.name;
+
           return {
             id: `kr-${kr.id}`,
             type: "KR",
@@ -334,6 +342,7 @@ const treeData = computed<MindMapNode | null>(() => {
             tag: "Key Result",
             badge: dept,
             color: p.color || "#0284c7",
+            pic: krPics,
             progress: kr.progress,
             status: kr.status,
             target: `${formatVal(kr.currentValue, kr.unit)} / ${formatVal(kr.targetValue, kr.unit)}`,

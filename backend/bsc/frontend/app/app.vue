@@ -1,0 +1,619 @@
+<template>
+  <div class="app-layout" :class="{ 'with-shell': showShell }">
+    <NuxtRouteAnnouncer />
+
+    <!-- Sidebar backdrop overlay (mobile only) -->
+    <div
+      v-if="showShell && isSidebarOpen"
+      class="sidebar-overlay"
+      @click="isSidebarOpen = false"
+    ></div>
+
+    <AppSidebar
+      v-if="showShell"
+      :isOpen="isSidebarOpen"
+      @toggle="toggleSidebar"
+      @close="handleSidebarClose"
+    />
+    <div :class="['main-wrapper', { 'with-sidebar': showShell }]">
+      <AppHeader
+        v-if="showShell"
+        :title="pageTitle"
+        :isSidebarOpen="isSidebarOpen"
+        @toggle-sidebar="toggleSidebar"
+      />
+      <div v-if="showShell && isInactiveDeptUser" class="inactive-dept-banner">
+        <div class="banner-content">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+            />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span
+            ><strong>Perhatian:</strong> Departemen Anda ({{
+              auth.user?.department
+            }}) sedang berstatus <strong>NONAKTIF</strong>. Akses pengisian dan
+            perubahan data dibatasi. Silakan hubungi Administrator.</span
+          >
+        </div>
+      </div>
+      <main :class="['page-content', { 'padded-content': showShell }]">
+        <NuxtPage />
+      </main>
+    </div>
+    <ConfirmModal />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, provide, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { useAuthStore } from "./stores/auth";
+import AppSidebar from "./components/AppSidebar.vue";
+import AppHeader from "./components/AppHeader.vue";
+// ConfirmModal auto-imported by Nuxt from app/components/
+
+const auth = useAuthStore();
+const route = useRoute();
+const config = useRuntimeConfig();
+
+const isSidebarOpen = ref(false);
+
+onMounted(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("sidebar_open");
+    if (saved !== null) {
+      isSidebarOpen.value = saved === "true";
+    } else {
+      isSidebarOpen.value = false;
+    }
+  }
+});
+
+function toggleSidebar() {
+  isSidebarOpen.value = !isSidebarOpen.value;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("sidebar_open", String(isSidebarOpen.value));
+  }
+}
+
+function handleSidebarClose() {
+  if (typeof window !== "undefined" && window.innerWidth <= 1024) {
+    isSidebarOpen.value = false;
+  }
+}
+
+const isAuthenticated = computed(() => auth.isAuthenticated);
+const isLoginPage = computed(() => route.path === "/login");
+const showShell = computed(() => isAuthenticated.value && !isLoginPage.value);
+const isManagerRole = computed(() => auth.user?.role === "MANAGER");
+const isInactiveDeptUser = computed(() => {
+  if (!auth.user) return false;
+  if (["ADMIN", "C_LEVEL"].includes(auth.user.role)) return false;
+  return auth.user.isDepartmentActive === false;
+});
+
+// Filter State for Manager
+const searchQuery = ref("");
+const selectedDepartment = ref("");
+const selectedEmployeeId = ref("");
+const selectedSprintMonth = ref("");
+const allUsers = ref([]);
+
+async function fetchAllUsers() {
+  if (!auth.token) return;
+  const API = config.public?.apiBase || "http://localhost:3001/api";
+  try {
+    const res = await fetch(`${API}/users`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${auth.token}`,
+      },
+    });
+    if (res.ok) allUsers.value = await res.json();
+  } catch (err) {}
+}
+
+watch(
+  () => auth.token,
+  (newToken) => {
+    if (newToken && isManagerRole.value) {
+      fetchAllUsers();
+    }
+  },
+  { immediate: true },
+);
+
+const departmentsList = computed(() => {
+  const depts = new Set();
+  allUsers.value.forEach((u) => {
+    if (u.department) depts.add(u.department);
+  });
+  return Array.from(depts).sort();
+});
+
+const employeesList = computed(() => {
+  if (!selectedDepartment.value) return allUsers.value;
+  return allUsers.value.filter(
+    (u) => u.department === selectedDepartment.value,
+  );
+});
+
+function resetFilters() {
+  searchQuery.value = "";
+  selectedDepartment.value = "";
+  selectedEmployeeId.value = "";
+  selectedSprintMonth.value = "";
+}
+
+provide("managerFilters", {
+  searchQuery,
+  selectedDepartment,
+  selectedEmployeeId,
+  selectedSprintMonth,
+  resetFilters,
+});
+
+const pageTitle = computed(() => {
+  const path = route.path;
+  if (path.startsWith("/c-level")) return "Executive Dashboard";
+  if (path.startsWith("/dashboard")) return "Dashboard";
+  if (path.startsWith("/initiatives")) return "Inisiatif & Task";
+  if (path.startsWith("/member-achievement")) return "Capaian Task Member";
+  if (path.startsWith("/departments") || path.startsWith("/admin/departments"))
+    return "Struktur Departemen";
+  if (path.startsWith("/admin/objectives")) return "OKR Builder";
+  if (
+    path.startsWith("/admin/initiatives-kanban") ||
+    path.startsWith("/admin/initiatives")
+  )
+    return "Inisiatif & Task";
+  if (path.startsWith("/admin/update-progress")) return "Update Progress";
+  if (path.startsWith("/admin/employees")) return "Data Pegawai";
+  if (path.startsWith("/admin/kpis")) return "Master KPI";
+  if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
+  if (path.startsWith("/admin/sprints")) return "Siklus Sprint";
+  if (path.startsWith("/admin/annual-bsc")) return "Annual BSC";
+  if (path.startsWith("/manager/overview")) return "OKR Overview";
+  if (path.startsWith("/leader/my-krs")) return "KR Saya";
+  if (path.startsWith("/leader/initiatives")) return "Inisiatif Tim";
+  if (path.startsWith("/team/my-work")) return "Pekerjaan Saya";
+  if (path.startsWith("/approvals")) return "Persetujuan Task";
+  if (path.startsWith("/strategy-map")) return "Strategy Map";
+  if (path.startsWith("/bsc-view"))
+    return "Strategic Mapping (Balanced Scorecard)";
+  if (path.startsWith("/kr-history")) return "Riwayat Key Result";
+  return "Dashboard";
+});
+</script>
+
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Geist:wght@500;800&display=swap");
+
+/* ===== SKOLLA DESIGN SYSTEM TOKENS ===== */
+:root {
+  /* primary */
+  --color-primary: #0e97d6;
+  --color-primary-rgb: 14, 151, 214;
+  --color-primary-contrast: var(--awsm-color-contrast-dark);
+  --color-primary-contrast-rgb: 242, 242, 242;
+  --color-primary-tint: #cfeaf7;
+  --color-primary-shade: #1e6289;
+  --color-primary-tone: #548fb9;
+
+  /* secondary */
+  --color-secondary: #f2ca17;
+  --color-secondary-rgb: 242, 202, 23;
+  --color-secondary-contrast: var(--awsm-color-contrast-light);
+  --color-secondary-contrast-rgb: 13, 13, 13;
+  --color-secondary-tint: #fbdb75;
+  --color-secondary-shade: #9b821c;
+  --color-secondary-tone: #ceb04d;
+
+  /* accent */
+  --color-accent: #ffffff;
+  --color-accent-rgb: 255, 255, 255;
+  --color-accent-contrast: var(--awsm-color-contrast-light);
+  --color-accent-contrast-rgb: 13, 13, 13;
+  --color-accent-tint: #ffffff;
+  --color-accent-shade: #a2a2a2;
+  --color-accent-tone: #d3d3d3;
+
+  /* util-info */
+  --color-util-info: #0e97d6;
+  --color-util-info-rgb: 14, 151, 214;
+  --color-util-info-contrast: var(--awsm-color-contrast-dark);
+  --color-util-info-contrast-rgb: 242, 242, 242;
+  --color-util-info-tint: #7fb9e4;
+  --color-util-info-shade: #1e6289;
+  --color-util-info-tone: #548fb9;
+
+  /* util-safe */
+  --color-util-safe: #49d507;
+  --color-util-safe-rgb: 73, 213, 7;
+  --color-util-safe-contrast: var(--awsm-color-contrast-light);
+  --color-util-safe-contrast-rgb: 13, 13, 13;
+  --color-util-safe-tint: #94e571;
+  --color-util-safe-shade: #378917;
+  --color-util-safe-tone: #69b949;
+
+  /* util-warning */
+  --color-util-warning: #f2af17;
+  --color-util-warning-rgb: 242, 175, 23;
+  --color-util-warning-contrast: var(--awsm-color-contrast-light);
+  --color-util-warning-contrast-rgb: 13, 13, 13;
+  --color-util-warning-tint: #fcc971;
+  --color-util-warning-shade: #9b711a;
+  --color-util-warning-tone: #ce9f49;
+
+  /* util-alert */
+  --color-util-alert: #f97066;
+  --color-util-alert-rgb: 249, 112, 102;
+  --color-util-alert-contrast: var(--awsm-color-contrast-light);
+  --color-util-alert-contrast-rgb: 13, 13, 13;
+  --color-util-alert-tint: #ffa296;
+  --color-util-alert-shade: #a04b44;
+  --color-util-alert-tone: #d3796f;
+
+  /* gamma */
+  --card-bg: #ffffff;
+  --card-border: #e4e4e4;
+  --content-bg: #fafcff;
+  --bg-page: #f8fafc;
+  --text-heading: #1e293b;
+  --text-body: #334155;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-color: #334155;
+  --header-bg: #ffffff;
+  --input-bg: #f0f3f9;
+  --input-border: #e2e8f0;
+  --input-focus: #0e97d6;
+  --color-green: #009c29;
+  --color-purple: #02219e;
+  --color-red: #eb3123;
+  --color-white: #ffffff;
+  --color-yellow: #f29317;
+  --color-border: #afbaca;
+  --color-purple-badge: #eef5ff;
+  --color-green-badge: #e3fdea;
+  --color-yellow-badge: #fefbe5;
+  --color-black-badge: #455468;
+  --color-red-badge: #ffeaed;
+  --color-field: #f0f3f9;
+  --color-gamma-900: #f2f2f2;
+  --color-gamma-850: #e4e4e4;
+  --color-gamma-750: #c9c9c9;
+  --color-gamma-700: #bcbcbc;
+  --color-gamma-650: #aeaeae;
+  --color-gamma-600: #a1a1a1;
+  --color-gamma-550: #949494;
+  --color-gamma-500: #868686;
+  --color-gamma-450: #797979;
+  --color-gamma-400: #6b6b6b;
+  --color-gamma-350: #5e5e5e;
+  --color-gamma-300: #515151;
+  --color-gamma-250: #434343;
+  --color-gamma-200: #363636;
+  --color-gamma-150: #282828;
+  --color-gamma-100: #1b1b1b;
+  --color-gamma-050: #0d0d0d;
+  --color-gamma-000: #000000;
+
+  /* base */
+  --color-base-light: var(--color-gamma-800);
+  --color-base-light-rgb: 215, 215, 215;
+  --color-base-dark: var(--color-gamma-150);
+  --color-base-dark-rgb: 40, 40, 40;
+
+  /* contrast */
+  --color-contrast-light: var(--color-gamma-050);
+  --color-contrast-light-rgb: 13, 13, 13;
+  --color-contrast-dark: var(--color-gamma-900);
+  --color-contrast-dark-rgb: 242, 242, 242;
+
+  /* text */
+  --color-text-strong: var(--color-gamma-050);
+  --color-text-regular: var(--color-gamma-150);
+  --color-text-subtle: var(--color-gamma-250);
+  --color-text-accent: var(--color-primary-tone);
+}
+
+:root {
+  /* font-size */
+  --font-size-xs: 11.104px;
+  --font-size-s: 13.328px;
+  --font-size-n: 16px;
+  --font-size-l: 19.2px;
+  --font-size-xl: 23.04px;
+  --font-size-xxl: 27.648px;
+
+  /* icon-size */
+  --icon-size-xs: 0.867rem;
+  --icon-size-s: 1.041rem;
+  --icon-size-n: 1.25rem;
+  --icon-size-l: 1.5rem;
+  --icon-size-xl: 1.8rem;
+  --icon-size-xxl: 2.16rem;
+
+  /* line-height */
+  --line-height-tight: 1.2;
+  --line-height-regular: 1.6;
+  --line-height-loose: 2.133;
+}
+
+:root {
+  /* spacing */
+  --space-012: 0.125rem;
+  --space-025: 0.25rem;
+  --space-050: 0.5rem;
+  --space-075: 0.75rem;
+  --space-100: 1rem;
+  --space-125: 1.25rem;
+  --space-150: 1.5rem;
+  --space-175: 1.75rem;
+  --space-200: 2rem;
+
+  /* local */
+  --side-gap: var(--awsm-space-100);
+  --col-gap: var(--awsm-space-100);
+  --width-min: 360px;
+  --width-max: 1200px;
+}
+
+:root {
+  /* radius */
+  --radius-small: 0.25rem;
+  --radius-medium: 0.5rem;
+  --radius-large: 1rem;
+  --radius-round: 50%;
+  --radius-pill: 9999px;
+
+  /* shadow */
+  --shadow-color: #c836e8;
+  --shadow-color-rgb: 200, 54, 232;
+  --shadow-small:
+    0px 1px 1px rgba(var(--awsm-shadow-color-rgb), 0.2),
+    0px 1px 2px -0.5px rgba(var(--awsm-shadow-color-rgb), 0.45),
+    0px 1px 4px -3px rgba(var(--awsm-shadow-color-rgb), 0.35);
+  --shadow-medium:
+    0px 1px 1px -0.5px rgba(var(--awsm-shadow-color-rgb), 0.1),
+    0px 1px 2px -1px rgba(var(--awsm-shadow-color-rgb), 0.25),
+    0px 2px 3px -1.5px rgba(var(--awsm-shadow-color-rgb), 0.3),
+    0px 5px 6px -2px rgba(var(--awsm-shadow-color-rgb), 0.4);
+  --shadow-large:
+    0px 0.5px 0.5px rgba(var(--awsm-shadow-color-rgb), 0.2),
+    0px 2px 2px -0.5px rgba(var(--awsm-shadow-color-rgb), 0.25),
+    0px 5px 6px -1px rgba(var(--awsm-shadow-color-rgb), 0.25),
+    0px 8px 9px -1px rgba(var(--awsm-shadow-color-rgb), 0.3),
+    0px 12px 14px -2px rgba(var(--awsm-shadow-color-rgb), 0.3),
+    0px 16px 20px -3px rgba(var(--awsm-shadow-color-rgb), 0.25);
+
+  /* duration */
+  --duration-instant: 0.118s;
+  --duration-short: 0.158s;
+  --duration-regular: 0.21s;
+  --duration-long: 0.28s;
+  --duration-extra: 0.373s;
+}
+
+/* Dark Theme Override */
+.dark-theme {
+  --card-bg: #131a2c;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --content-bg: #0b0f19;
+  --bg-page: #0b0f19;
+  --text-heading: #f8fafc;
+  --text-body: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-color: #e2e8f0;
+  --header-bg: rgba(19, 26, 44, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-focus: #0e97d6;
+  --color-field: #1a2236;
+  --color-green-badge: rgba(52, 211, 153, 0.15);
+  --color-yellow-badge: rgba(251, 191, 36, 0.15);
+  --color-red-badge: rgba(248, 113, 113, 0.15);
+  --color-purple-badge: rgba(167, 139, 250, 0.15);
+  --color-blue-badge: rgba(56, 182, 240, 0.15);
+  --color-black-badge: #94a3b8;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --shadow-color-rgb: 0, 0, 0;
+  --bg-primary: #0b0f19;
+  --bg-secondary: #131a2c;
+  --bg-card: #131a2c;
+  --bg-input: rgba(255, 255, 255, 0.04);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #f8fafc;
+}
+
+.dark-theme body {
+  background: var(--content-bg);
+}
+
+.dark-theme .page-content {
+  background: var(--bg-page);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Keep native dropdown arrow inside every select control. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem !important;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Shared custom dropdown pattern. */
+.dropdown {
+  position: relative;
+}
+
+.dropdown .dropbtn {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.dropdown .dropdown-content {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 1000;
+  min-width: 12.5rem;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
+}
+
+.dropdown .dropdown-content a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--text-body);
+  text-decoration: none;
+}
+
+.dropdown .dropdown-content a:hover,
+.dropdown .dropdown-content a:focus-visible {
+  background: var(--primary-light, #f1f5f9);
+}
+
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
+  display: block;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: "Rubik", sans-serif;
+}
+
+body {
+  background: inherit;
+  color: var(--text-heading);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+p {
+  color: var(--text-body);
+}
+
+/* Layout shell wrapper styles */
+.app-layout {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+  box-shadow: 0 20px 20px #009c29;
+}
+
+.main-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.main-wrapper.with-sidebar {
+  margin-left: 0;
+  margin-top: 0;
+  width: 100%;
+}
+
+.inactive-dept-banner {
+  background: #fff1f0;
+  border-bottom: 1px solid #ffa39e;
+  padding: 0.75rem 1.5rem;
+  color: #cf1322;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.inactive-dept-banner .banner-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.inactive-dept-banner svg {
+  flex-shrink: 0;
+  stroke: #cf1322;
+}
+
+.page-content {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-page, #f8fafc);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(13, 21, 37, 0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+}
+
+@media (min-width: 1025px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+/* Responsive vertical scroll for all modal boxes */
+.modal-box {
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@media (max-height: 700px) {
+  .modal-box {
+    max-height: calc(100dvh - 20px);
+    max-height: calc(100vh - 20px);
+  }
+}
+
+}
+</style>

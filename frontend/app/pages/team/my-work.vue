@@ -689,7 +689,7 @@
                 class="cross-dept-badge"
                 @click.stop="openCrossDeptModal(assign.task.id)"
               >
-                ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} →
+                Lintas Dept: {{ assign.task.creatorDept || "?" }} →
                 {{ assign.task.targetDept || "?" }}
               </span>
               <span
@@ -1517,7 +1517,7 @@
                       class="cross-dept-badge"
                       @click.stop="openCrossDeptModal(assign.task.id)"
                     >
-                      ⚡ Lintas Dept: {{ assign.task.creatorDept || "?" }} →
+                      Lintas Dept: {{ assign.task.creatorDept || "?" }} →
                       {{ assign.task.targetDept || "?" }}
                     </span>
                     <span

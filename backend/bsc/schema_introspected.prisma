@@ -1,0 +1,334 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model annual_key_result {
+  id              String       @id
+  objective_id    String
+  title           String
+  description     String?
+  target_value    Float
+  current_value   Float        @default(0)
+  unit            String
+  bsc_perspective String
+  year            String
+  status          String       @default("ON_TRACK")
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now())
+  objective       objective    @relation(fields: [objective_id], references: [id], map: "AnnualKeyResult_objectiveId_fkey")
+  key_result      key_result[]
+
+  @@index([objective_id], map: "AnnualKeyResult_objectiveId_fkey")
+}
+
+model causal_link {
+  id                                              String     @id
+  source_kr_id                                    String
+  target_kr_id                                    String
+  relationship                                    String
+  note                                            String?    @db.Text
+  created_by                                      String
+  created_at                                      DateTime   @default(now())
+  key_result_causal_link_source_kr_idTokey_result key_result @relation("causal_link_source_kr_idTokey_result", fields: [source_kr_id], references: [id], map: "CausalLink_sourceKrId_fkey")
+  key_result_causal_link_target_kr_idTokey_result key_result @relation("causal_link_target_kr_idTokey_result", fields: [target_kr_id], references: [id], map: "CausalLink_targetKrId_fkey")
+
+  @@index([source_kr_id], map: "CausalLink_sourceKrId_idx")
+  @@index([target_kr_id], map: "CausalLink_targetKrId_idx")
+}
+
+model department {
+  id         String   @id
+  name       String
+  value      String   @unique(map: "Department_value_key")
+  manager_id String?
+  created_at DateTime @default(now())
+  user       user?    @relation(fields: [manager_id], references: [id], map: "Department_managerId_fkey")
+
+  @@index([manager_id], map: "Department_managerId_fkey")
+}
+
+model initiative {
+  id                 String              @id
+  key_result_id      String
+  team_id            String
+  owner_id           String?
+  assigned_leader_id String?
+  assigned_by        String?
+  title              String
+  description        String?             @db.Text
+  target_value       Float               @default(0)
+  current_value      Float               @default(0)
+  achieved_value     Float?
+  unit               String?
+  status             String              @default("ON_TRACK")
+  kanban_status      String              @default("TODO")
+  weight             Float               @default(1)
+  start_date         DateTime?
+  due_date           DateTime?
+  finish_date        DateTime?
+  sprint_month       String?
+  created_at         DateTime            @default(now())
+  updated_at         DateTime
+  documentation_link String?
+  key_result         key_result          @relation(fields: [key_result_id], references: [id], map: "Initiative_keyResultId_fkey")
+  user               user?               @relation(fields: [owner_id], references: [id], map: "Initiative_ownerId_fkey")
+  team               team                @relation(fields: [team_id], references: [id], map: "Initiative_teamId_fkey")
+  initiative_update  initiative_update[]
+  task               task[]
+
+  @@index([assigned_leader_id], map: "Initiative_assignedLeaderId_idx")
+  @@index([key_result_id], map: "Initiative_keyResultId_idx")
+  @@index([owner_id], map: "Initiative_ownerId_idx")
+  @@index([sprint_month], map: "Initiative_sprintMonth_idx")
+  @@index([team_id], map: "Initiative_teamId_idx")
+}
+
+model initiative_kpi {
+  id            String   @id
+  initiative_id String
+  kpi_id        String
+  target_value  Float
+  current_value Float    @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+
+  @@unique([initiative_id, kpi_id], map: "InitiativeKpi_initiativeId_kpiId_key")
+  @@index([initiative_id], map: "InitiativeKpi_initiativeId_idx")
+  @@index([kpi_id], map: "InitiativeKpi_kpiId_idx")
+}
+
+model initiative_update {
+  id            String     @id
+  initiative_id String
+  old_value     Float
+  new_value     Float
+  note          String?    @db.Text
+  kanban_status String?
+  submitted_by  String
+  created_at    DateTime   @default(now())
+  link          String?
+  reviewed_at   DateTime?
+  reviewed_by   String?
+  status        String     @default("PENDING_APPROVAL")
+  initiative    initiative @relation(fields: [initiative_id], references: [id], map: "InitiativeUpdate_initiativeId_fkey")
+
+  @@index([initiative_id, created_at], map: "InitiativeUpdate_initiativeId_createdAt_idx")
+}
+
+model key_result {
+  id                                               String             @id
+  objective_id                                     String
+  title                                            String
+  target_value                                     Float
+  current_value                                    Float              @default(0)
+  unit                                             String
+  bsc_perspective                                  String
+  status                                           String             @default("ON_TRACK")
+  created_at                                       DateTime           @default(now())
+  updated_at                                       DateTime
+  annual_key_result_id                             String?
+  month                                            String?
+  month_weight                                     Float              @default(1)
+  is_manual_override                               Boolean            @default(false)
+  causal_link_causal_link_source_kr_idTokey_result causal_link[]      @relation("causal_link_source_kr_idTokey_result")
+  causal_link_causal_link_target_kr_idTokey_result causal_link[]      @relation("causal_link_target_kr_idTokey_result")
+  initiative                                       initiative[]
+  annual_key_result                                annual_key_result? @relation(fields: [annual_key_result_id], references: [id], map: "KeyResult_annualKeyResultId_fkey")
+  objective                                        objective          @relation(fields: [objective_id], references: [id], map: "KeyResult_objectiveId_fkey")
+  kr_assignment                                    kr_assignment[]
+  kr_department                                    kr_department[]
+  kr_update                                        kr_update[]
+
+  @@index([annual_key_result_id], map: "KeyResult_annualKeyResultId_fkey")
+  @@index([objective_id], map: "KeyResult_objectiveId_idx")
+}
+
+model kpi {
+  id              String   @id
+  name            String
+  description     String?  @db.Text
+  department      String?
+  bsc_perspective String
+  unit            String
+  default_target  Float?
+  status          String   @default("ACTIVE")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+
+  @@index([bsc_perspective], map: "Kpi_bscPerspective_idx")
+  @@index([department], map: "Kpi_department_idx")
+}
+
+model kr_assignment {
+  id            String     @id
+  key_result_id String
+  user_id       String
+  assigned_by   String
+  assigned_at   DateTime   @default(now())
+  raci_role     String     @default("RESPONSIBLE")
+  key_result    key_result @relation(fields: [key_result_id], references: [id], map: "KrAssignment_keyResultId_fkey")
+  user          user       @relation(fields: [user_id], references: [id], map: "KrAssignment_userId_fkey")
+
+  @@unique([key_result_id, user_id], map: "KrAssignment_keyResultId_userId_key")
+  @@index([key_result_id], map: "KrAssignment_keyResultId_idx")
+  @@index([user_id], map: "KrAssignment_userId_idx")
+}
+
+model kr_department {
+  id            String     @id
+  key_result_id String
+  department    String
+  created_at    DateTime   @default(now())
+  key_result    key_result @relation(fields: [key_result_id], references: [id], map: "KrDepartment_keyResultId_fkey")
+
+  @@unique([key_result_id, department], map: "KrDepartment_keyResultId_department_key")
+  @@index([key_result_id], map: "KrDepartment_keyResultId_idx")
+}
+
+model kr_update {
+  id            String     @id
+  key_result_id String
+  old_value     Float
+  new_value     Float
+  note          String?    @db.Text
+  updated_by    String
+  updated_at    DateTime   @default(now())
+  key_result    key_result @relation(fields: [key_result_id], references: [id], map: "KrUpdate_keyResultId_fkey")
+
+  @@index([key_result_id, updated_at], map: "KrUpdate_keyResultId_updatedAt_idx")
+}
+
+model notification {
+  id           String   @id
+  recipient_id String
+  type         String   @db.VarChar(100)
+  title        String   @db.VarChar(255)
+  body         String   @db.Text
+  link         String?  @db.VarChar(500)
+  is_read      Boolean  @default(false)
+  created_at   DateTime @default(now())
+
+  @@index([recipient_id, created_at], map: "Notification_recipientId_createdAt_idx")
+  @@index([recipient_id, is_read], map: "Notification_recipientId_isRead_idx")
+}
+
+model objective {
+  id                String              @id
+  title             String
+  description       String?             @db.Text
+  quarter           String?
+  owner_id          String?
+  created_at        DateTime            @default(now())
+  year              String              @default("Q3-2026")
+  annual_key_result annual_key_result[]
+  key_result        key_result[]
+}
+
+model task {
+  id                      String            @id
+  initiative_id           String
+  title                   String
+  target_value            Float
+  current_value           Float             @default(0)
+  unit                    String?
+  assigned_team_member_id String?
+  assigned_by             String?
+  sprint_month            String?
+  start_date              DateTime?
+  finish_date             DateTime?
+  status                  String            @default("ON_TRACK")
+  created_at              DateTime          @default(now())
+  updated_at              DateTime
+  weight                  Float             @default(1)
+  documentation_link      String?
+  initiative              initiative        @relation(fields: [initiative_id], references: [id], map: "Kpi_initiativeId_fkey")
+  task_assignment         task_assignment[]
+  task_update             task_update[]
+
+  @@index([initiative_id], map: "Kpi_initiativeId_idx")
+  @@index([assigned_team_member_id], map: "Task_assignedTeamMemberId_idx")
+  @@index([sprint_month], map: "Task_sprintMonth_idx")
+}
+
+model task_assignment {
+  id          String   @id
+  task_id     String
+  user_id     String
+  assigned_at DateTime @default(now())
+  task        task     @relation(fields: [task_id], references: [id], map: "KpiAssignment_kpiId_fkey")
+  user        user     @relation(fields: [user_id], references: [id], map: "KpiAssignment_userId_fkey")
+
+  @@unique([task_id, user_id], map: "TaskAssignment_taskId_userId_key")
+  @@index([user_id], map: "KpiAssignment_userId_idx")
+  @@index([task_id], map: "TaskAssignment_taskId_idx")
+}
+
+model task_kpi {
+  id            String   @id
+  task_id       String
+  kpi_id        String
+  target_value  Float
+  current_value Float    @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+
+  @@unique([task_id, kpi_id], map: "TaskKpi_taskId_kpiId_key")
+  @@index([kpi_id], map: "TaskKpi_kpiId_idx")
+  @@index([task_id], map: "TaskKpi_taskId_idx")
+}
+
+model task_update {
+  id           String    @id
+  task_id      String
+  old_value    Float
+  new_value    Float
+  note         String?   @db.Text
+  submitted_by String
+  status       String    @default("PENDING_APPROVAL")
+  reviewed_by  String?
+  review_note  String?   @db.Text
+  reviewed_at  DateTime?
+  created_at   DateTime  @default(now())
+  link         String?
+  task         task      @relation(fields: [task_id], references: [id], map: "KpiUpdate_kpiId_fkey")
+
+  @@index([task_id, created_at], map: "TaskUpdate_taskId_createdAt_idx")
+}
+
+model team {
+  id                        String       @id
+  name                      String
+  manager_id                String?
+  leader_id                 String?
+  department                String?
+  initiative                initiative[]
+  user_team_leader_idTouser user?        @relation("team_leader_idTouser", fields: [leader_id], references: [id], map: "Team_leaderId_fkey")
+  user_user_team_idToteam   user[]       @relation("user_team_idToteam")
+
+  @@index([leader_id], map: "Team_leaderId_idx")
+}
+
+model user {
+  id                        String            @id
+  name                      String
+  email                     String            @unique(map: "User_email_key")
+  password                  String
+  role                      String            @default("TEAM")
+  department                String?
+  position                  String?
+  team_id                   String?
+  created_at                DateTime          @default(now())
+  department                department[]
+  initiative                initiative[]
+  kr_assignment             kr_assignment[]
+  task_assignment           task_assignment[]
+  team_team_leader_idTouser team[]            @relation("team_leader_idTouser")
+  team_user_team_idToteam   team?             @relation("user_team_idToteam", fields: [team_id], references: [id], map: "User_teamId_fkey")
+
+  @@index([team_id], map: "User_teamId_idx")
+}

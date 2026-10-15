@@ -421,12 +421,16 @@
 
         <div v-else>
           <!-- Bulk Toolbar & View Mode Switcher -->
-          <div v-if="allDisplayedKrs.length > 0" class="kr-toolbar">
+          <div
+            v-if="hasAnyKrs || allDisplayedKrs.length > 0 || hasActiveFilters"
+            class="kr-toolbar"
+          >
             <div class="toolbar-left">
               <label class="select-all-label">
                 <input
                   type="checkbox"
                   :checked="isAllKrsSelected"
+                  :disabled="allDisplayedKrs.length === 0"
                   @change="toggleSelectAllKrs"
                 />
                 <span>Pilih Semua KR ({{ allDisplayedKrs.length }})</span>
@@ -476,6 +480,61 @@
                     <rect x="3" y="14" width="7" height="7"></rect>
                   </svg>
                   Kartu Hirarki
+                </button>
+              </div>
+
+              <!-- Filter Perspektif BSC, Departemen, & PIC RACI -->
+              <div class="toolbar-filters">
+                <select
+                  v-model="filterPerspective"
+                  class="toolbar-filter-select"
+                  title="Filter Perspektif BSC"
+                >
+                  <option value="">Semua Perspektif</option>
+                  <option value="FINANCIAL">Financial</option>
+                  <option value="CUSTOMER">Customer</option>
+                  <option value="INTERNAL_PROCESS">Internal Process</option>
+                  <option value="LEARNING_GROWTH">Learning & Growth</option>
+                </select>
+
+                <select
+                  v-model="filterDepartment"
+                  class="toolbar-filter-select"
+                  title="Filter Departemen"
+                >
+                  <option value="">Semua Departemen</option>
+                  <option
+                    v-for="dept in filterDepartmentOptions"
+                    :key="dept.value"
+                    :value="dept.value"
+                  >
+                    {{ dept.label }}
+                  </option>
+                </select>
+
+                <select
+                  v-model="filterPic"
+                  class="toolbar-filter-select"
+                  title="Filter PIC (RACI)"
+                >
+                  <option value="">Semua PIC RACI</option>
+                  <option
+                    v-for="pic in filterPicOptions"
+                    :key="pic.id"
+                    :value="pic.id"
+                  >
+                    {{ pic.name }}
+                  </option>
+                </select>
+
+                <button
+                  v-if="hasActiveFilters"
+                  type="button"
+                  class="toolbar-reset-btn"
+                  @click="resetFilters"
+                  title="Reset Semua Filter"
+                >
+                  ✕ Reset
                 </button>
               </div>
             </div>
@@ -906,6 +965,13 @@
                 </div> -->
                 </div>
               </div>
+            </div>
+            <div
+              v-if="filteredObjectives.length === 0"
+              class="empty-state"
+              style="margin-top: 16px"
+            >
+              Tidak ada Key Result yang cocok dengan pencarian / filter.
             </div>
           </div>
         </div>
@@ -2300,19 +2366,123 @@ async function submitBulkReassignDept() {
 const selectedKrIds = ref([]);
 const showBulkDeleteModal = ref(false);
 const krSearch = ref("");
+const filterPerspective = ref("");
+const filterDepartment = ref("");
+const filterPic = ref("");
+
+const hasActiveFilters = computed(() => {
+  return (
+    !!filterPerspective.value ||
+    !!filterDepartment.value ||
+    !!filterPic.value ||
+    !!krSearch.value.trim()
+  );
+});
+
+function resetFilters() {
+  filterPerspective.value = "";
+  filterDepartment.value = "";
+  filterPic.value = "";
+  krSearch.value = "";
+}
+
+const filterDepartmentOptions = computed(() => {
+  const map = new Map();
+  for (const d of availableDepartments.value || []) {
+    if (d.value) map.set(d.value.toUpperCase(), d.label || d.value);
+  }
+  for (const obj of objectives.value || []) {
+    for (const kr of obj.keyResults || []) {
+      for (const d of getKrDepartments(kr)) {
+        if (d && !map.has(d.toUpperCase())) {
+          map.set(d.toUpperCase(), d);
+        }
+      }
+    }
+  }
+  return Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+});
+
+const filterPicOptions = computed(() => {
+  const map = new Map();
+  for (const u of userList.value || []) {
+    if (u.id && u.name) {
+      map.set(u.id, u.name);
+    }
+  }
+  for (const obj of objectives.value || []) {
+    for (const kr of obj.keyResults || []) {
+      for (const a of kr.assignments || []) {
+        const uid = a.userId || a.user?.id;
+        const uname = getAssignmentUserName(a);
+        if (uid && uname && uname !== "Pegawai" && !map.has(uid)) {
+          map.set(uid, uname);
+        }
+      }
+    }
+  }
+  return Array.from(map.entries())
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const hasAnyKrs = computed(() => {
+  return (objectives.value || []).some(
+    (o) => (o.keyResults || []).length > 0,
+  );
+});
 
 const filteredObjectives = computed(() => {
   const q = krSearch.value.trim().toLowerCase();
-  return objectives.value
+  const persp = filterPerspective.value;
+  const dept = filterDepartment.value
+    ? filterDepartment.value.toUpperCase()
+    : "";
+  const pic = filterPic.value;
+
+  return (objectives.value || [])
     .map((obj) => ({
       ...obj,
-      filteredKrs: q
-        ? (obj.keyResults || []).filter((kr) =>
-            kr.title.toLowerCase().includes(q),
-          )
-        : obj.keyResults || [],
+      filteredKrs: (obj.keyResults || []).filter((kr) => {
+        // 1. Text Search
+        if (q && !kr.title.toLowerCase().includes(q)) {
+          return false;
+        }
+
+        // 2. BSC Perspective
+        if (persp && String(kr.bscPerspective || "").toUpperCase() !== persp) {
+          return false;
+        }
+
+        // 3. Department
+        if (dept) {
+          const krDepts = getKrDepartments(kr).map((d) => d.toUpperCase());
+          if (!krDepts.includes(dept)) {
+            return false;
+          }
+        }
+
+        // 4. PIC RACI
+        if (pic) {
+          const assignments = kr.assignments || [];
+          const hasPic = assignments.some(
+            (a) => a.userId === pic || a.user?.id === pic,
+          );
+          if (!hasPic) {
+            return false;
+          }
+        }
+
+        return true;
+      }),
     }))
     .filter((obj) => obj.filteredKrs.length > 0);
+});
+
+watch([filterPerspective, filterDepartment, filterPic, krSearch], () => {
+  selectedKrIds.value = [];
 });
 
 const allDisplayedKrs = computed(() => {
@@ -2332,9 +2502,16 @@ const isAllKrsSelected = computed(() => {
 
 function toggleSelectAllKrs() {
   if (isAllKrsSelected.value) {
-    selectedKrIds.value = [];
+    const displayedIds = new Set(allDisplayedKrs.value.map((kr) => kr.id));
+    selectedKrIds.value = selectedKrIds.value.filter(
+      (id) => !displayedIds.has(id),
+    );
   } else {
-    selectedKrIds.value = allDisplayedKrs.value.map((kr) => kr.id);
+    const set = new Set(selectedKrIds.value);
+    for (const kr of allDisplayedKrs.value) {
+      set.add(kr.id);
+    }
+    selectedKrIds.value = Array.from(set);
   }
 }
 
@@ -3974,6 +4151,64 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-filter-select {
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  color: #171c20;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  max-width: 160px;
+}
+
+.toolbar-filter-select:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.toolbar-filter-select option {
+  background: #ffffff;
+  color: #171c20;
+}
+
+.toolbar-reset-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbar-reset-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.dark-theme .toolbar-filter-select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.dark-theme .toolbar-filter-select option {
+  background: #1e293b;
+  color: #f1f5f9;
 }
 
 .select-all-label {

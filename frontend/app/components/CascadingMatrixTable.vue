@@ -371,9 +371,23 @@
                         <span class="bsc-pill-sub">{{ p.name }}</span>
                       </td>
                       <td>
-                        <span class="text-dept">{{
-                          kr.departments?.join(", ") || "Lintas Tim"
-                        }}</span>
+                        <div class="team-pic-cell">
+                          <span class="text-dept">{{
+                            kr.departments?.join(", ") || "Lintas Tim"
+                          }}</span>
+                          <div
+                            v-if="kr.assignments && kr.assignments.length > 0"
+                            class="pic-sub-chips"
+                          >
+                            <span
+                              v-for="a in kr.assignments"
+                              :key="a.id"
+                              class="pic-mini-badge"
+                            >
+                              <strong :class="a.raciRole === 'RESPONSIBLE' ? 'r-color' : 'a-color'">{{ a.raciRole ? a.raciRole[0] : 'R' }}:</strong> {{ a.user?.name }}
+                            </span>
+                          </div>
+                        </div>
                       </td>
                       <td>
                         <div class="target-col">
@@ -908,6 +922,28 @@ function formatVal(val: any, unit?: string) {
 .text-dept {
   color: #0f172a;
   font-weight: 600;
+}
+.team-pic-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pic-sub-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+.pic-mini-badge {
+  font-size: 0.72rem;
+  color: #475569;
+  line-height: 1.2;
+}
+.pic-mini-badge .r-color {
+  color: #1d4ed8;
+}
+.pic-mini-badge .a-color {
+  color: #7c3aed;
 }
 .text-team {
   color: #0369a1;

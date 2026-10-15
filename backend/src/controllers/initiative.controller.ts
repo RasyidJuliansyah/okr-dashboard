@@ -695,13 +695,22 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
             currentValue: true,
             status: true,
             objective: { select: { id: true, title: true, year: true } },
+            assignments: {
+              include: {
+                user: {
+                  select: { id: true, name: true, email: true, department: true },
+                },
+              },
+            },
           },
         },
         team: { select: { id: true, name: true, department: true } },
         owner: { select: { id: true, name: true, position: true } },
+        sprint: { select: { id: true, name: true, status: true } },
         tasks: {
           where: { isActive: true },
           include: {
+            sprint: { select: { id: true, name: true, status: true } },
             assignments: {
               include: { user: { select: { id: true, name: true } } },
             },
@@ -756,12 +765,43 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
     for (const init of enriched) {
       const krId = init.keyResultId || "unassigned";
       if (!byKeyResult[krId]) {
+        const rawKr = init.keyResult;
+        let responsible: any = null;
+        let accountables: any[] = [];
+        let assignments: any[] = [];
+
+        if (rawKr) {
+          assignments = rawKr.assignments || [];
+          const respAssign = assignments.find((a: any) => a.raciRole === "RESPONSIBLE");
+          responsible = respAssign ? respAssign.user : null;
+          accountables = assignments
+            .filter((a: any) => a.raciRole === "ACCOUNTABLE")
+            .map((a: any) => a.user)
+            .filter(Boolean);
+        }
+
         byKeyResult[krId] = {
-          keyResult: init.keyResult || {
-            id: "unassigned",
-            title: "Inisiatif Mandiri (Tanpa Key Result)",
-            bscPerspective: null,
-          },
+          keyResult: rawKr
+            ? {
+                id: rawKr.id,
+                title: rawKr.title,
+                bscPerspective: rawKr.bscPerspective,
+                targetValue: rawKr.targetValue,
+                currentValue: rawKr.currentValue,
+                status: rawKr.status,
+                objective: rawKr.objective,
+                responsible,
+                accountables,
+                assignments,
+              }
+            : {
+                id: "unassigned",
+                title: "Inisiatif Mandiri (Tanpa Key Result)",
+                bscPerspective: null,
+                responsible: null,
+                accountables: [],
+                assignments: [],
+              },
           initiatives: [],
           krProgress: 0,
         };

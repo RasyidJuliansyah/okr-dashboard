@@ -1417,6 +1417,7 @@
       v-else-if="activeView === 'list'"
       :initiatives="filteredInitiatives"
       @open-cross-dept="openCrossDeptModal"
+      @progress-updated="fetchInitiatives"
     />
 
     <InitiativesGantt

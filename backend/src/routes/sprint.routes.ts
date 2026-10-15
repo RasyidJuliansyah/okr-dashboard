@@ -18,8 +18,8 @@ const router = Router();
 // Public / Authenticated read routes
 router.get("/", authMiddleware, getSprints);
 router.get("/active", authMiddleware, getActiveSprint);
-router.get("/:id/member-scores", authMiddleware, getSprintMemberScores);
-router.get("/:id/report", authMiddleware, getSprintReport);
+router.get("/:id/member-scores", authMiddleware, roleGuard(["ADMIN", "C_LEVEL", "MANAGER"]), getSprintMemberScores);
+router.get("/:id/report", authMiddleware, roleGuard(["ADMIN", "C_LEVEL", "MANAGER"]), getSprintReport);
 
 // Admin-only management routes
 router.post("/generate-yearly", authMiddleware, roleGuard(["ADMIN"]), generateYearly);

@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-root">
+  <div v-if="isAllowed" class="admin-root">
     <div class="admin-content">
       <!-- Header Section -->
       <div class="header-section card">
@@ -512,6 +512,17 @@ const auth = useAuthStore();
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
 
+const isAdmin = computed(
+  () => auth.user?.role === "ADMIN" || auth.user?.originalRole === "ADMIN",
+);
+const isCLevel = computed(
+  () => auth.user?.role === "C_LEVEL" || auth.user?.originalRole === "C_LEVEL",
+);
+const isManager = computed(
+  () => auth.user?.role === "MANAGER" || auth.user?.originalRole === "MANAGER",
+);
+const isAllowed = computed(() => isAdmin.value || isCLevel.value || isManager.value);
+
 const loading = ref(true);
 const errorMessage = ref("");
 const sprints = ref<any[]>([]);
@@ -714,6 +725,12 @@ function exportActiveTabToCsv() {
 }
 
 onMounted(async () => {
+  if (!auth.isAuthenticated) {
+    return navigateTo("/login");
+  }
+  if (!isAllowed.value) {
+    return navigateTo("/dashboard");
+  }
   await Promise.all([fetchSprintsList(), fetchDepartments()]);
   if (selectedSprintId.value) {
     await fetchReport();

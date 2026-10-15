@@ -695,6 +695,20 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
 
     const keyResultInclude = {
       objective: true,
+      assignments: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              department: true,
+              position: true,
+              role: true,
+            },
+          },
+        },
+      },
       initiatives: {
         where: { isActive: true },
         include: {
@@ -736,6 +750,16 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
         const assignments = await prisma.krAssignment.findMany({
           where: { userId: String(queryUserId), keyResult: { isActive: true } },
           include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                department: true,
+                position: true,
+                role: true,
+              },
+            },
             keyResult: {
               include: keyResultInclude,
             },
@@ -748,43 +772,63 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
           include: {
             ...keyResultInclude,
             assignments: {
-              include: { user: true },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    department: true,
+                    position: true,
+                    role: true,
+                  },
+                },
+              },
             },
           },
         });
 
-        const assignments = krs.map((kr) => {
-          const primaryAssign =
-            kr.assignments.find((a) => a.raciRole === "RESPONSIBLE") ||
-            kr.assignments[0];
-          return {
-            id: primaryAssign ? primaryAssign.id : `virtual-${kr.id}`,
+        const assignments = krs.flatMap((kr: any) => {
+          if (!kr.assignments || kr.assignments.length === 0) {
+            return [
+              {
+                id: `virtual-${kr.id}`,
+                keyResultId: kr.id,
+                userId,
+                raciRole: "RESPONSIBLE",
+                user: null,
+                keyResult: kr,
+              },
+            ];
+          }
+          return kr.assignments.map((a: any) => ({
+            id: a.id,
             keyResultId: kr.id,
-            userId: primaryAssign ? primaryAssign.userId : userId,
-            raciRole: primaryAssign ? primaryAssign.raciRole : "RESPONSIBLE",
+            userId: a.userId,
+            raciRole: a.raciRole,
+            user: a.user,
             keyResult: kr,
-          };
+          }));
         });
         return res.status(200).json(assignments);
       }
     }
 
-    let whereClause: any = { userId, keyResult: { isActive: true } };
-
-    if (role === "LEADER") {
-      whereClause = {
-        userId,
-        keyResult: {
-          isActive: true,
-          month: { not: null },
-          targetValue: { gt: 0 },
-        },
-      };
-    }
+    const whereClause = { userId, keyResult: { isActive: true } };
 
     const assignments = await prisma.krAssignment.findMany({
       where: whereClause,
       include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            position: true,
+            role: true,
+          },
+        },
         keyResult: {
           include: keyResultInclude,
         },

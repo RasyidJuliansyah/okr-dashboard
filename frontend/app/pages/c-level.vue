@@ -244,7 +244,27 @@
                           {{ kr.objectiveTitle }} {{ kr.year ? `(${kr.year})` : '' }}
                         </span>
                         <span
-                          v-if="kr.responsible"
+                          v-if="kr.assignments && kr.assignments.length > 0"
+                          class="meta-chip raci-meta-chip"
+                          title="PIC & Penanggung Jawab"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                          <span
+                            v-for="(a, idx) in kr.assignments"
+                            :key="idx"
+                            class="raci-chip-inner"
+                          >
+                            <span class="raci-badge-micro" :class="a.raciRole === 'RESPONSIBLE' ? 'r-badge' : 'a-badge'">
+                              {{ a.raciRole === 'RESPONSIBLE' ? 'R' : 'A' }}
+                            </span>
+                            {{ a.user?.name }}
+                          </span>
+                        </span>
+                        <span
+                          v-else-if="kr.responsible"
                           class="meta-chip"
                           title="PIC Responsible"
                         >
@@ -470,7 +490,7 @@
                 <th>Key Result</th>
                 <th>Perspektif</th>
                 <th>Objective</th>
-                <th>PIC (Responsible)</th>
+                <th>PIC (RACI)</th>
                 <th>Progres</th>
                 <th>Status</th>
               </tr>
@@ -502,9 +522,25 @@
                   <span class="year-chip">{{ kr.year }}</span>
                 </td>
                 <td>
-                  <span v-if="kr.responsible" class="pic-name">{{
-                    kr.responsible.name
-                  }}</span>
+                  <div v-if="kr.assignments && kr.assignments.length > 0" class="pic-stack">
+                    <div
+                      v-for="(a, idx) in kr.assignments"
+                      :key="idx"
+                      class="pic-chip-item"
+                    >
+                      <span
+                        class="raci-badge-micro"
+                        :class="a.raciRole === 'RESPONSIBLE' ? 'r-badge' : 'a-badge'"
+                      >
+                        {{ a.raciRole === 'RESPONSIBLE' ? 'R' : 'A' }}
+                      </span>
+                      <span class="pic-name">{{ a.user?.name || '—' }}</span>
+                    </div>
+                  </div>
+                  <span v-else-if="kr.responsible" class="pic-name">
+                    <span class="raci-badge-micro r-badge">R</span>
+                    {{ kr.responsible.name }}
+                  </span>
                   <span v-else class="pic-empty">—</span>
                 </td>
                 <td class="progress-cell">
@@ -782,6 +818,7 @@ function exportCsv() {
     "Bulan",
     "Tahun",
     "PIC Responsible",
+    "PIC Accountable",
     "Departemen",
     "Jumlah Inisiatif",
   ];
@@ -803,6 +840,10 @@ function exportCsv() {
             ? kr.departments.join(", ")
             : "-";
         const picName = kr.responsible?.name || "-";
+        const accountableNames =
+          Array.isArray(kr.accountables) && kr.accountables.length > 0
+            ? kr.accountables.map((u) => u.name).filter(Boolean).join(", ")
+            : "-";
         const initsCount = Array.isArray(kr.initiatives)
           ? kr.initiatives.length
           : 0;
@@ -823,6 +864,7 @@ function exportCsv() {
           escapeCell(kr.month || "-"),
           escapeCell(kr.year || "-"),
           escapeCell(picName),
+          escapeCell(accountableNames),
           escapeCell(depts),
           initsCount,
         ]);
@@ -1737,6 +1779,56 @@ onMounted(fetchData);
   font-size: 13px;
   font-weight: 600;
   color: #1a2335;
+}
+
+.pic-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pic-chip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.raci-badge-micro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.raci-badge-micro.r-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.raci-badge-micro.a-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.raci-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.raci-chip-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .pic-empty {

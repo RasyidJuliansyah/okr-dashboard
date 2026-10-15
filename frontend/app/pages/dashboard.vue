@@ -307,7 +307,7 @@
         <div class="section-title-row">
           <h3 class="section-title">Progress Capaian Initiative</h3>
           <span class="count-badge-sub">
-            {{ initProgressData.summary?.totalInitiatives || 0 }} Initiative
+            {{ filteredTotalInitiatives }} Initiative
           </span>
         </div>
 
@@ -315,35 +315,104 @@
         <div class="init-summary-grid">
           <div class="init-summary-card card">
             <span class="summary-val"
-              >{{ initProgressData.summary?.avgProgress || 0 }}%</span
+              >{{ filteredSummary.avgProgress || 0 }}%</span
             >
             <span class="summary-lbl">Rata-rata Progress</span>
           </div>
           <div class="init-summary-card card">
             <span class="summary-val">
-              {{ initProgressData.summary?.completedTasks || 0 }}/{{
-                initProgressData.summary?.totalTasks || 0
+              {{ filteredSummary.completedTasks || 0 }}/{{
+                filteredSummary.totalTasks || 0
               }}
             </span>
             <span class="summary-lbl">Task Selesai</span>
           </div>
           <div class="init-summary-card card">
             <span class="summary-val done-val">
-              {{ initProgressData.summary?.byKanbanStatus?.DONE || 0 }}
+              {{ filteredSummary.byKanbanStatus?.DONE || 0 }}
             </span>
             <span class="summary-lbl">Initiative Done</span>
           </div>
           <div class="init-summary-card card">
             <span class="summary-val progress-val">
-              {{ initProgressData.summary?.byKanbanStatus?.IN_PROGRESS || 0 }}
+              {{ filteredSummary.byKanbanStatus?.IN_PROGRESS || 0 }}
             </span>
             <span class="summary-lbl">In Progress</span>
           </div>
         </div>
 
+        <!-- Filter Bar -->
+        <div class="init-filter-bar">
+          <div class="filter-search-box">
+            <svg
+              class="search-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              v-model="filterSearch"
+              type="text"
+              class="filter-search-input"
+              placeholder="Cari nama inisiatif, task, KR, atau tim..."
+            />
+            <button
+              v-if="filterSearch"
+              type="button"
+              class="filter-clear-btn"
+              @click="filterSearch = ''"
+              title="Hapus pencarian"
+            >
+              &times;
+            </button>
+          </div>
+
+          <div class="filter-actions-group">
+            <div class="filter-field">
+              <label class="filter-field-label">Status</label>
+              <select v-model="filterInitStatus" class="filter-select-input">
+                <option value="ALL">Semua Status</option>
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done / Selesai</option>
+                <option value="ON_TRACK">On Track</option>
+                <option value="AT_RISK">At Risk</option>
+                <option value="OFF_TRACK">Off Track</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label class="filter-field-label">Tipe Card</label>
+              <select v-model="filterCardType" class="filter-select-input">
+                <option value="ALL">Semua Tipe</option>
+                <option value="INITIATIVE">Initiatives</option>
+                <option value="TASK">Task</option>
+                <option value="CROSS_DEPT">Cross Departemen</option>
+              </select>
+            </div>
+
+            <button
+              v-if="isAnyInitFilterActive"
+              type="button"
+              class="filter-reset-btn"
+              @click="resetInitFilters"
+            >
+              Reset Filter
+            </button>
+          </div>
+        </div>
+
         <!-- Grouped by Key Result -->
         <div
-          v-for="group in initProgressData.byKeyResult"
+          v-for="group in filteredByKeyResult"
           :key="group.keyResult?.id"
           class="kr-group-card card"
         >
@@ -373,12 +442,66 @@
             </div>
           </div>
 
+          <!-- RACI 2-Section: KR Responsible & KR Accountability -->
+          <div
+            v-if="group.keyResult?.id !== 'unassigned'"
+            class="kr-raci-dual-section"
+          >
+            <!-- Section 1: KR Responsible -->
+            <div class="raci-section-box responsible-box">
+              <div class="raci-section-header">
+                <span class="raci-mini-badge r-mini">R</span>
+                <span class="raci-section-title">KR Responsible</span>
+              </div>
+              <div class="raci-section-body">
+                <span
+                  v-if="getResponsible(group.keyResult)"
+                  class="raci-chip responsible-chip"
+                >
+                  <span class="pic-name">{{ getResponsible(group.keyResult).name }}</span>
+                  <span
+                    v-if="getResponsible(group.keyResult).department"
+                    class="chip-dept"
+                  >
+                    · {{ getResponsible(group.keyResult).department }}
+                  </span>
+                </span>
+                <span v-else class="raci-empty-text">—</span>
+              </div>
+            </div>
+
+            <!-- Section 2: KR Accountability -->
+            <div class="raci-section-box accountable-box">
+              <div class="raci-section-header">
+                <span class="raci-mini-badge a-mini">A</span>
+                <span class="raci-section-title">KR Accountability</span>
+              </div>
+              <div class="raci-section-body">
+                <template
+                  v-if="getAccountables(group.keyResult).length"
+                >
+                  <span
+                    v-for="acc in getAccountables(group.keyResult)"
+                    :key="acc.id"
+                    class="raci-chip accountable-chip"
+                  >
+                    <span class="pic-name">{{ acc.name }}</span>
+                    <span v-if="acc.department" class="chip-dept"
+                      >· {{ acc.department }}</span
+                    >
+                  </span>
+                </template>
+                <span v-else class="raci-empty-text">—</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Initiative rows under this KR -->
           <div
             v-for="init in group.initiatives"
             :key="init.id"
             class="init-progress-row"
-            :class="{ 'is-expanded': isInitExpanded(init.id) }"
+            :class="{ 'is-expanded': isInitExpanded(init.id) || isAutoExpanded(init) }"
           >
             <div
               class="init-row-header"
@@ -392,6 +515,41 @@
                 ></span>
                 <span class="init-row-title">{{ init.title }}</span>
                 <span class="team-mini-badge">{{ init.team?.name }}</span>
+                <span
+                  v-if="init.sprint?.name || init.sprintMonth"
+                  class="cadence-mini-badge"
+                  :title="'Cadence: ' + (init.sprint?.name || formatSprintLabel(init.sprintMonth))"
+                >
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                  {{ init.sprint?.name || formatSprintLabel(init.sprintMonth) }}
+                </span>
+                <span
+                  class="status-mini-badge"
+                  :class="getStatusBadgeClass(init.kanbanStatus || init.status)"
+                >
+                  {{ formatStatusLabel(init.kanbanStatus || init.status) }}
+                </span>
+                <span
+                  v-if="hasCrossDeptTasks(init)"
+                  class="cross-dept-tag-badge"
+                  title="Memiliki task lintas departemen"
+                >
+                  Cross-Dept
+                </span>
               </div>
               <div class="init-row-right">
                 <span class="init-pct">{{ init.calculatedProgress }}%</span>
@@ -400,9 +558,9 @@
                   type="button"
                   class="task-count-mini is-toggleable"
                   @click.stop="toggleInitTasks(init.id)"
-                  :aria-expanded="isInitExpanded(init.id)"
+                  :aria-expanded="isInitExpanded(init.id) || isAutoExpanded(init)"
                   :title="
-                    isInitExpanded(init.id)
+                    isInitExpanded(init.id) || isAutoExpanded(init)
                       ? 'Tutup rincian task'
                       : 'Buka rincian task'
                   "
@@ -412,7 +570,7 @@
                   >
                   <svg
                     class="init-expand-icon"
-                    :class="{ 'is-expanded': isInitExpanded(init.id) }"
+                    :class="{ 'is-expanded': isInitExpanded(init.id) || isAutoExpanded(init) }"
                     width="13"
                     height="13"
                     viewBox="0 0 24 24"
@@ -440,7 +598,7 @@
 
             <!-- Task detail rows -->
             <div
-              v-if="init.tasks?.length && isInitExpanded(init.id)"
+              v-if="init.tasks?.length && (isInitExpanded(init.id) || isAutoExpanded(init))"
               class="task-detail-grid"
             >
               <div
@@ -448,7 +606,42 @@
                 :key="task.id"
                 class="task-detail-row"
               >
-                <span class="task-detail-name">{{ task.title }}</span>
+                <div class="task-detail-title-col">
+                  <span class="task-detail-name">{{ task.title }}</span>
+                  <div class="task-meta-pills">
+                    <span
+                      v-if="task.isCrossDept"
+                      class="task-cross-badge"
+                      :title="(task.creatorDept || '') + (task.targetDept ? ' → ' + task.targetDept : '')"
+                    >
+                      Cross-Dept
+                    </span>
+                    <span
+                      v-if="task.sprint?.name || task.sprintMonth"
+                      class="task-cadence-badge"
+                    >
+                      <svg
+                        width="9"
+                        height="9"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                      </svg>
+                      {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
+                    </span>
+                    <span
+                      class="status-mini-badge"
+                      :class="getStatusBadgeClass(task.kanbanStatus || task.status)"
+                    >
+                      {{ formatStatusLabel(task.kanbanStatus || task.status) }}
+                    </span>
+                  </div>
+                </div>
                 <span class="task-detail-val">
                   {{ formatTargetValue(task.currentValue, task.unit) }} /
                   {{ formatTargetValue(task.targetValue, task.unit) }}
@@ -474,7 +667,21 @@
           </div>
         </div>
 
-        <div v-if="!initProgressData.byKeyResult?.length" class="empty-state">
+        <div
+          v-if="filteredByKeyResult.length === 0 && isAnyInitFilterActive"
+          class="empty-state"
+        >
+          <p>Tidak ada Initiative atau Task yang sesuai dengan kriteria filter.</p>
+          <button
+            type="button"
+            class="filter-reset-btn"
+            style="margin-top: 10px;"
+            @click="resetInitFilters"
+          >
+            Reset Filter
+          </button>
+        </div>
+        <div v-else-if="!initProgressData.byKeyResult?.length" class="empty-state">
           Belum ada Initiative yang terdaftar pada lingkup ini.
         </div>
       </section>
@@ -590,9 +797,59 @@
             </div>
 
             <h4 class="cross-dept-item-title">{{ task.title }}</h4>
-            <p v-if="task.description" class="cross-dept-item-desc">
-              {{ task.description }}
-            </p>
+            <div v-if="task.description" class="cross-dept-desc-wrapper">
+              <p
+                class="cross-dept-item-desc"
+                :class="{ 'desc-expanded': isCrossDeptDescExpanded(task.id) }"
+              >
+                {{ task.description }}
+              </p>
+              <button
+                v-if="isDescLong(task.description)"
+                type="button"
+                class="desc-toggle-btn"
+                :title="
+                  isCrossDeptDescExpanded(task.id)
+                    ? 'Perkecil deskripsi'
+                    : 'Perluas deskripsi'
+                "
+                :aria-label="
+                  isCrossDeptDescExpanded(task.id)
+                    ? 'Perkecil deskripsi'
+                    : 'Perluas deskripsi'
+                "
+                @click.stop="toggleCrossDeptDesc(task.id)"
+              >
+                <svg
+                  v-if="!isCrossDeptDescExpanded(task.id)"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
+            </div>
 
             <div class="cross-dept-meta-row">
               <span v-if="task.creator?.name" class="meta-sub">
@@ -1286,6 +1543,24 @@ function formatCrossDeptStatus(st) {
   return s.replace(/_/g, " ");
 }
 
+const expandedCrossDeptDesc = ref({});
+
+function toggleCrossDeptDesc(taskId) {
+  expandedCrossDeptDesc.value = {
+    ...expandedCrossDeptDesc.value,
+    [taskId]: !expandedCrossDeptDesc.value[taskId],
+  };
+}
+
+function isCrossDeptDescExpanded(taskId) {
+  return !!expandedCrossDeptDesc.value[taskId];
+}
+
+function isDescLong(desc) {
+  if (!desc) return false;
+  return desc.length > 35 || desc.includes("\n");
+}
+
 const currentCrossDeptList = computed(() => {
   if (activeCrossDeptTab.value === "incoming") {
     return crossDeptData.value?.incoming || [];
@@ -1436,6 +1711,285 @@ function isObjectiveExpanded(objId) {
 // State & Computed untuk Initiative Progress (Leader, Manager, C-Level, Admin)
 const initProgressData = ref({ initiatives: [], byKeyResult: [], summary: {} });
 
+// Filter State untuk Initiative Progress (Search, Status, Card Type)
+const filterSearch = ref("");
+const filterInitStatus = ref("ALL");
+const filterCardType = ref("ALL"); // 'ALL' | 'INITIATIVE' | 'TASK' | 'CROSS_DEPT'
+
+const isAnyInitFilterActive = computed(() => {
+  return (
+    !!filterSearch.value.trim() ||
+    filterInitStatus.value !== "ALL" ||
+    filterCardType.value !== "ALL"
+  );
+});
+
+function resetInitFilters() {
+  filterSearch.value = "";
+  filterInitStatus.value = "ALL";
+  filterCardType.value = "ALL";
+}
+
+function formatSprintLabel(sprint) {
+  if (!sprint) return "";
+  if (/^\d{4}-\d{2}$/.test(sprint)) {
+    const [year, month] = sprint.split("-");
+    const monthNames = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+    ];
+    const mIdx = parseInt(month, 10) - 1;
+    if (mIdx >= 0 && mIdx < 12) {
+      return `${monthNames[mIdx]} ${year}`;
+    }
+  }
+  return sprint;
+}
+
+function formatStatusLabel(status) {
+  if (!status) return "To Do";
+  const s = String(status).toUpperCase();
+  if (s === "DONE" || s === "COMPLETED") return "Done";
+  if (s === "IN_PROGRESS") return "In Progress";
+  if (s === "TODO") return "To Do";
+  if (s === "DROP") return "Drop";
+  if (s === "ON_TRACK") return "On Track";
+  if (s === "AT_RISK") return "At Risk";
+  if (s === "OFF_TRACK") return "Off Track";
+  return status;
+}
+
+function getStatusBadgeClass(status) {
+  if (!status) return "status-todo";
+  const s = String(status).toUpperCase();
+  if (s === "DONE" || s === "COMPLETED") return "status-done";
+  if (s === "IN_PROGRESS") return "status-in-progress";
+  if (s === "TODO") return "status-todo";
+  if (s === "DROP") return "status-drop";
+  if (s === "ON_TRACK") return "status-on-track";
+  if (s === "AT_RISK") return "status-at-risk";
+  if (s === "OFF_TRACK") return "status-off-track";
+  return "status-todo";
+}
+
+function hasCrossDeptTasks(init) {
+  if (init?.isCrossDept) return true;
+  return Array.isArray(init?.tasks) && init.tasks.some((t) => t.isCrossDept);
+}
+
+function isAutoExpanded(init) {
+  if (!isAnyInitFilterActive.value) return false;
+  if (
+    filterCardType.value === "TASK" ||
+    filterCardType.value === "CROSS_DEPT" ||
+    !!filterSearch.value.trim() ||
+    filterInitStatus.value !== "ALL"
+  ) {
+    return Array.isArray(init?.tasks) && init.tasks.length > 0;
+  }
+  return false;
+}
+
+function matchesStatusFilter(item, selectedStatus) {
+  if (!selectedStatus || selectedStatus === "ALL") return true;
+  const s = selectedStatus.toUpperCase();
+  const itemKanban = String(item?.kanbanStatus || "").toUpperCase();
+  const itemStatus = String(item?.status || "").toUpperCase();
+  const pct =
+    item?.calculatedProgress !== undefined
+      ? item.calculatedProgress
+      : item?.progressPercent !== undefined
+        ? item.progressPercent
+        : 0;
+
+  if (s === "DONE") {
+    return (
+      itemKanban === "DONE" ||
+      itemKanban === "COMPLETED" ||
+      itemStatus === "DONE" ||
+      itemStatus === "COMPLETED" ||
+      pct >= 100
+    );
+  }
+  if (s === "IN_PROGRESS") {
+    return (
+      itemKanban === "IN_PROGRESS" ||
+      itemStatus === "IN_PROGRESS" ||
+      (pct > 0 && pct < 100)
+    );
+  }
+  if (s === "TODO") {
+    return itemKanban === "TODO" || itemStatus === "TODO" || pct === 0;
+  }
+  if (s === "DROP") {
+    return itemKanban === "DROP" || itemStatus === "DROP";
+  }
+  if (s === "ON_TRACK") {
+    return itemStatus === "ON_TRACK";
+  }
+  if (s === "AT_RISK") {
+    return itemStatus === "AT_RISK";
+  }
+  if (s === "OFF_TRACK") {
+    return itemStatus === "OFF_TRACK";
+  }
+  return itemKanban === s || itemStatus === s;
+}
+
+const filteredByKeyResult = computed(() => {
+  const rawGroups = initProgressData.value?.byKeyResult || [];
+  if (!isAnyInitFilterActive.value) {
+    return rawGroups;
+  }
+
+  const q = filterSearch.value.trim().toLowerCase();
+  const statusFilter = filterInitStatus.value;
+  const typeFilter = filterCardType.value; // 'ALL' | 'INITIATIVE' | 'TASK' | 'CROSS_DEPT'
+
+  const result = [];
+
+  for (const group of rawGroups) {
+    const krTitle = (group.keyResult?.title || "").toLowerCase();
+    const krMatches = q && krTitle.includes(q);
+
+    const matchingInitiatives = [];
+
+    for (const init of group.initiatives || []) {
+      const initTitle = (init.title || "").toLowerCase();
+      const teamName = (init.team?.name || "").toLowerCase();
+      const initMatchesName =
+        !q || krMatches || initTitle.includes(q) || teamName.includes(q);
+      const initMatchesStatus = matchesStatusFilter(init, statusFilter);
+      const isCrossDeptInit = hasCrossDeptTasks(init);
+
+      const allTasks = Array.isArray(init.tasks) ? init.tasks : [];
+
+      const matchingTasks = allTasks.filter((task) => {
+        if (typeFilter === "INITIATIVE") return false;
+        if (typeFilter === "CROSS_DEPT" && !task.isCrossDept) return false;
+
+        const taskTitle = (task.title || "").toLowerCase();
+        const assigneeMatches = (task.assignments || []).some((a) =>
+          (a.user?.name || "").toLowerCase().includes(q)
+        );
+        const taskMatchesName =
+          !q ||
+          krMatches ||
+          initTitle.includes(q) ||
+          taskTitle.includes(q) ||
+          assigneeMatches;
+        const taskMatchesStatus = matchesStatusFilter(task, statusFilter);
+
+        return taskMatchesName && taskMatchesStatus;
+      });
+
+      if (typeFilter === "TASK") {
+        if (matchingTasks.length > 0) {
+          matchingInitiatives.push({
+            ...init,
+            tasks: matchingTasks,
+          });
+        }
+      } else if (typeFilter === "INITIATIVE") {
+        if (initMatchesName && initMatchesStatus) {
+          matchingInitiatives.push({
+            ...init,
+            tasks: allTasks,
+          });
+        }
+      } else if (typeFilter === "CROSS_DEPT") {
+        if (isCrossDeptInit) {
+          const crossTasks =
+            matchingTasks.length > 0
+              ? matchingTasks
+              : allTasks.filter((t) => t.isCrossDept);
+          if ((initMatchesName && initMatchesStatus) || matchingTasks.length > 0) {
+            matchingInitiatives.push({
+              ...init,
+              tasks: crossTasks,
+            });
+          }
+        }
+      } else {
+        // typeFilter === 'ALL'
+        const selfMatches = initMatchesName && initMatchesStatus;
+        const hasMatchingTasks = matchingTasks.length > 0;
+        if (selfMatches || hasMatchingTasks) {
+          matchingInitiatives.push({
+            ...init,
+            tasks: hasMatchingTasks ? matchingTasks : allTasks,
+          });
+        }
+      }
+    }
+
+    if (matchingInitiatives.length > 0) {
+      result.push({
+        ...group,
+        initiatives: matchingInitiatives,
+      });
+    }
+  }
+
+  return result;
+});
+
+const filteredSummary = computed(() => {
+  if (!isAnyInitFilterActive.value) {
+    return initProgressData.value?.summary || {};
+  }
+  let totalInits = 0;
+  let sumPct = 0;
+  let totalTasks = 0;
+  let completedTasks = 0;
+  let doneInits = 0;
+  let inProgressInits = 0;
+
+  for (const group of filteredByKeyResult.value) {
+    for (const init of group.initiatives || []) {
+      totalInits++;
+      sumPct += init.calculatedProgress || 0;
+      const tasks = Array.isArray(init.tasks) ? init.tasks : [];
+      totalTasks += tasks.length;
+      completedTasks += tasks.filter(
+        (t) => (t.progressPercent || 0) >= 100 || isTaskDone(t)
+      ).length;
+      const s = String(init.kanbanStatus || init.status || "").toUpperCase();
+      if (
+        s === "DONE" ||
+        s === "COMPLETED" ||
+        (init.calculatedProgress || 0) >= 100
+      ) {
+        doneInits++;
+      } else if (
+        s === "IN_PROGRESS" ||
+        ((init.calculatedProgress || 0) > 0 &&
+          (init.calculatedProgress || 0) < 100)
+      ) {
+        inProgressInits++;
+      }
+    }
+  }
+
+  return {
+    totalInitiatives: totalInits,
+    avgProgress:
+      totalInits > 0 ? Math.round((sumPct / totalInits) * 10) / 10 : 0,
+    totalTasks,
+    completedTasks,
+    byKanbanStatus: {
+      DONE: doneInits,
+      IN_PROGRESS: inProgressInits,
+    },
+  };
+});
+
+const filteredTotalInitiatives = computed(() => {
+  return filteredSummary.value.totalInitiatives !== undefined
+    ? filteredSummary.value.totalInitiatives
+    : initProgressData.value.summary?.totalInitiatives || 0;
+});
+
 // State expand / collapse per Initiative
 const expandedInitIds = ref({});
 
@@ -1509,6 +2063,30 @@ async function fetchInitiativeProgress() {
   } catch (err) {
     console.error("Error fetching initiative progress:", err);
   }
+}
+
+function getResponsible(kr) {
+  if (!kr) return null;
+  if (kr.responsible) return kr.responsible;
+  if (Array.isArray(kr.assignments)) {
+    const a = kr.assignments.find((x) => x.raciRole === "RESPONSIBLE");
+    if (a?.user) return a.user;
+  }
+  return null;
+}
+
+function getAccountables(kr) {
+  if (!kr) return [];
+  if (Array.isArray(kr.accountables) && kr.accountables.length > 0) {
+    return kr.accountables;
+  }
+  if (Array.isArray(kr.assignments)) {
+    return kr.assignments
+      .filter((x) => x.raciRole === "ACCOUNTABLE")
+      .map((x) => x.user)
+      .filter(Boolean);
+  }
+  return [];
 }
 
 const summaryData = ref({});
@@ -3305,6 +3883,192 @@ async function handleReject() {
   transition: width 0.4s ease;
 }
 
+.kr-raci-dual-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--bg-input, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+}
+
+.raci-section-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.raci-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.raci-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.responsible-box .raci-section-title {
+  color: #0284c7;
+}
+
+.accountable-box .raci-section-title {
+  color: #7c3aed;
+}
+
+.raci-section-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+
+.responsible-box .responsible-chip {
+  background: rgba(14, 151, 214, 0.12);
+  color: #0369a1;
+  border: 1px solid rgba(14, 151, 214, 0.25);
+  font-weight: 600;
+}
+
+.accountable-box .accountable-chip {
+  background: rgba(124, 58, 237, 0.12);
+  color: #6d28d9;
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  font-weight: 600;
+}
+
+.raci-empty-text {
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+  font-style: italic;
+}
+
+/* Initiative Progress Filter Controls */
+.init-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.filter-search-box {
+  display: flex;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.filter-search-input {
+  width: 100%;
+  height: 38px;
+  padding: 6px 30px 6px 34px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-primary, #0f172a);
+  background: var(--bg-page, #ffffff);
+  transition: border-color 0.2s;
+}
+
+.filter-search-input:focus {
+  outline: none;
+  border-color: #0e97d6;
+}
+
+.filter-search-box .search-icon {
+  position: absolute;
+  left: 11px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.filter-clear-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.filter-clear-btn:hover {
+  color: #475569;
+}
+
+.filter-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.filter-select-input {
+  height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: var(--bg-page, #ffffff);
+  color: var(--text-primary, #0f172a);
+  cursor: pointer;
+}
+
+.filter-select-input:focus {
+  outline: none;
+  border-color: #0e97d6;
+}
+
+.filter-reset-btn {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--bg-page, #f8fafc);
+  color: var(--text-secondary, #475569);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.filter-reset-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
 .init-progress-row {
   background: var(--bg-input, #f8fafc);
   border: 1px solid var(--border-color, #e2e8f0);
@@ -3333,6 +4097,7 @@ async function handleReject() {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .kanban-dot {
@@ -3366,6 +4131,109 @@ async function handleReject() {
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 500;
+}
+
+.cadence-mini-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-mini-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-mini-badge.status-done,
+.status-mini-badge.status-on-track {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid rgba(22, 101, 52, 0.25);
+}
+
+.status-mini-badge.status-in-progress {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid rgba(3, 105, 161, 0.25);
+}
+
+.status-mini-badge.status-todo {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.25);
+}
+
+.status-mini-badge.status-at-risk {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid rgba(146, 64, 14, 0.25);
+}
+
+.status-mini-badge.status-off-track,
+.status-mini-badge.status-drop {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid rgba(153, 27, 27, 0.25);
+}
+
+.cross-dept-tag-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.task-detail-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.task-meta-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.task-cadence-badge {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.task-cross-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .init-row-right {
@@ -3460,7 +4328,7 @@ button.task-count-mini {
 
 .task-detail-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 40px 1.5fr;
+  grid-template-columns: 2.2fr 1fr 1.2fr 40px 1.2fr;
   align-items: center;
   gap: 10px;
   font-size: 0.78rem;
@@ -3987,11 +4855,53 @@ button.task-count-mini {
   color: #1e293b;
   margin: 0;
 }
+.cross-dept-desc-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
 .cross-dept-item-desc {
   font-size: 12px;
   color: #475569;
   margin: 0;
-  line-height: 1.4;
+  max-width: 250px;
+  height: 20px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
+}
+.cross-dept-item-desc.desc-expanded {
+  max-width: 100%;
+  height: auto;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.desc-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-left: auto;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #475569;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+.desc-toggle-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
 }
 .cross-dept-meta-row {
   display: flex;

@@ -19,7 +19,7 @@ def test_expand_collapse():
             print("1. Logging in as admin...")
             page.goto(f"{BASE_URL}/login", wait_until="networkidle")
             page.wait_for_selector("#email", timeout=10000)
-            page.fill("#email", "admin@skolla.education")
+            page.fill("#email", "hrd@skolla.education")
             page.fill("#password", "SkollaEdu")
             page.click("button[type='submit']")
             page.wait_for_url(lambda url: "/login" not in url, timeout=15000)

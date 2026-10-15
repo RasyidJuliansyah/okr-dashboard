@@ -101,8 +101,16 @@
                         :class="getStatusClass(assign.keyResult.status)"
                         >Status: {{ assign.keyResult.status }}</span
                       >
-                      <span class="badge bg-blue"
+                      <span
+                        class="badge"
+                        :class="assign.raciRole === 'RESPONSIBLE' ? 'bg-blue' : 'bg-purple'"
                         >RACI: {{ assign.raciRole }}</span
+                      >
+                      <span
+                        v-if="assign.user?.name"
+                        class="badge"
+                        style="background: #f1f5f9; color: #334155; font-weight: 500"
+                        >PIC: {{ assign.user.name }}</span
                       >
                       <button
                         v-if="assign.raciRole === 'RESPONSIBLE'"
@@ -861,7 +869,11 @@ const availableEmployees = computed(() => {
   }
   const emps = new Map();
   krs.value.forEach((assign) => {
-    assign.keyResult.initiatives?.forEach((ini) => {
+    if (assign.user) emps.set(assign.user.id, assign.user);
+    assign.keyResult?.assignments?.forEach((a) => {
+      if (a.user) emps.set(a.user.id, a.user);
+    });
+    assign.keyResult?.initiatives?.forEach((ini) => {
       if (ini.owner) emps.set(ini.owner.id, ini.owner);
       ini.tasks?.forEach((t) => {
         t.assignments?.forEach((a) => {
@@ -870,7 +882,7 @@ const availableEmployees = computed(() => {
       });
     });
   });
-  return Array.from(emps.values()).sort((a, b) => a.name.localeCompare(b.name));
+  return Array.from(emps.values()).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 });
 
 const availableGroups = computed(() => {
@@ -922,7 +934,10 @@ const filteredKrs = computed(() => {
     result = result.filter((assign) => {
       return (
         assign.userId === selectedEmployee.value ||
-        assign.keyResult.initiatives?.some(
+        assign.keyResult?.assignments?.some(
+          (a) => a.userId === selectedEmployee.value,
+        ) ||
+        assign.keyResult?.initiatives?.some(
           (ini) =>
             ini.owner?.id === selectedEmployee.value ||
             ini.tasks?.some((t) =>

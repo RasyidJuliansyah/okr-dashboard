@@ -1,0 +1,4829 @@
+<template>
+  <div class="admin-root">
+    <div class="admin-content">
+      <div class="header-section card">
+        <div class="header-title">
+          <h2>Pekerjaan Saya</h2>
+          <p class="section-desc">
+            Inisiatif tim dan Task yang menjadi tanggung jawab Anda hari ini.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter Bar for Search, Department, PIC, and Sprint -->
+      <div
+        class="filters-bar card mb-6"
+        style="
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+          padding: 12px 16px;
+          margin-top: 24px;
+        "
+      >
+        <!-- Search Input -->
+        <div class="filter-item" style="flex: 1; min-width: 220px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+            >Search Task / Inisiatif</label
+          >
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="form-input"
+            placeholder="Cari judul task, inisiatif, atau KR..."
+            style="width: 100%; font-size: 13px"
+          />
+        </div>
+
+        <!-- Department Filter -->
+        <div class="filter-item" style="min-width: 170px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+            >Departemen</label
+          >
+          <select
+            v-model="selectedDepartment"
+            class="form-input"
+            style="width: 100%; font-size: 13px"
+          >
+            <option value="">Semua Departemen</option>
+            <option v-for="dept in departmentsList" :key="dept" :value="dept">
+              {{ getDeptLabel(dept) }}
+            </option>
+          </select>
+        </div>
+
+        <!-- PIC / Employee Filter -->
+        <div class="filter-item" style="min-width: 170px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+            >PIC / Pegawai</label
+          >
+          <select
+            v-model="selectedEmployeeId"
+            class="form-input"
+            style="width: 100%; font-size: 13px"
+          >
+            <option value="">Semua PIC</option>
+            <option v-for="emp in employeesList" :key="emp.id" :value="emp.id">
+              {{ emp.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Sprint Month Filter -->
+        <div class="filter-item" style="min-width: 150px">
+          <label
+            style="
+              font-size: 11px;
+              font-weight: 600;
+              color: #64748b;
+              margin-bottom: 4px;
+              display: block;
+            "
+          >
+            Periode Sprint</label
+          >
+          <input
+            v-model="selectedSprintMonth"
+            type="month"
+            class="form-input"
+            style="width: 100%; font-size: 13px"
+          />
+        </div>
+
+        <!-- Reset Button -->
+        <div
+          class="filter-item"
+          v-if="
+            searchQuery ||
+            selectedDepartment ||
+            selectedEmployeeId ||
+            selectedSprintMonth
+          "
+          style="align-self: flex-end"
+        >
+          <button
+            class="secondary-btn small"
+            @click="resetFilters"
+            style="
+              font-size: 12px;
+              padding: 6px 12px;
+              height: 36px;
+              min-width: 100px;
+            "
+          >
+            Reset Filter
+          </button>
+        </div>
+      </div>
+
+      <div v-if="loading" class="alert alert-info">Memuat data...</div>
+      <div v-else-if="errorMsg" class="alert alert-error">{{ errorMsg }}</div>
+      <div v-if="successMsg" class="alert alert-success">{{ successMsg }}</div>
+
+      <!-- Inisiatif Saya Section -->
+      <div
+        v-if="!loading && filteredTeamInitiatives.length > 0"
+        class="team-initiatives-section mb-6 card"
+        style="
+          padding: 16px;
+          border: 1px solid var(--card-border);
+          border-radius: 12px;
+          background: var(--card-bg);
+        "
+      >
+        <div
+          class="section-toggle-header"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+          "
+          @click="isMyInitiativesExpanded = !isMyInitiativesExpanded"
+        >
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="font-size: 14px; font-weight: 700; color: #0f172a">
+              {{ isMyInitiativesExpanded ? "▼" : "▶" }}
+            </span>
+            <h3 class="section-title" style="margin: 0">Inisiatif Saya</h3>
+            <span
+              class="col-count-badge"
+              style="
+                background: #e0f2fe;
+                color: #0284c7;
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 12px;
+              "
+            >
+              {{ filteredTeamInitiatives.length }}
+            </span>
+          </div>
+          <span style="font-size: 13px; color: #0ea5e9; font-weight: 500">
+            {{ isMyInitiativesExpanded ? "Sembunyikan" : "Tampilkan" }}
+          </span>
+        </div>
+
+        <div v-show="isMyInitiativesExpanded" style="margin-top: 16px">
+          <div
+            v-for="(inis, deptKey) in getGroupedInitiatives(
+              filteredTeamInitiatives,
+            )"
+            :key="deptKey"
+            class="dept-group mb-6"
+          >
+            <div class="dept-group-header mb-4">
+              <span class="dept-title-badge">{{ getDeptLabel(deptKey) }}</span>
+            </div>
+
+            <div class="initiative-list">
+              <div v-for="ini in inis" :key="ini.id" class="ini-card card">
+                <div class="ini-header">
+                  <h4>{{ ini.title }}</h4>
+                  <div
+                    class="badge-group"
+                    style="display: flex; gap: 8px; align-items: center"
+                  >
+                    <span
+                      class="status-badge"
+                      :class="getStatusClass(ini.status)"
+                      >{{ ini.status }}</span
+                    >
+                    <!-- Selector Stage Kanban -->
+                    <select
+                      :value="ini.kanbanStatus || 'TODO'"
+                      style="
+                        font-size: 11px;
+                        padding: 2px 8px;
+                        border-radius: 6px;
+                        border: 1px solid #cbd5e1;
+                        background: var(--bg-page);
+                        font-weight: 600;
+                        color: #334155;
+                        cursor: pointer;
+                      "
+                      @change="
+                        updateKanbanStage(
+                          ini,
+                          'initiative',
+                          $event.target.value,
+                        )
+                      "
+                    >
+                      <option value="TODO">TO DO</option>
+                      <option value="IN_PROGRESS">IN PROGRESS</option>
+                      <option value="DONE">DONE</option>
+                      <option value="DROP">DROP</option>
+                    </select>
+                    <!-- CTA Edit & Delete Inisiatif -->
+                    <button
+                      v-if="canEditInitiative(ini)"
+                      class="action-btn"
+                      title="Edit Inisiatif"
+                      style="
+                        background-color: transparent;
+                        border-color: transparent;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                      "
+                      @click="openEditIniModal(ini)"
+                    >
+                      <svg
+                        width="16px"
+                        height="16px"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteInitiative(ini)"
+                      class="action-btn danger"
+                      title="Hapus Inisiatif"
+                      style="
+                        background-color: transparent;
+                        border-color: transparent;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                      "
+                      @click="deleteInitiative(ini.id)"
+                    >
+                      <svg
+                        width="16px"
+                        height="16px"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        color="red"
+                      >
+                        <path
+                          d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="ini-context">
+                  <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
+                  <p>
+                    <strong>Tim:</strong> {{ ini.team?.name }}
+                    <span
+                      v-if="ini.owner"
+                      class="text-sm text-gray"
+                      style="margin-left: 8px"
+                      >(PIC: <strong>{{ ini.owner.name }}</strong
+                      >)</span
+                    >
+                  </p>
+                  <p>
+                    <strong>Created By:</strong>
+                    {{ getIniCreatorName(ini) }}
+                  </p>
+                </div>
+
+                <!-- KPI Inisiatif -->
+                <div
+                  v-if="ini.kpis?.length"
+                  style="margin-top: 10px; margin-bottom: 6px"
+                >
+                  <button
+                    type="button"
+                    class="kpi-toggle"
+                    :aria-expanded="isKpiExpanded(`initiative-${ini.id}`)"
+                    @click.stop="toggleKpi(`initiative-${ini.id}`)"
+                  >
+                    <span>KPI Initiative ({{ ini.kpis.length }})</span>
+                    <span aria-hidden="true">{{
+                      isKpiExpanded(`initiative-${ini.id}`) ? "▼" : "▶"
+                    }}</span>
+                  </button>
+                  <div
+                    v-show="isKpiExpanded(`initiative-${ini.id}`)"
+                    class="kpi-list"
+                  >
+                    <div
+                      v-for="assignment in ini.kpis"
+                      :key="assignment.id || assignment.kpiId"
+                      class="kpi-row"
+                    >
+                      <span class="kpi-title">{{
+                        getKpiTitle(assignment)
+                      }}</span>
+                      <span class="kpi-value">
+                        {{ assignment.currentValue ?? 0 }} /
+                        {{ assignment.targetValue ?? 0
+                        }}{{
+                          assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : ""
+                        }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Realisasi vs Target Inisiatif -->
+                <div
+                  class="ini-progress-section"
+                  style="margin-top: 12px; margin-bottom: 12px"
+                >
+                  <div
+                    class="progress-labels"
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      font-size: 13px;
+                      color: #475569;
+                    "
+                  >
+                    <span
+                      >Target Inisiatif:
+                      <strong>{{
+                        formatTargetValue(ini.targetValue, ini.unit, "%")
+                      }}</strong></span
+                    >
+                    <span
+                      >Realisasi:
+                      <strong>{{
+                        formatTargetValue(
+                          ini.achievedValue ?? ini.currentValue,
+                          ini.unit,
+                          "%",
+                        )
+                      }}</strong></span
+                    >
+                  </div>
+                  <div
+                    class="progress-bar-container"
+                    style="
+                      height: 8px;
+                      background: #e2e8f0;
+                      border-radius: 4px;
+                      overflow: hidden;
+                      margin-top: 4px;
+                    "
+                  >
+                    <div
+                      class="progress-bar"
+                      :style="{
+                        width: getProgressPercent(ini) + '%',
+                        height: '100%',
+                        background: '#0ea5e9',
+                      }"
+                    ></div>
+                  </div>
+                </div>
+
+                <!-- Riwayat Laporan Inisiatif -->
+                <div
+                  v-if="ini.progressUpdates?.length > 0"
+                  class="ini-updates"
+                  style="
+                    background: var(--bg-page);
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    margin-bottom: 12px;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      margin-bottom: 8px;
+                    "
+                  >
+                    <div style="font-weight: 500; color: #475569">
+                      Riwayat Laporan ({{ ini.progressUpdates.length }})
+                    </div>
+                    <button
+                      v-if="
+                        ini.progressUpdates.length > 1 &&
+                        ['TEAM', 'LEADER', 'MANAGER', 'ADMIN'].includes(
+                          userRole,
+                        )
+                      "
+                      class="toggle-history-btn"
+                      style="margin: 0"
+                      @click="toggleIniHistory(ini.id)"
+                    >
+                      {{
+                        expandedIniIds.includes(ini.id)
+                          ? "▲ Sembunyikan"
+                          : `▼ Lihat ${ini.progressUpdates.length - 1} riwayat sebelumnya`
+                      }}
+                    </button>
+                  </div>
+
+                  <!-- Update terbaru selalu tampil -->
+                  <div
+                    class="history-item"
+                    style="padding: 0; background: transparent"
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                      "
+                    >
+                      <div>
+                        <div class="history-timestamp">
+                          {{ formatDateTime(ini.progressUpdates[0].createdAt) }}
+                        </div>
+                        <div class="history-value">
+                          Realisasi:
+                          <strong
+                            >{{ ini.progressUpdates[0].newValue }}
+                            {{ ini.unit || "%" }}</strong
+                          >
+                          <span class="prev-value"
+                            >(dari {{ ini.progressUpdates[0].oldValue }})</span
+                          >
+                        </div>
+                        <div
+                          v-if="ini.progressUpdates[0].kanbanStatus"
+                          class="history-kanban"
+                        >
+                          Status:
+                          <span class="kanban-tag">{{
+                            ini.progressUpdates[0].kanbanStatus
+                          }}</span>
+                        </div>
+                      </div>
+                      <button
+                        class="toggle-history-btn"
+                        style="margin: 0; padding: 2px 6px; font-size: 11px"
+                        @click="
+                          openDetailModal(
+                            ini.title,
+                            'Inisiatif',
+                            ini.progressUpdates[0],
+                            ini.owner?.name || authStore.user?.name,
+                          )
+                        "
+                      >
+                        Lihat Hasil
+                      </button>
+                    </div>
+                    <div
+                      v-if="ini.progressUpdates[0].note"
+                      class="history-note"
+                    >
+                      "{{ ini.progressUpdates[0].note }}"
+                    </div>
+                  </div>
+
+                  <!-- History lainnya disembunyikan pakai toggle -->
+                  <div
+                    v-if="expandedIniIds.includes(ini.id)"
+                    class="history-timeline"
+                  >
+                    <div
+                      v-for="upd in ini.progressUpdates.slice(1)"
+                      :key="upd.id"
+                      class="history-item"
+                    >
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: flex-start;
+                        "
+                      >
+                        <div>
+                          <div class="history-timestamp">
+                            {{ formatDateTime(upd.createdAt) }}
+                          </div>
+                          <div class="history-value">
+                            Realisasi:
+                            <strong
+                              >{{ upd.newValue }} {{ ini.unit || "%" }}</strong
+                            >
+                            <span class="prev-value"
+                              >(dari {{ upd.oldValue }})</span
+                            >
+                          </div>
+                          <div v-if="upd.kanbanStatus" class="history-kanban">
+                            Status:
+                            <span class="kanban-tag">{{
+                              upd.kanbanStatus
+                            }}</span>
+                          </div>
+                        </div>
+                        <button
+                          class="toggle-history-btn"
+                          style="margin: 0; padding: 2px 6px; font-size: 11px"
+                          @click="
+                            openDetailModal(
+                              ini.title,
+                              'Inisiatif',
+                              upd,
+                              ini.owner?.name || authStore.user?.name,
+                            )
+                          "
+                        >
+                          Lihat Hasil
+                        </button>
+                      </div>
+                      <div v-if="upd.note" class="history-note">
+                        "{{ upd.note }}"
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="ini.tasks?.length > 0" class="ini-tasks">
+                  <h5>Task Terkait:</h5>
+                  <div class="task-progress-list">
+                    <div
+                      v-for="task in ini.tasks"
+                      :key="task.id"
+                      class="task-progress-item"
+                    >
+                      <div class="task-progress-header">
+                        <span class="task-title">{{ task.title }}</span>
+                        <span class="task-numbers"
+                          >{{ task.currentValue }}/{{ task.targetValue }}
+                          {{ task.unit }}</span
+                        >
+                      </div>
+                      <div class="progress-bar-container small">
+                        <div
+                          class="progress-bar"
+                          :style="{ width: getProgressPercent(task) + '%' }"
+                        ></div>
+                      </div>
+                      <!-- KPI Task -->
+                      <div v-if="task.kpis?.length" style="margin-top: 4px">
+                        <button
+                          type="button"
+                          class="kpi-toggle task-kpi-toggle"
+                          :aria-expanded="isKpiExpanded(`ini-task-${task.id}`)"
+                          @click.stop="toggleKpi(`ini-task-${task.id}`)"
+                        >
+                          <span>KPI Task ({{ task.kpis.length }})</span>
+                          <span aria-hidden="true">{{
+                            isKpiExpanded(`ini-task-${task.id}`) ? "▼" : "▶"
+                          }}</span>
+                        </button>
+                        <div
+                          v-show="isKpiExpanded(`ini-task-${task.id}`)"
+                          class="kpi-list task-kpi-list"
+                        >
+                          <div
+                            v-for="assignment in task.kpis"
+                            :key="assignment.id || assignment.kpiId"
+                            class="kpi-row"
+                          >
+                            <span class="kpi-title">{{
+                              getKpiTitle(assignment)
+                            }}</span>
+                            <span class="kpi-value">
+                              {{ assignment.currentValue ?? 0 }} /
+                              {{ assignment.targetValue ?? 0
+                              }}{{
+                                assignment.kpi?.unit
+                                  ? ` ${assignment.kpi.unit}`
+                                  : ""
+                              }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-sm text-gray mt-2">
+                  Belum ada Task untuk inisiatif ini.
+                </div>
+
+                <div
+                  class="card-actions"
+                  style="margin-top: 16px; display: flex; gap: 8px"
+                >
+                  <button
+                    class="secondary-btn"
+                    style="
+                      flex: 1;
+                      border: 1px dashed #0ea5e9;
+                      color: #0ea5e9;
+                      font-weight: 600;
+                    "
+                    @click="openMyWorkAddTaskModal(ini)"
+                  >
+                    + Buat Task Baru
+                  </button>
+                  <button
+                    v-if="canReportInitiative(ini)"
+                    class="secondary-btn"
+                    style="flex: 1; border: 1px solid #0ea5e9; color: #0ea5e9"
+                    @click="openIniModal(ini)"
+                  >
+                    Laporkan Progress Inisiatif
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title mt-6">Task Yang Di-Assign Ke Saya</h3>
+      <div
+        v-if="!loading && filteredTaskAssignments.length === 0"
+        class="empty-state card"
+      >
+        Belum ada Task yang di-assign ke Anda.
+      </div>
+
+      <div class="task-grid">
+        <div
+          v-for="assign in filteredTaskAssignments"
+          :key="assign.id"
+          class="task-card card"
+          :class="{ 'cross-dept-task-card': assign.task.isCrossDept }"
+        >
+          <div class="title-wrapper">
+            <div v-if="assign.task.isCrossDept" class="cross-dept-tag-row">
+              <span
+                class="cross-dept-badge"
+                @click.stop="openCrossDeptModal(assign.task.id)"
+              >
+                Lintas Dept: {{ assign.task.creatorDept || "?" }} →
+                {{ assign.task.targetDept || "?" }}
+              </span>
+              <span
+                v-if="
+                  (assign.task.kanbanStatus || assign.task.status) ===
+                  'NEED_INFO'
+                "
+                class="badge-need-info"
+              >
+                NEED INFO
+              </span>
+            </div>
+            <div class="task-header">
+              <h3>{{ assign.task.title }}</h3>
+              <span
+                class="status-badge"
+                :class="getStatusClass(assign.task.status)"
+                >{{ assign.task.status }}</span
+              >
+            </div>
+            <p
+              v-if="assign.task.isCrossDept && assign.task.description"
+              class="cross-dept-card-desc"
+            >
+              {{ assign.task.description }}
+            </p>
+            <div
+              v-if="
+                assign.task.isCrossDept &&
+                (assign.task.finishDate || assign.task.dueDate)
+              "
+              class="cross-dept-deadline-tag"
+            >
+              Tenggat:
+              <strong>{{
+                formatDate(assign.task.finishDate || assign.task.dueDate)
+              }}</strong>
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-top: 8px;
+              "
+            >
+              <!-- Selector Stage Kanban Task -->
+              <select
+                :value="
+                  assign.task.kanbanStatus === 'CLOSED'
+                    ? 'DONE'
+                    : assign.task.kanbanStatus || 'TODO'
+                "
+                style="
+                  font-size: 14px;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  border: 1px solid #cbd5e1;
+                  background: var(--bg-page);
+                  font-weight: 600;
+                  color: #334155;
+                  cursor: pointer;
+                  flex: 1;
+                "
+                @change="
+                  updateKanbanStage(assign.task, 'task', $event.target.value)
+                "
+              >
+                <option value="TODO">TO DO</option>
+                <option value="IN_PROGRESS">IN PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="DROP">DROP</option>
+              </select>
+              <button
+                v-if="canEditTask(assign.task)"
+                class="action-btn"
+                title="Edit Task"
+                style="
+                  background-color: transparent;
+                  border-color: transparent;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  display: inline-flex;
+                  align-items: center;
+                "
+                @click.stop="openEditTaskModal(assign.task)"
+              >
+                <svg
+                  width="16px"
+                  height="16px"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                v-if="canDeleteTask(assign.task)"
+                class="action-btn danger"
+                title="Hapus Task"
+                style="
+                  background-color: transparent;
+                  border-color: transparent;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  display: inline-flex;
+                  align-items: center;
+                "
+                @click.stop="deleteTask(assign.task.id)"
+              >
+                <svg
+                  width="16px"
+                  height="16px"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  color="red"
+                >
+                  <path
+                    d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="task-context">
+            <p v-if="assign.task.initiative?.keyResult?.title">
+              <strong>KR:</strong>
+              {{ assign.task.initiative?.keyResult?.title }}
+            </p>
+            <p v-if="assign.task.initiative?.title">
+              <strong>Inisiatif:</strong> {{ assign.task.initiative?.title }}
+            </p>
+            <p>
+              <strong>Created By:</strong>
+              {{ getTaskCreatorName(assign.task) }}
+            </p>
+          </div>
+
+          <!-- KPI Task -->
+          <div
+            v-if="assign.task.kpis?.length"
+            style="margin-top: 10px; margin-bottom: 6px"
+          >
+            <button
+              type="button"
+              class="kpi-toggle"
+              :aria-expanded="isKpiExpanded(`my-task-${assign.task.id}`)"
+              @click.stop="toggleKpi(`my-task-${assign.task.id}`)"
+            >
+              <span>KPI Task ({{ assign.task.kpis.length }})</span>
+              <span aria-hidden="true">{{
+                isKpiExpanded(`my-task-${assign.task.id}`) ? "▼" : "▶"
+              }}</span>
+            </button>
+            <div
+              v-show="isKpiExpanded(`my-task-${assign.task.id}`)"
+              class="kpi-list"
+            >
+              <div
+                v-for="assignment in assign.task.kpis"
+                :key="assignment.id || assignment.kpiId"
+                class="kpi-row"
+              >
+                <span class="kpi-title">{{ getKpiTitle(assignment) }}</span>
+                <span class="kpi-value">
+                  {{ assignment.currentValue ?? 0 }} /
+                  {{ assignment.targetValue ?? 0
+                  }}{{ assignment.kpi?.unit ? ` ${assignment.kpi.unit}` : "" }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="task-progress-section">
+            <div class="progress-labels">
+              <span
+                >Saat ini:
+                <strong>{{
+                  formatTargetValue(assign.task.currentValue, assign.task.unit)
+                }}</strong></span
+              >
+              <span
+                >Target:
+                <strong>{{
+                  formatTargetValue(assign.task.targetValue, assign.task.unit)
+                }}</strong></span
+              >
+            </div>
+            <div class="progress-bar-container">
+              <div
+                class="progress-bar"
+                :style="{ width: getProgressPercent(assign.task) + '%' }"
+              ></div>
+            </div>
+          </div>
+
+          <div class="task-updates">
+            <div v-if="assign.task.updates?.length > 0">
+              <!-- Update terbaru selalu tampil -->
+              <div class="update-latest">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                  "
+                >
+                  <div>
+                    <span class="update-timestamp">{{
+                      formatDateTime(assign.task.updates[0].createdAt)
+                    }}</span>
+                    <span class="update-val"
+                      >Nilai dilaporkan:
+                      {{ assign.task.updates[0].newValue }}</span
+                    >
+                    <span
+                      class="update-status"
+                      :class="
+                        'status-' + assign.task.updates[0].status.toLowerCase()
+                      "
+                    >
+                      {{ getUpdateStatusLabel(assign.task.updates[0].status) }}
+                    </span>
+                  </div>
+                  <button
+                    class="toggle-history-btn"
+                    style="margin: 0; padding: 2px 6px; font-size: 11px"
+                    @click="
+                      openDetailModal(
+                        assign.task.title,
+                        'Task',
+                        assign.task.updates[0],
+                        authStore.user?.name,
+                      )
+                    "
+                  >
+                    Lihat Hasil
+                  </button>
+                </div>
+                <span v-if="assign.task.updates[0].note" class="history-note"
+                  >"{{ assign.task.updates[0].note }}"</span
+                >
+              </div>
+
+              <!-- Toggle history lama -->
+              <div
+                v-if="
+                  assign.task.updates.length > 1 &&
+                  ['TEAM', 'LEADER', 'MANAGER', 'ADMIN'].includes(userRole)
+                "
+              >
+                <button
+                  class="toggle-history-btn"
+                  @click="toggleTaskHistory(assign.task.id)"
+                >
+                  {{
+                    expandedTaskIds.includes(assign.task.id)
+                      ? "▲ Sembunyikan riwayat"
+                      : `▼ Lihat ${assign.task.updates.length - 1} riwayat sebelumnya`
+                  }}
+                </button>
+                <div
+                  v-if="expandedTaskIds.includes(assign.task.id)"
+                  class="history-timeline"
+                >
+                  <div
+                    v-for="upd in assign.task.updates.slice(1)"
+                    :key="upd.id"
+                    class="history-item"
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                      "
+                    >
+                      <div>
+                        <span class="history-timestamp">{{
+                          formatDateTime(upd.createdAt)
+                        }}</span>
+                        <span class="history-value"
+                          >Nilai: {{ upd.newValue }}</span
+                        >
+                        <span
+                          class="update-status"
+                          :class="'status-' + upd.status.toLowerCase()"
+                        >
+                          {{ getUpdateStatusLabel(upd.status) }}
+                        </span>
+                      </div>
+                      <button
+                        class="toggle-history-btn"
+                        style="margin: 0; padding: 2px 6px; font-size: 11px"
+                        @click="
+                          openDetailModal(
+                            assign.task.title,
+                            'Task',
+                            upd,
+                            authStore.user?.name,
+                          )
+                        "
+                      >
+                        Lihat Hasil
+                      </button>
+                    </div>
+                    <div v-if="upd.note" class="history-note">
+                      "{{ upd.note }}"
+                    </div>
+                    <div v-if="upd.reviewNote" class="reject-note">
+                      Alasan reject: "{{ upd.reviewNote }}"
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p v-else class="text-sm text-gray">Belum ada update.</p>
+          </div>
+
+          <div v-if="canReportTask(assign.task)" class="card-actions">
+            <button
+              class="primary-btn full-width"
+              :disabled="isTaskDone(assign.task)"
+              @click="openUpdateModal(assign.task)"
+            >
+              Submit Update Progress
+            </button>
+          </div>
+
+          <div
+            v-if="assign.task.isCrossDept"
+            class="card-actions cross-dept-actions-row"
+            style="
+              margin-top: 8px;
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            "
+          >
+            <button
+              type="button"
+              class="cross-dept-work-btn full-width"
+              @click="openCrossDeptModal(assign.task.id)"
+            >
+              🔍 Detail & Diskusi
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pekerjaan Tim Saya -->
+      <div
+        v-if="['TEAM', 'LEADER', 'MANAGER', 'ADMIN'].includes(userRole)"
+        class="team-section mt-8"
+      >
+        <h3 class="section-title">Pekerjaan Tim Saya</h3>
+
+        <div
+          v-if="
+            filteredTeamMembersTasks.length === 0 &&
+            filteredTeamMembersInitiatives.length === 0
+          "
+          class="empty-state card mt-4"
+        >
+          Belum ada inisiatif atau Task yang dikerjakan oleh anggota tim Anda
+          (atau tidak cocok dengan filter).
+        </div>
+
+        <div v-else>
+          <!-- Team Initiatives -->
+          <div
+            v-if="filteredTeamMembersInitiatives.length > 0"
+            class="mb-6 card"
+            style="
+              padding: 16px;
+              border: 1px solid var(--card-border);
+              border-radius: 12px;
+              background: var(--card-bg);
+            "
+          >
+            <div
+              class="section-toggle-header"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                cursor: pointer;
+                user-select: none;
+              "
+              @click="isTeamInitiativesExpanded = !isTeamInitiativesExpanded"
+            >
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a">
+                  {{ isTeamInitiativesExpanded ? "▼" : "▶" }}
+                </span>
+                <h4
+                  class="text-gray"
+                  style="
+                    margin: 0;
+                    font-weight: 700;
+                    font-size: 16px;
+                    color: #1e293b;
+                  "
+                >
+                  Inisiatif Tim
+                </h4>
+                <span
+                  class="col-count-badge"
+                  style="
+                    background: var(--bg-page);
+                    color: #475569;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    font-size: 12px;
+                  "
+                >
+                  {{ filteredTeamMembersInitiatives.length }}
+                </span>
+              </div>
+              <span style="font-size: 13px; color: #0ea5e9; font-weight: 500">
+                {{ isTeamInitiativesExpanded ? "Sembunyikan" : "Tampilkan" }}
+              </span>
+            </div>
+
+            <div v-show="isTeamInitiativesExpanded" style="margin-top: 16px">
+              <div
+                v-for="(inis, deptKey) in getGroupedInitiatives(
+                  filteredTeamMembersInitiatives,
+                )"
+                :key="deptKey"
+                class="dept-group mb-6"
+              >
+                <div class="dept-group-header mb-4">
+                  <span class="dept-title-badge">{{
+                    getDeptLabel(deptKey)
+                  }}</span>
+                </div>
+                <div class="initiative-list">
+                  <div
+                    v-for="ini in inis"
+                    :key="'team_ini_' + ini.id"
+                    class="ini-card card"
+                  >
+                    <div class="ini-header">
+                      <h4>{{ ini.title }}</h4>
+                      <div
+                        class="badge-group"
+                        style="display: flex; gap: 8px; align-items: center"
+                      >
+                        <span
+                          class="status-badge"
+                          :class="getStatusClass(ini.status)"
+                          >{{ ini.status }}</span
+                        >
+                        <!-- Selector Stage Kanban -->
+                        <select
+                          :value="ini.kanbanStatus || 'TODO'"
+                          style="
+                            font-size: 11px;
+                            padding: 2px 8px;
+                            border-radius: 6px;
+                            border: 1px solid #cbd5e1;
+                            background: var(--bg-page);
+                            font-weight: 600;
+                            color: #334155;
+                            cursor: pointer;
+                          "
+                          @change="
+                            updateKanbanStage(
+                              ini,
+                              'initiative',
+                              $event.target.value,
+                            )
+                          "
+                        >
+                          <option value="TODO">TO DO</option>
+                          <option value="IN_PROGRESS">IN PROGRESS</option>
+                          <option value="DONE">DONE</option>
+                          <option value="DROP">DROP</option>
+                        </select>
+                        <!-- Delete button for ADMIN only -->
+                        <button
+                          v-if="canEditInitiative(ini)"
+                          class="action-btn"
+                          title="Edit Inisiatif"
+                          style="
+                            background-color: transparent;
+                            border-color: transparent;
+                            font-size: 11px;
+                            cursor: pointer;
+                            color: #475569;
+                          "
+                          @click="openEditIniModal(ini)"
+                        >
+                          <svg
+                            width="16px"
+                            height="16px"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          v-if="canDeleteInitiative(ini)"
+                          class="action-btn danger"
+                          title="Hapus Inisiatif"
+                          style="
+                            background-color: transparent;
+                            border-color: transparent;
+                            padding: 2px 6px;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                          @click="deleteInitiative(ini.id)"
+                        >
+                          <svg
+                            width="16px"
+                            height="16px"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            color="red"
+                          >
+                            <path
+                              d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="ini-context">
+                      <p><strong>KR:</strong> {{ ini.keyResult?.title }}</p>
+                      <p><strong>PIC:</strong> {{ ini.owner?.name || "-" }}</p>
+                      <p>
+                        <strong>Created By:</strong>
+                        {{ getIniCreatorName(ini) }}
+                      </p>
+                    </div>
+
+                    <!-- KPI Inisiatif Tim -->
+                    <div
+                      v-if="ini.kpis?.length"
+                      style="margin-top: 10px; margin-bottom: 6px"
+                    >
+                      <button
+                        type="button"
+                        class="kpi-toggle"
+                        :aria-expanded="isKpiExpanded(`team-ini-${ini.id}`)"
+                        @click.stop="toggleKpi(`team-ini-${ini.id}`)"
+                      >
+                        <span>KPI Initiative ({{ ini.kpis.length }})</span>
+                        <span aria-hidden="true">{{
+                          isKpiExpanded(`team-ini-${ini.id}`) ? "▼" : "▶"
+                        }}</span>
+                      </button>
+                      <div
+                        v-show="isKpiExpanded(`team-ini-${ini.id}`)"
+                        class="kpi-list"
+                      >
+                        <div
+                          v-for="assignment in ini.kpis"
+                          :key="assignment.id || assignment.kpiId"
+                          class="kpi-row"
+                        >
+                          <span class="kpi-title">{{
+                            getKpiTitle(assignment)
+                          }}</span>
+                          <span class="kpi-value">
+                            {{ assignment.currentValue ?? 0 }} /
+                            {{ assignment.targetValue ?? 0
+                            }}{{
+                              assignment.kpi?.unit
+                                ? ` ${assignment.kpi.unit}`
+                                : ""
+                            }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      class="ini-progress-section"
+                      style="margin-top: 12px; margin-bottom: 12px"
+                    >
+                      <div
+                        class="progress-labels"
+                        style="
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 13px;
+                          color: #475569;
+                        "
+                      >
+                        <span
+                          >Target:
+                          <strong>{{
+                            formatTargetValue(ini.targetValue, ini.unit, "%")
+                          }}</strong></span
+                        >
+                        <span
+                          >Realisasi:
+                          <strong>{{
+                            formatTargetValue(
+                              ini.achievedValue ?? ini.currentValue,
+                              ini.unit,
+                              "%",
+                            )
+                          }}</strong></span
+                        >
+                      </div>
+                      <div
+                        class="progress-bar-container"
+                        style="
+                          height: 8px;
+                          background: #e2e8f0;
+                          border-radius: 4px;
+                          overflow: hidden;
+                          margin-top: 4px;
+                        "
+                      >
+                        <div
+                          class="progress-bar"
+                          :style="{
+                            width: getProgressPercent(ini) + '%',
+                            height: '100%',
+                            background: '#0ea5e9',
+                          }"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- History Inisiatif -->
+                    <div
+                      class="ini-updates"
+                      style="
+                        background: var(--bg-page);
+                        padding: 10px;
+                        border-radius: 8px;
+                        font-size: 12px;
+                      "
+                    >
+                      <div v-if="ini.progressUpdates?.length > 0">
+                        <div
+                          class="history-item"
+                          style="padding: 0; background: transparent"
+                        >
+                          <div
+                            style="
+                              display: flex;
+                              justify-content: space-between;
+                              align-items: flex-start;
+                            "
+                          >
+                            <div>
+                              <div class="history-timestamp">
+                                {{
+                                  formatDateTime(
+                                    ini.progressUpdates[0].createdAt,
+                                  )
+                                }}
+                              </div>
+                              <div class="history-value">
+                                Realisasi:
+                                <strong
+                                  >{{ ini.progressUpdates[0].newValue }}
+                                  {{ ini.unit || "%" }}</strong
+                                >
+                              </div>
+                              <div
+                                v-if="ini.progressUpdates[0].kanbanStatus"
+                                class="history-kanban"
+                              >
+                                Status:
+                                <span class="kanban-tag">{{
+                                  ini.progressUpdates[0].kanbanStatus
+                                }}</span>
+                              </div>
+                            </div>
+                            <button
+                              class="toggle-history-btn"
+                              style="
+                                margin: 0;
+                                padding: 2px 6px;
+                                font-size: 11px;
+                              "
+                              @click="
+                                openDetailModal(
+                                  ini.title,
+                                  'Inisiatif',
+                                  ini.progressUpdates[0],
+                                  ini.owner?.name,
+                                )
+                              "
+                            >
+                              Lihat Hasil
+                            </button>
+                          </div>
+                          <div
+                            v-if="ini.progressUpdates[0].note"
+                            class="history-note"
+                          >
+                            "{{ ini.progressUpdates[0].note }}"
+                          </div>
+                        </div>
+
+                        <div v-if="ini.progressUpdates.length > 1">
+                          <button
+                            class="toggle-history-btn"
+                            @click="toggleIniHistory('team_' + ini.id)"
+                          >
+                            {{
+                              expandedIniIds.includes("team_" + ini.id)
+                                ? "▲ Sembunyikan"
+                                : `▼ Lihat ${ini.progressUpdates.length - 1} riwayat sebelumnya`
+                            }}
+                          </button>
+                          <div
+                            v-if="expandedIniIds.includes('team_' + ini.id)"
+                            class="history-timeline"
+                          >
+                            <div
+                              v-for="upd in ini.progressUpdates.slice(1)"
+                              :key="upd.id"
+                              class="history-item"
+                            >
+                              <div
+                                style="
+                                  display: flex;
+                                  justify-content: space-between;
+                                  align-items: flex-start;
+                                "
+                              >
+                                <div>
+                                  <div class="history-timestamp">
+                                    {{ formatDateTime(upd.createdAt) }}
+                                  </div>
+                                  <div class="history-value">
+                                    Realisasi:
+                                    <strong
+                                      >{{ upd.newValue }}
+                                      {{ ini.unit || "%" }}</strong
+                                    >
+                                  </div>
+                                </div>
+                                <button
+                                  class="toggle-history-btn"
+                                  style="
+                                    margin: 0;
+                                    padding: 2px 6px;
+                                    font-size: 11px;
+                                  "
+                                  @click="
+                                    openDetailModal(
+                                      ini.title,
+                                      'Inisiatif',
+                                      upd,
+                                      ini.owner?.name,
+                                    )
+                                  "
+                                >
+                                  Lihat Hasil
+                                </button>
+                              </div>
+                              <div v-if="upd.note" class="history-note">
+                                "{{ upd.note }}"
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="text-sm text-gray">
+                        Belum ada laporan progress.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Team Tasks -->
+          <div v-if="filteredTeamMembersTasks.length > 0">
+            <h4 class="text-gray mb-4">Task Tim</h4>
+            <div class="task-grid">
+              <div
+                v-for="assign in filteredTeamMembersTasks"
+                :key="'team_task_' + assign.id"
+                class="task-card card"
+                :class="{ 'cross-dept-task-card': assign.task.isCrossDept }"
+              >
+                <div class="title-wrapper">
+                  <div class="member-badge">{{ assign.user?.name }}</div>
+
+                  <div
+                    v-if="assign.task.isCrossDept"
+                    class="cross-dept-tag-row"
+                  >
+                    <span
+                      class="cross-dept-badge"
+                      @click.stop="openCrossDeptModal(assign.task.id)"
+                    >
+                      Lintas Dept: {{ assign.task.creatorDept || "?" }} →
+                      {{ assign.task.targetDept || "?" }}
+                    </span>
+                    <span
+                      v-if="
+                        (assign.task.kanbanStatus || assign.task.status) ===
+                        'NEED_INFO'
+                      "
+                      class="badge-need-info"
+                    >
+                      ⚠️ NEED INFO
+                    </span>
+                  </div>
+
+                  <div class="task-header">
+                    <h3>{{ assign.task.title }}</h3>
+                    <span
+                      class="status-badge"
+                      :class="getStatusClass(assign.task.status)"
+                      >{{ assign.task.status }}</span
+                    >
+                  </div>
+                  <p
+                    v-if="assign.task.isCrossDept && assign.task.description"
+                    class="cross-dept-card-desc"
+                  >
+                    {{ assign.task.description }}
+                  </p>
+                  <div
+                    v-if="
+                      assign.task.isCrossDept &&
+                      (assign.task.finishDate || assign.task.dueDate)
+                    "
+                    class="cross-dept-deadline-tag"
+                  >
+                    Tenggat:
+                    <strong>{{
+                      formatDate(assign.task.finishDate || assign.task.dueDate)
+                    }}</strong>
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 8px;
+                      align-items: center;
+                      margin-top: 4px;
+                    "
+                  >
+                    <!-- Selector Stage Kanban Task -->
+                    <select
+                      :value="
+                        assign.task.kanbanStatus === 'CLOSED'
+                          ? 'DONE'
+                          : assign.task.kanbanStatus || 'TODO'
+                      "
+                      style="
+                        font-size: 14px;
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                        border: 1px solid #cbd5e1;
+                        background: var(--bg-page);
+                        font-weight: 600;
+                        color: #334155;
+                        cursor: pointer;
+                        flex: 1;
+                      "
+                      @change="
+                        updateKanbanStage(
+                          assign.task,
+                          'task',
+                          $event.target.value,
+                        )
+                      "
+                    >
+                      <option value="TODO">TO DO</option>
+                      <option value="IN_PROGRESS">IN PROGRESS</option>
+                      <option value="DONE">DONE</option>
+                      <option value="DROP">DROP</option>
+                    </select>
+                    <button
+                      v-if="canEditTask(assign.task)"
+                      class="action-btn"
+                      title="Edit Task"
+                      style="
+                        background-color: transparent;
+                        border-color: transparent;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                      "
+                      @click.stop="openEditTaskModal(assign.task)"
+                    >
+                      <svg
+                        width="16px"
+                        height="16px"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M2.87601 18.1156C2.92195 17.7021 2.94493 17.4954 3.00748 17.3022C3.06298 17.1307 3.1414 16.9676 3.24061 16.8171C3.35242 16.6475 3.49952 16.5005 3.7937 16.2063L17 3C18.1046 1.89543 19.8954 1.89543 21 3C22.1046 4.10457 22.1046 5.89543 21 7L7.7937 20.2063C7.49951 20.5005 7.35242 20.6475 7.18286 20.7594C7.03242 20.8586 6.86926 20.937 6.69782 20.9925C6.50457 21.055 6.29783 21.078 5.88434 21.124L2.49997 21.5L2.87601 18.1156Z"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      v-if="canDeleteTask(assign.task)"
+                      class="action-btn danger"
+                      title="Hapus Task"
+                      style="
+                        background-color: transparent;
+                        border-color: transparent;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        display: inline-flex;
+                        align-items: center;
+                      "
+                      @click.stop="deleteTask(assign.task.id)"
+                    >
+                      <svg
+                        width="16px"
+                        height="16px"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        color="red"
+                      >
+                        <path
+                          d="M16 6V5.2C16 4.0799 16 3.51984 15.782 3.09202C15.5903 2.71569 15.2843 2.40973 14.908 2.21799C14.4802 2 13.9201 2 12.8 2H11.2C10.0799 2 9.51984 2 9.09202 2.21799C8.71569 2.40973 8.40973 2.71569 8.21799 3.09202C8 3.51984 8 4.0799 8 5.2V6M3 6H21M19 6V17.2C19 18.8802 19 19.7202 18.673 20.362C18.3854 20.9265 17.9265 21.3854 17.362 21.673C16.7202 22 15.8802 22 14.2 22H9.8C8.11984 22 7.27976 22 6.63803 21.673C6.07354 21.3854 5.6146 20.9265 5.32698 20.362C5 19.7202 5 18.8802 5 17.2V6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="task-context">
+                    <p v-if="assign.task.initiative?.keyResult?.title">
+                      <strong>KR:</strong>
+                      {{ assign.task.initiative?.keyResult?.title }}
+                    </p>
+                    <p v-if="assign.task.initiative?.title">
+                      <strong>Inisiatif:</strong>
+                      {{ assign.task.initiative?.title }}
+                    </p>
+                    <p>
+                      <strong>Created By:</strong>
+                      {{ getTaskCreatorName(assign.task) }}
+                    </p>
+                  </div>
+
+                  <!-- KPI Task Tim -->
+                  <div
+                    v-if="assign.task.kpis?.length"
+                    style="margin-top: 10px; margin-bottom: 6px"
+                  >
+                    <button
+                      type="button"
+                      class="kpi-toggle"
+                      :aria-expanded="
+                        isKpiExpanded(`team-task-${assign.task.id}`)
+                      "
+                      @click.stop="toggleKpi(`team-task-${assign.task.id}`)"
+                    >
+                      <span>KPI Task ({{ assign.task.kpis.length }})</span>
+                      <span aria-hidden="true">{{
+                        isKpiExpanded(`team-task-${assign.task.id}`) ? "▼" : "▶"
+                      }}</span>
+                    </button>
+                    <div
+                      v-show="isKpiExpanded(`team-task-${assign.task.id}`)"
+                      class="kpi-list"
+                    >
+                      <div
+                        v-for="assignment in assign.task.kpis"
+                        :key="assignment.id || assignment.kpiId"
+                        class="kpi-row"
+                      >
+                        <span class="kpi-title">{{
+                          getKpiTitle(assignment)
+                        }}</span>
+                        <span class="kpi-value">
+                          {{ assignment.currentValue ?? 0 }} /
+                          {{ assignment.targetValue ?? 0
+                          }}{{
+                            assignment.kpi?.unit
+                              ? ` ${assignment.kpi.unit}`
+                              : ""
+                          }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    v-if="assign.task.isCrossDept"
+                    class="cross-dept-actions-row"
+                    style="
+                      margin-top: 8px;
+                      display: flex;
+                      gap: 8px;
+                      align-items: center;
+                    "
+                  >
+                    <button
+                      type="button"
+                      class="cross-dept-work-btn"
+                      @click="openCrossDeptModal(assign.task.id)"
+                    >
+                      Detail & Diskusi
+                    </button>
+                  </div>
+
+                  <div class="task-progress-section">
+                    <div class="progress-labels">
+                      <span
+                        >Saat ini:
+                        <strong
+                          >{{ assign.task.currentValue }}
+                          {{ assign.task.unit }}</strong
+                        ></span
+                      >
+                      <span
+                        >Target:
+                        <strong
+                          >{{ assign.task.targetValue }}
+                          {{ assign.task.unit }}</strong
+                        ></span
+                      >
+                    </div>
+                    <div class="progress-bar-container">
+                      <div
+                        class="progress-bar"
+                        :style="{
+                          width: getProgressPercent(assign.task) + '%',
+                        }"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <!-- Full history untuk LEADER melihat anggota tim -->
+                  <div class="task-updates">
+                    <div v-if="assign.task.updates?.length > 0">
+                      <div class="update-latest">
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                          "
+                        >
+                          <div>
+                            <span class="update-timestamp">{{
+                              formatDateTime(assign.task.updates[0].createdAt)
+                            }}</span>
+                            <span class="update-val"
+                              >Nilai dilaporkan:
+                              {{ assign.task.updates[0].newValue }}</span
+                            >
+                            <span
+                              class="update-status"
+                              :class="
+                                'status-' +
+                                assign.task.updates[0].status.toLowerCase()
+                              "
+                            >
+                              {{
+                                getUpdateStatusLabel(
+                                  assign.task.updates[0].status,
+                                )
+                              }}
+                            </span>
+                          </div>
+                          <button
+                            class="toggle-history-btn"
+                            style="margin: 0; padding: 2px 6px; font-size: 11px"
+                            @click="
+                              openDetailModal(
+                                assign.task.title,
+                                'Task',
+                                assign.task.updates[0],
+                                assign.user?.name,
+                              )
+                            "
+                          >
+                            Lihat Hasil
+                          </button>
+                        </div>
+                        <span
+                          v-if="assign.task.updates[0].note"
+                          class="history-note"
+                          >"{{ assign.task.updates[0].note }}"</span
+                        >
+                      </div>
+
+                      <div v-if="assign.task.updates.length > 1">
+                        <button
+                          class="toggle-history-btn"
+                          @click="toggleTaskHistory('team_' + assign.task.id)"
+                        >
+                          {{
+                            expandedTaskIds.includes("team_" + assign.task.id)
+                              ? "▲ Sembunyikan riwayat"
+                              : `▼ Lihat ${assign.task.updates.length - 1} riwayat sebelumnya`
+                          }}
+                        </button>
+                        <div
+                          v-if="
+                            expandedTaskIds.includes('team_' + assign.task.id)
+                          "
+                          class="history-timeline"
+                        >
+                          <div
+                            v-for="upd in assign.task.updates.slice(1)"
+                            :key="upd.id"
+                            class="history-item"
+                          >
+                            <div
+                              style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: flex-start;
+                              "
+                            >
+                              <div>
+                                <span class="history-timestamp">{{
+                                  formatDateTime(upd.createdAt)
+                                }}</span>
+                                <span class="history-value"
+                                  >Nilai: {{ upd.newValue }}</span
+                                >
+                                <span
+                                  class="update-status"
+                                  :class="'status-' + upd.status.toLowerCase()"
+                                >
+                                  {{ getUpdateStatusLabel(upd.status) }}
+                                </span>
+                              </div>
+                              <button
+                                class="toggle-history-btn"
+                                style="
+                                  margin: 0;
+                                  padding: 2px 6px;
+                                  font-size: 11px;
+                                "
+                                @click="
+                                  openDetailModal(
+                                    assign.task.title,
+                                    'Task',
+                                    upd,
+                                    assign.user?.name,
+                                  )
+                                "
+                              >
+                                Lihat Hasil
+                              </button>
+                            </div>
+                            <div v-if="upd.note" class="history-note">
+                              "{{ upd.note }}"
+                            </div>
+                            <div v-if="upd.reviewNote" class="reject-note">
+                              Alasan reject: "{{ upd.reviewNote }}"
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-else class="text-sm text-gray">Belum ada update.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Submit Update Task -->
+      <div
+        v-if="showUpdateModal"
+        class="modal-overlay"
+        @click.self="showUpdateModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Submit Update Progress Task</h3>
+            <button class="modal-close-btn" @click="showUpdateModal = false">
+              &times;
+            </button>
+          </div>
+          <p class="mb-4">
+            Task: <strong>{{ selectedTask?.title }}</strong>
+          </p>
+
+          <div class="info-box mb-4">
+            Target:
+            {{ formatTargetValue(selectedTask?.targetValue, selectedTask?.unit)
+            }}<br />
+            Saat ini:
+            {{
+              formatTargetValue(selectedTask?.currentValue, selectedTask?.unit)
+            }}
+          </div>
+
+          <label>Nilai Baru (Kumulatif) *</label>
+          <input
+            v-model.number="updateForm.newValue"
+            type="number"
+            class="form-input"
+          />
+
+          <label>Catatan Progress</label>
+          <textarea
+            v-model="updateForm.note"
+            class="form-input"
+            rows="3"
+            placeholder="Apa yang sudah dikerjakan?"
+          ></textarea>
+
+          <label>Link Dokumentasi Hasil (opsional)</label>
+          <input
+            v-model="updateForm.link"
+            type="url"
+            class="form-input"
+            placeholder="https://example.com/..."
+          />
+
+          <!-- KpiSelector jika task memiliki KPI terlampir -->
+          <KpiSelector
+            v-if="selectedTask?.kpis?.length"
+            v-model="selectedTask.kpis"
+            :showCurrentValue="true"
+          />
+
+          <div v-if="isAutoApproveRole" class="info-box info-approved mb-4">
+            Sebagai <strong>{{ userRole }}</strong
+            >, update Anda akan <strong>langsung diterapkan</strong> tanpa perlu
+            persetujuan.
+          </div>
+          <div v-else class="info-box mb-4">
+            Update akan dikirim ke Leader/Manager untuk disetujui terlebih
+            dahulu.
+          </div>
+
+          <!-- Riwayat Task updates sebelumnya -->
+          <div
+            v-if="selectedTask?.updates?.length > 0"
+            class="mini-history mb-4"
+            style="border-top: 1px solid var(--card-border); padding-top: 12px"
+          >
+            <h5 style="margin: 0 0 8px 0; font-size: 13px; color: #475569">
+              Riwayat Update Sebelumnya:
+            </h5>
+            <div
+              style="
+                max-height: 120px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <div
+                v-for="upd in selectedTask.updates"
+                :key="upd.id"
+                style="
+                  font-size: 11px;
+                  padding: 6px;
+                  border: 1px solid var(--card-border);
+                  border-radius: 6px;
+                "
+              >
+                <div style="display: flex; justify-content: space-between">
+                  <span style="color: #64748b">{{
+                    new Date(upd.createdAt).toLocaleDateString("id-ID")
+                  }}</span>
+                  <span style="font-weight: 500"
+                    >Nilai: {{ upd.newValue }}</span
+                  >
+                </div>
+                <div style="margin-top: 2px">
+                  Status: {{ getUpdateStatusLabel(upd.status) }}
+                </div>
+                <div
+                  v-if="upd.note"
+                  style="color: #64748b; font-style: italic; margin-top: 2px"
+                >
+                  "{{ upd.note }}"
+                </div>
+                <div
+                  v-if="upd.reviewNote"
+                  style="color: #ef4444; margin-top: 2px; font-weight: 500"
+                >
+                  Alasan reject: "{{ upd.reviewNote }}"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="modalError" class="alert alert-error">
+            {{ modalError }}
+          </div>
+
+          <div class="modal-actions">
+            <button
+              class="secondary-btn btn-cancel-danger"
+              @click="showUpdateModal = false"
+            >
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="submitUpdate"
+              :disabled="saving"
+            >
+              {{ saving ? "Mengirim..." : "Kirim Update" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Laporkan Progress Inisiatif -->
+      <div
+        v-if="showIniModal"
+        class="modal-overlay"
+        @click.self="showIniModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Laporkan Progress Inisiatif</h3>
+            <button class="modal-close-btn" @click="showIniModal = false">
+              &times;
+            </button>
+          </div>
+          <label class="label">
+            Inisiatif: <strong>{{ selectedIni?.title }}</strong>
+          </label>
+
+          <div class="info-box margin-top-8">
+            Target:
+            {{
+              formatTargetValue(
+                selectedIni?.targetValue,
+                selectedIni?.unit,
+                "%",
+              )
+            }}<br />
+            Saat ini:
+            {{
+              formatTargetValue(
+                selectedIni?.currentValue,
+                selectedIni?.unit,
+                "%",
+              )
+            }}<br />
+            <label class="label">Status Kanban: </label>
+            <strong>{{ selectedIni?.kanbanStatus || "TODO" }}</strong>
+          </div>
+
+          <label class="label">Status Pekerjaan (Kanban)</label>
+          <select v-model="iniForm.kanbanStatus" class="form-input">
+            <option value="TODO">Todo</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="DONE">Done</option>
+            <option value="DROP">Drop</option>
+          </select>
+
+          <label class="label">Nilai Realisasi Saat Ini *</label>
+          <input
+            v-model.number="iniForm.newValue"
+            type="number"
+            class="form-input"
+          />
+
+          <label class="label">Catatan Progress / Notes *</label>
+          <textarea
+            v-model="iniForm.note"
+            class="form-input"
+            rows="3"
+            placeholder="Informasi detail pekerjaan, kendala, atau note penting..."
+          ></textarea>
+
+          <label class="label">Link Dokumentasi Hasil (opsional)</label>
+          <input
+            v-model="iniForm.link"
+            type="url"
+            class="form-input"
+            placeholder="https://example.com/..."
+          />
+
+          <!-- KpiSelector jika inisiatif memiliki KPI terlampir -->
+          <KpiSelector
+            v-if="selectedIni?.kpis?.length"
+            v-model="selectedIni.kpis"
+            :showCurrentValue="true"
+          />
+
+          <div class="info-box margin-top-8">
+            Catatan progress inisiatif ini akan langsung disimpan ke history
+            tanpa proses approval.
+          </div>
+
+          <div v-if="modalError" class="alert alert-error">
+            {{ modalError }}
+          </div>
+
+          <div class="modal-actions">
+            <button
+              class="secondary-btn btn-cancel-danger"
+              @click="showIniModal = false"
+            >
+              Batal
+            </button>
+            <button
+              class="primary-btn"
+              @click="submitIniUpdate"
+              :disabled="saving"
+            >
+              {{ saving ? "Mengirim..." : "Simpan Progress" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Detail Hasil Kerja / Popup Hasil -->
+      <div
+        v-if="showDetailModal"
+        class="modal-overlay"
+        @click.self="showDetailModal = false"
+      >
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Detail Progress & Hasil</h3>
+            <button class="modal-close-btn" @click="showDetailModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="info-box mb-4">
+            <p>
+              <strong>Item:</strong> {{ detailData.type }} -
+              {{ detailData.title }}
+            </p>
+            <p>
+              <strong>Dilaporkan Oleh:</strong> {{ detailData.submittedBy }}
+            </p>
+            <p><strong>Tanggal:</strong> {{ detailData.date }}</p>
+            <p v-if="detailData.status">
+              <strong>Status Approval:</strong>
+              {{ getUpdateStatusLabel(detailData.status) }}
+            </p>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Perubahan Progress:</span
+            >
+            <span class="val" style="font-size: 16px"
+              >Realisasi: <strong>{{ detailData.newValue }}</strong> (dari
+              {{ detailData.oldValue }})</span
+            >
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Catatan Progress:</span
+            >
+            <span
+              class="val"
+              style="
+                display: block;
+                background: var(--bg-page);
+                padding: 10px;
+                border-radius: 8px;
+                font-style: italic;
+                border: 1px solid var(--card-border);
+                white-space: pre-line;
+              "
+            >
+              {{ detailData.note }}
+            </span>
+          </div>
+          <div class="mb-4">
+            <span
+              class="lbl"
+              style="display: block; font-weight: 600; margin-bottom: 4px"
+              >Link Dokumentasi:</span
+            >
+            <div v-if="detailData.link" style="margin-top: 8px">
+              <a
+                :href="detailData.link"
+                target="_blank"
+                class="primary-btn"
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 6px;
+                  text-decoration: none;
+                  font-size: 14px;
+                "
+              >
+                Buka Link Dokumentasi
+              </a>
+            </div>
+            <span v-else class="text-sm text-gray" style="font-style: italic"
+              >Tidak ada link dokumentasi yang dilampirkan.</span
+            >
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn" @click="showDetailModal = false">
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Buat Task Baru di Pekerjaan Saya -->
+      <!-- ─── MODAL: Tambah Task Massal ─── -->
+      <div
+        v-if="showMyWorkTaskModal"
+        class="modal-overlay"
+        @click.self="showMyWorkTaskModal = false"
+      >
+        <div class="modal-box modal-box-large">
+          <div class="modal-header">
+            <h3>Tambah Task Massal untuk Inisiatif</h3>
+            <button
+              class="modal-close-btn"
+              @click="showMyWorkTaskModal = false"
+            >
+              &times;
+            </button>
+          </div>
+          <div class="modal-body-scroll">
+            <p class="mb-3" style="font-size: 13px; color: #475569">
+              Inisiatif Induk: <strong>{{ selectedIniForTask?.title }}</strong>
+            </p>
+
+            <div v-if="modalError" class="alert alert-error mb-4">
+              {{ modalError }}
+            </div>
+
+            <!-- Batch Default Settings Card -->
+            <div class="batch-defaults-card mb-4">
+              <div class="batch-defaults-title">
+                ⚡ Default Settings untuk Baris Task Baru
+              </div>
+              <UnitTargetInput
+                v-model:targetValue="batchDefaults.targetValue"
+                v-model:unit="batchDefaults.unit"
+                v-model:targetType="batchDefaults.targetType"
+                labelTarget="Target Value Default"
+                labelUnit="Satuan (Unit) Default"
+                placeholderTarget="100"
+                :required="true"
+              />
+
+              <div
+                class="form-row-2"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+              >
+                <div>
+                  <label
+                    style="
+                      display: block;
+                      margin-bottom: 4px;
+                      font-weight: 500;
+                      font-size: 13px;
+                    "
+                    >Bulan Sprint</label
+                  >
+                  <input
+                    v-model="batchDefaults.sprintMonth"
+                    type="month"
+                    class="form-input"
+                  />
+                </div>
+                <div>
+                  <label
+                    style="
+                      display: block;
+                      margin-bottom: 4px;
+                      font-weight: 500;
+                      font-size: 13px;
+                    "
+                    >Assignee Default</label
+                  >
+                  <select
+                    v-model="batchDefaults.assignedTeamMemberId"
+                    class="form-input"
+                  >
+                    <option value="">-- Diri Sendiri --</option>
+                    <option
+                      v-for="u in availableAssignees"
+                      :key="u.id"
+                      :value="u.id"
+                    >
+                      {{ u.name }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2 text-right">
+                <button
+                  type="button"
+                  class="btn-text-action"
+                  @click="applyDefaultsToAllRows"
+                >
+                  Terapkan Default ke Semua Baris
+                </button>
+              </div>
+            </div>
+
+            <!-- Task Rows Header & List -->
+            <div class="task-rows-header">
+              <label style="font-weight: 700; color: #334155; font-size: 14px">
+                Daftar Baris Task ({{ taskRows.length }})
+              </label>
+              <button type="button" class="btn-add-row" @click="addTaskRow">
+                + Tambah Baris Task
+              </button>
+            </div>
+
+            <div class="task-rows-container">
+              <div
+                v-for="(row, idx) in taskRows"
+                :key="idx"
+                class="task-row-card"
+              >
+                <!-- Row 1: Form input task + number + delete button -->
+                <div class="task-row-main">
+                  <div class="task-row-num">{{ idx + 1 }}</div>
+                  <div class="task-row-fields">
+                    <input
+                      v-model="row.title"
+                      class="form-input row-title"
+                      placeholder="Judul Task (Contoh: Implementasi modul Auth)..."
+                    />
+                    <input
+                      v-if="isRupiahUnit(row.unit)"
+                      :value="formatRupiahNumber(row.targetValue)"
+                      @input="onRowTargetRupiahInput($event, row)"
+                      type="text"
+                      class="form-input row-target"
+                      placeholder="Target"
+                    />
+                    <input
+                      v-else
+                      v-model.number="row.targetValue"
+                      type="number"
+                      class="form-input row-target"
+                      placeholder="Target"
+                    />
+                    <select
+                      v-model="row.targetType"
+                      class="form-input row-type"
+                      style="width: 65px; flex-shrink: 0"
+                      title="Tipe Target: ≥ (Minimal), ≤ (Maksimal), = (Tepat)"
+                    >
+                      <option value="AT_LEAST">≥</option>
+                      <option value="AT_MOST">≤</option>
+                      <option value="EXACT">=</option>
+                    </select>
+                    <div class="row-unit-group">
+                      <select
+                        v-model="row._unitCategory"
+                        class="form-input row-unit-select"
+                        @change="onRowUnitCategoryChange(row)"
+                      >
+                        <option value="%">%</option>
+                        <option value="Rupiah">Rp</option>
+                        <option value="Lainnya">Lainnya</option>
+                      </select>
+                      <input
+                        v-if="getRowUnitCategory(row) === 'Lainnya'"
+                        v-model="row.unit"
+                        class="form-input row-unit-custom"
+                        placeholder="Satuan..."
+                      />
+                    </div>
+                    <select
+                      v-model="row.assignedTeamMemberId"
+                      class="form-input row-assignee"
+                    >
+                      <option value="">-- Diri Sendiri --</option>
+                      <option
+                        v-for="u in availableAssignees"
+                        :key="u.id"
+                        :value="u.id"
+                      >
+                        {{ u.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-remove-row"
+                    :disabled="taskRows.length <= 1"
+                    @click="removeTaskRow(idx)"
+                    title="Hapus baris"
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                <!-- Row 2: CTA pilih KPI -->
+                <div class="task-row-kpi">
+                  <KpiSelector v-model="row.kpis" />
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-actions mt-4">
+              <button
+                class="secondary-btn btn-cancel-danger"
+                @click="showMyWorkTaskModal = false"
+              >
+                Batal
+              </button>
+              <button
+                class="primary-btn"
+                :disabled="saving || validTaskCount === 0 || !isBatchUnitValid"
+                @click="saveMyWorkTasksBatch"
+              >
+                {{
+                  saving ? "Menyimpan..." : `Simpan (${validTaskCount} Task)`
+                }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MODAL: Edit Inisiatif ─── -->
+    <div
+      v-if="showEditIniModal"
+      class="modal-overlay"
+      @click.self="showEditIniModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Edit Inisiatif</h3>
+          <button class="modal-close-btn" @click="showEditIniModal = false">
+            &times;
+          </button>
+        </div>
+        <div v-if="modalError" class="alert alert-error mb-4">
+          {{ modalError }}
+        </div>
+        <div class="form-group mb-3">
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Judul Inisiatif *</label
+          >
+          <input
+            v-model="editIniForm.title"
+            type="text"
+            class="form-input"
+            placeholder="Judul inisiatif..."
+            required
+          />
+        </div>
+        <div class="form-group mb-3">
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Deskripsi</label
+          >
+          <textarea
+            v-model="editIniForm.description"
+            class="form-input"
+            rows="3"
+            placeholder="Deskripsi inisiatif..."
+          ></textarea>
+        </div>
+        <UnitTargetInput
+          v-model:targetValue="editIniForm.targetValue"
+          v-model:unit="editIniForm.unit"
+          labelTarget="Target Value"
+          labelUnit="Satuan (Unit)"
+          :required="true"
+        />
+        <div class="form-group mb-4">
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Bulan Sprint</label
+          >
+          <input
+            v-model="editIniForm.sprintMonth"
+            type="month"
+            class="form-input"
+          />
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn btn-cancel-danger"
+            @click="showEditIniModal = false"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            class="primary-btn"
+            :disabled="saving || !editIniForm.title?.trim()"
+            @click="submitEditIni"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MODAL: Edit Task ─── -->
+    <div
+      v-if="showEditTaskModal"
+      class="modal-overlay"
+      @click.self="showEditTaskModal = false"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Edit Task</h3>
+          <button class="modal-close-btn" @click="showEditTaskModal = false">
+            &times;
+          </button>
+        </div>
+        <div v-if="modalError" class="alert alert-error mb-4">
+          {{ modalError }}
+        </div>
+        <div class="form-group mb-3">
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Judul Task *</label
+          >
+          <input
+            v-model="editTaskForm.title"
+            type="text"
+            class="form-input"
+            placeholder="Judul task..."
+            required
+          />
+        </div>
+        <div class="form-group mb-3">
+          <label
+            style="
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+              font-size: 13px;
+            "
+            >Deskripsi</label
+          >
+          <textarea
+            v-model="editTaskForm.description"
+            class="form-input"
+            rows="3"
+            placeholder="Deskripsi task..."
+          ></textarea>
+        </div>
+        <UnitTargetInput
+          v-model:targetValue="editTaskForm.targetValue"
+          v-model:unit="editTaskForm.unit"
+          labelTarget="Target Value"
+          labelUnit="Satuan (Unit)"
+          :required="true"
+        />
+        <div
+          class="form-row-2 mb-4"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+        >
+          <div>
+            <label
+              style="
+                display: block;
+                margin-bottom: 4px;
+                font-weight: 500;
+                font-size: 13px;
+              "
+              >Assignee</label
+            >
+            <select
+              v-model="editTaskForm.assignedTeamMemberId"
+              class="form-input"
+            >
+              <option value="">-- Diri Sendiri / Tidak Diubah --</option>
+              <option v-for="u in availableAssignees" :key="u.id" :value="u.id">
+                {{ u.name }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label
+              style="
+                display: block;
+                margin-bottom: 4px;
+                font-weight: 500;
+                font-size: 13px;
+              "
+              >Bulan Sprint</label
+            >
+            <input
+              v-model="editTaskForm.sprintMonth"
+              type="month"
+              class="form-input"
+            />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-btn btn-cancel-danger"
+            @click="showEditTaskModal = false"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            class="primary-btn"
+            :disabled="saving || !editTaskForm.title?.trim()"
+            @click="submitEditTask"
+          >
+            {{ saving ? "Menyimpan..." : "Simpan Perubahan" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cross Department Discussion & Lifecycle Modal -->
+    <CrossDeptCommentModal
+      :task-id="activeCrossDeptTaskId"
+      :is-open="showCrossDeptModal"
+      @close="showCrossDeptModal = false"
+      @task-updated="fetchMyWork"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from "vue";
+import { useAuthStore } from "~/stores/auth";
+import { useRouter } from "vue-router";
+import { isRupiahUnit, detectUnitCategory } from "~/utils/formatters";
+import CrossDeptCommentModal from "~/components/CrossDeptCommentModal.vue";
+
+const authStore = useAuthStore();
+const router = useRouter();
+
+const taskAssignments = ref([]);
+const teamInitiatives = ref([]);
+const loading = ref(true);
+const errorMsg = ref("");
+
+// Expand & Collapse states (Default TERTUTUP/Collapsed)
+const isMyInitiativesExpanded = ref(false);
+const isTeamInitiativesExpanded = ref(false);
+
+// KPI Expand & Collapse states
+const expandedKpis = ref({});
+
+function toggleKpi(id) {
+  expandedKpis.value = {
+    ...expandedKpis.value,
+    [id]: !expandedKpis.value[id],
+  };
+}
+
+function isKpiExpanded(id) {
+  return !!expandedKpis.value[id];
+}
+
+function getKpiTitle(assignment) {
+  return (
+    assignment.kpi?.title || assignment.kpi?.name || assignment.kpiId || "KPI"
+  );
+}
+
+const showUpdateModal = ref(false);
+const showIniModal = ref(false);
+const saving = ref(false);
+const modalError = ref("");
+const successMsg = ref("");
+const selectedTask = ref(null);
+const selectedIni = ref(null);
+
+// Cross Department Task Modal
+const showCrossDeptModal = ref(false);
+const activeCrossDeptTaskId = ref("");
+
+function openCrossDeptModal(taskId) {
+  if (!taskId) return;
+  activeCrossDeptTaskId.value = taskId;
+  showCrossDeptModal.value = true;
+}
+
+// Modal Tambah Task Massal di Pekerjaan Saya
+const showMyWorkTaskModal = ref(false);
+const selectedIniForTask = ref(null);
+const batchDefaults = ref({
+  targetValue: 100,
+  targetType: "AT_LEAST",
+  unit: "%",
+  sprintMonth: "",
+  assignedTeamMemberId: "",
+  kpis: [],
+});
+const taskRows = ref([
+  {
+    title: "",
+    targetValue: 100,
+    targetType: "AT_LEAST",
+    unit: "%",
+    _unitCategory: "%",
+    assignedTeamMemberId: "",
+    sprintMonth: "",
+    kpis: [],
+  },
+]);
+const validTaskCount = computed(
+  () =>
+    taskRows.value.filter((r) => r.title && r.title.trim().length > 0).length,
+);
+
+const isBatchUnitValid = computed(() => {
+  const validTasks = taskRows.value.filter(
+    (r) => r.title && r.title.trim().length > 0,
+  );
+  if (validTasks.length === 0) return true;
+  return validTasks.every((r) => r.unit && r.unit.trim().length > 0);
+});
+
+const updateForm = ref({
+  newValue: 0,
+  note: "",
+  link: "",
+});
+
+const iniForm = ref({
+  newValue: 0,
+  note: "",
+  kanbanStatus: "",
+  link: "",
+});
+
+const showDetailModal = ref(false);
+const detailData = ref({
+  title: "",
+  type: "",
+  oldValue: 0,
+  newValue: 0,
+  note: "",
+  link: "",
+  date: "",
+  submittedBy: "",
+  status: "",
+});
+
+function openDetailModal(title, type, update, submitterName) {
+  detailData.value = {
+    title,
+    type,
+    oldValue: update.oldValue,
+    newValue: update.newValue,
+    note: update.note || "Tidak ada catatan.",
+    link: update.link || "",
+    date: formatDateTime(update.createdAt),
+    submittedBy: submitterName || "Anggota Tim",
+    status: update.status || "",
+  };
+  showDetailModal.value = true;
+}
+
+const userRole = computed(() => authStore.user?.role || "");
+const isAutoApproveRole = computed(() =>
+  ["LEADER", "MANAGER", "ADMIN"].includes(userRole.value),
+);
+const isAdmin = computed(
+  () => userRole.value === "ADMIN" || authStore.user?.originalRole === "ADMIN",
+);
+
+const config = useRuntimeConfig();
+const API = config.public.apiBase || "http://localhost:3001/api";
+const { confirm: confirmDialog, alert: alertDialog } = useConfirm();
+
+function getHeaders() {
+  const token =
+    authStore.token ||
+    (typeof window !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+}
+
+async function deleteInitiative(id) {
+  const ok = await confirmDialog(
+    "Hapus inisiatif ini beserta seluruh Task di dalamnya?",
+  );
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
+  try {
+    let res = await fetch(`${API}/initiatives/${cleanId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+    if (res.ok) {
+      successMsg.value = "Inisiatif berhasil dihapus";
+      setTimeout(() => (successMsg.value = ""), 3000);
+      teamInitiatives.value = teamInitiatives.value.filter(
+        (i) => i.id !== cleanId && i.id !== id,
+      );
+      taskAssignments.value = taskAssignments.value.filter((a) => {
+        const parentId = a.task?.initiativeId || a.task?.initiative?.id;
+        return parentId !== cleanId && parentId !== id;
+      });
+      if (teamMembersWork.value.initiatives) {
+        teamMembersWork.value.initiatives =
+          teamMembersWork.value.initiatives.filter(
+            (i) => i.id !== cleanId && i.id !== id,
+          );
+      }
+      if (teamMembersWork.value.taskAssignments) {
+        teamMembersWork.value.taskAssignments =
+          teamMembersWork.value.taskAssignments.filter((a) => {
+            const parentId = a.task?.initiativeId || a.task?.initiative?.id;
+            return parentId !== cleanId && parentId !== id;
+          });
+      }
+      await fetchMyWork();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      errorMsg.value = err.message || "Gagal menghapus inisiatif";
+      await alertDialog({
+        title: "Gagal",
+        message: errorMsg.value,
+        danger: true,
+        confirmText: "Tutup",
+      });
+    }
+  } catch (err) {
+    errorMsg.value = err.message || "Terjadi kesalahan jaringan";
+    await alertDialog({
+      title: "Gagal",
+      message: errorMsg.value,
+      danger: true,
+      confirmText: "Tutup",
+    });
+  }
+}
+
+async function deleteTask(id) {
+  const ok = await confirmDialog("Hapus Task ini?");
+  if (!ok) return;
+  const cleanId = String(id).replace(/^task-/, "");
+  try {
+    let res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      res = await fetch(`${API}/tasks/${cleanId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+    }
+    if (res.ok) {
+      successMsg.value = "Task berhasil dihapus";
+      setTimeout(() => (successMsg.value = ""), 3000);
+      taskAssignments.value = taskAssignments.value.filter((a) => {
+        const tId = a.task?.id || a.taskId || a.id;
+        return tId !== cleanId && tId !== id;
+      });
+      if (teamMembersWork.value.taskAssignments) {
+        teamMembersWork.value.taskAssignments =
+          teamMembersWork.value.taskAssignments.filter((a) => {
+            const tId = a.task?.id || a.taskId || a.id;
+            return tId !== cleanId && tId !== id;
+          });
+      }
+      await fetchMyWork();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      errorMsg.value = err.message || "Gagal menghapus Task";
+      await alertDialog({
+        title: "Gagal",
+        message: errorMsg.value,
+        danger: true,
+        confirmText: "Tutup",
+      });
+    }
+  } catch (err) {
+    errorMsg.value = err.message || "Terjadi kesalahan jaringan";
+    await alertDialog({
+      title: "Gagal",
+      message: errorMsg.value,
+      danger: true,
+      confirmText: "Tutup",
+    });
+  }
+}
+
+// Filter State
+const searchQuery = ref("");
+const selectedDepartment = ref("");
+const selectedEmployeeId = ref("");
+const selectedSprintMonth = ref("");
+
+const allUsers = ref([]);
+
+async function fetchAllUsers() {
+  try {
+    const res = await fetch(`${API}/users`, { headers: getHeaders() });
+    if (res.ok) allUsers.value = await res.json();
+  } catch (err) {}
+}
+
+const departmentsList = computed(() => {
+  const depts = new Set();
+  allUsers.value.forEach((u) => {
+    if (u.department) depts.add(u.department);
+  });
+  teamInitiatives.value.forEach((i) => {
+    if (i.team?.department) depts.add(i.team.department);
+  });
+  if (teamMembersWork.value.initiatives) {
+    teamMembersWork.value.initiatives.forEach((i) => {
+      if (i.team?.department) depts.add(i.team.department);
+    });
+  }
+  return Array.from(depts).sort();
+});
+
+const employeesList = computed(() => {
+  if (!selectedDepartment.value) return allUsers.value;
+  return allUsers.value.filter(
+    (u) => u.department === selectedDepartment.value,
+  );
+});
+
+function resetFilters() {
+  searchQuery.value = "";
+  selectedDepartment.value = "";
+  selectedEmployeeId.value = "";
+  selectedSprintMonth.value = "";
+}
+
+const filteredTeamInitiatives = computed(() => {
+  return teamInitiatives.value.filter((ini) => {
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = ini.title?.toLowerCase().includes(q);
+      const matchDesc = ini.description?.toLowerCase().includes(q);
+      const matchKr = ini.keyResult?.title?.toLowerCase().includes(q);
+      const matchOwner = ini.owner?.name?.toLowerCase().includes(q);
+      const matchTask = ini.tasks?.some((t) =>
+        t.title?.toLowerCase().includes(q),
+      );
+      if (!matchTitle && !matchDesc && !matchKr && !matchOwner && !matchTask)
+        return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        ini.team?.department === selectedDepartment.value ||
+        ini.owner?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const isOwner = ini.ownerId === selectedEmployeeId.value;
+      const isAssignedLeader =
+        ini.assignedLeaderId === selectedEmployeeId.value;
+      const isTaskAssignee = ini.tasks?.some(
+        (t) =>
+          t.assignedTeamMemberId === selectedEmployeeId.value ||
+          t.assignments?.some((a) => a.userId === selectedEmployeeId.value),
+      );
+      if (!isOwner && !isAssignedLeader && !isTaskAssignee) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchIniSprint = ini.sprintMonth === selectedSprintMonth.value;
+      const matchTaskSprint = ini.tasks?.some(
+        (t) => t.sprintMonth === selectedSprintMonth.value,
+      );
+      if (!matchIniSprint && !matchTaskSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+const filteredTaskAssignments = computed(() => {
+  return taskAssignments.value.filter((assign) => {
+    const task = assign.task || assign;
+    if (!task) return false;
+    if (task.isActive === false) return false;
+    if (task.initiative && task.initiative.isActive === false) return false;
+
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = task.title?.toLowerCase().includes(q);
+      const matchIni = task.initiative?.title?.toLowerCase().includes(q);
+      const matchKr = task.initiative?.keyResult?.title
+        ?.toLowerCase()
+        .includes(q);
+      if (!matchTitle && !matchIni && !matchKr) return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        task.initiative?.team?.department === selectedDepartment.value ||
+        assign.user?.department === selectedDepartment.value ||
+        task.assignedTeamMember?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const matchUser =
+        assign.userId === selectedEmployeeId.value ||
+        task.assignedTeamMemberId === selectedEmployeeId.value ||
+        task.assignments?.some((a) => a.userId === selectedEmployeeId.value);
+      if (!matchUser) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchTaskSprint = task.sprintMonth === selectedSprintMonth.value;
+      const matchIniSprint =
+        task.initiative?.sprintMonth === selectedSprintMonth.value;
+      if (!matchTaskSprint && !matchIniSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+const filteredTeamMembersInitiatives = computed(() => {
+  if (!teamMembersWork.value.initiatives) return [];
+  return teamMembersWork.value.initiatives.filter((ini) => {
+    if (ini.isActive === false) return false;
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = ini.title?.toLowerCase().includes(q);
+      const matchDesc = ini.description?.toLowerCase().includes(q);
+      const matchKr = ini.keyResult?.title?.toLowerCase().includes(q);
+      const matchOwner = ini.owner?.name?.toLowerCase().includes(q);
+      const matchTask = ini.tasks?.some((t) =>
+        t.title?.toLowerCase().includes(q),
+      );
+      if (!matchTitle && !matchDesc && !matchKr && !matchOwner && !matchTask)
+        return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        ini.team?.department === selectedDepartment.value ||
+        ini.owner?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const isOwner = ini.ownerId === selectedEmployeeId.value;
+      const isAssignedLeader =
+        ini.assignedLeaderId === selectedEmployeeId.value;
+      const isTaskAssignee = ini.tasks?.some(
+        (t) =>
+          t.assignedTeamMemberId === selectedEmployeeId.value ||
+          t.assignments?.some((a) => a.userId === selectedEmployeeId.value),
+      );
+      if (!isOwner && !isAssignedLeader && !isTaskAssignee) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchIniSprint = ini.sprintMonth === selectedSprintMonth.value;
+      const matchTaskSprint = ini.tasks?.some(
+        (t) => t.sprintMonth === selectedSprintMonth.value,
+      );
+      if (!matchIniSprint && !matchTaskSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+const filteredTeamMembersTasks = computed(() => {
+  if (!teamMembersWork.value.taskAssignments) return [];
+  return teamMembersWork.value.taskAssignments.filter((assign) => {
+    const task = assign.task || assign;
+    if (!task) return false;
+    if (task.isActive === false) return false;
+    if (task.initiative && task.initiative.isActive === false) return false;
+
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase().trim();
+      const matchTitle = task.title?.toLowerCase().includes(q);
+      const matchIni = task.initiative?.title?.toLowerCase().includes(q);
+      const matchKr = task.initiative?.keyResult?.title
+        ?.toLowerCase()
+        .includes(q);
+      if (!matchTitle && !matchIni && !matchKr) return false;
+    }
+
+    if (selectedDepartment.value) {
+      const matchDept =
+        task.initiative?.team?.department === selectedDepartment.value ||
+        assign.user?.department === selectedDepartment.value ||
+        task.assignedTeamMember?.department === selectedDepartment.value;
+      if (!matchDept) return false;
+    }
+
+    if (selectedEmployeeId.value) {
+      const matchUser =
+        assign.userId === selectedEmployeeId.value ||
+        task.assignedTeamMemberId === selectedEmployeeId.value ||
+        task.assignments?.some((a) => a.userId === selectedEmployeeId.value);
+      if (!matchUser) return false;
+    }
+
+    if (selectedSprintMonth.value) {
+      const matchTaskSprint = task.sprintMonth === selectedSprintMonth.value;
+      const matchIniSprint =
+        task.initiative?.sprintMonth === selectedSprintMonth.value;
+      if (!matchTaskSprint && !matchIniSprint) return false;
+    }
+
+    return true;
+  });
+});
+
+onMounted(async () => {
+  if (
+    !authStore.isAuthenticated ||
+    !["TEAM", "LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(
+      authStore.user?.role,
+    )
+  ) {
+    router.push("/login");
+    return;
+  }
+  await Promise.all([fetchMyWork(), fetchAllUsers()]);
+});
+
+watch(selectedEmployeeId, () => {
+  if (["ADMIN", "C_LEVEL"].includes(authStore.user?.role)) {
+    fetchMyWork();
+  }
+});
+
+const teamMembersWork = ref({ taskAssignments: [], initiatives: [] });
+const expandedTaskIds = ref([]);
+const expandedIniIds = ref([]);
+
+const availableAssignees = computed(() => {
+  if (!authStore.user) return [];
+  const userDept = authStore.user.department;
+  const userTeam = authStore.user.teamId;
+  return allUsers.value.filter((u) => {
+    if (u.id === authStore.user.id) return true;
+    if (userTeam && u.teamId === userTeam) return true;
+    if (userDept && u.department === userDept) return true;
+    return false;
+  });
+});
+
+async function updateKanbanStage(item, type, newStatus) {
+  if (!item || !newStatus) return;
+  try {
+    const id = type === "task" ? `task-${item.id}` : item.id;
+    const res = await fetch(`${API}/initiatives/${id}/kanban-status`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify({ kanbanStatus: newStatus }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Gagal memperbarui status stage");
+    }
+    successMsg.value = `Status stage berhasil diperbarui ke ${newStatus}`;
+    setTimeout(() => (successMsg.value = ""), 3000);
+    await fetchMyWork();
+  } catch (err) {
+    errorMsg.value = err.message;
+    setTimeout(() => (errorMsg.value = ""), 4000);
+  }
+}
+
+function openMyWorkAddTaskModal(ini) {
+  selectedIniForTask.value = ini;
+  const now = new Date();
+  const defaultSprint =
+    ini.sprintMonth ||
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  batchDefaults.value = {
+    targetValue: 100,
+    unit: "%",
+    sprintMonth: defaultSprint,
+    assignedTeamMemberId: authStore.user?.id || "",
+    kpis: [],
+  };
+
+  taskRows.value = [
+    {
+      title: "",
+      targetValue: 100,
+      targetType: "AT_LEAST",
+      unit: "%",
+      assignedTeamMemberId: authStore.user?.id || "",
+      sprintMonth: defaultSprint,
+      kpis: [],
+    },
+  ];
+  modalError.value = "";
+  showMyWorkTaskModal.value = true;
+}
+
+function addTaskRow() {
+  const cat = detectUnitCategory(batchDefaults.value.unit);
+  taskRows.value.push({
+    title: "",
+    targetValue: batchDefaults.value.targetValue || 100,
+    targetType: batchDefaults.value.targetType || "AT_LEAST",
+    unit: batchDefaults.value.unit || "%",
+    _unitCategory: cat,
+    assignedTeamMemberId: batchDefaults.value.assignedTeamMemberId || "",
+    sprintMonth: batchDefaults.value.sprintMonth || "",
+    kpis: [],
+  });
+}
+
+function removeTaskRow(index) {
+  if (taskRows.value.length > 1) {
+    taskRows.value.splice(index, 1);
+  }
+}
+
+function applyDefaultsToAllRows() {
+  taskRows.value.forEach((r) => {
+    r.targetValue = batchDefaults.value.targetValue;
+    r.unit = batchDefaults.value.unit;
+    r._unitCategory = detectUnitCategory(batchDefaults.value.unit);
+    r.sprintMonth = batchDefaults.value.sprintMonth;
+    r.assignedTeamMemberId = batchDefaults.value.assignedTeamMemberId;
+  });
+}
+
+function formatRupiahNumber(val) {
+  if (val === null || val === undefined || val === "" || val === 0) {
+    return "";
+  }
+  const num = Number(val);
+  return isNaN(num) ? "" : num.toLocaleString("en-US");
+}
+
+function onRowTargetRupiahInput(e, row) {
+  const input = e.target;
+  const rawDigits = input.value.replace(/[^\d]/g, "");
+  if (rawDigits === "") {
+    row.targetValue = 0;
+    input.value = "";
+    return;
+  }
+  const num = parseInt(rawDigits, 10);
+  row.targetValue = num;
+  input.value = num.toLocaleString("en-US");
+}
+
+function getRowUnitCategory(row) {
+  if (!row._unitCategory) {
+    row._unitCategory = detectUnitCategory(row.unit);
+  }
+  return row._unitCategory;
+}
+
+function onRowUnitCategoryChange(row) {
+  if (row._unitCategory === "Rupiah") {
+    row.unit = "Rupiah (Rp)";
+  } else if (row._unitCategory === "%") {
+    row.unit = "%";
+    const num = Number(row.targetValue) || 0;
+    if (num > 100) {
+      row.targetValue = 100;
+    }
+  } else {
+    if (row.unit === "Rupiah (Rp)" || row.unit === "%") {
+      row.unit = "";
+    }
+  }
+}
+
+async function saveMyWorkTasksBatch() {
+  const validTasks = taskRows.value.filter(
+    (r) => r.title && r.title.trim().length > 0,
+  );
+
+  if (validTasks.length === 0) {
+    modalError.value = "Setidaknya 1 baris Judul Task wajib diisi";
+    return;
+  }
+  if (validTasks.some((r) => !r.unit || !r.unit.trim())) {
+    modalError.value = "Satuan (Unit) pada semua task wajib diisi";
+    return;
+  }
+  if (!selectedIniForTask.value?.id) {
+    modalError.value = "Inisiatif induk tidak ditemukan";
+    return;
+  }
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const res = await fetch(
+      `${API}/initiatives/${selectedIniForTask.value.id}/tasks/batch`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ tasks: validTasks }),
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Gagal membuat Task massal");
+    }
+    const data = await res.json();
+    showMyWorkTaskModal.value = false;
+    successMsg.value = `${data.tasks?.length || validTasks.length} task baru berhasil dibuat!`;
+    setTimeout(() => (successMsg.value = ""), 3500);
+    await fetchMyWork();
+  } catch (err) {
+    modalError.value = err.message;
+  } finally {
+    saving.value = false;
+  }
+}
+
+function toggleTaskHistory(id) {
+  const idx = expandedTaskIds.value.indexOf(id);
+  if (idx === -1) expandedTaskIds.value.push(id);
+  else expandedTaskIds.value.splice(idx, 1);
+}
+
+function toggleIniHistory(id) {
+  const idx = expandedIniIds.value.indexOf(id);
+  if (idx === -1) expandedIniIds.value.push(id);
+  else expandedIniIds.value.splice(idx, 1);
+}
+
+function getTaskCreatorName(task) {
+  if (!task) return "-";
+  return (
+    task.creator?.name ||
+    task.assignedByUser?.name ||
+    (task.assignedBy && !task.assignedBy.includes("-")
+      ? task.assignedBy
+      : "") ||
+    task.initiative?.owner?.name ||
+    task.initiative?.assignedLeader?.name ||
+    "-"
+  );
+}
+
+function getIniCreatorName(ini) {
+  if (!ini) return "-";
+  return (
+    ini.creator?.name ||
+    ini.assignedByUser?.name ||
+    ini.owner?.name ||
+    ini.assignedLeader?.name ||
+    (ini.assignedBy && !ini.assignedBy.includes("-") ? ini.assignedBy : "") ||
+    "-"
+  );
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const dayName = days[d.getDay()];
+  const date = d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const time = d.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${dayName}, ${date} · ${time}`;
+}
+
+async function fetchMyWork() {
+  loading.value = true;
+  errorMsg.value = "";
+  try {
+    const query =
+      selectedEmployeeId.value &&
+      ["ADMIN", "C_LEVEL"].includes(authStore.user?.role)
+        ? `?userId=${selectedEmployeeId.value}`
+        : "";
+    const res = await fetch(`${API}/initiatives/my-work/all${query}`, {
+      headers: getHeaders(),
+    });
+    if (res.status === 401) {
+      errorMsg.value =
+        "Sesi login Anda telah berakhir. Mengalihkan ke login...";
+      setTimeout(() => authStore.logout(), 1000);
+      return;
+    }
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(
+        errData.message || `Gagal memuat pekerjaan (HTTP ${res.status})`,
+      );
+    }
+    const data = await res.json();
+    taskAssignments.value = data.taskAssignments || [];
+    teamInitiatives.value = data.myInitiatives || [];
+    if (data.teamMembersWork && Object.keys(data.teamMembersWork).length > 0) {
+      teamMembersWork.value = data.teamMembersWork;
+    }
+  } catch (err) {
+    errorMsg.value = err.message;
+  } finally {
+    loading.value = false;
+  }
+}
+
+function getProgressPercent(task) {
+  if (!task) return 0;
+  const val =
+    task.achievedValue !== null && task.achievedValue !== undefined
+      ? task.achievedValue
+      : task.currentValue || 0;
+  return calculateProgressPercent(
+    val,
+    task.targetValue,
+    task.targetType,
+    task.baselineValue,
+  );
+}
+
+function getStatusClass(status) {
+  if (status === "ON_TRACK") return "bg-green";
+  if (status === "AT_RISK") return "bg-yellow";
+  if (status === "OFF_TRACK") return "bg-red";
+  return "bg-gray";
+}
+
+function isTaskDone(task) {
+  if (!task) return false;
+  const status = String(task.status || "").toUpperCase();
+  const kanbanStatus = String(task.kanbanStatus || "").toUpperCase();
+  return (
+    status === "DONE" ||
+    status === "COMPLETED" ||
+    kanbanStatus === "DONE" ||
+    kanbanStatus === "COMPLETED"
+  );
+}
+
+function canReportInitiative(ini) {
+  if (!ini) return false;
+  const role = userRole.value;
+  if (["LEADER", "MANAGER", "ADMIN"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  return (
+    ini.ownerId === userId ||
+    ini.owner?.id === userId ||
+    ini.assignedLeaderId === userId
+  );
+}
+
+function canReportTask(task) {
+  if (!task) return false;
+  const role = userRole.value;
+  if (["LEADER", "MANAGER", "ADMIN"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  return (
+    task.assignedTeamMemberId === userId ||
+    task.assignedTeamMember?.id === userId ||
+    task.assignments?.some((a) => a.userId === userId || a.user?.id === userId)
+  );
+}
+function canEditInitiative(ini) {
+  if (!ini) return false;
+  const role = userRole.value;
+  if (["ADMIN", "C_LEVEL"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  if (role === "MANAGER") {
+    const userDept = authStore.user?.department;
+    return !ini.team?.department || ini.team.department === userDept;
+  }
+  if (role === "LEADER") {
+    return (
+      ini.assignedLeaderId === userId ||
+      ini.ownerId === userId ||
+      ini.owner?.id === userId ||
+      ini.teamId === authStore.user?.teamId
+    );
+  }
+  return ini.ownerId === userId || ini.owner?.id === userId;
+}
+
+function canDeleteInitiative(ini) {
+  return canEditInitiative(ini);
+}
+
+function canEditTask(task) {
+  if (!task) return false;
+  const role = userRole.value;
+  if (["ADMIN", "C_LEVEL"].includes(role)) return true;
+  const userId = authStore.user?.id;
+  if (!userId) return false;
+  if (role === "MANAGER") {
+    const userDept = authStore.user?.department;
+    const taskDept =
+      task.initiative?.team?.department || task.targetDept || task.creatorDept;
+    return !taskDept || taskDept === userDept;
+  }
+  if (role === "LEADER") {
+    const isAssigned = task.assignments?.some(
+      (a) => a.userId === userId || a.user?.id === userId,
+    );
+    return (
+      task.assignedTeamMemberId === userId ||
+      task.assignedTeamMember?.id === userId ||
+      task.creatorId === userId ||
+      task.assignedBy === userId ||
+      isAssigned ||
+      task.initiative?.teamId === authStore.user?.teamId
+    );
+  }
+  const isAssigned = task.assignments?.some(
+    (a) => a.userId === userId || a.user?.id === userId,
+  );
+  return (
+    task.assignedTeamMemberId === userId ||
+    task.assignedTeamMember?.id === userId ||
+    task.creatorId === userId ||
+    isAssigned
+  );
+}
+
+function canDeleteTask(task) {
+  return canEditTask(task);
+}
+
+const showEditTaskModal = ref(false);
+const editingTaskData = ref(null);
+const editTaskForm = ref({
+  title: "",
+  targetValue: 100,
+  unit: "%",
+  assignedTeamMemberId: "",
+  sprintMonth: "",
+  description: "",
+});
+
+const showEditIniModal = ref(false);
+const editingIniData = ref(null);
+const editIniForm = ref({
+  title: "",
+  targetValue: 100,
+  unit: "%",
+  sprintMonth: "",
+  description: "",
+});
+
+function openEditTaskModal(task) {
+  if (!canEditTask(task)) return;
+  editingTaskData.value = task;
+  editTaskForm.value = {
+    title: task.title || "",
+    targetValue: task.targetValue ?? 100,
+    unit: task.unit || "%",
+    assignedTeamMemberId:
+      task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
+    sprintMonth: task.sprintMonth || "",
+    description: task.description || "",
+  };
+  modalError.value = "";
+  showEditTaskModal.value = true;
+}
+
+async function submitEditTask() {
+  if (!editingTaskData.value) return;
+  if (!editTaskForm.value.title?.trim()) {
+    modalError.value = "Judul Task wajib diisi";
+    return;
+  }
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const cleanId = String(editingTaskData.value.id).replace(/^task-/, "");
+    const res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        title: editTaskForm.value.title.trim(),
+        targetValue: editTaskForm.value.targetValue,
+        unit: editTaskForm.value.unit,
+        assignedTeamMemberId:
+          editTaskForm.value.assignedTeamMemberId || undefined,
+        sprintMonth: editTaskForm.value.sprintMonth || undefined,
+        description: editTaskForm.value.description,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal memperbarui task");
+    }
+    successMsg.value = "Task berhasil diperbarui";
+    setTimeout(() => (successMsg.value = ""), 3000);
+    showEditTaskModal.value = false;
+    await fetchMyWork();
+  } catch (err) {
+    modalError.value = err.message || "Gagal memperbarui task";
+  } finally {
+    saving.value = false;
+  }
+}
+
+function openEditIniModal(ini) {
+  if (!canEditInitiative(ini)) return;
+  editingIniData.value = ini;
+  editIniForm.value = {
+    title: ini.title || "",
+    targetValue: ini.targetValue ?? 100,
+    unit: ini.unit || "%",
+    sprintMonth: ini.sprintMonth || "",
+    description: ini.description || "",
+  };
+  modalError.value = "";
+  showEditIniModal.value = true;
+}
+
+async function submitEditIni() {
+  if (!editingIniData.value) return;
+  if (!editIniForm.value.title?.trim()) {
+    modalError.value = "Judul Inisiatif wajib diisi";
+    return;
+  }
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const cleanId = String(editingIniData.value.id).replace(/^task-/, "");
+    const res = await fetch(`${API}/initiatives/${cleanId}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        title: editIniForm.value.title.trim(),
+        targetValue: editIniForm.value.targetValue,
+        unit: editIniForm.value.unit,
+        sprintMonth: editIniForm.value.sprintMonth || undefined,
+        description: editIniForm.value.description,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gagal memperbarui inisiatif");
+    }
+    successMsg.value = "Inisiatif berhasil diperbarui";
+    setTimeout(() => (successMsg.value = ""), 3000);
+    showEditIniModal.value = false;
+    await fetchMyWork();
+  } catch (err) {
+    modalError.value = err.message || "Gagal memperbarui inisiatif";
+  } finally {
+    saving.value = false;
+  }
+}
+
+function openUpdateModal(task) {
+  if (!canReportTask(task) || isTaskDone(task)) return;
+  selectedTask.value = task;
+  updateForm.value = {
+    newValue: task.currentValue,
+    note: "",
+    link: "",
+  };
+  modalError.value = "";
+  showUpdateModal.value = true;
+}
+
+function openIniModal(ini) {
+  if (!canReportInitiative(ini)) return;
+  selectedIni.value = ini;
+  iniForm.value = {
+    newValue: ini.currentValue,
+    note: "",
+    kanbanStatus: ini.kanbanStatus || "TODO",
+    link: "",
+  };
+  modalError.value = "";
+  showIniModal.value = true;
+}
+
+async function submitUpdate() {
+  if (
+    updateForm.value.newValue === undefined ||
+    updateForm.value.newValue === null
+  ) {
+    modalError.value = "Nilai baru wajib diisi";
+    return;
+  }
+
+  const ok = await confirmDialog({
+    title: "Konfirmasi",
+    message: `Kirim update progress untuk task "${selectedTask.value.title}"?`,
+    confirmText: "Ya, Lanjutkan",
+    cancelText: "Batal",
+    type: "info",
+    danger: false,
+  });
+  if (!ok) return;
+
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const res = await fetch(
+      `${API}/initiatives/tasks/${selectedTask.value.id}/updates`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(updateForm.value),
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message);
+    }
+
+    const data = await res.json();
+    showUpdateModal.value = false;
+    await fetchMyWork(); // refresh
+
+    const msg = data.message || "Update berhasil dikirim!";
+    successMsg.value = msg;
+    setTimeout(() => {
+      successMsg.value = "";
+    }, 4000);
+    await alertDialog({
+      title: "Berhasil",
+      message: msg,
+      confirmText: "OK",
+      type: "success",
+    });
+  } catch (err) {
+    modalError.value = err.message;
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function submitIniUpdate() {
+  if (iniForm.value.newValue === undefined || iniForm.value.newValue === null) {
+    modalError.value = "Nilai realisasi wajib diisi";
+    return;
+  }
+
+  // Jika inisiatif memiliki tasks, konfirmasi sebelum override agregasi task
+  if (selectedIni.value?.tasks && selectedIni.value.tasks.length > 0) {
+    const ok = await confirmDialog(
+      `Inisiatif ini memiliki ${selectedIni.value.tasks.length} Task dengan progress otomatis. ` +
+        "Apakah Anda yakin ingin menimpa (override) nilai progres inisiatif ini secara manual?",
+    );
+    if (!ok) return;
+  } else {
+    const ok = await confirmDialog({
+      title: "Konfirmasi",
+      message: `Kirim update progress untuk inisiatif "${selectedIni.value.title}"?`,
+      confirmText: "Ya, Lanjutkan",
+      cancelText: "Batal",
+      type: "info",
+      danger: false,
+    });
+    if (!ok) return;
+  }
+
+  saving.value = true;
+  modalError.value = "";
+  try {
+    const res = await fetch(
+      `${API}/initiatives/${selectedIni.value.id}/progress-updates`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(iniForm.value),
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message);
+    }
+
+    const data = await res.json();
+    showIniModal.value = false;
+    await fetchMyWork(); // refresh
+
+    const msg = data.message || "Laporan progress berhasil disimpan!";
+    successMsg.value = msg;
+    setTimeout(() => {
+      successMsg.value = "";
+    }, 4000);
+    await alertDialog({
+      title: "Berhasil",
+      message: msg,
+      confirmText: "OK",
+      type: "success",
+    });
+  } catch (err) {
+    modalError.value = err.message;
+  } finally {
+    saving.value = false;
+  }
+}
+
+function getUpdateStatusLabel(status) {
+  const labels = {
+    PENDING_APPROVAL: "Menunggu Persetujuan",
+    APPROVED: "Disetujui",
+    REJECTED: "Ditolak",
+  };
+  return labels[status] || status;
+}
+
+const DEPT_LABELS = {
+  STRATEGIC: "Strategic",
+  FINANCE: "Finance",
+  BUSINESS: "Business",
+  B2S: "B2S",
+  B2B_EXPANSION: "B2B Expansion",
+  B2B_CORPORATION: "B2B Corporate",
+  B2C: "B2C",
+  PRODUCT_SERVICE: "Product Service",
+  SERVICE_ACCOUNT: "Service Account",
+  TECHDEV: "Techdev",
+  TECHOPS: "TechOps",
+  EDUCATION: "Education",
+  SSC: "Shared Service Center",
+  DESIGN: "Design",
+  DATA: "Data",
+  HR: "HR",
+  UNASSIGNED: "General / Lainnya",
+};
+
+function getDeptLabel(deptKey) {
+  return DEPT_LABELS[deptKey] || deptKey;
+}
+
+function getGroupedInitiatives(initiatives) {
+  if (!initiatives) return {};
+  const groups = {};
+
+  initiatives.forEach((ini) => {
+    let depts = [];
+    const kr = ini.keyResult;
+    if (kr) {
+      if (kr.departments && kr.departments.length > 0) {
+        depts = kr.departments.map((d) => d.department);
+      } else {
+        // Fallback 1: Parse from bracket prefix in KR title, e.g. "[B2C] title"
+        const titleMatch = kr.title.match(/^\[(.*?)\]/);
+        if (titleMatch) {
+          const titleDept = titleMatch[1].trim();
+          let key = titleDept.toUpperCase().replace(/\s+/g, "_");
+          if (key === "B2B_CORPORATE") key = "B2B_CORPORATION";
+          depts = [key];
+        } else {
+          // Fallback 2: Check team department of the initiative itself
+          if (ini.team?.department) {
+            depts = [ini.team.department];
+          }
+        }
+      }
+    }
+
+    if (depts.length === 0) {
+      depts = ["UNASSIGNED"];
+    }
+
+    depts.forEach((dept) => {
+      if (!groups[dept]) {
+        groups[dept] = [];
+      }
+      if (!groups[dept].some((item) => item.id === ini.id)) {
+        groups[dept].push(ini);
+      }
+    });
+  });
+
+  return groups;
+}
+</script>
+
+<style scoped>
+.admin-root {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--bg-color, #f8fafc);
+}
+.admin-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  border: 2px solid var(--border-color, #e2e8f0);
+}
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-title h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+.section-desc {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .task-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.task-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  overflow: hidden;
+}
+.task-card.cross-dept-task-card {
+  background: #fffdf5 !important;
+  border: 2px solid #fde68a !important;
+  border-left: 5px solid #f59e0b !important;
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1) !important;
+}
+.cross-dept-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.cross-dept-badge {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cross-dept-badge:hover {
+  background: #fde68a;
+}
+.badge-need-info {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.cross-dept-work-btn {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cross-dept-work-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+.cross-dept-link-btn {
+  background: var(--bg-page);
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.cross-dept-link-btn:hover {
+  background: #e2e8f0;
+}
+.cross-dept-card-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+.cross-dept-deadline-tag {
+  font-size: 11px;
+  color: #92400e;
+  background: #fef3c7;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 4px 0;
+  width: fit-content;
+}
+.title-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.task-header h3 {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+  color: #0f172a;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+.status-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.task-context {
+  background: var(--bg-page);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+.task-context p {
+  margin: 0 0 4px 0;
+}
+.task-context p:last-child {
+  margin: 0;
+}
+
+.task-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #475569;
+}
+.progress-bar-container {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: #0ea5e9;
+  transition: width 0.3s;
+}
+
+.task-updates h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+.recent-update {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.update-date {
+  color: #94a3b8;
+}
+.update-val {
+  display: flex;
+  margin: 4px;
+  font-weight: 500;
+  color: #1e293b;
+}
+.update-status {
+  font-weight: 600;
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.status-pending_approval {
+  background: #fef08a;
+  color: #854d0e;
+}
+.status-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.bg-green {
+  background: #dcfce7;
+  color: #166534;
+}
+.bg-yellow {
+  background: #fef08a;
+  color: #854d0e;
+}
+.bg-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.bg-gray {
+  background: var(--bg-page);
+  color: #475569;
+}
+
+.text-gray {
+  color: #64748b;
+}
+.text-sm {
+  font-size: 12px;
+}
+
+.primary-btn {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.primary-btn:hover {
+  background: #0284c7;
+}
+.primary-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+.primary-btn.full-width {
+  width: 100%;
+  margin-top: auto;
+}
+.secondary-btn {
+  background: white;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-cancel-danger {
+  color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
+  background-color: transparent !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-danger:hover {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-box {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 500px;
+  max-height: calc(100dvh - 32px);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.info-box {
+  background: var(--bg-page);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid var(--card-border);
+  margin-top: 12px;
+}
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+.alert {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.alert-info {
+  background: #e0f2fe;
+  color: #075985;
+}
+.alert-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.info-approved {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+/* History timeline */
+.history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px solid #e2e8f0;
+}
+.history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--bg-page);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.history-timestamp {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+.history-value {
+  color: #1e293b;
+  font-weight: 500;
+}
+.prev-value {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-left: 4px;
+}
+.history-note {
+  color: #64748b;
+  font-style: italic;
+}
+.reject-note {
+  color: #ef4444;
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.kanban-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.toggle-history-btn {
+  background: none;
+  border: none;
+  color: #0ea5e9;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
+.update-latest {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+}
+.update-timestamp {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Seksi tim (LEADER) */
+.team-section {
+  border-top: 2px solid #e2e8f0;
+  padding-top: 24px;
+}
+.member-badge {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-gray-450, #475569);
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+.mt-8 {
+  margin-top: 40px;
+}
+
+.info-approved {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+/* Initiatives styles */
+.section-title {
+  font-size: 18px;
+  margin: 0 0 16px 0;
+  color: #0f172a;
+}
+.mt-6 {
+  margin-top: 32px;
+}
+.team-initiatives-section {
+  margin-bottom: 24px;
+}
+.initiative-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ini-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.ini-header h4 {
+  font-size: 16px;
+  margin: 0;
+  color: #0f172a;
+}
+.ini-context {
+  background: var(--bg-page);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+.ini-context p {
+  margin: 0 0 4px 0;
+}
+.ini-context p:last-child {
+  margin: 0;
+}
+.ini-tasks {
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+.ini-tasks h5 {
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  color: #64748b;
+}
+.task-progress-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.task-progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.task-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.task-title {
+  font-weight: 500;
+  color: #334155;
+}
+.task-numbers {
+  color: #64748b;
+}
+.progress-bar-container.small {
+  height: 6px;
+}
+
+/* Modal Header styling */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.modal-header h3 {
+  margin: 0;
+}
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+}
+.modal-close-btn:hover {
+  color: #0f172a;
+}
+.alert-info {
+  background: #e0f2fe;
+  color: #075985;
+}
+.mb-1 {
+  margin-bottom: 4px;
+}
+.mb-2 {
+  margin-bottom: 8px;
+}
+.mb-3 {
+  margin-bottom: 12px;
+}
+.mb-4 {
+  margin-bottom: 16px;
+}
+.label {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+.dept-group-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 16px;
+}
+.dept-group:first-child .dept-group-header {
+  margin-top: 0;
+}
+.dept-title-badge {
+  font-size: 16px;
+  font-weight: 700;
+  color: #475569;
+  background: var(--color-cyan-100, #cffafe);
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Bulk Task Modal Styles */
+.modal-box-large {
+  max-width: 960px !important;
+  width: 96% !important;
+}
+
+.batch-defaults-card {
+  background: var(--bg-page);
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.batch-defaults-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+.form-row-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+@media (max-width: 768px) {
+  .form-row-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.btn-text-action {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-text-action:hover {
+  text-decoration: underline;
+}
+
+.task-rows-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.btn-add-row {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-add-row:hover {
+  background: #dbeafe;
+}
+
+.task-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.task-row-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+.task-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.task-row-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.task-row-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.row-title {
+  flex: 3;
+  min-width: 140px;
+  margin-bottom: 0 !important;
+}
+.row-target {
+  flex: 1;
+  min-width: 75px;
+  margin-bottom: 0 !important;
+}
+.row-type {
+  width: 60px;
+  min-width: 55px;
+  flex-shrink: 0;
+  margin-bottom: 0 !important;
+}
+.row-unit-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1.5;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+.row-unit-select {
+  flex: 1;
+  min-width: 70px;
+  margin-bottom: 0 !important;
+  padding: 6px 6px;
+}
+.row-unit-custom {
+  flex: 1.3;
+  min-width: 80px;
+  margin-bottom: 0 !important;
+  padding: 6px 8px;
+}
+.row-assignee {
+  flex: 2;
+  min-width: 120px;
+  margin-bottom: 0 !important;
+}
+.task-row-kpi {
+  padding-left: 30px;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 6px;
+}
+.btn-remove-row {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-remove-row:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-remove-row:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+/* KPI Section */
+.kpi-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  background: #f0f9ff;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.kpi-toggle:hover {
+  background: #e0f2fe;
+}
+.kpi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-left: 2px solid #bae6fd;
+  margin-top: 4px;
+}
+.kpi-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  color: #475569;
+  font-size: 12px;
+}
+.kpi-title {
+  font-weight: 600;
+}
+.kpi-value {
+  color: #64748b;
+  white-space: nowrap;
+}
+.task-kpi-toggle {
+  max-width: 240px;
+}
+.task-kpi-list {
+  max-width: 420px;
+}
+</style>

@@ -175,7 +175,30 @@
       <!-- Owner & Penanggung Jawab Section -->
       <div class="inspector-section">
         <h3 class="section-title">OWNER & PENANGGUNG JAWAB:</h3>
-        <div class="owner-card">
+        <div v-if="allOwners.length > 0" class="owners-list">
+          <div
+            v-for="person in allOwners"
+            :key="person.id"
+            class="owner-card"
+          >
+            <div class="owner-avatar" :class="person.roleClass">
+              {{ person.initials }}
+            </div>
+            <div class="owner-meta">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <h4 class="owner-name">{{ person.name }}</h4>
+                <span
+                  class="raci-badge-micro"
+                  :class="person.raciRole === 'RESPONSIBLE' ? 'r-badge' : 'a-badge'"
+                >
+                  {{ person.raciRole === 'RESPONSIBLE' ? 'R' : 'A' }}
+                </span>
+              </div>
+              <span class="owner-role">{{ person.roleLabel }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="owner-card">
           <div class="owner-avatar">
             {{ ownerInitials }}
           </div>
@@ -494,6 +517,36 @@ const lineage = computed(() => {
   );
 });
 
+const allOwners = computed(() => {
+  const assigns = props.selectedNode?.assignments;
+  if (Array.isArray(assigns) && assigns.length > 0) {
+    return assigns.map((a: any) => {
+      const u = a.user || {};
+      const name = u.name || a.userName || "Unknown";
+      const parts = name.split(" ").filter(Boolean);
+      const initials =
+        parts.length >= 2
+          ? (parts[0][0] + parts[1][0]).toUpperCase()
+          : (name.slice(0, 2) || "OK").toUpperCase();
+      const raciRole = a.raciRole || "RESPONSIBLE";
+      const roleLabel =
+        u.position ||
+        (raciRole === "RESPONSIBLE"
+          ? "Responsible (Pelaksana)"
+          : "Accountable (Penanggung Jawab)");
+      return {
+        id: a.id || u.id || name,
+        name,
+        roleLabel,
+        raciRole,
+        roleClass: raciRole === "RESPONSIBLE" ? "responsible" : "accountable",
+        initials,
+      };
+    });
+  }
+  return [];
+});
+
 const ownerName = computed(() => {
   return (
     props.selectedNode?.owner?.name ||
@@ -763,6 +816,12 @@ function formatVal(val: any, unit?: string) {
   flex-shrink: 0;
 }
 
+.owners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .owner-card {
   display: flex;
   align-items: center;
@@ -785,6 +844,39 @@ function formatVal(val: any, unit?: string) {
   font-size: 0.85rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.owner-avatar.responsible {
+  background: #0284c7;
+}
+
+.owner-avatar.accountable {
+  background: #7c3aed;
+}
+
+.raci-badge-micro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.raci-badge-micro.r-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.raci-badge-micro.a-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
 }
 
 .owner-meta {

@@ -123,7 +123,6 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       include: {
         objective: { select: { title: true, year: true } },
         assignments: {
-          where: { raciRole: "RESPONSIBLE" },
           include: {
             user: { select: { id: true, name: true, department: true } },
           },
@@ -250,7 +249,16 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         };
       });
 
-      const responsible = kr.assignments[0]?.user ?? null;
+      const responsibleAssignment = kr.assignments.find((a: any) => a.raciRole === "RESPONSIBLE");
+      const responsible = responsibleAssignment?.user ?? kr.assignments[0]?.user ?? null;
+      const accountables = kr.assignments
+        .filter((a: any) => a.raciRole === "ACCOUNTABLE")
+        .map((a: any) => a.user)
+        .filter(Boolean);
+      const assignments = kr.assignments.map((a: any) => ({
+        raciRole: a.raciRole,
+        user: a.user,
+      }));
       const krDepts = kr.departments.map((d: any) => d.department);
 
       perspectiveMap[p].keyResults.push({
@@ -268,6 +276,8 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         month: kr.month,
         isActive: kr.isActive ? 1 : 0,
         responsible,
+        accountables,
+        assignments,
         departments: krDepts,
         initiatives: mappedInitiatives,
       });
@@ -287,7 +297,6 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
 
       // Critical KRs (AT_RISK or OFF_TRACK)
       if (kr.status === "AT_RISK" || kr.status === "OFF_TRACK") {
-        const responsible = kr.assignments[0]?.user ?? null;
         criticalKrs.push({
           id: kr.id,
           title: kr.title,
@@ -300,6 +309,8 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
           objectiveTitle: kr.objective.title,
           year: kr.objective.year,
           responsible,
+          accountables,
+          assignments,
           departments: kr.departments.map((d) => d.department),
         });
       }
@@ -698,6 +709,7 @@ export async function getCascadingTree(req: AuthRequest, res: Response) {
             month: kr.month,
             departments: depts,
             owner: primaryOwner,
+            assignments: kr.assignments,
             causalLinks: {
               outbound: (kr.sourceLinksA || []).map((l: any) => ({
                 id: l.id,
