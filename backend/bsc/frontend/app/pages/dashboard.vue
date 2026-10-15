@@ -1730,7 +1730,7 @@ function resetInitFilters() {
   filterCardType.value = "ALL";
 }
 
-function formatSprintLabel(sprint: string | null | undefined): string {
+function formatSprintLabel(sprint) {
   if (!sprint) return "";
   if (/^\d{4}-\d{2}$/.test(sprint)) {
     const [year, month] = sprint.split("-");
@@ -1746,7 +1746,7 @@ function formatSprintLabel(sprint: string | null | undefined): string {
   return sprint;
 }
 
-function formatStatusLabel(status: string | null | undefined): string {
+function formatStatusLabel(status) {
   if (!status) return "To Do";
   const s = String(status).toUpperCase();
   if (s === "DONE" || s === "COMPLETED") return "Done";
@@ -1759,7 +1759,7 @@ function formatStatusLabel(status: string | null | undefined): string {
   return status;
 }
 
-function getStatusBadgeClass(status: string | null | undefined): string {
+function getStatusBadgeClass(status) {
   if (!status) return "status-todo";
   const s = String(status).toUpperCase();
   if (s === "DONE" || s === "COMPLETED") return "status-done";
@@ -1772,12 +1772,12 @@ function getStatusBadgeClass(status: string | null | undefined): string {
   return "status-todo";
 }
 
-function hasCrossDeptTasks(init: any): boolean {
+function hasCrossDeptTasks(init) {
   if (init?.isCrossDept) return true;
-  return Array.isArray(init?.tasks) && init.tasks.some((t: any) => t.isCrossDept);
+  return Array.isArray(init?.tasks) && init.tasks.some((t) => t.isCrossDept);
 }
 
-function isAutoExpanded(init: any): boolean {
+function isAutoExpanded(init) {
   if (!isAnyInitFilterActive.value) return false;
   if (
     filterCardType.value === "TASK" ||
@@ -1790,15 +1790,15 @@ function isAutoExpanded(init: any): boolean {
   return false;
 }
 
-function matchesStatusFilter(item: any, selectedStatus: string): boolean {
+function matchesStatusFilter(item, selectedStatus) {
   if (!selectedStatus || selectedStatus === "ALL") return true;
   const s = selectedStatus.toUpperCase();
-  const itemKanban = String(item.kanbanStatus || "").toUpperCase();
-  const itemStatus = String(item.status || "").toUpperCase();
+  const itemKanban = String(item?.kanbanStatus || "").toUpperCase();
+  const itemStatus = String(item?.status || "").toUpperCase();
   const pct =
-    item.calculatedProgress !== undefined
+    item?.calculatedProgress !== undefined
       ? item.calculatedProgress
-      : item.progressPercent !== undefined
+      : item?.progressPercent !== undefined
         ? item.progressPercent
         : 0;
 
@@ -1846,13 +1846,13 @@ const filteredByKeyResult = computed(() => {
   const statusFilter = filterInitStatus.value;
   const typeFilter = filterCardType.value; // 'ALL' | 'INITIATIVE' | 'TASK' | 'CROSS_DEPT'
 
-  const result: any[] = [];
+  const result = [];
 
   for (const group of rawGroups) {
     const krTitle = (group.keyResult?.title || "").toLowerCase();
     const krMatches = q && krTitle.includes(q);
 
-    const matchingInitiatives: any[] = [];
+    const matchingInitiatives = [];
 
     for (const init of group.initiatives || []) {
       const initTitle = (init.title || "").toLowerCase();
@@ -1864,12 +1864,12 @@ const filteredByKeyResult = computed(() => {
 
       const allTasks = Array.isArray(init.tasks) ? init.tasks : [];
 
-      const matchingTasks = allTasks.filter((task: any) => {
+      const matchingTasks = allTasks.filter((task) => {
         if (typeFilter === "INITIATIVE") return false;
         if (typeFilter === "CROSS_DEPT" && !task.isCrossDept) return false;
 
         const taskTitle = (task.title || "").toLowerCase();
-        const assigneeMatches = (task.assignments || []).some((a: any) =>
+        const assigneeMatches = (task.assignments || []).some((a) =>
           (a.user?.name || "").toLowerCase().includes(q)
         );
         const taskMatchesName =
@@ -1902,7 +1902,7 @@ const filteredByKeyResult = computed(() => {
           const crossTasks =
             matchingTasks.length > 0
               ? matchingTasks
-              : allTasks.filter((t: any) => t.isCrossDept);
+              : allTasks.filter((t) => t.isCrossDept);
           if ((initMatchesName && initMatchesStatus) || matchingTasks.length > 0) {
             matchingInitiatives.push({
               ...init,
@@ -1952,7 +1952,7 @@ const filteredSummary = computed(() => {
       const tasks = Array.isArray(init.tasks) ? init.tasks : [];
       totalTasks += tasks.length;
       completedTasks += tasks.filter(
-        (t: any) => (t.progressPercent || 0) >= 100 || isTaskDone(t)
+        (t) => (t.progressPercent || 0) >= 100 || isTaskDone(t)
       ).length;
       const s = String(init.kanbanStatus || init.status || "").toUpperCase();
       if (
