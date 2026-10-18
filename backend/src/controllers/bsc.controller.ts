@@ -53,14 +53,15 @@ export async function getBscOverview(req: AuthRequest, res: Response) {
       const p = kr.bscPerspective;
       if (!bscData[p]) return; // Safeguard
 
-      const progress =
-        kr.targetValue > 0
-          ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
-          : 0;
+      const progress = calculateProgressPercent(
+        kr.currentValue,
+        kr.targetValue,
+        kr.targetType,
+      );
 
       const krWithProgress = {
         ...kr,
-        progress: Math.round(progress * 10) / 10,
+        progress,
       };
 
       bscData[p].krs.push(krWithProgress);
@@ -211,11 +212,11 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       const p = kr.bscPerspective;
       if (!perspectiveMap[p]) return;
 
-      const progress =
-        kr.targetValue > 0
-          ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
-          : 0;
-      const progressRounded = Math.round(progress * 10) / 10;
+      const progressRounded = calculateProgressPercent(
+        kr.currentValue,
+        kr.targetValue,
+        kr.targetType,
+      );
 
       perspectiveMap[p].totalCount++;
       perspectiveMap[p].totalProgress += progressRounded;
@@ -321,13 +322,11 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
           const updDate = new Date(upd.updatedAt);
           for (let wi = trendWeeks.length - 1; wi >= 0; wi--) {
             if (updDate >= trendWeeks[wi].weekStart) {
-              const pct =
-                kr.targetValue > 0
-                  ? Math.min(
-                      100,
-                      Math.max(0, (upd.newValue / kr.targetValue) * 100),
-                    )
-                  : 0;
+              const pct = calculateProgressPercent(
+                upd.newValue,
+                kr.targetValue,
+                kr.targetType,
+              );
               trendAccum[p][wi].sum += pct;
               trendAccum[p][wi].count++;
               break;
@@ -414,11 +413,12 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         bscPerspective: true,
         currentValue: true,
         targetValue: true,
+        targetType: true,
       },
     });
 
     const calcPerspectiveHealth = (
-      krs: { bscPerspective: string; currentValue: number; targetValue: number }[],
+      krs: { bscPerspective: string; currentValue: number; targetValue: number; targetType?: string }[],
     ) => {
       const pMap: Record<string, { count: number; totalProgress: number }> = {};
       PERSPECTIVES.forEach((p) => {
@@ -427,12 +427,13 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       krs.forEach((kr) => {
         const p = kr.bscPerspective;
         if (!pMap[p]) return;
-        const progress =
-          kr.targetValue > 0
-            ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
-            : 0;
+        const progress = calculateProgressPercent(
+          kr.currentValue,
+          kr.targetValue,
+          kr.targetType,
+        );
         pMap[p].count++;
-        pMap[p].totalProgress += Math.round(progress * 10) / 10;
+        pMap[p].totalProgress += progress;
       });
       const validPerspectives = PERSPECTIVES.filter((p) => pMap[p].count > 0);
       if (validPerspectives.length === 0) return null;
@@ -673,11 +674,11 @@ export async function getCascadingTree(req: AuthRequest, res: Response) {
             if (!matchesObj && !matchesKr && !matchesInit && !matchesTask && !matchesTeam) return;
           }
 
-          const progress =
-            kr.targetValue > 0
-              ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
-              : 0;
-          const roundedProgress = Math.round(progress * 10) / 10;
+          const roundedProgress = calculateProgressPercent(
+            kr.currentValue,
+            kr.targetValue,
+            kr.targetType,
+          );
 
           kr.initiatives.forEach((i) => {
             if (teamCounts[i.teamId]) teamCounts[i.teamId].count++;
@@ -733,30 +734,43 @@ export async function getCascadingTree(req: AuthRequest, res: Response) {
               })),
             },
             initiatives: kr.initiatives.map((init) => {
-              const initProg =
-                init.targetValue > 0
-                  ? Math.min(100, Math.max(0, (init.currentValue / init.targetValue) * 100))
-                  : init.kanbanStatus === "DONE"
-                  ? 100
-                  : 0;
+              let initProg = calculateProgressPercent(
+                init.currentValue,
+                init.targetValue,
+                init.targetType,
+              );
+              if (
+                (init.kanbanStatus === "DONE" || init.status === "DONE") &&
+                initProg < 100
+              ) {
+                initProg = 100;
+              }
 
               const mappedTasks = init.tasks.map((task) => {
-                const taskProg =
-                  task.targetValue && task.targetValue > 0
-                    ? Math.min(100, Math.max(0, (task.currentValue / task.targetValue) * 100))
-                    : task.kanbanStatus === "DONE"
-                    ? 100
-                    : 0;
+                let taskProg = calculateProgressPercent(
+                  task.currentValue,
+                  task.targetValue,
+                  task.targetType,
+                  task.baselineValue,
+                );
+                if (
+                  (task.kanbanStatus === "DONE" || task.status === "DONE") &&
+                  taskProg < 100
+                ) {
+                  taskProg = 100;
+                }
                 return {
                   id: task.id,
                   title: task.title,
                   description: task.description,
                   targetValue: task.targetValue,
                   currentValue: task.currentValue,
+                  targetType: task.targetType,
+                  baselineValue: task.baselineValue,
                   unit: task.unit,
                   status: task.status,
                   kanbanStatus: task.kanbanStatus,
-                  progress: Math.round(taskProg * 10) / 10,
+                  progress: taskProg,
                   assignedTeamMember: task.assignedTeamMember,
                   assignedUser: task.assignedTeamMember,
                   sprint: task.sprint,
@@ -769,10 +783,11 @@ export async function getCascadingTree(req: AuthRequest, res: Response) {
                 description: init.description,
                 targetValue: init.targetValue,
                 currentValue: init.currentValue,
+                targetType: init.targetType,
                 unit: init.unit,
                 status: init.status,
                 kanbanStatus: init.kanbanStatus,
-                progress: Math.round(initProg * 10) / 10,
+                progress: initProg,
                 sprintMonth: init.sprintMonth,
                 sprint: init.sprint,
                 team: init.team,

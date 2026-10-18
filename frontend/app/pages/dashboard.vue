@@ -2037,7 +2037,7 @@ function isTaskDone(task) {
 }
 
 function getProgressPercent(task) {
-  if (!task || !task.targetValue || task.targetValue <= 0) return 0;
+  if (!task || task.targetValue === null || task.targetValue === undefined) return 0;
   const val =
     task.achievedValue !== null && task.achievedValue !== undefined
       ? task.achievedValue

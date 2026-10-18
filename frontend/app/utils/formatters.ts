@@ -108,7 +108,8 @@ export const TARGET_TYPE_OPTIONS = [
 ];
 
 export function getTargetPrefix(targetType?: string | null): string {
-  const type = (targetType || "AT_LEAST").toUpperCase();
+  const rawType = (targetType || "AT_LEAST").toUpperCase();
+  const type = rawType === "MAXIMUM" ? "AT_MOST" : rawType === "MINIMUM" ? "AT_LEAST" : rawType;
   if (type === "AT_MOST") return "≤ ";
   if (type === "EXACT") return "= ";
   return "≥ ";
@@ -124,7 +125,8 @@ export function calculateProgressPercent(
   const curr = Number(current || 0);
   const tgt = Number(target);
   const base = Number(baseline || 0);
-  const type = (targetType || "AT_LEAST").toUpperCase();
+  const rawType = (targetType || "AT_LEAST").toUpperCase();
+  const type = rawType === "MAXIMUM" ? "AT_MOST" : rawType === "MINIMUM" ? "AT_LEAST" : rawType;
 
   if (type === "AT_MOST") {
     if (tgt <= 0) return curr <= 0 ? 100 : 0;

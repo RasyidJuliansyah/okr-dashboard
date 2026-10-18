@@ -487,6 +487,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useAuthStore } from "../../stores/auth";
+import { calculateProgressPercent } from "../../utils/formatters";
 
 const auth = useAuthStore();
 const config = useRuntimeConfig();
@@ -558,9 +559,12 @@ async function fetchAvailableKrs() {
 }
 
 function calculateProgress(item) {
-  if (!item.targetValue) return 0;
-  const progress = (item.currentValue / item.targetValue) * 100;
-  return Math.min(100, Math.max(0, Math.round(progress * 10) / 10));
+  if (!item) return 0;
+  return calculateProgressPercent(
+    item.currentValue,
+    item.targetValue,
+    item.targetType
+  );
 }
 
 function resetForm() {

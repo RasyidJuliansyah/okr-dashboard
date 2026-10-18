@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { calculateProgressPercent } from '../utils/progress';
 
 const prisma = new PrismaClient();
 
@@ -94,9 +95,7 @@ export async function getStrategyMap(req: AuthRequest, res: Response) {
       const y = 80 + level * 220; // FINANCIAL (80) -> CUSTOMER (300) -> INTERNAL_PROCESS (520) -> LEARNING_GROWTH (740)
 
       levelKrs.forEach((kr, index) => {
-        const progress = kr.targetValue > 0 
-          ? Math.min(100, Math.max(0, (kr.currentValue / kr.targetValue) * 100))
-          : 0;
+        const progress = calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType);
 
         // Center nodes on this level horizontally
         const offset = index - (count - 1) / 2;

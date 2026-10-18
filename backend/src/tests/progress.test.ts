@@ -13,6 +13,26 @@ assert.strictEqual(calculateProgressPercent(1200, 1000, "AT_MOST"), 80);
 assert.strictEqual(calculateProgressPercent(1500, 1000, "AT_MOST"), 50);
 assert.strictEqual(calculateProgressPercent(2000, 1000, "AT_MOST"), 0);
 
+// MAXIMUM (alias for AT_MOST)
+assert.strictEqual(calculateProgressPercent(800, 1000, "MAXIMUM"), 100);
+assert.strictEqual(calculateProgressPercent(1000, 1000, "MAXIMUM"), 100);
+assert.strictEqual(calculateProgressPercent(1200, 1000, "MAXIMUM"), 80);
+assert.strictEqual(calculateProgressPercent(1500, 1000, "MAXIMUM"), 50);
+assert.strictEqual(calculateProgressPercent(2000, 1000, "MAXIMUM"), 0);
+assert.strictEqual(calculateProgressPercent(0, 0, "MAXIMUM"), 100);
+assert.strictEqual(calculateProgressPercent(10, 0, "MAXIMUM"), 0);
+
+// MINIMUM (alias for AT_LEAST)
+assert.strictEqual(calculateProgressPercent(50, 100, "MINIMUM"), 50);
+assert.strictEqual(calculateProgressPercent(120, 100, "MINIMUM"), 100);
+
+// Prefixes
+assert.strictEqual(getTargetPrefix("AT_MOST"), "≤ ");
+assert.strictEqual(getTargetPrefix("MAXIMUM"), "≤ ");
+assert.strictEqual(getTargetPrefix("AT_LEAST"), "≥ ");
+assert.strictEqual(getTargetPrefix("MINIMUM"), "≥ ");
+assert.strictEqual(getTargetPrefix("EXACT"), "= ");
+
 // EXACT
 assert.strictEqual(calculateProgressPercent(10, 10, "EXACT"), 100);
 assert.strictEqual(calculateProgressPercent(9, 10, "EXACT"), 90);

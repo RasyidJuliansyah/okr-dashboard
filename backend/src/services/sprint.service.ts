@@ -338,6 +338,7 @@ export async function closeAndRolloverSprint(
         targetValue: true,
         currentValue: true,
         achievedValue: true,
+        targetType: true,
         kanbanStatus: true,
       },
     });
@@ -367,6 +368,7 @@ export async function closeAndRolloverSprint(
         targetValue: true,
         currentValue: true,
         baselineValue: true,
+        targetType: true,
         status: true,
         kanbanStatus: true,
         isCrossDept: true,
@@ -377,7 +379,8 @@ export async function closeAndRolloverSprint(
     let iniTotalWeight = 0;
     userInitiatives.forEach((init) => {
       const val = init.achievedValue ?? init.currentValue ?? 0;
-      let pct = init.targetValue > 0 ? (val / init.targetValue) * 100 : init.kanbanStatus === "DONE" ? 100 : 0;
+      let pct = calculateProgressPercent(val, init.targetValue, init.targetType);
+      if (init.kanbanStatus === "DONE" && pct < 100) pct = 100;
       pct = Math.min(100, Math.max(0, Math.round(pct * 10) / 10));
       iniWeightedSum += pct * 2;
       iniTotalWeight += 2;
@@ -392,16 +395,11 @@ export async function closeAndRolloverSprint(
       if (
         t.status === "DONE" ||
         t.kanbanStatus === "DONE" ||
-        t.kanbanStatus === "CLOSED" ||
-        (t.status === "ON_TRACK" && target > 0 && t.currentValue >= target)
+        t.kanbanStatus === "CLOSED"
       ) {
         pct = 100;
-      } else if (target > baseline) {
-        pct = ((t.currentValue - baseline) / (target - baseline)) * 100;
-      } else if (target > 0) {
-        pct = (t.currentValue / target) * 100;
       } else {
-        pct = t.currentValue > 0 ? 100 : 0;
+        pct = calculateProgressPercent(t.currentValue, target, t.targetType, baseline);
       }
       pct = Math.min(100, Math.max(0, Math.round(pct * 10) / 10));
       taskWeightedSum += pct * 1;

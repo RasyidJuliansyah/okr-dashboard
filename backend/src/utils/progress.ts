@@ -1,22 +1,23 @@
-export type TargetType = "AT_LEAST" | "AT_MOST" | "EXACT";
+export type TargetType = "AT_LEAST" | "AT_MOST" | "EXACT" | "MAXIMUM" | "MINIMUM";
 
 /**
  * Calculates progress percentage (0 - 100) based on targetType:
- * - AT_LEAST: higher is better. (current - baseline) / (target - baseline) * 100.
- * - AT_MOST: lower is better (max cap). If current <= target -> 100%. If current > target -> penalty.
+ * - AT_LEAST / MINIMUM: higher is better. (current - baseline) / (target - baseline) * 100.
+ * - AT_MOST / MAXIMUM: lower is better (max cap). If current <= target -> 100%. If current > target -> penalty.
  * - EXACT: deviation penalty.
  */
 export function calculateProgressPercent(
-  current: number,
-  target: number,
-  targetType: string = "AT_LEAST",
-  baseline: number = 0
+  current: number | null | undefined,
+  target: number | null | undefined,
+  targetType?: string | null,
+  baseline?: number | null
 ): number {
   if (target === null || target === undefined || isNaN(target)) return 0;
   const curr = current || 0;
   const tgt = target;
   const base = baseline || 0;
-  const type = (targetType || "AT_LEAST").toUpperCase();
+  const rawType = (targetType || "AT_LEAST").toUpperCase();
+  const type = rawType === "MAXIMUM" ? "AT_MOST" : rawType === "MINIMUM" ? "AT_LEAST" : rawType;
 
   if (type === "AT_MOST") {
     if (tgt <= 0) {
@@ -50,7 +51,8 @@ export function calculateProgressPercent(
 }
 
 export function getTargetPrefix(targetType?: string | null): string {
-  const type = (targetType || "AT_LEAST").toUpperCase();
+  const rawType = (targetType || "AT_LEAST").toUpperCase();
+  const type = rawType === "MAXIMUM" ? "AT_MOST" : rawType === "MINIMUM" ? "AT_LEAST" : rawType;
   if (type === "AT_MOST") return "≤ ";
   if (type === "EXACT") return "= ";
   return "≥ ";

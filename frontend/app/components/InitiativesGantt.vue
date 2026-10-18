@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { calculateProgressPercent } from "../utils/formatters";
 
 const props = defineProps<{
   initiatives: any[];
@@ -67,9 +68,9 @@ function getProgressPct(ini: any): number {
     ini.achievedValue !== null && ini.achievedValue !== undefined
       ? ini.achievedValue
       : ini.currentValue ?? 0;
-  const target = ini.targetValue ?? 0;
-  if (!target || target <= 0) return 0;
-  return Math.min(100, Math.max(0, Math.round((achieved / target) * 100)));
+  return Math.round(
+    calculateProgressPercent(achieved, ini.targetValue, ini.targetType)
+  );
 }
 
 function buildTasks() {
