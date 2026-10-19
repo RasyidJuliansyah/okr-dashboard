@@ -2264,6 +2264,7 @@ async function fetchDashboardData() {
     } else if (userRole.value === "LEADER") {
       leadingTeams.value = response.leadingTeams || [];
       leaderInitiatives.value = response.initiatives || [];
+      pendingApprovals.value = response.pendingApprovals || [];
       await fetchPendingApprovals();
     } else if (userRole.value === "MANAGER") {
       pendingApprovals.value = response.pendingApprovals || [];

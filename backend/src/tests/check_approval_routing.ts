@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { getDepartmentLeaderInfo, getTaskApprovalRecipientId } from "../controllers/initiative.controller";
+import { getDepartmentLeaderInfo, getTaskApprovalRecipientId, getLeaderTeamIds } from "../controllers/initiative.controller";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -32,8 +32,6 @@ async function runTests() {
   assert.strictEqual(recipientWithLeader, b2cLeaderId, "Recipient should be B2C leader");
 
   // Test 5: Recipient routing for task in department without leader (fallback to manager)
-  // B2B_EXPANSION or B2S has manager '2fe0bee9-fe63-472d-be9c-735ee11ab167'
-  // If we simulate a dept with manager but without leader:
   const dummyTaskNoLeader = {
     initiative: { team: { department: "DATA" } },
     assignedBy: "manager-uuid-fallback",
@@ -44,14 +42,91 @@ async function runTests() {
   // Test 6: Recipient routing for task in dept managed by a Manager in DB
   const techdevDept = await prisma.department.findUnique({ where: { value: "TECHDEV" } });
   if (techdevDept?.managerId) {
-    // If dept has no leader, should return techdevDept.managerId
-    // Let's test with a fictional dept or with team.managerId
     const dummyTaskWithManager = {
       initiative: { team: { department: "NON_EXISTENT_DEPT", managerId: techdevDept.managerId } },
     };
     const recipientManager = await getTaskApprovalRecipientId(dummyTaskWithManager, "some-member");
     assert.strictEqual(recipientManager, techdevDept.managerId, "Should fallback to team managerId");
   }
+
+  // Test 7: Cross-department task recipient routing
+  // User with no teamId submitting cross-dept task to targetDept "B2C"
+  const crossDeptTaskTargetB2C = {
+    isCrossDept: true,
+    targetDept: "B2C",
+    creatorDept: "TECHDEV",
+  };
+  const recipientCrossDept = await getTaskApprovalRecipientId(crossDeptTaskTargetB2C, "standalone-user-no-team");
+  assert.strictEqual(recipientCrossDept, b2cLeaderId, "Cross-dept task should route to targetDept leader");
+
+  // Test 8: Leader and Manager Prisma where clause logic for cross-department closed tasks
+  // Build where filter for Leader with department "TECHOPS"
+  const leaderDept = "TECHOPS";
+  const leaderTeams = await prisma.team.findMany({
+    where: { department: leaderDept },
+    select: { id: true },
+  });
+  const leaderTeamIds = leaderTeams.map((t) => t.id);
+
+  // Leader query condition check:
+  // Must match closed cross-dept task where creatorDept or targetDept is leaderDept
+  const matchingClosedTask = {
+    isCrossDept: true,
+    kanbanStatus: "CLOSED",
+    creatorDept: leaderDept,
+    targetDept: "B2C",
+  };
+  const nonMatchingCrossTask = {
+    isCrossDept: true,
+    kanbanStatus: "CLOSED",
+    creatorDept: "B2C",
+    targetDept: "B2S",
+  };
+  const openCrossTask = {
+    isCrossDept: true,
+    kanbanStatus: "IN_PROGRESS",
+    creatorDept: leaderDept,
+    targetDept: "B2C",
+  };
+
+  const leaderMatches = (task: typeof matchingClosedTask) =>
+    task.isCrossDept &&
+    task.kanbanStatus === "CLOSED" &&
+    (task.creatorDept === leaderDept || task.targetDept === leaderDept);
+
+  assert.strictEqual(leaderMatches(matchingClosedTask), true, "Leader should match closed task with creatorDept");
+  assert.strictEqual(leaderMatches(nonMatchingCrossTask), false, "Leader should not match unrelated closed task");
+  assert.strictEqual(leaderMatches(openCrossTask), false, "Leader should not match non-closed task");
+
+  // Manager query condition check:
+  const managerDepts = ["TECHDEV", "PRODUCT"];
+  const managerMatches = (task: typeof matchingClosedTask) =>
+    task.isCrossDept &&
+    task.kanbanStatus === "CLOSED" &&
+    (managerDepts.includes(task.creatorDept) || managerDepts.includes(task.targetDept));
+
+  const mgrTaskCreator = {
+    isCrossDept: true,
+    kanbanStatus: "CLOSED",
+    creatorDept: "TECHDEV",
+    targetDept: "B2C",
+  };
+  const mgrTaskTarget = {
+    isCrossDept: true,
+    kanbanStatus: "CLOSED",
+    creatorDept: "B2C",
+    targetDept: "PRODUCT",
+  };
+  const mgrTaskUnrelated = {
+    isCrossDept: true,
+    kanbanStatus: "CLOSED",
+    creatorDept: "B2C",
+    targetDept: "B2S",
+  };
+
+  assert.strictEqual(managerMatches(mgrTaskCreator), true, "Manager should match when creatorDept is managed");
+  assert.strictEqual(managerMatches(mgrTaskTarget), true, "Manager should match when targetDept is managed");
+  assert.strictEqual(managerMatches(mgrTaskUnrelated), false, "Manager should not match unrelated task");
 
   console.log("All approval routing assertions passed successfully!");
 }

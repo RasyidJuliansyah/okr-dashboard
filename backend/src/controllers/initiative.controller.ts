@@ -89,7 +89,7 @@ export async function getInitiativeWeightBudget(
   }
 }
 
-async function getLeaderTeamIds(userId: string): Promise<string[]> {
+export async function getLeaderTeamIds(userId: string): Promise<string[]> {
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
     select: { teamId: true, department: true },
@@ -191,7 +191,24 @@ export async function getTaskApprovalRecipientId(
   task: any,
   submitterId: string,
 ): Promise<string | null> {
+  const submitter = await prisma.user.findUnique({
+    where: { id: submitterId },
+    select: { teamId: true, department: true },
+  });
+
+  // Jika submitter punya tim dengan Leader aktif, arahkan ke Leader tim tersebut
+  if (submitter?.teamId) {
+    const team = await prisma.team.findUnique({
+      where: { id: submitter.teamId },
+      select: { leaderId: true },
+    });
+    if (team?.leaderId && team.leaderId !== submitterId) {
+      return team.leaderId;
+    }
+  }
+
   const taskDept =
+    (task.isCrossDept ? task.targetDept || submitter?.department : null) ||
     task.initiative?.team?.department ||
     task.targetDept ||
     task.creatorDept;
@@ -3861,7 +3878,12 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
     const taskUpdate = await prisma.taskUpdate.findUnique({
       where: { id: updateId },
       include: {
-        task: { include: { initiative: { include: { team: true } } } },
+        task: {
+          include: {
+            creator: { select: { id: true, name: true, department: true } },
+            initiative: { include: { team: true } },
+          },
+        },
       },
     });
     if (!taskUpdate)
@@ -3871,6 +3893,22 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
         .status(400)
         .json({ message: "Update ini sudah diproses sebelumnya" });
     }
+
+    const isCrossDept = Boolean(taskUpdate.task.isCrossDept);
+
+    // Guard: Task lintas departemen hanya boleh di-approve jika status card sudah CLOSED oleh pembuat tugas
+    if (isCrossDept && taskUpdate.task.kanbanStatus !== "CLOSED") {
+      return res.status(400).json({
+        message:
+          "Tugas lintas departemen hanya dapat disetujui setelah card berstatus Closed oleh pembuat tugas",
+      });
+    }
+
+    // Submitter info untuk scoping persetujuan
+    const submitter = await prisma.user.findUnique({
+      where: { id: taskUpdate.submittedBy },
+      select: { role: true, department: true, teamId: true },
+    });
 
     // Authorization check for approving Task Update
     if (role === "MANAGER") {
@@ -3889,27 +3927,33 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
         taskUpdate.task.initiative?.team?.department ||
         taskUpdate.task.targetDept ||
         taskUpdate.task.creatorDept;
-      if (!taskDept || !deptValues.has(taskDept)) {
+
+      const isManagerAuthorized =
+        (taskDept && deptValues.has(taskDept)) ||
+        (taskUpdate.task.targetDept && deptValues.has(taskUpdate.task.targetDept)) ||
+        (taskUpdate.task.creatorDept && deptValues.has(taskUpdate.task.creatorDept)) ||
+        (submitter?.department && deptValues.has(submitter.department));
+
+      if (!isManagerAuthorized) {
         return res.status(403).json({
           message:
             "Forbidden: Manajer hanya berwenang menyetujui update di departemen yang dikelola",
         });
       }
 
-      // Cek apakah departemen memiliki Leader aktif
-      const leaderInfo = await getDepartmentLeaderInfo([taskDept]);
-      const hasLeader = leaderInfo.deptsWithLeader.has(taskDept);
+      // Untuk task internal biasa: jika departemen punya Leader, update anggota tim harus melalui Leader
+      // Untuk task cross-dept: Leader dan Manager sama-sama berwenang menyetujui selama card berstatus Closed
+      if (!isCrossDept) {
+        const leaderInfo = await getDepartmentLeaderInfo(taskDept ? [taskDept] : []);
+        const hasLeader = taskDept ? leaderInfo.deptsWithLeader.has(taskDept) : false;
 
-      if (hasLeader) {
-        const submitter = await prisma.user.findUnique({
-          where: { id: taskUpdate.submittedBy },
-          select: { role: true },
-        });
-        if (submitter?.role !== "LEADER") {
-          return res.status(403).json({
-            message:
-              "Forbidden: Departemen memiliki Leader, update dari anggota tim harus disetujui oleh Leader",
-          });
+        if (hasLeader) {
+          if (submitter?.role !== "LEADER") {
+            return res.status(403).json({
+              message:
+                "Forbidden: Departemen memiliki Leader, update dari anggota tim harus disetujui oleh Leader",
+            });
+          }
         }
       }
     } else if (role === "LEADER") {
@@ -3922,18 +3966,24 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
 
       const taskTeamId = taskUpdate.task.initiative?.teamId;
       const isLeaderOfTeam = taskTeamId ? leaderTeamIds.includes(taskTeamId) : false;
+      const isLeaderOfSubmitter = submitter?.teamId ? leaderTeamIds.includes(submitter.teamId) : false;
 
-      if (!isLeaderOfTeam) {
-        const taskDept =
-          taskUpdate.task.initiative?.team?.department ||
-          taskUpdate.task.targetDept ||
-          taskUpdate.task.creatorDept;
-        if (!dbUser?.department || taskDept !== dbUser.department) {
-          return res.status(403).json({
-            message:
-              "Forbidden: Leader hanya berwenang menyetujui update Task di tim/departemennya",
-          });
-        }
+      const taskDept =
+        taskUpdate.task.initiative?.team?.department ||
+        taskUpdate.task.targetDept ||
+        taskUpdate.task.creatorDept;
+
+      const isLeaderOfDept =
+        (dbUser?.department && taskDept === dbUser.department) ||
+        (dbUser?.department && taskUpdate.task.targetDept === dbUser.department) ||
+        (dbUser?.department && taskUpdate.task.creatorDept === dbUser.department) ||
+        (dbUser?.department && submitter?.department === dbUser.department);
+
+      if (!isLeaderOfTeam && !isLeaderOfSubmitter && !isLeaderOfDept) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Leader hanya berwenang menyetujui update Task di tim/departemennya",
+        });
       }
     } else if (role === "C_LEVEL") {
       const dbUser = await prisma.user.findUnique({
@@ -3950,7 +4000,12 @@ export async function approveTaskUpdate(req: AuthRequest, res: Response) {
         if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
           sponsoredDeptValues.push(req.user.activeDepartment);
         }
-        if (sponsoredDeptValues.length > 0 && taskDept && !sponsoredDeptValues.includes(taskDept)) {
+        const isSupervised =
+          (taskDept && sponsoredDeptValues.includes(taskDept)) ||
+          (taskUpdate.task.targetDept && sponsoredDeptValues.includes(taskUpdate.task.targetDept)) ||
+          (taskUpdate.task.creatorDept && sponsoredDeptValues.includes(taskUpdate.task.creatorDept));
+
+        if (sponsoredDeptValues.length > 0 && !isSupervised) {
           return res.status(403).json({
             message: "Forbidden: C-Level hanya berwenang menyetujui update di departemen yang disupervisi",
           });
@@ -4043,6 +4098,13 @@ export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
         .json({ message: "Update ini sudah diproses sebelumnya" });
     }
 
+    const isCrossDept = Boolean(taskUpdate.task.isCrossDept);
+
+    const submitter = await prisma.user.findUnique({
+      where: { id: taskUpdate.submittedBy },
+      select: { role: true, department: true, teamId: true },
+    });
+
     // Authorization check for rejecting Task Update
     if (role === "MANAGER") {
       const managedDepts = await prisma.department.findMany({
@@ -4060,27 +4122,32 @@ export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
         taskUpdate.task.initiative?.team?.department ||
         taskUpdate.task.targetDept ||
         taskUpdate.task.creatorDept;
-      if (!taskDept || !deptValues.has(taskDept)) {
+
+      const isManagerAuthorized =
+        (taskDept && deptValues.has(taskDept)) ||
+        (taskUpdate.task.targetDept && deptValues.has(taskUpdate.task.targetDept)) ||
+        (taskUpdate.task.creatorDept && deptValues.has(taskUpdate.task.creatorDept)) ||
+        (submitter?.department && deptValues.has(submitter.department));
+
+      if (!isManagerAuthorized) {
         return res.status(403).json({
           message:
             "Forbidden: Manajer hanya berwenang menolak update di departemen yang dikelola",
         });
       }
 
-      // Cek apakah departemen memiliki Leader aktif
-      const leaderInfo = await getDepartmentLeaderInfo([taskDept]);
-      const hasLeader = leaderInfo.deptsWithLeader.has(taskDept);
+      // Cek apakah departemen memiliki Leader aktif (untuk task internal biasa)
+      if (!isCrossDept) {
+        const leaderInfo = await getDepartmentLeaderInfo(taskDept ? [taskDept] : []);
+        const hasLeader = taskDept ? leaderInfo.deptsWithLeader.has(taskDept) : false;
 
-      if (hasLeader) {
-        const submitter = await prisma.user.findUnique({
-          where: { id: taskUpdate.submittedBy },
-          select: { role: true },
-        });
-        if (submitter?.role !== "LEADER") {
-          return res.status(403).json({
-            message:
-              "Forbidden: Departemen memiliki Leader, penolakan update dari anggota tim dilakukan oleh Leader",
-          });
+        if (hasLeader) {
+          if (submitter?.role !== "LEADER") {
+            return res.status(403).json({
+              message:
+                "Forbidden: Departemen memiliki Leader, penolakan update dari anggota tim dilakukan oleh Leader",
+            });
+          }
         }
       }
     } else if (role === "LEADER") {
@@ -4093,18 +4160,24 @@ export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
 
       const taskTeamId = taskUpdate.task.initiative?.teamId;
       const isLeaderOfTeam = taskTeamId ? leaderTeamIds.includes(taskTeamId) : false;
+      const isLeaderOfSubmitter = submitter?.teamId ? leaderTeamIds.includes(submitter.teamId) : false;
 
-      if (!isLeaderOfTeam) {
-        const taskDept =
-          taskUpdate.task.initiative?.team?.department ||
-          taskUpdate.task.targetDept ||
-          taskUpdate.task.creatorDept;
-        if (!dbUser?.department || taskDept !== dbUser.department) {
-          return res.status(403).json({
-            message:
-              "Forbidden: Leader hanya berwenang menolak update Task di tim/departemennya",
-          });
-        }
+      const taskDept =
+        taskUpdate.task.initiative?.team?.department ||
+        taskUpdate.task.targetDept ||
+        taskUpdate.task.creatorDept;
+
+      const isLeaderOfDept =
+        (dbUser?.department && taskDept === dbUser.department) ||
+        (dbUser?.department && taskUpdate.task.targetDept === dbUser.department) ||
+        (dbUser?.department && taskUpdate.task.creatorDept === dbUser.department) ||
+        (dbUser?.department && submitter?.department === dbUser.department);
+
+      if (!isLeaderOfTeam && !isLeaderOfSubmitter && !isLeaderOfDept) {
+        return res.status(403).json({
+          message:
+            "Forbidden: Leader hanya berwenang menolak update Task di tim/departemennya",
+        });
       }
     } else if (role === "C_LEVEL") {
       const dbUser = await prisma.user.findUnique({
@@ -4121,7 +4194,12 @@ export async function rejectTaskUpdate(req: AuthRequest, res: Response) {
         if (req.user?.activeDepartment && req.user.activeDepartment !== "STRATEGIC") {
           sponsoredDeptValues.push(req.user.activeDepartment);
         }
-        if (sponsoredDeptValues.length > 0 && taskDept && !sponsoredDeptValues.includes(taskDept)) {
+        const isSupervised =
+          (taskDept && sponsoredDeptValues.includes(taskDept)) ||
+          (taskUpdate.task.targetDept && sponsoredDeptValues.includes(taskUpdate.task.targetDept)) ||
+          (taskUpdate.task.creatorDept && sponsoredDeptValues.includes(taskUpdate.task.creatorDept));
+
+        if (sponsoredDeptValues.length > 0 && !isSupervised) {
           return res.status(403).json({
             message: "Forbidden: C-Level hanya berwenang menolak update di departemen yang disupervisi",
           });
@@ -4311,7 +4389,7 @@ export async function getPendingInitiativeUpdates(
 
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { department: true },
+      select: { department: true, teamId: true },
     });
 
     let deptValues: string[] = [];
@@ -4351,6 +4429,7 @@ export async function getPendingInitiativeUpdates(
 
         taskOrConditions.push({
           task: {
+            NOT: { isCrossDept: true },
             OR: [
               { initiative: { team: { department: { in: deptsWithLeaderArr } } } },
               { targetDept: { in: deptsWithLeaderArr } },
@@ -4370,6 +4449,7 @@ export async function getPendingInitiativeUpdates(
 
         taskOrConditions.push({
           task: {
+            NOT: { isCrossDept: true },
             OR: [
               { initiative: { team: { department: { in: deptsWithoutLeaderArr } } } },
               { targetDept: { in: deptsWithoutLeaderArr } },
@@ -4377,6 +4457,39 @@ export async function getPendingInitiativeUpdates(
             ],
           },
         });
+      }
+
+      // Cross-department tasks: closed card, matching manager's departments
+      if (deptValues.length > 0) {
+        const deptUsers = await prisma.user.findMany({
+          where: { department: { in: deptValues } },
+          select: { id: true },
+        });
+        const deptUserIds = deptUsers.map((u) => u.id);
+
+        const crossDeptTaskOr: any[] = [
+          { initiative: { team: { department: { in: deptValues } } } },
+          { targetDept: { in: deptValues } },
+          { creatorDept: { in: deptValues } },
+        ];
+
+        taskOrConditions.push({
+          task: {
+            isCrossDept: true,
+            kanbanStatus: "CLOSED",
+            OR: crossDeptTaskOr,
+          },
+        });
+
+        if (deptUserIds.length > 0) {
+          taskOrConditions.push({
+            task: {
+              isCrossDept: true,
+              kanbanStatus: "CLOSED",
+            },
+            submittedBy: { in: deptUserIds },
+          });
+        }
       }
 
       if (initiativeOrConditions.length > 0) {
@@ -4392,6 +4505,9 @@ export async function getPendingInitiativeUpdates(
       }
     } else if (role === "LEADER") {
       leadingTeamIds = await getLeaderTeamIds(userId);
+      if (dbUser?.teamId && !leadingTeamIds.includes(dbUser.teamId)) {
+        leadingTeamIds.push(dbUser.teamId);
+      }
 
       const teamMembers = await prisma.user.findMany({
         where: {
@@ -4407,12 +4523,56 @@ export async function getPendingInitiativeUpdates(
       };
       whereClause.submittedBy = { in: teamMemberIds };
 
-      taskWhereClause.task = {
-        initiative: {
-          teamId: { in: leadingTeamIds },
-        },
-      };
-      taskWhereClause.submittedBy = { in: teamMemberIds };
+      const leaderTaskOrConditions: any[] = [];
+
+      // 1. Internal tasks from Leader's teams submitted by team members
+      if (leadingTeamIds.length > 0 && teamMemberIds.length > 0) {
+        leaderTaskOrConditions.push({
+          task: {
+            NOT: { isCrossDept: true },
+            initiative: { teamId: { in: leadingTeamIds } },
+          },
+          submittedBy: { in: teamMemberIds },
+        });
+      }
+
+      // 2. Cross-department tasks (closed) scoped to Leader's department or teams
+      const leaderCrossDeptOr: any[] = [];
+      if (dbUser?.department) {
+        leaderCrossDeptOr.push({ targetDept: dbUser.department });
+        leaderCrossDeptOr.push({ creatorDept: dbUser.department });
+        leaderCrossDeptOr.push({ initiative: { team: { department: dbUser.department } } });
+      }
+      if (leadingTeamIds.length > 0) {
+        leaderCrossDeptOr.push({ initiative: { teamId: { in: leadingTeamIds } } });
+        leaderCrossDeptOr.push({ assignedTeamMember: { teamId: { in: leadingTeamIds } } });
+      }
+
+      if (leaderCrossDeptOr.length > 0) {
+        leaderTaskOrConditions.push({
+          task: {
+            isCrossDept: true,
+            kanbanStatus: "CLOSED",
+            OR: leaderCrossDeptOr,
+          },
+        });
+      }
+
+      if (teamMemberIds.length > 0) {
+        leaderTaskOrConditions.push({
+          task: {
+            isCrossDept: true,
+            kanbanStatus: "CLOSED",
+          },
+          submittedBy: { in: teamMemberIds },
+        });
+      }
+
+      if (leaderTaskOrConditions.length > 0) {
+        taskWhereClause.OR = leaderTaskOrConditions;
+      } else {
+        taskWhereClause.id = "__none__";
+      }
     } else if (role === "C_LEVEL") {
       const cUser = await prisma.user.findUnique({
         where: { id: userId },
@@ -4437,7 +4597,26 @@ export async function getPendingInitiativeUpdates(
           ],
         };
       }
-    } else if (role !== "ADMIN") {
+      taskWhereClause.AND = [
+        ...(taskWhereClause.AND || []),
+        {
+          OR: [
+            { task: { NOT: { isCrossDept: true } } },
+            { task: { isCrossDept: true, kanbanStatus: "CLOSED" } },
+          ],
+        },
+      ];
+    } else if (role === "ADMIN") {
+      taskWhereClause.AND = [
+        ...(taskWhereClause.AND || []),
+        {
+          OR: [
+            { task: { NOT: { isCrossDept: true } } },
+            { task: { isCrossDept: true, kanbanStatus: "CLOSED" } },
+          ],
+        },
+      ];
+    } else {
       return res.status(200).json([]);
     }
 
@@ -4495,7 +4674,9 @@ export async function getPendingInitiativeUpdates(
         id: t.task.initiativeId,
         title: t.task.initiative
           ? `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`
-          : `[TASK] ${t.task.title}`,
+          : (t.task.isCrossDept
+              ? `[TASK] ${t.task.title} (Lintas Dept: ${t.task.creatorDept || "?"} → ${t.task.targetDept || "?"})`
+              : `[TASK] ${t.task.title}`),
         team: t.task.initiative?.team || null,
       },
       oldValue: t.oldValue,
@@ -4511,6 +4692,9 @@ export async function getPendingInitiativeUpdates(
       submitter: userMap.get(t.submittedBy) || null,
       reviewer: t.reviewedBy ? userMap.get(t.reviewedBy) || null : null,
       type: "TASK",
+      isCrossDept: Boolean(t.task.isCrossDept),
+      creatorDept: t.task.creatorDept || null,
+      targetDept: t.task.targetDept || null,
     }));
 
     const combinedUpdates = [
@@ -4538,7 +4722,7 @@ export async function getInitiativeUpdatesHistory(
 
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { department: true },
+      select: { department: true, teamId: true },
     });
 
     let deptValues: string[] = [];
@@ -4565,21 +4749,38 @@ export async function getInitiativeUpdatesHistory(
         team: { department: { in: deptValues } },
       };
       taskWhereClause.task = {
-        initiative: {
-          team: { department: { in: deptValues } },
-        },
+        OR: [
+          { initiative: { team: { department: { in: deptValues } } } },
+          { targetDept: { in: deptValues } },
+          { creatorDept: { in: deptValues } },
+        ],
       };
     } else if (role === "LEADER") {
       leadingTeamIds = await getLeaderTeamIds(userId);
+      if (dbUser?.teamId && !leadingTeamIds.includes(dbUser.teamId)) {
+        leadingTeamIds.push(dbUser.teamId);
+      }
 
       whereClause.initiative = {
         teamId: { in: leadingTeamIds },
       };
-      taskWhereClause.task = {
-        initiative: {
-          teamId: { in: leadingTeamIds },
-        },
-      };
+
+      const leaderTaskHistoryOr: any[] = [];
+      if (leadingTeamIds.length > 0) {
+        leaderTaskHistoryOr.push({ initiative: { teamId: { in: leadingTeamIds } } });
+        leaderTaskHistoryOr.push({ assignedTeamMember: { teamId: { in: leadingTeamIds } } });
+      }
+      if (dbUser?.department) {
+        leaderTaskHistoryOr.push({ targetDept: dbUser.department });
+        leaderTaskHistoryOr.push({ creatorDept: dbUser.department });
+        leaderTaskHistoryOr.push({ initiative: { team: { department: dbUser.department } } });
+      }
+
+      if (leaderTaskHistoryOr.length > 0) {
+        taskWhereClause.task = { OR: leaderTaskHistoryOr };
+      } else {
+        taskWhereClause.id = "__none__";
+      }
     } else if (role === "TEAM") {
       whereClause.submittedBy = userId;
       taskWhereClause.submittedBy = userId;
@@ -4641,7 +4842,9 @@ export async function getInitiativeUpdatesHistory(
         id: t.task.initiativeId,
         title: t.task.initiative
           ? `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`
-          : `[TASK] ${t.task.title}`,
+          : (t.task.isCrossDept
+              ? `[TASK] ${t.task.title} (Lintas Dept: ${t.task.creatorDept || "?"} → ${t.task.targetDept || "?"})`
+              : `[TASK] ${t.task.title}`),
         team: t.task.initiative?.team || null,
       },
       oldValue: t.oldValue,
@@ -4657,6 +4860,9 @@ export async function getInitiativeUpdatesHistory(
       submitter: userMap.get(t.submittedBy) || null,
       reviewer: t.reviewedBy ? userMap.get(t.reviewedBy) || null : null,
       type: "TASK",
+      isCrossDept: Boolean(t.task.isCrossDept),
+      creatorDept: t.task.creatorDept || null,
+      targetDept: t.task.targetDept || null,
     }));
 
     const combinedUpdates = [

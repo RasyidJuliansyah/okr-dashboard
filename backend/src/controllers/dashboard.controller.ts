@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { getDepartmentLeaderInfo } from "./initiative.controller";
+import { getDepartmentLeaderInfo, getLeaderTeamIds } from "./initiative.controller";
 import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
 
 const prisma = new PrismaClient();
@@ -392,6 +392,157 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         });
       }
 
+      const leaderTeamIdsForApproval = await getLeaderTeamIds(userId);
+      if (dbUser?.teamId && !leaderTeamIdsForApproval.includes(dbUser.teamId)) {
+        leaderTeamIdsForApproval.push(dbUser.teamId);
+      }
+      const teamMembers = await prisma.user.findMany({
+        where: {
+          teamId: { in: leaderTeamIdsForApproval },
+          role: "TEAM",
+        },
+        select: { id: true },
+      });
+      const teamMemberIds = teamMembers.map((u) => u.id);
+
+      const pendingInitiativeApprovals =
+        leaderTeamIdsForApproval.length > 0 && teamMemberIds.length > 0
+          ? await prisma.initiativeUpdate.findMany({
+              where: {
+                status: "PENDING_APPROVAL",
+                initiative: { teamId: { in: leaderTeamIdsForApproval } },
+                submittedBy: { in: teamMemberIds },
+              },
+              include: {
+                initiative: {
+                  include: { team: { select: { id: true, name: true } } },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+            })
+          : [];
+
+      const leaderTaskOrConditions: any[] = [];
+      if (leaderTeamIdsForApproval.length > 0 && teamMemberIds.length > 0) {
+        leaderTaskOrConditions.push({
+          task: {
+            NOT: { isCrossDept: true },
+            initiative: { teamId: { in: leaderTeamIdsForApproval } },
+          },
+          submittedBy: { in: teamMemberIds },
+        });
+      }
+      const leaderCrossDeptOr: any[] = [];
+      if (dbUser?.department) {
+        leaderCrossDeptOr.push({ targetDept: dbUser.department });
+        leaderCrossDeptOr.push({ creatorDept: dbUser.department });
+        leaderCrossDeptOr.push({ initiative: { team: { department: dbUser.department } } });
+      }
+      if (leaderTeamIdsForApproval.length > 0) {
+        leaderCrossDeptOr.push({ initiative: { teamId: { in: leaderTeamIdsForApproval } } });
+        leaderCrossDeptOr.push({ assignedTeamMember: { teamId: { in: leaderTeamIdsForApproval } } });
+      }
+      if (leaderCrossDeptOr.length > 0) {
+        leaderTaskOrConditions.push({
+          task: {
+            isCrossDept: true,
+            kanbanStatus: "CLOSED",
+            OR: leaderCrossDeptOr,
+          },
+        });
+      }
+      if (teamMemberIds.length > 0) {
+        leaderTaskOrConditions.push({
+          task: {
+            isCrossDept: true,
+            kanbanStatus: "CLOSED",
+          },
+          submittedBy: { in: teamMemberIds },
+        });
+      }
+
+      const pendingTaskApprovals =
+        leaderTaskOrConditions.length > 0
+          ? await prisma.taskUpdate.findMany({
+              where: {
+                status: "PENDING_APPROVAL",
+                OR: leaderTaskOrConditions,
+              },
+              include: {
+                task: {
+                  include: {
+                    initiative: {
+                      include: { team: { select: { id: true, name: true } } },
+                    },
+                  },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+            })
+          : [];
+
+      const pendingSubmitterIds = new Set<string>();
+      pendingInitiativeApprovals.forEach((u) => {
+        if (u.submittedBy) pendingSubmitterIds.add(u.submittedBy);
+      });
+      pendingTaskApprovals.forEach((t) => {
+        if (t.submittedBy) pendingSubmitterIds.add(t.submittedBy);
+      });
+
+      const submitterUsers =
+        pendingSubmitterIds.size > 0
+          ? await prisma.user.findMany({
+              where: { id: { in: Array.from(pendingSubmitterIds) } },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                position: true,
+                role: true,
+              },
+            })
+          : [];
+      const submitterMap = new Map(submitterUsers.map((u) => [u.id, u]));
+
+      const mappedPendingInitiativeApprovals = pendingInitiativeApprovals.map(
+        (u: any) => ({
+          ...u,
+          submitter: submitterMap.get(u.submittedBy) || null,
+          type: "INITIATIVE",
+        }),
+      );
+
+      const mappedPendingTaskApprovals = pendingTaskApprovals.map((t: any) => ({
+        id: t.id,
+        initiativeId: t.task.initiativeId,
+        initiative: {
+          id: t.task.initiativeId,
+          title: t.task.initiative
+            ? `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`
+            : (t.task.isCrossDept
+                ? `[TASK] ${t.task.title} (Lintas Dept: ${t.task.creatorDept || "?"} → ${t.task.targetDept || "?"})`
+                : `[TASK] ${t.task.title}`),
+          team: t.task.initiative?.team || null,
+        },
+        oldValue: t.oldValue,
+        newValue: t.newValue,
+        note: t.note,
+        link: t.link,
+        status: t.status,
+        submittedBy: t.submittedBy,
+        submitter: submitterMap.get(t.submittedBy) || null,
+        createdAt: t.createdAt,
+        type: "TASK",
+        isCrossDept: Boolean(t.task.isCrossDept),
+        creatorDept: t.task.creatorDept || null,
+        targetDept: t.task.targetDept || null,
+      }));
+
+      const pendingApprovals = [
+        ...mappedPendingInitiativeApprovals,
+        ...mappedPendingTaskApprovals,
+      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
       return res.status(200).json({
         role,
         scope: "leader",
@@ -408,6 +559,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         leadingTeams,
         initiatives,
         keyResults: mappedLeaderKrs.length > 0 ? mappedLeaderKrs : Array.from(leaderKrMap.values()),
+        pendingApprovals,
       });
     }
 
@@ -489,6 +641,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
 
         taskOrConditions.push({
           task: {
+            NOT: { isCrossDept: true },
             OR: [
               { initiative: { team: { department: { in: deptsWithLeaderArr } } } },
               { targetDept: { in: deptsWithLeaderArr } },
@@ -508,6 +661,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
 
         taskOrConditions.push({
           task: {
+            NOT: { isCrossDept: true },
             OR: [
               { initiative: { team: { department: { in: deptsWithoutLeaderArr } } } },
               { targetDept: { in: deptsWithoutLeaderArr } },
@@ -515,6 +669,39 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
             ],
           },
         });
+      }
+
+      // Cross-department tasks: closed card, matching manager's departments
+      if (deptValues.length > 0) {
+        const deptUsers = await prisma.user.findMany({
+          where: { department: { in: deptValues } },
+          select: { id: true },
+        });
+        const deptUserIds = deptUsers.map((u) => u.id);
+
+        const crossDeptTaskOr: any[] = [
+          { initiative: { team: { department: { in: deptValues } } } },
+          { targetDept: { in: deptValues } },
+          { creatorDept: { in: deptValues } },
+        ];
+
+        taskOrConditions.push({
+          task: {
+            isCrossDept: true,
+            kanbanStatus: "CLOSED",
+            OR: crossDeptTaskOr,
+          },
+        });
+
+        if (deptUserIds.length > 0) {
+          taskOrConditions.push({
+            task: {
+              isCrossDept: true,
+              kanbanStatus: "CLOSED",
+            },
+            submittedBy: { in: deptUserIds },
+          });
+        }
       }
 
       // Approval queue: InitiativeUpdate PENDING dari team di dept ini
@@ -591,7 +778,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           id: t.task.initiativeId,
           title: t.task.initiative
             ? `[TASK] ${t.task.title} (Inisiatif: ${t.task.initiative.title})`
-            : `[TASK] ${t.task.title}`,
+            : (t.task.isCrossDept
+                ? `[TASK] ${t.task.title} (Lintas Dept: ${t.task.creatorDept || "?"} → ${t.task.targetDept || "?"})`
+                : `[TASK] ${t.task.title}`),
           team: t.task.initiative?.team || null,
         },
         oldValue: t.oldValue,
@@ -603,6 +792,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         submitter: submitterMap.get(t.submittedBy) || null,
         createdAt: t.createdAt,
         type: "TASK",
+        isCrossDept: Boolean(t.task.isCrossDept),
+        creatorDept: t.task.creatorDept || null,
+        targetDept: t.task.targetDept || null,
       }));
 
       const pendingApprovals = [
