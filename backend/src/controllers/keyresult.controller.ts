@@ -384,6 +384,7 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
       annualKeyResultId,
       targetType,
       objectiveId,
+      isManualOverride,
     } = req.body;
 
     if (!title || targetValue === undefined || !bscPerspective) {
@@ -452,6 +453,9 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
         bscPerspective,
         status: newStatus,
         targetType: targetTypeVal,
+        ...(isManualOverride !== undefined && {
+          isManualOverride: Boolean(isManualOverride),
+        }),
         ...(objectiveId && { objectiveId }),
         ...(month !== undefined && { month: month || null }),
         ...(monthWeight !== undefined && {
@@ -491,6 +495,11 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
       },
     });
 
+    if (isManualOverride === false) {
+      const { cascadeInitiativeToMonthlyKr } = await import("./initiative.controller");
+      await cascadeInitiativeToMonthlyKr(id);
+    }
+
     const finalKR = await prisma.keyResult.findUnique({
       where: { id: updatedKR.id },
     });
@@ -498,6 +507,36 @@ export async function updateKeyResult(req: AuthRequest, res: Response) {
     return res.status(200).json(finalKR || updatedKR);
   } catch (error) {
     console.error("Update key result details error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function recalculateKeyResultProgress(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const kr = await prisma.keyResult.findUnique({ where: { id } });
+    if (!kr) {
+      return res.status(404).json({ message: "Key Result not found" });
+    }
+
+    await prisma.keyResult.update({
+      where: { id },
+      data: { isManualOverride: false },
+    });
+
+    const { cascadeInitiativeToMonthlyKr } = await import("./initiative.controller");
+    await cascadeInitiativeToMonthlyKr(id);
+
+    const updated = await prisma.keyResult.findUnique({
+      where: { id },
+    });
+
+    return res.status(200).json({
+      message: "Key Result progress recalculated successfully",
+      keyResult: updated,
+    });
+  } catch (error) {
+    console.error("Recalculate KR error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

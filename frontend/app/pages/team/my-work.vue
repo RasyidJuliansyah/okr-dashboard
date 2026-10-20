@@ -104,12 +104,20 @@
           >
             Periode Sprint</label
           >
-          <input
+          <select
             v-model="selectedSprintMonth"
-            type="month"
             class="form-input"
             style="width: 100%; font-size: 13px"
-          />
+          >
+            <option value="">Semua Periode Sprint</option>
+            <option
+              v-for="s in allSprintOptions"
+              :key="s.name"
+              :value="s.name"
+            >
+              {{ s.label }}
+            </option>
+          </select>
         </div>
 
         <!-- Reset Button -->
@@ -2383,11 +2391,19 @@
                     "
                     >Bulan Sprint</label
                   >
-                  <input
+                  <select
                     v-model="batchDefaults.sprintMonth"
-                    type="month"
                     class="form-input"
-                  />
+                  >
+                    <option value="">-- Pilih Sprint --</option>
+                    <option
+                      v-for="s in allSprintOptions"
+                      :key="s.name"
+                      :value="s.name"
+                    >
+                      {{ s.label }}
+                    </option>
+                  </select>
                 </div>
                 <div>
                   <label
@@ -2615,11 +2631,19 @@
             "
             >Bulan Sprint</label
           >
-          <input
+          <select
             v-model="editIniForm.sprintMonth"
-            type="month"
             class="form-input"
-          />
+          >
+            <option value="">-- Pilih Sprint --</option>
+            <option
+              v-for="s in allSprintOptions"
+              :key="s.name"
+              :value="s.name"
+            >
+              {{ s.label }}
+            </option>
+          </select>
         </div>
         <div class="modal-actions">
           <button
@@ -2734,11 +2758,19 @@
               "
               >Bulan Sprint</label
             >
-            <input
+            <select
               v-model="editTaskForm.sprintMonth"
-              type="month"
               class="form-input"
-            />
+            >
+              <option value="">-- Pilih Sprint --</option>
+              <option
+                v-for="s in allSprintOptions"
+                :key="s.name"
+                :value="s.name"
+              >
+                {{ s.label }}
+              </option>
+            </select>
           </div>
         </div>
         <div class="modal-actions">
@@ -3094,6 +3126,65 @@ const selectedDepartment = ref("");
 const selectedEmployeeId = ref("");
 const selectedSprintMonth = ref("");
 
+const availableSprints = ref([]);
+
+async function fetchSprints() {
+  try {
+    const res = await fetch(`${API}/sprints`, { headers: getHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      availableSprints.value = Array.isArray(data) ? data : data.sprints || [];
+    }
+  } catch (err) {
+    console.error("Failed to fetch sprints:", err);
+  }
+}
+
+const allSprintOptions = computed(() => {
+  const map = new Map();
+  for (const s of availableSprints.value) {
+    if (s.name) {
+      map.set(s.name, {
+        id: s.id,
+        name: s.name,
+        label: `${s.name}${s.status === "ACTIVE" ? " (Berjalan)" : ""}`,
+      });
+    }
+  }
+  const addFallback = (name) => {
+    if (name && !map.has(name)) {
+      map.set(name, { id: null, name, label: name });
+    }
+  };
+  teamInitiatives.value.forEach((i) => {
+    addFallback(i.sprint?.name || i.sprintMonth);
+    i.tasks?.forEach((t) => addFallback(t.sprint?.name || t.sprintMonth));
+  });
+  taskAssignments.value.forEach((a) => {
+    addFallback(a.task?.sprint?.name || a.task?.sprintMonth);
+    addFallback(a.task?.initiative?.sprint?.name || a.task?.initiative?.sprintMonth);
+  });
+  if (teamMembersWork.value.initiatives) {
+    teamMembersWork.value.initiatives.forEach((i) => {
+      addFallback(i.sprint?.name || i.sprintMonth);
+      i.tasks?.forEach((t) => addFallback(t.sprint?.name || t.sprintMonth));
+    });
+  }
+  if (teamMembersWork.value.taskAssignments) {
+    teamMembersWork.value.taskAssignments.forEach((a) => {
+      addFallback(a.task?.sprint?.name || a.task?.sprintMonth);
+      addFallback(a.task?.initiative?.sprint?.name || a.task?.initiative?.sprintMonth);
+    });
+  }
+  return Array.from(map.values());
+});
+
+const selectedSprintId = computed(() => {
+  if (!selectedSprintMonth.value) return null;
+  const found = availableSprints.value.find((s) => s.name === selectedSprintMonth.value);
+  return found?.id || null;
+});
+
 const allUsers = ref([]);
 
 async function fetchAllUsers() {
@@ -3168,9 +3259,17 @@ const filteredTeamInitiatives = computed(() => {
     }
 
     if (selectedSprintMonth.value) {
-      const matchIniSprint = ini.sprintMonth === selectedSprintMonth.value;
+      const targetName = selectedSprintMonth.value;
+      const targetId = selectedSprintId.value;
+      const matchIniSprint =
+        ini.sprintMonth === targetName ||
+        ini.sprint?.name === targetName ||
+        (targetId && (ini.sprintId === targetId || ini.sprint?.id === targetId));
       const matchTaskSprint = ini.tasks?.some(
-        (t) => t.sprintMonth === selectedSprintMonth.value,
+        (t) =>
+          t.sprintMonth === targetName ||
+          t.sprint?.name === targetName ||
+          (targetId && (t.sprintId === targetId || t.sprint?.id === targetId)),
       );
       if (!matchIniSprint && !matchTaskSprint) return false;
     }
@@ -3213,9 +3312,16 @@ const filteredTaskAssignments = computed(() => {
     }
 
     if (selectedSprintMonth.value) {
-      const matchTaskSprint = task.sprintMonth === selectedSprintMonth.value;
+      const targetName = selectedSprintMonth.value;
+      const targetId = selectedSprintId.value;
+      const matchTaskSprint =
+        task.sprintMonth === targetName ||
+        task.sprint?.name === targetName ||
+        (targetId && (task.sprintId === targetId || task.sprint?.id === targetId));
       const matchIniSprint =
-        task.initiative?.sprintMonth === selectedSprintMonth.value;
+        task.initiative?.sprintMonth === targetName ||
+        task.initiative?.sprint?.name === targetName ||
+        (targetId && (task.initiative?.sprintId === targetId || task.initiative?.sprint?.id === targetId));
       if (!matchTaskSprint && !matchIniSprint) return false;
     }
 
@@ -3260,9 +3366,17 @@ const filteredTeamMembersInitiatives = computed(() => {
     }
 
     if (selectedSprintMonth.value) {
-      const matchIniSprint = ini.sprintMonth === selectedSprintMonth.value;
+      const targetName = selectedSprintMonth.value;
+      const targetId = selectedSprintId.value;
+      const matchIniSprint =
+        ini.sprintMonth === targetName ||
+        ini.sprint?.name === targetName ||
+        (targetId && (ini.sprintId === targetId || ini.sprint?.id === targetId));
       const matchTaskSprint = ini.tasks?.some(
-        (t) => t.sprintMonth === selectedSprintMonth.value,
+        (t) =>
+          t.sprintMonth === targetName ||
+          t.sprint?.name === targetName ||
+          (targetId && (t.sprintId === targetId || t.sprint?.id === targetId)),
       );
       if (!matchIniSprint && !matchTaskSprint) return false;
     }
@@ -3306,9 +3420,16 @@ const filteredTeamMembersTasks = computed(() => {
     }
 
     if (selectedSprintMonth.value) {
-      const matchTaskSprint = task.sprintMonth === selectedSprintMonth.value;
+      const targetName = selectedSprintMonth.value;
+      const targetId = selectedSprintId.value;
+      const matchTaskSprint =
+        task.sprintMonth === targetName ||
+        task.sprint?.name === targetName ||
+        (targetId && (task.sprintId === targetId || task.sprint?.id === targetId));
       const matchIniSprint =
-        task.initiative?.sprintMonth === selectedSprintMonth.value;
+        task.initiative?.sprintMonth === targetName ||
+        task.initiative?.sprint?.name === targetName ||
+        (targetId && (task.initiative?.sprintId === targetId || task.initiative?.sprint?.id === targetId));
       if (!matchTaskSprint && !matchIniSprint) return false;
     }
 
@@ -3326,7 +3447,7 @@ onMounted(async () => {
     router.push("/login");
     return;
   }
-  await Promise.all([fetchMyWork(), fetchAllUsers()]);
+  await Promise.all([fetchMyWork(), fetchAllUsers(), fetchSprints()]);
 });
 
 watch(selectedEmployeeId, () => {
@@ -3375,10 +3496,12 @@ async function updateKanbanStage(item, type, newStatus) {
 
 function openMyWorkAddTaskModal(ini) {
   selectedIniForTask.value = ini;
-  const now = new Date();
+  const activeSprint = availableSprints.value.find((s) => s.status === "ACTIVE");
   const defaultSprint =
+    ini.sprint?.name ||
     ini.sprintMonth ||
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    activeSprint?.name ||
+    (availableSprints.value[0]?.name || "");
 
   batchDefaults.value = {
     targetValue: 100,
@@ -3499,12 +3622,19 @@ async function saveMyWorkTasksBatch() {
   saving.value = true;
   modalError.value = "";
   try {
+    const tasksPayload = validTasks.map((r) => {
+      const matched = availableSprints.value.find((s) => s.name === r.sprintMonth);
+      return {
+        ...r,
+        sprintId: matched?.id || selectedIniForTask.value?.sprintId || undefined,
+      };
+    });
     const res = await fetch(
       `${API}/initiatives/${selectedIniForTask.value.id}/tasks/batch`,
       {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ tasks: validTasks }),
+        body: JSON.stringify({ tasks: tasksPayload }),
       },
     );
     if (!res.ok) {
@@ -3781,7 +3911,7 @@ function openEditTaskModal(task) {
     targetType: task.targetType || "AT_LEAST",
     assignedTeamMemberId:
       task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
-    sprintMonth: task.sprintMonth || "",
+    sprintMonth: task.sprint?.name || task.sprintMonth || "",
     description: task.description || "",
   };
   modalError.value = "";
@@ -3797,6 +3927,11 @@ async function submitEditTask() {
   saving.value = true;
   modalError.value = "";
   try {
+    const matchedSprint = availableSprints.value.find(
+      (s) => s.name === editTaskForm.value.sprintMonth,
+    );
+    const sprintId =
+      matchedSprint?.id || editingTaskData.value.sprintId || undefined;
     const cleanId = String(editingTaskData.value.id).replace(/^task-/, "");
     const res = await fetch(`${API}/initiatives/tasks/${cleanId}`, {
       method: "PUT",
@@ -3809,6 +3944,7 @@ async function submitEditTask() {
         assignedTeamMemberId:
           editTaskForm.value.assignedTeamMemberId || undefined,
         sprintMonth: editTaskForm.value.sprintMonth || undefined,
+        sprintId: sprintId,
         description: editTaskForm.value.description,
       }),
     });

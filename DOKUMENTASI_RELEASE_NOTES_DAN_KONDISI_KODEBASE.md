@@ -98,6 +98,26 @@ Berikut adalah rekapitulasi riwayat rilis dan pembaruan fitur berdasarkan git hi
 - **Desain UI Ringkas & Collapsible Section**:
   - Penambahan kapabilitas **Expand / Collapse** pada section _Inisiatif Saya_ dan _Inisiatif Tim_ di Pekerjaan Saya dengan indikator panah toggle (▼ / ▶) dan counter badge. Default berstatus **Tertutup (Collapsed)** saat halaman dimuat untuk kerapian dan kenyamanan navigasi.
 
+### 📦 Release 1.6: Tata Kelola Metrik BAU, Perbaikan Auto-Cascade KR, dan Sprint Dropdown DB-Backed (20 Oktober 2026)
+
+- **Tata Kelola & Panduan Metrik BAU (Business as Usual: Output vs Outcome)**:
+  - **Diferensiasi Karakteristik Metrik**:
+    - **Metrik BAU / Penjagaan Standar (Outcome)**: Key Result dengan target minimal (`AT_LEAST` / `≥`) seperti SLA layanan $\ge 90\%$, Uptime $\ge 99\%$, Adopsi Sistem $\ge 90\%$, atau Kepuasan Pelanggan $\ge 82\%$. Nilai capaian metrik ini mengukur status operasional riil di lapangan.
+    - **Tugas Penjagaan / Task Eksekusi (Output)**: Task/inisiatif di bawah BAU (misal: checklist monitoring harian, review bug, audit server) merupakan aktivitas preventif/kuratif. Selesainya task (100% output) adalah sarana penjagaan standar, bukan otomatis mewakili angka outcome riil.
+  - **Logika Perhitungan Target Tipe Minimal vs Maksimal vs Tepat**:
+    - **Minimal (`AT_LEAST` / `≥`)**: Progress dihitung proporsional dari rentang $\frac{\text{current} - \text{baseline}}{\text{target} - \text{baseline}} \times 100\%$. Membutuhkan input metrik capaian agar angka bergerak.
+    - **Maksimal (`AT_MOST` / `≤`)**: Selama $\text{current} \le \text{target}$, progress bernilai 100% (penalti deviasi hanya berlaku jika melebihi batas target).
+    - **Tepat (`EXACT` / `=`)**: Dihitung dari deviasi selisih absolut terhadap nilai target.
+- **Perbaikan Isu Kuncian Auto-Cascade (`isManualOverride`)**:
+  - **Penyebab Terkunci**: Key Result yang pernah diubah nilainya secara manual terkunci dengan flag `isManualOverride = true`. Ketika inisiatif atau task di bawahnya dikerjakan hingga 70%-100%, sistem mengabaikan perhitungan (*silent skip*) sehingga angka KR membeku di 0%.
+  - **Solusi Otomatisasi Cascade**:
+    - Modifikasi fungsi `cascadeInitiativeToMonthlyKr`: Apabila KR memiliki inisiatif aktif, sistem secara otomatis membuka kuncian `isManualOverride` menjadi `false` dan menyinkronkan progress inisiatif/task ke KR dan Annual BSC.
+    - Endpoint baru `POST /api/key-results/:id/recalculate` untuk memicu rekalkulasi on-demand dan sinkronisasi instan kapan saja.
+    - Normalisasi bobot inisiatif (`weight = 0` menjadi `weight = 1.0`) agar seluruh inisiatif aktif berkontribusi terhadap capaian KR induknya.
+- **Dukungan Dropdown Sprint Berbasis Database (`sprintId`)**:
+  - Penggantian filter bulan kalender statis pada menu *Pekerjaan Saya* (`my-work.vue`) dengan pilihan Sprint dinamis dari relasi database (`Sprint`).
+  - Pembuatan dan pembaruan Task kini terhubung langsung dengan `sprintId` dan `sprintMonth` aktif.
+
 ---
 
 ## 4. Matriks Kemampuan Otorisasi (RBAC Current State)

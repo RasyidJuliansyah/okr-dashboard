@@ -11,6 +11,7 @@ import {
   getKrsForInitiativeDropdown,
   bulkDeleteKeyResults,
   delegateKeyResult,
+  recalculateKeyResultProgress,
 } from "../controllers/keyresult.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
@@ -38,6 +39,12 @@ router.patch(
   authMiddleware,
   roleGuard(["ADMIN", "LEADER", "MANAGER"]),
   updateKeyResultProgress,
+);
+router.post(
+  "/:id/recalculate",
+  authMiddleware,
+  roleGuard(["ADMIN", "LEADER", "MANAGER"]),
+  recalculateKeyResultProgress,
 );
 
 // History — Semua role yang terotentikasi dapat melihat history

@@ -89,7 +89,11 @@ export async function createCrossDeptTask(req: AuthRequest, res: Response) {
       fallbackToActive: true,
     });
     const finalSprintId = req.body.sprintId || matchedSprint?.id || null;
-    const finalSprintMonth = finalSprintId || req.body.sprintMonth || matchedSprint?.name || null;
+    let finalSprintMonth = req.body.sprintMonth || matchedSprint?.name || null;
+    if (!finalSprintMonth && finalSprintId) {
+      const sp = await prisma.sprint.findUnique({ where: { id: finalSprintId } });
+      if (sp) finalSprintMonth = sp.name;
+    }
 
     const task = await prisma.task.create({
       data: {

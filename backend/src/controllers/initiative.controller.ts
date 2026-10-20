@@ -507,6 +507,13 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
 
         // Filter per sprintId atau sprintMonth jika ada
         const filteredInitiatives = ownedInitiatives.filter((init) => {
+          if (sprintId && sprintMonth) {
+            return (
+              init.sprintId === sprintId ||
+              init.sprintMonth === sprintMonth ||
+              (targetSprint && init.sprintMonth === targetSprint.name)
+            );
+          }
           if (sprintId) {
             return init.sprintId === sprintId || (targetSprint && init.sprintMonth === targetSprint.name);
           }
@@ -514,19 +521,31 @@ export async function getMemberProgress(req: AuthRequest, res: Response) {
         });
 
         const filteredTasks = assignedTasks.filter((t) => {
-          if (sprintId) {
+          const taskSprint = t.sprintMonth || t.initiative?.sprintMonth;
+          const taskSprintId = t.sprintId || t.initiative?.sprintId;
+          if (sprintId && sprintMonth) {
             return (
-              t.sprintId === sprintId ||
+              taskSprintId === sprintId ||
+              taskSprint === sprintMonth ||
               (targetSprint && (
-                t.sprintMonth === targetSprint.name ||
-                t.initiative?.sprintMonth === targetSprint.name ||
+                taskSprint === targetSprint.name ||
                 (t.finishDate && targetSprint.startDate && targetSprint.endDate &&
                   new Date(t.finishDate) >= new Date(targetSprint.startDate) &&
                   new Date(t.finishDate) <= new Date(targetSprint.endDate))
               ))
             );
           }
-          const taskSprint = t.sprintMonth || t.initiative?.sprintMonth;
+          if (sprintId) {
+            return (
+              taskSprintId === sprintId ||
+              (targetSprint && (
+                taskSprint === targetSprint.name ||
+                (t.finishDate && targetSprint.startDate && targetSprint.endDate &&
+                  new Date(t.finishDate) >= new Date(targetSprint.startDate) &&
+                  new Date(t.finishDate) <= new Date(targetSprint.endDate))
+              ))
+            );
+          }
           return sprintMonth ? taskSprint === sprintMonth : true;
         });
 
@@ -885,22 +904,40 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       req.query;
     const { role, id: userId } = req.user!;
 
-    let where: any = { isActive: true };
-    if (krId) where.keyResultId = krId as string;
-    if (kanbanStatus) where.kanbanStatus = kanbanStatus as string;
-    if (sprintId) {
-      where.sprintId = sprintId as string;
+    const andConditions: any[] = [{ isActive: true }];
+    if (krId) andConditions.push({ keyResultId: krId as string });
+    if (kanbanStatus) andConditions.push({ kanbanStatus: kanbanStatus as string });
+    if (sprintId && sprintMonth) {
+      andConditions.push({
+        OR: [
+          { sprintId: sprintId as string },
+          { sprintMonth: sprintMonth as string },
+          { sprint: { name: sprintMonth as string } },
+          { sprint: { id: sprintId as string } },
+        ],
+      });
+    } else if (sprintId) {
+      andConditions.push({
+        OR: [
+          { sprintId: sprintId as string },
+          { sprint: { id: sprintId as string } },
+        ],
+      });
     } else if (sprintMonth) {
-      where.OR = [
-        { sprintMonth: sprintMonth as string },
-        { sprint: { name: sprintMonth as string } },
-      ];
+      andConditions.push({
+        OR: [
+          { sprintMonth: sprintMonth as string },
+          { sprint: { name: sprintMonth as string } },
+        ],
+      });
     }
 
     // 1. TEAM (T): hanya melihat inisiatif milik sendiri + inisiatif yang di-assign khusus padanya (bukan inisiatif induk Leader)
     if (role === "TEAM") {
-      where.OR = [{ ownerId: userId }, { assignedLeaderId: userId }];
-      if (teamId) where.teamId = teamId as string;
+      andConditions.push({
+        OR: [{ ownerId: userId }, { assignedLeaderId: userId }],
+      });
+      if (teamId) andConditions.push({ teamId: teamId as string });
     }
 
     // 2. LEADER (P): melihat card miliknya sendiri + semua card anggota tim di bawahnya
@@ -909,15 +946,14 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       const teamIds = leaderTeamIds;
 
       if (ownerId) {
-        // Filter spesifik pegawai di bawahnya / dirinya
-        where.ownerId = ownerId as string;
-        where.OR = [{ teamId: { in: teamIds } }, { ownerId: userId }];
-      } else {
-        where.OR = [{ teamId: { in: teamIds } }, { ownerId: userId }];
+        andConditions.push({ ownerId: ownerId as string });
       }
+      andConditions.push({
+        OR: [{ teamId: { in: teamIds } }, { ownerId: userId }],
+      });
 
       if (teamId && teamIds.includes(teamId as string)) {
-        where.teamId = teamId as string;
+        andConditions.push({ teamId: teamId as string });
       }
     }
 
@@ -950,14 +986,14 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       if (dbUser?.teamId) teamIdSet.add(dbUser.teamId);
       const teamIds = Array.from(teamIdSet);
 
-      where.teamId = { in: teamIds };
+      andConditions.push({ teamId: { in: teamIds } });
 
       if (ownerId) {
-        where.ownerId = ownerId as string;
+        andConditions.push({ ownerId: ownerId as string });
       }
 
       if (teamId && teamIds.includes(teamId as string)) {
-        where.teamId = teamId as string;
+        andConditions.push({ teamId: teamId as string });
       }
     }
 
@@ -994,15 +1030,19 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
         if (mgrUser?.teamId) teamIdSet.add(mgrUser.teamId);
         const teamIds = Array.from(teamIdSet);
 
-        where.OR = [
-          { teamId: { in: teamIds } },
-          { ownerId: managerId as string },
-          { owner: { department: { in: Array.from(deptValues) } } },
-        ];
+        andConditions.push({
+          OR: [
+            { teamId: { in: teamIds } },
+            { ownerId: managerId as string },
+            { owner: { department: { in: Array.from(deptValues) } } },
+          ],
+        });
       }
-      if (teamId) where.teamId = teamId as string;
-      if (ownerId) where.ownerId = ownerId as string;
+      if (teamId) andConditions.push({ teamId: teamId as string });
+      if (ownerId) andConditions.push({ ownerId: ownerId as string });
     }
+
+    const where = { AND: andConditions };
 
     let initiatives = await prisma.initiative.findMany({
       where,
@@ -1052,11 +1092,26 @@ export async function getInitiatives(req: AuthRequest, res: Response) {
       ],
       AND: [],
     };
-    if (sprintId) {
+    if (sprintId && sprintMonth) {
       taskWhere.AND.push({
         OR: [
           { sprintId: sprintId as string },
           { initiative: { sprintId: sprintId as string } },
+          { sprintMonth: sprintMonth as string },
+          { initiative: { sprintMonth: sprintMonth as string } },
+          { sprint: { name: sprintMonth as string } },
+          { initiative: { sprint: { name: sprintMonth as string } } },
+          { sprint: { id: sprintId as string } },
+          { initiative: { sprint: { id: sprintId as string } } },
+        ],
+      });
+    } else if (sprintId) {
+      taskWhere.AND.push({
+        OR: [
+          { sprintId: sprintId as string },
+          { initiative: { sprintId: sprintId as string } },
+          { sprint: { id: sprintId as string } },
+          { initiative: { sprint: { id: sprintId as string } } },
         ],
       });
     } else if (sprintMonth) {
@@ -2245,8 +2300,10 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           keyResult: { include: { objective: true, departments: true } },
           team: true,
           owner: { select: { id: true, name: true } },
+          sprint: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
         },
       },
+      sprint: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
       creator: {
         select: { id: true, name: true, department: true, role: true },
       },
@@ -2402,6 +2459,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         keyResult: { include: { objective: true, departments: true } },
         team: true,
         owner: { select: { id: true, name: true } },
+        sprint: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
         kpis: {
           include: {
             kpi: true,
@@ -2410,6 +2468,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
         tasks: {
           where: { isActive: true },
           include: {
+            sprint: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
             assignments: {
               include: { user: { select: { id: true, name: true } } },
             },
@@ -2525,6 +2584,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           keyResult: { include: { objective: true, departments: true } },
           team: true,
           owner: { select: { id: true, name: true } },
+          sprint: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
           kpis: {
             include: {
               kpi: true,
@@ -2533,6 +2593,7 @@ export async function getMyWork(req: AuthRequest, res: Response) {
           tasks: {
             where: { isActive: true },
             include: {
+              sprint: { select: { id: true, name: true, status: true, startDate: true, endDate: true } },
               assignments: {
                 include: { user: { select: { id: true, name: true } } },
               },
@@ -3648,17 +3709,20 @@ export async function cascadeInitiativeToMonthlyKr(
   });
   if (!kr) return;
 
-  // Jika di-override secara manual oleh Leader, skip sinkronisasi otomatis dari Initiative
-  if (kr.isManualOverride) {
-    return;
-  }
-
   const allInitiatives = await prisma.initiative.findMany({
     where: { keyResultId, isActive: true },
     include: { tasks: { where: { isActive: true } } },
   });
 
   if (allInitiatives.length === 0 || kr.targetValue <= 0) return;
+
+  // Jika KR memiliki inisiatif aktif dan sebelumnya terkunci manual override, buka kunciannya otomatis
+  if (kr.isManualOverride) {
+    await prisma.keyResult.update({
+      where: { id: keyResultId },
+      data: { isManualOverride: false },
+    });
+  }
 
   const isPercentUnit = !kr.unit || kr.unit.trim() === "%";
 
