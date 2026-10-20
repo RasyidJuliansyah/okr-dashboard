@@ -1494,6 +1494,7 @@ function openInitiativeModal(kr) {
     assigneeIds: [],
     targetValue: 100,
     unit: "%",
+    targetType: "AT_LEAST",
     keyResultId: kr?.id || "",
     sprintMonth: getCurrentRunningSprintMonth(),
     kpis: [],
@@ -1522,6 +1523,7 @@ function openCreateTaskModal(ini, kr) {
     sprintMonth: getResolvedSprintMonth(ini.sprintMonth),
     targetValue: 100,
     unit: "%",
+    targetType: "AT_LEAST",
     kpis: [],
   };
   modalError.value = "";
@@ -1544,6 +1546,7 @@ function startEditInitiative(ini, kr) {
     assigneeIds: [],
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "%",
+    targetType: ini.targetType || "AT_LEAST",
     keyResultId: ini.keyResultId || kr?.id || "",
     sprintMonth: getResolvedSprintMonth(ini.sprintMonth),
     kpis: ini.kpis
@@ -1581,6 +1584,7 @@ function startEditTask(task, ini, kr) {
     sprintMonth: getResolvedSprintMonth(task.sprintMonth || ini.sprintMonth),
     targetValue: task.targetValue || 0,
     unit: task.unit || "%",
+    targetType: task.targetType || "AT_LEAST",
     kpis: task.kpis
       ? task.kpis.map((tk) => ({
           kpiId: tk.kpiId,
@@ -1696,6 +1700,7 @@ async function saveInitiative() {
             title: form.value.title,
             targetValue: form.value.targetValue || 0,
             unit: form.value.unit,
+            targetType: form.value.targetType || "AT_LEAST",
             assigneeId: rawAssignees[0],
             assigneeIds: rawAssignees,
             assignedTeamMemberId: rawAssignees[0],
@@ -1749,6 +1754,7 @@ async function saveInitiative() {
             title: form.value.title,
             targetValue: form.value.targetValue || 0,
             unit: form.value.unit,
+            targetType: form.value.targetType || "AT_LEAST",
             sprintMonth: form.value.sprintMonth || null,
             kpis: form.value.kpis || [],
           }),

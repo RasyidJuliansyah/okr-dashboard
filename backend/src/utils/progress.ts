@@ -12,12 +12,19 @@ export function calculateProgressPercent(
   targetType?: string | null,
   baseline?: number | null
 ): number {
-  if (target === null || target === undefined || isNaN(target)) return 0;
-  const curr = current || 0;
-  const tgt = target;
-  const base = baseline || 0;
+  if (target === null || target === undefined || isNaN(Number(target))) return 0;
+  const curr = Number(current || 0);
+  const tgt = Number(target);
+  const base = Number(baseline || 0);
   const rawType = (targetType || "AT_LEAST").toUpperCase();
-  const type = rawType === "MAXIMUM" ? "AT_MOST" : rawType === "MINIMUM" ? "AT_LEAST" : rawType;
+  const type =
+    rawType === "MAXIMUM" || rawType === "≤" || rawType === "<="
+      ? "AT_MOST"
+      : rawType === "MINIMUM" || rawType === "≥" || rawType === ">="
+      ? "AT_LEAST"
+      : rawType === "="
+      ? "EXACT"
+      : rawType;
 
   if (type === "AT_MOST") {
     if (tgt <= 0) {

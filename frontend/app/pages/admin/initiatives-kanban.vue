@@ -723,6 +723,7 @@
             <UnitTargetInput
               v-model:targetValue="initiativeForm.targetValue"
               v-model:unit="initiativeForm.unit"
+              v-model:targetType="initiativeForm.targetType"
               :required="true"
             />
 
@@ -783,6 +784,7 @@
             <UnitTargetInput
               v-model:targetValue="taskForm.targetValue"
               v-model:unit="taskForm.unit"
+              v-model:targetType="taskForm.targetType"
               :required="true"
             />
           </div>
@@ -889,7 +891,7 @@ const filteredUsers = computed(() => {
 // Task modal state
 const showTaskModal = ref(false);
 const selectedInitiativeForTask = ref<any>(null);
-const taskForm = ref({ title: "", targetValue: 0, unit: "" });
+const taskForm = ref({ title: "", targetValue: 0, unit: "", targetType: "AT_LEAST" });
 
 // ─── Filtered Lists per Kanban Column ───
 const filteredInitiatives = computed(() => {
@@ -1039,6 +1041,7 @@ function openAddInitiativeModal() {
     ownerId: "",
     targetValue: 0,
     unit: "",
+    targetType: "AT_LEAST",
     kanbanStatus: "TODO",
     weight: 1.0,
   };
@@ -1058,6 +1061,7 @@ function openEditInitiativeModal(ini: any) {
     ownerId: ini.ownerId || "",
     targetValue: ini.targetValue || 0,
     unit: ini.unit || "",
+    targetType: ini.targetType || "AT_LEAST",
     kanbanStatus: ini.kanbanStatus || "TODO",
     weight: ini.weight !== undefined ? ini.weight : 1.0,
   };
@@ -1213,7 +1217,7 @@ async function deleteInitiative(id: string) {
 
 function openAddTaskModal(ini: any) {
   selectedInitiativeForTask.value = ini;
-  taskForm.value = { title: "", targetValue: 0, unit: "" };
+  taskForm.value = { title: "", targetValue: 0, unit: "", targetType: "AT_LEAST" };
   showTaskModal.value = true;
 }
 

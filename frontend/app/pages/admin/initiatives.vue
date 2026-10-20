@@ -259,6 +259,7 @@
           <UnitTargetInput
             v-model:targetValue="initiativeForm.targetValue"
             v-model:unit="initiativeForm.unit"
+            v-model:targetType="initiativeForm.targetType"
             :required="true"
           />
           <div class="modal-actions">
@@ -301,6 +302,7 @@
           <UnitTargetInput
             v-model:targetValue="taskForm.targetValue"
             v-model:unit="taskForm.unit"
+            v-model:targetType="taskForm.targetType"
             :required="true"
           />
           <div class="modal-actions">
@@ -481,6 +483,7 @@ function openAddInitiativeModal() {
     ownerId: "",
     targetValue: 0,
     unit: "",
+    targetType: "AT_LEAST",
   };
   errorMessage.value = "";
   showInitiativeModal.value = true;
@@ -498,6 +501,7 @@ function openEditInitiativeModal(ini: any) {
     ownerId: ini.ownerId || "",
     targetValue: ini.targetValue,
     unit: ini.unit || "",
+    targetType: ini.targetType || "AT_LEAST",
   };
   errorMessage.value = "";
   showInitiativeModal.value = true;
@@ -586,7 +590,7 @@ async function deleteInitiative(id: string) {
 function openAddTaskModal(initiative: any) {
   editingTask.value = null;
   selectedInitiativeForTask.value = initiative;
-  taskForm.value = { title: "", targetValue: 0, unit: "" };
+  taskForm.value = { title: "", targetValue: 0, unit: "", targetType: "AT_LEAST" };
   errorMessage.value = "";
   showTaskModal.value = true;
 }
@@ -597,6 +601,7 @@ function openEditTaskModal(task: any) {
     title: task.title,
     targetValue: task.targetValue,
     unit: task.unit || "",
+    targetType: task.targetType || "AT_LEAST",
   };
   showTaskModal.value = true;
 }

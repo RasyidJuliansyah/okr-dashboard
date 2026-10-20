@@ -126,7 +126,14 @@ export function calculateProgressPercent(
   const tgt = Number(target);
   const base = Number(baseline || 0);
   const rawType = (targetType || "AT_LEAST").toUpperCase();
-  const type = rawType === "MAXIMUM" ? "AT_MOST" : rawType === "MINIMUM" ? "AT_LEAST" : rawType;
+  const type =
+    rawType === "MAXIMUM" || rawType === "≤" || rawType === "<="
+      ? "AT_MOST"
+      : rawType === "MINIMUM" || rawType === "≥" || rawType === ">="
+      ? "AT_LEAST"
+      : rawType === "="
+      ? "EXACT"
+      : rawType;
 
   if (type === "AT_MOST") {
     if (tgt <= 0) return curr <= 0 ? 100 : 0;

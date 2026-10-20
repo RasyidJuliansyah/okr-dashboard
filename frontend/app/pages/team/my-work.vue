@@ -927,7 +927,12 @@
               <span
                 >Target:
                 <strong>{{
-                  formatTargetValue(assign.task.targetValue, assign.task.unit)
+                  formatTargetValue(
+                    assign.task.targetValue,
+                    assign.task.unit,
+                    "",
+                    assign.task.targetType
+                  )
                 }}</strong></span
               >
             </div>
@@ -1827,10 +1832,14 @@
                       >
                       <span
                         >Target:
-                        <strong
-                          >{{ assign.task.targetValue }}
-                          {{ assign.task.unit }}</strong
-                        ></span
+                        <strong>{{
+                          formatTargetValue(
+                            assign.task.targetValue,
+                            assign.task.unit,
+                            "",
+                            assign.task.targetType
+                          )
+                        }}</strong></span
                       >
                     </div>
                     <div class="progress-bar-container">
@@ -2591,6 +2600,7 @@
         <UnitTargetInput
           v-model:targetValue="editIniForm.targetValue"
           v-model:unit="editIniForm.unit"
+          v-model:targetType="editIniForm.targetType"
           labelTarget="Target Value"
           labelUnit="Satuan (Unit)"
           :required="true"
@@ -2685,6 +2695,7 @@
         <UnitTargetInput
           v-model:targetValue="editTaskForm.targetValue"
           v-model:unit="editTaskForm.unit"
+          v-model:targetType="editTaskForm.targetType"
           labelTarget="Target Value"
           labelUnit="Satuan (Unit)"
           :required="true"
@@ -3371,6 +3382,7 @@ function openMyWorkAddTaskModal(ini) {
 
   batchDefaults.value = {
     targetValue: 100,
+    targetType: "AT_LEAST",
     unit: "%",
     sprintMonth: defaultSprint,
     assignedTeamMemberId: authStore.user?.id || "",
@@ -3415,6 +3427,7 @@ function removeTaskRow(index) {
 function applyDefaultsToAllRows() {
   taskRows.value.forEach((r) => {
     r.targetValue = batchDefaults.value.targetValue;
+    r.targetType = batchDefaults.value.targetType || "AT_LEAST";
     r.unit = batchDefaults.value.unit;
     r._unitCategory = detectUnitCategory(batchDefaults.value.unit);
     r.sprintMonth = batchDefaults.value.sprintMonth;
@@ -3741,6 +3754,7 @@ const editTaskForm = ref({
   title: "",
   targetValue: 100,
   unit: "%",
+  targetType: "AT_LEAST",
   assignedTeamMemberId: "",
   sprintMonth: "",
   description: "",
@@ -3752,6 +3766,7 @@ const editIniForm = ref({
   title: "",
   targetValue: 100,
   unit: "%",
+  targetType: "AT_LEAST",
   sprintMonth: "",
   description: "",
 });
@@ -3763,6 +3778,7 @@ function openEditTaskModal(task) {
     title: task.title || "",
     targetValue: task.targetValue ?? 100,
     unit: task.unit || "%",
+    targetType: task.targetType || "AT_LEAST",
     assignedTeamMemberId:
       task.assignedTeamMemberId || task.assignments?.[0]?.userId || "",
     sprintMonth: task.sprintMonth || "",
@@ -3789,6 +3805,7 @@ async function submitEditTask() {
         title: editTaskForm.value.title.trim(),
         targetValue: editTaskForm.value.targetValue,
         unit: editTaskForm.value.unit,
+        targetType: editTaskForm.value.targetType || "AT_LEAST",
         assignedTeamMemberId:
           editTaskForm.value.assignedTeamMemberId || undefined,
         sprintMonth: editTaskForm.value.sprintMonth || undefined,
@@ -3817,6 +3834,7 @@ function openEditIniModal(ini) {
     title: ini.title || "",
     targetValue: ini.targetValue ?? 100,
     unit: ini.unit || "%",
+    targetType: ini.targetType || "AT_LEAST",
     sprintMonth: ini.sprintMonth || "",
     description: ini.description || "",
   };
@@ -3841,6 +3859,7 @@ async function submitEditIni() {
         title: editIniForm.value.title.trim(),
         targetValue: editIniForm.value.targetValue,
         unit: editIniForm.value.unit,
+        targetType: editIniForm.value.targetType || "AT_LEAST",
         sprintMonth: editIniForm.value.sprintMonth || undefined,
         description: editIniForm.value.description,
       }),

@@ -7,6 +7,9 @@ assert.strictEqual(calculateProgressPercent(120, 100, "AT_LEAST"), 100);
 assert.strictEqual(calculateProgressPercent(0, 100, "AT_LEAST"), 0);
 
 // AT_MOST
+assert.strictEqual(calculateProgressPercent(1, 5, "AT_MOST"), 100);
+assert.strictEqual(calculateProgressPercent(1, 5, "≤"), 100);
+assert.strictEqual(calculateProgressPercent(1, 5, "<="), 100);
 assert.strictEqual(calculateProgressPercent(800, 1000, "AT_MOST"), 100);
 assert.strictEqual(calculateProgressPercent(1000, 1000, "AT_MOST"), 100);
 assert.strictEqual(calculateProgressPercent(1200, 1000, "AT_MOST"), 80);
