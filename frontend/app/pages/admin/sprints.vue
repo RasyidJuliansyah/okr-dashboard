@@ -216,40 +216,98 @@
 
       <!-- Close & Rollover Sprint Modal -->
       <div v-if="showCloseModal" class="modal-backdrop">
-        <div class="modal-card">
+        <div class="modal-card modal-card-lg">
           <h3 style="margin-bottom: 8px;">Tutup & Rollover Sprint</h3>
-          <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
-            Anda akan menutup sprint <strong>{{ sprintToClose?.name }}</strong>. Capaian member akan dibekukan, target KR diakumulasikan, dan sprint berikutnya akan diaktifkan.
+          <p style="color: #64748b; font-size: 13.5px; margin-bottom: 12px;">
+            Menutup sprint <strong>{{ sprintToClose?.name }}</strong>. Capaian member dibekukan ke snapshot, target KR diakumulasikan, dan sprint baru diaktifkan.
           </p>
 
-          <div style="background: var(--bg-page, #f8fafc); border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 20px;">
-            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
-              <input
-                v-model="rolloverUnfinishedTasks"
-                type="checkbox"
-                style="margin-top: 3px; accent-color: #0284c7; width: 16px; height: 16px;"
-              />
-              <span style="font-size: 13.5px; color: #1e293b; line-height: 1.4;">
-                <strong>Rollover task & inisiatif belum selesai ke sprint baru</strong>
-                <br />
-                <span style="color: #64748b; font-size: 12.5px;">
-                  Baseline otomatis diisi nilai terakhir sehingga capaian sprint baru me-reset dari 0%, sementara capaian KR tetap berjalan akumulatif.
-                </span>
-              </span>
-            </label>
+          <div v-if="loadingPending" class="loading-state" style="padding: 1.5rem;">
+            Memuat daftar inisiatif & task belum selesai...
           </div>
 
-          <div class="modal-actions">
-            <button class="secondary-btn" :disabled="closingSprintId !== null" @click="showCloseModal = false">
-              Batal
-            </button>
-            <button
-              class="danger-btn"
-              :disabled="closingSprintId !== null"
-              @click="handleExecuteCloseSprint"
-            >
-              {{ closingSprintId ? "Memproses..." : "Konfirmasi Tutup Sprint" }}
-            </button>
+          <div v-else>
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;">
+              <span>Sprint Ditutup: <strong>{{ sprintToClose?.name }}</strong></span> →
+              <span>Sprint Tujuan: <strong style="color: #1d4ed8;">{{ pendingData?.nextSprint ? pendingData.nextSprint.name : '(Belum Ada)' }}</strong></span>
+            </div>
+
+            <div style="background: var(--bg-page, #f8fafc); border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.4; color: #334155;">
+              <strong>Aturan Rollover:</strong><br />
+              • <strong>Dicentang</strong>: Carry over ke <strong>{{ pendingData?.nextSprint?.name || 'sprint baru' }}</strong>.<br />
+              • <strong>Tidak Dicentang</strong>: Auto-<strong>DONE</strong> di <strong>{{ sprintToClose?.name }}</strong> (capaian riil tetap utuh).
+            </div>
+
+            <!-- Pending Initiatives Selection -->
+            <div style="margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-size: 12.5px; font-weight: 700; color: #1e293b;">
+                  Inisiatif Belum Selesai ({{ pendingData?.initiatives?.length || 0 }})
+                </label>
+                <button
+                  v-if="pendingData?.initiatives?.length > 0"
+                  type="button"
+                  @click="toggleAllInitiatives"
+                  style="font-size: 11px; color: #0284c7; background: none; border: none; cursor: pointer; text-decoration: underline;"
+                >
+                  {{ areAllInitiativesSelected ? 'Batal Semua' : 'Pilih Semua' }}
+                </button>
+              </div>
+
+              <div v-if="!pendingData?.initiatives || pendingData.initiatives.length === 0" style="font-size: 12px; color: #64748b; font-style: italic; padding: 6px 10px; background: #f8fafc; border-radius: 6px;">
+                Semua inisiatif pada sprint ini sudah berstatus DONE/DROP.
+              </div>
+              <div v-else style="max-height: 130px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; display: flex; flex-direction: column; gap: 4px;">
+                <label v-for="ini in pendingData.initiatives" :key="ini.id" style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; padding: 3px 4px; border-radius: 4px; background: #fff;">
+                  <input type="checkbox" :value="ini.id" v-model="selectedInitiativeIds" style="accent-color: #0284c7; width: 14px; height: 14px;" />
+                  <span style="flex: 1; font-weight: 500; color: #1e293b;">{{ ini.title }}</span>
+                  <span class="badge" style="font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #e0f2fe; color: #0369a1;">{{ ini.kanbanStatus }}</span>
+                  <span style="font-size: 11px; color: #64748b;">{{ ini.currentValue || 0 }}/{{ ini.targetValue || 0 }} {{ ini.unit || '' }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Pending Tasks Selection -->
+            <div style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-size: 12.5px; font-weight: 700; color: #1e293b;">
+                  Task Belum Selesai ({{ pendingData?.tasks?.length || 0 }})
+                </label>
+                <button
+                  v-if="pendingData?.tasks?.length > 0"
+                  type="button"
+                  @click="toggleAllTasks"
+                  style="font-size: 11px; color: #0284c7; background: none; border: none; cursor: pointer; text-decoration: underline;"
+                >
+                  {{ areAllTasksSelected ? 'Batal Semua' : 'Pilih Semua' }}
+                </button>
+              </div>
+
+              <div v-if="!pendingData?.tasks || pendingData.tasks.length === 0" style="font-size: 12px; color: #64748b; font-style: italic; padding: 6px 10px; background: #f8fafc; border-radius: 6px;">
+                Semua task pada sprint ini sudah berstatus DONE/CLOSED/DROP.
+              </div>
+              <div v-else style="max-height: 130px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; display: flex; flex-direction: column; gap: 4px;">
+                <label v-for="task in pendingData.tasks" :key="task.id" style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; padding: 3px 4px; border-radius: 4px; background: #fff;">
+                  <input type="checkbox" :value="task.id" v-model="selectedTaskIds" style="accent-color: #0284c7; width: 14px; height: 14px;" />
+                  <span style="flex: 1; font-weight: 500; color: #1e293b;">{{ task.title }}</span>
+                  <span class="badge" style="font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #e0f2fe; color: #0369a1;">{{ task.kanbanStatus }}</span>
+                  <span style="font-size: 11px; color: #64748b;">{{ task.currentValue || 0 }}/{{ task.targetValue || 0 }} {{ task.unit || '' }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button class="secondary-btn" :disabled="closingSprintId !== null" @click="showCloseModal = false">
+                Batal
+              </button>
+              <button
+                class="danger-btn"
+                :disabled="closingSprintId !== null || loadingPending"
+                @click="handleExecuteCloseSprint"
+              >
+                {{ closingSprintId ? "Memproses..." : "Konfirmasi Tutup Sprint" }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -293,7 +351,36 @@ const editForm = ref({
 
 const showCloseModal = ref(false);
 const sprintToClose = ref<any>(null);
-const rolloverUnfinishedTasks = ref(true);
+const loadingPending = ref(false);
+const pendingData = ref<any>(null);
+const selectedInitiativeIds = ref<string[]>([]);
+const selectedTaskIds = ref<string[]>([]);
+
+const areAllInitiativesSelected = computed(() => {
+  if (!pendingData.value?.initiatives?.length) return false;
+  return selectedInitiativeIds.value.length === pendingData.value.initiatives.length;
+});
+
+const areAllTasksSelected = computed(() => {
+  if (!pendingData.value?.tasks?.length) return false;
+  return selectedTaskIds.value.length === pendingData.value.tasks.length;
+});
+
+function toggleAllInitiatives() {
+  if (areAllInitiativesSelected.value) {
+    selectedInitiativeIds.value = [];
+  } else {
+    selectedInitiativeIds.value = (pendingData.value?.initiatives || []).map((i: any) => i.id);
+  }
+}
+
+function toggleAllTasks() {
+  if (areAllTasksSelected.value) {
+    selectedTaskIds.value = [];
+  } else {
+    selectedTaskIds.value = (pendingData.value?.tasks || []).map((t: any) => t.id);
+  }
+}
 
 function formatDate(isoStr: string) {
   if (!isoStr) return "-";
@@ -366,10 +453,34 @@ async function handleToggleLock(sprint: any) {
   }
 }
 
-function confirmCloseSprint(sprint: any) {
+async function confirmCloseSprint(sprint: any) {
   sprintToClose.value = sprint;
-  rolloverUnfinishedTasks.value = true;
+  selectedInitiativeIds.value = [];
+  selectedTaskIds.value = [];
+  pendingData.value = null;
+  loadingPending.value = true;
   showCloseModal.value = true;
+
+  try {
+    const res = await $fetch<any>(`${API}/sprints/${sprint.id}/pending-items`, {
+      headers: getHeaders(),
+    });
+    pendingData.value = res;
+    if (res.initiatives?.length) {
+      selectedInitiativeIds.value = res.initiatives
+        .filter((i: any) => i.kanbanStatus === "IN_PROGRESS")
+        .map((i: any) => i.id);
+    }
+    if (res.tasks?.length) {
+      selectedTaskIds.value = res.tasks
+        .filter((t: any) => t.kanbanStatus === "IN_PROGRESS")
+        .map((t: any) => t.id);
+    }
+  } catch (err: any) {
+    errorMsg.value = err?.data?.error || err.message || "Gagal memuat item pending";
+  } finally {
+    loadingPending.value = false;
+  }
 }
 
 async function handleExecuteCloseSprint() {
@@ -383,10 +494,13 @@ async function handleExecuteCloseSprint() {
       method: "POST",
       headers: getHeaders(),
       body: {
-        rolloverUnfinishedTasks: rolloverUnfinishedTasks.value,
+        rolloverUnfinishedTasks: true,
+        carryOverInitiativeIds: selectedInitiativeIds.value,
+        carryOverTaskIds: selectedTaskIds.value,
       },
     });
-    successMsg.value = `Sprint ${sprint.name} berhasil ditutup! Capaian member dibekukan${rolloverUnfinishedTasks.value ? " & task belum selesai di-rollover ke sprint baru" : ""}.`;
+    const carriedCount = selectedInitiativeIds.value.length + selectedTaskIds.value.length;
+    successMsg.value = `Sprint ${sprint.name} berhasil ditutup! Capaian member dibekukan, ${carriedCount} item di-carry over ke sprint baru, dan sisa item ditutup sebagai DONE.`;
     showCloseModal.value = false;
     await fetchSprints();
   } catch (err: any) {
@@ -743,6 +857,11 @@ onMounted(() => {
   max-width: 440px;
   padding: 1.5rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+.modal-card-lg {
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .modal-card h3 {
   margin: 0 0 1rem 0;

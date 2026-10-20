@@ -313,7 +313,11 @@ export async function closeAndRolloverSprint(
   sprintId: string,
   adminId?: string,
   req?: any,
-  options?: { rolloverUnfinishedTasks?: boolean }
+  options?: {
+    rolloverUnfinishedTasks?: boolean;
+    carryOverInitiativeIds?: string[];
+    carryOverTaskIds?: string[];
+  }
 ) {
   const sprint = await prisma.sprint.findUnique({
     where: { id: sprintId },
@@ -491,8 +495,49 @@ export async function closeAndRolloverSprint(
         data: { status: "ACTIVE", isLocked: false },
       });
 
-      if (options?.rolloverUnfinishedTasks) {
-        // Rollover incomplete tasks to next sprint, reset baseline to current value
+      const carryOverInis = options?.carryOverInitiativeIds || [];
+      const carryOverTasks = options?.carryOverTaskIds || [];
+
+      // 1. Explicitly selected initiatives to carry over
+      if (carryOverInis.length > 0) {
+        await tx.initiative.updateMany({
+          where: { id: { in: carryOverInis }, sprintId },
+          data: {
+            sprintId: nextSprint.id,
+            sprintMonth: nextSprint.name,
+          },
+        });
+
+        // Also carry over tasks under these initiatives that were in the closing sprint
+        await tx.task.updateMany({
+          where: { initiativeId: { in: carryOverInis }, sprintId },
+          data: {
+            sprintId: nextSprint.id,
+            sprintMonth: nextSprint.name,
+          },
+        });
+      }
+
+      // 2. Explicitly selected tasks to carry over
+      if (carryOverTasks.length > 0) {
+        const tasksToCarry = await tx.task.findMany({
+          where: { id: { in: carryOverTasks }, sprintId },
+          select: { id: true, currentValue: true },
+        });
+        for (const t of tasksToCarry) {
+          await tx.task.update({
+            where: { id: t.id },
+            data: {
+              sprintId: nextSprint.id,
+              sprintMonth: nextSprint.name,
+              baselineValue: t.currentValue || 0,
+            },
+          });
+        }
+      }
+
+      // 3. Fallback: legacy rolloverUnfinishedTasks flag without explicit selection
+      if (options?.rolloverUnfinishedTasks && carryOverInis.length === 0 && carryOverTasks.length === 0) {
         const unfinishedTasks = await tx.task.findMany({
           where: {
             sprintId,
@@ -513,7 +558,6 @@ export async function closeAndRolloverSprint(
           });
         }
 
-        // Rollover incomplete initiatives to next sprint
         const unfinishedInis = await tx.initiative.findMany({
           where: {
             sprintId,
@@ -533,6 +577,33 @@ export async function closeAndRolloverSprint(
         }
       }
     }
+
+    // Auto-DONE all remaining unfinished initiatives in sprintId (preserve actual values)
+    await tx.initiative.updateMany({
+      where: {
+        sprintId,
+        isActive: true,
+        kanbanStatus: { notIn: ["DONE", "DROP"] },
+      },
+      data: {
+        kanbanStatus: "DONE",
+        status: "DONE",
+      },
+    });
+
+    // Auto-DONE all remaining unfinished tasks in sprintId (preserve actual values)
+    await tx.task.updateMany({
+      where: {
+        sprintId,
+        isActive: true,
+        kanbanStatus: { notIn: ["DONE", "CLOSED", "DROP"] },
+        status: { not: "DONE" },
+      },
+      data: {
+        kanbanStatus: "DONE",
+        status: "DONE",
+      },
+    });
   });
 
   await logAudit(prisma, {
@@ -599,11 +670,53 @@ function matchesDepartment(candidate: string | null | undefined, targetDept: str
   return false;
 }
 
-export async function getSprintReportData(sprintId: string, department?: string) {
+export async function getSprintReportData(
+  sprintId: string,
+  department?: string,
+  user?: { id: string; role: string; originalRole?: string | null }
+) {
   const sprint = await prisma.sprint.findUnique({
     where: { id: sprintId },
   });
   if (!sprint) throw new Error("Sprint not found");
+
+  const role = user?.role;
+  const userId = user?.id;
+  const isLeader = role === "LEADER";
+  const isManager = role === "MANAGER";
+
+  let dbUser: { id: string; department: string | null; teamId: string | null } | null = null;
+  const managedDeptValues = new Set<string>();
+  let leaderTeamIds: string[] = [];
+
+  if (userId && (isLeader || isManager)) {
+    dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, department: true, teamId: true },
+    });
+  }
+
+  if (userId && isManager) {
+    const managed = await prisma.department.findMany({
+      where: { managerId: userId, isActive: true },
+      select: { value: true },
+    });
+    managed.forEach((d) => managedDeptValues.add(d.value.toUpperCase()));
+    if (dbUser?.department && dbUser.department.toUpperCase() !== "STRATEGIC") {
+      managedDeptValues.add(dbUser.department.toUpperCase());
+    }
+  } else if (userId && isLeader) {
+    const leadingTeams = await prisma.team.findMany({
+      where: {
+        OR: [
+          { leaderId: userId },
+          ...(dbUser?.teamId ? [{ id: dbUser.teamId }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+    leaderTeamIds = leadingTeams.map((t) => t.id);
+  }
 
   const allDepts = await prisma.department.findMany({
     where: { isActive: true },
@@ -619,7 +732,64 @@ export async function getSprintReportData(sprintId: string, department?: string)
   const targetDeptId = targetDept?.id;
   const targetDeptValue = targetDept?.value || department;
 
-  // 1. Fetch Initiatives in this sprint
+  // 1. Fetch Key Results for the sprint year
+  const allKrs = await prisma.keyResult.findMany({
+    where: {
+      isActive: true,
+      objective: {
+        isActive: true,
+        year: sprint.year || "2026",
+      },
+    },
+    include: {
+      objective: { select: { id: true, title: true, year: true } },
+      departments: true,
+      assignments: {
+        select: { userId: true, raciRole: true },
+      },
+      sprintTargets: { where: { sprintId } },
+    },
+  });
+
+  // ponytail: Scope Key Results by role & department. Leader: Accountable; Manager: Responsible or managed dept.
+  let keyResults = allKrs;
+  if (isLeader) {
+    keyResults = allKrs.filter((kr) => {
+      const isAccountable = kr.assignments?.some(
+        (a) => a.userId === userId && a.raciRole === "ACCOUNTABLE"
+      );
+      if (!isAccountable) return false;
+      if (targetDeptValue) {
+        return (
+          kr.departments.some((d) => matchesDepartment(d.department, targetDeptValue)) ||
+          matchesDepartment(dbUser?.department, targetDeptValue)
+        );
+      }
+      return true;
+    });
+  } else if (isManager) {
+    keyResults = allKrs.filter((kr) => {
+      const isResponsible = kr.assignments?.some(
+        (a) => a.userId === userId && a.raciRole === "RESPONSIBLE"
+      );
+      const isDeptUnderManager = kr.departments.some((d) =>
+        Array.from(managedDeptValues).some((mv) => matchesDepartment(d.department, mv))
+      );
+      if (!isResponsible && !isDeptUnderManager) return false;
+      if (targetDeptValue) {
+        return kr.departments.some((d) => matchesDepartment(d.department, targetDeptValue));
+      }
+      return true;
+    });
+  } else if (targetDeptValue) {
+    keyResults = allKrs.filter((kr) =>
+      kr.departments.some((d) => matchesDepartment(d.department, targetDeptValue))
+    );
+  }
+
+  const scopedKrIds = new Set(keyResults.map((kr) => kr.id));
+
+  // 2. Fetch Initiatives in this sprint
   const initiativesRaw = await prisma.initiative.findMany({
     where: {
       sprintId,
@@ -686,23 +856,81 @@ export async function getSprintReportData(sprintId: string, department?: string)
     orderBy: { createdAt: "asc" },
   });
 
-  const initiatives = targetDeptValue
-    ? initiativesRaw.filter((ini) => {
+  const initiatives = initiativesRaw.filter((ini) => {
+    if (isLeader) {
+      const isLinkedToScopedKr = ini.keyResultId ? scopedKrIds.has(ini.keyResultId) : false;
+      const isLeaderOfTeam = ini.teamId ? leaderTeamIds.includes(ini.teamId) : false;
+      const isDirectUser = ini.ownerId === userId || ini.assignedLeaderId === userId;
+      const isLeaderDept =
+        dbUser?.department &&
+        (matchesDepartment(ini.team?.department, dbUser.department) ||
+          matchesDepartment(ini.owner?.department, dbUser.department) ||
+          matchesDepartment(ini.assignedLeader?.department, dbUser.department));
+
+      if (!isLinkedToScopedKr && !isLeaderOfTeam && !isDirectUser && !isLeaderDept) return false;
+      if (targetDeptValue) {
         return (
           ini.team?.departmentId === targetDeptId ||
           matchesDepartment(ini.team?.department, targetDeptValue) ||
           matchesDepartment(ini.team?.departmentRel?.value, targetDeptValue) ||
-          ini.owner?.departmentId === targetDeptId ||
           matchesDepartment(ini.owner?.department, targetDeptValue) ||
           matchesDepartment(ini.owner?.departmentRel?.value, targetDeptValue) ||
-          ini.assignedLeader?.departmentId === targetDeptId ||
           matchesDepartment(ini.assignedLeader?.department, targetDeptValue) ||
-          matchesDepartment(ini.assignedLeader?.departmentRel?.value, targetDeptValue)
+          matchesDepartment(ini.assignedLeader?.departmentRel?.value, targetDeptValue) ||
+          isLinkedToScopedKr
         );
-      })
-    : initiativesRaw;
+      }
+      return true;
+    }
 
-  // 2. Fetch Tasks in this sprint
+    if (isManager) {
+      const isLinkedToScopedKr = ini.keyResultId ? scopedKrIds.has(ini.keyResultId) : false;
+      const isManagedDept = Array.from(managedDeptValues).some((mv) =>
+        matchesDepartment(ini.team?.department, mv) ||
+        matchesDepartment(ini.team?.departmentRel?.value, mv) ||
+        matchesDepartment(ini.owner?.department, mv) ||
+        matchesDepartment(ini.owner?.departmentRel?.value, mv) ||
+        matchesDepartment(ini.assignedLeader?.department, mv) ||
+        matchesDepartment(ini.assignedLeader?.departmentRel?.value, mv)
+      );
+
+      if (!isLinkedToScopedKr && !isManagedDept) return false;
+      if (targetDeptValue) {
+        return (
+          ini.team?.departmentId === targetDeptId ||
+          matchesDepartment(ini.team?.department, targetDeptValue) ||
+          matchesDepartment(ini.team?.departmentRel?.value, targetDeptValue) ||
+          matchesDepartment(ini.owner?.department, targetDeptValue) ||
+          matchesDepartment(ini.owner?.departmentRel?.value, targetDeptValue) ||
+          matchesDepartment(ini.assignedLeader?.department, targetDeptValue) ||
+          matchesDepartment(ini.assignedLeader?.departmentRel?.value, targetDeptValue) ||
+          isLinkedToScopedKr
+        );
+      }
+      return true;
+    }
+
+    if (targetDeptValue) {
+      return (
+        ini.team?.departmentId === targetDeptId ||
+        matchesDepartment(ini.team?.department, targetDeptValue) ||
+        matchesDepartment(ini.team?.departmentRel?.value, targetDeptValue) ||
+        ini.owner?.departmentId === targetDeptId ||
+        matchesDepartment(ini.owner?.department, targetDeptValue) ||
+        matchesDepartment(ini.owner?.departmentRel?.value, targetDeptValue) ||
+        ini.assignedLeader?.departmentId === targetDeptId ||
+        matchesDepartment(ini.assignedLeader?.department, targetDeptValue) ||
+        matchesDepartment(ini.assignedLeader?.departmentRel?.value, targetDeptValue) ||
+        (ini.keyResultId ? scopedKrIds.has(ini.keyResultId) : false)
+      );
+    }
+
+    return true;
+  });
+
+  const scopedInitiativeIds = new Set(initiatives.map((i) => i.id));
+
+  // 3. Fetch Tasks in this sprint
   const tasksRaw = await prisma.task.findMany({
     where: {
       sprintId,
@@ -714,6 +942,7 @@ export async function getSprintReportData(sprintId: string, department?: string)
           id: true,
           title: true,
           keyResultId: true,
+          teamId: true,
           team: {
             select: {
               id: true,
@@ -762,8 +991,23 @@ export async function getSprintReportData(sprintId: string, department?: string)
     orderBy: { createdAt: "asc" },
   });
 
-  const tasks = targetDeptValue
-    ? tasksRaw.filter((t) => {
+  const tasks = tasksRaw.filter((t) => {
+    if (isLeader) {
+      const isLinkedToScopedIni = t.initiativeId ? scopedInitiativeIds.has(t.initiativeId) : false;
+      const isLinkedToScopedKr = t.initiative?.keyResultId ? scopedKrIds.has(t.initiative.keyResultId) : false;
+      const isAssignee = t.assignedTeamMemberId === userId;
+      const isLeaderOfTeam = t.initiative?.teamId ? leaderTeamIds.includes(t.initiative.teamId) : false;
+      const isLeaderDept =
+        dbUser?.department &&
+        (matchesDepartment(t.assignedTeamMember?.department, dbUser.department) ||
+          matchesDepartment(t.targetDept, dbUser.department) ||
+          matchesDepartment(t.creatorDept, dbUser.department) ||
+          matchesDepartment(t.initiative?.team?.department, dbUser.department));
+
+      if (!isLinkedToScopedIni && !isLinkedToScopedKr && !isAssignee && !isLeaderOfTeam && !isLeaderDept) {
+        return false;
+      }
+      if (targetDeptValue) {
         return (
           t.assignedTeamMember?.departmentId === targetDeptId ||
           matchesDepartment(t.assignedTeamMember?.department, targetDeptValue) ||
@@ -772,10 +1016,63 @@ export async function getSprintReportData(sprintId: string, department?: string)
           matchesDepartment(t.creatorDept, targetDeptValue) ||
           t.initiative?.team?.departmentId === targetDeptId ||
           matchesDepartment(t.initiative?.team?.department, targetDeptValue) ||
-          matchesDepartment(t.initiative?.team?.departmentRel?.value, targetDeptValue)
+          matchesDepartment(t.initiative?.team?.departmentRel?.value, targetDeptValue) ||
+          isLinkedToScopedIni ||
+          isLinkedToScopedKr
         );
-      })
-    : tasksRaw;
+      }
+      return true;
+    }
+
+    if (isManager) {
+      const isLinkedToScopedIni = t.initiativeId ? scopedInitiativeIds.has(t.initiativeId) : false;
+      const isLinkedToScopedKr = t.initiative?.keyResultId ? scopedKrIds.has(t.initiative.keyResultId) : false;
+      const isManagedDept = Array.from(managedDeptValues).some((mv) =>
+        matchesDepartment(t.assignedTeamMember?.department, mv) ||
+        matchesDepartment(t.assignedTeamMember?.departmentRel?.value, mv) ||
+        matchesDepartment(t.targetDept, mv) ||
+        matchesDepartment(t.creatorDept, mv) ||
+        matchesDepartment(t.initiative?.team?.department, mv) ||
+        matchesDepartment(t.initiative?.team?.departmentRel?.value, mv)
+      );
+
+      if (!isLinkedToScopedIni && !isLinkedToScopedKr && !isManagedDept) {
+        return false;
+      }
+      if (targetDeptValue) {
+        return (
+          t.assignedTeamMember?.departmentId === targetDeptId ||
+          matchesDepartment(t.assignedTeamMember?.department, targetDeptValue) ||
+          matchesDepartment(t.assignedTeamMember?.departmentRel?.value, targetDeptValue) ||
+          matchesDepartment(t.targetDept, targetDeptValue) ||
+          matchesDepartment(t.creatorDept, targetDeptValue) ||
+          t.initiative?.team?.departmentId === targetDeptId ||
+          matchesDepartment(t.initiative?.team?.department, targetDeptValue) ||
+          matchesDepartment(t.initiative?.team?.departmentRel?.value, targetDeptValue) ||
+          isLinkedToScopedIni ||
+          isLinkedToScopedKr
+        );
+      }
+      return true;
+    }
+
+    if (targetDeptValue) {
+      return (
+        t.assignedTeamMember?.departmentId === targetDeptId ||
+        matchesDepartment(t.assignedTeamMember?.department, targetDeptValue) ||
+        matchesDepartment(t.assignedTeamMember?.departmentRel?.value, targetDeptValue) ||
+        matchesDepartment(t.targetDept, targetDeptValue) ||
+        matchesDepartment(t.creatorDept, targetDeptValue) ||
+        t.initiative?.team?.departmentId === targetDeptId ||
+        matchesDepartment(t.initiative?.team?.department, targetDeptValue) ||
+        matchesDepartment(t.initiative?.team?.departmentRel?.value, targetDeptValue) ||
+        (t.initiativeId ? scopedInitiativeIds.has(t.initiativeId) : false) ||
+        (t.initiative?.keyResultId ? scopedKrIds.has(t.initiative.keyResultId) : false)
+      );
+    }
+
+    return true;
+  });
 
   // Process Task Report Items
   const taskReportItems = tasks.map((t) => {
@@ -867,31 +1164,15 @@ export async function getSprintReportData(sprintId: string, department?: string)
     };
   });
 
-  // 3. Process Key Results
-  const allKrs = await prisma.keyResult.findMany({
-    where: {
-      isActive: true,
-      objective: {
-        isActive: true,
-        year: sprint.year || "2026",
-      },
-    },
-    include: {
-      objective: { select: { id: true, title: true, year: true } },
-      departments: true,
-      sprintTargets: { where: { sprintId } },
-    },
-  });
-
-  // ponytail: Decouple KRs from sprint cycles. All active KRs remain visible across sprints unless department filter is applied.
-  const keyResults = targetDeptValue
-    ? allKrs.filter(
-        (kr) =>
-          kr.departments.some((d) => matchesDepartment(d.department, targetDeptValue)) ||
-          initiatives.some((i) => i.keyResultId === kr.id) ||
-          tasks.some((t) => t.initiative?.keyResultId === kr.id)
-      )
-    : allKrs;
+  // 4. Process Key Results
+  if (!isLeader && !isManager && targetDeptValue) {
+    keyResults = allKrs.filter(
+      (kr) =>
+        kr.departments.some((d) => matchesDepartment(d.department, targetDeptValue)) ||
+        initiatives.some((i) => i.keyResultId === kr.id) ||
+        tasks.some((t) => t.initiative?.keyResultId === kr.id)
+    );
+  }
 
   const krReportItems = keyResults.map((kr) => {
     const st = kr.sprintTargets?.[0];
@@ -955,7 +1236,7 @@ export async function getSprintReportData(sprintId: string, department?: string)
   });
 
 
-  // 4. Process KPIs (Master KPI)
+  // 5. Process KPIs (Master KPI)
   const kpiMap = new Map<
     string,
     {
@@ -971,10 +1252,7 @@ export async function getSprintReportData(sprintId: string, department?: string)
     }
   >();
 
-  const relevantInitiatives = targetDeptValue ? initiatives : initiativesRaw;
-  const relevantTasks = targetDeptValue ? tasks : tasksRaw;
-
-  relevantInitiatives.forEach((ini) => {
+  initiatives.forEach((ini) => {
     (ini.kpis || []).forEach((ik: any) => {
       if (!ik.kpi) return;
       const kId = ik.kpiId;
@@ -996,7 +1274,7 @@ export async function getSprintReportData(sprintId: string, department?: string)
     });
   });
 
-  relevantTasks.forEach((t) => {
+  tasks.forEach((t) => {
     (t.kpis || []).forEach((tk: any) => {
       if (!tk.kpi) return;
       const kId = tk.kpiId;
@@ -1069,13 +1347,14 @@ export async function getSprintReportData(sprintId: string, department?: string)
     (t) => t.status === "DONE" || t.kanbanStatus === "DONE" || t.kanbanStatus === "CLOSED"
   ).length;
 
-  const allSprintPcts = [
-    ...initiativeReportItems.map((i) => i.sprintAchievementPct),
-    ...taskReportItems.map((t) => t.sprintAchievementPct),
-  ];
+  // ponytail: avgSprintAchievementPct is computed from scoped Key Results sprint achievement per department/role.
   const avgSprintAchievementPct =
-    allSprintPcts.length > 0
-      ? Math.round((allSprintPcts.reduce((s, p) => s + p, 0) / allSprintPcts.length) * 10) / 10
+    krReportItems.length > 0
+      ? Math.round(
+          (krReportItems.reduce((s, kr) => s + kr.sprintAchievementPct, 0) /
+            krReportItems.length) *
+            10
+        ) / 10
       : 0;
 
   const avgCumulativeKrAchievementPct =
@@ -1107,4 +1386,179 @@ export async function getSprintReportData(sprintId: string, department?: string)
     kpis: kpiReportItems,
   };
 }
+
+export async function getPendingSprintItemsService(sprintId: string) {
+  const currentSprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
+  if (!currentSprint) throw new Error("Sprint tidak ditemukan");
+
+  const nextSprint = await prisma.sprint.findFirst({
+    where: { startDate: { gt: currentSprint.startDate } },
+    orderBy: { startDate: "asc" },
+  });
+
+  const initiatives = await prisma.initiative.findMany({
+    where: {
+      sprintId,
+      isActive: true,
+      kanbanStatus: { notIn: ["DONE", "DROP"] },
+    },
+    select: {
+      id: true,
+      title: true,
+      kanbanStatus: true,
+      currentValue: true,
+      targetValue: true,
+      unit: true,
+      owner: { select: { id: true, name: true } },
+      team: { select: { id: true, name: true } },
+    },
+  });
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      sprintId,
+      isActive: true,
+      kanbanStatus: { notIn: ["DONE", "DROP", "CLOSED"] },
+      status: { not: "DONE" },
+    },
+    select: {
+      id: true,
+      title: true,
+      kanbanStatus: true,
+      currentValue: true,
+      targetValue: true,
+      unit: true,
+      assignedTeamMember: { select: { id: true, name: true } },
+      initiative: { select: { id: true, title: true } },
+    },
+  });
+
+  return {
+    sprint: currentSprint,
+    nextSprint,
+    initiatives,
+    tasks,
+  };
+}
+
+export async function carryOverInitiativeService(
+  initiativeId: string,
+  userId?: string,
+  req?: any
+) {
+  const ini = await prisma.initiative.findUnique({
+    where: { id: initiativeId },
+    include: { sprint: true },
+  });
+  if (!ini) throw new Error("Inisiatif tidak ditemukan");
+
+  let refDate: Date = new Date();
+  if (ini.sprint?.startDate) {
+    refDate = ini.sprint.startDate;
+  } else if (ini.startDate) {
+    refDate = new Date(ini.startDate);
+  } else {
+    const active = await prisma.sprint.findFirst({ where: { status: "ACTIVE" } });
+    if (active?.startDate) refDate = active.startDate;
+  }
+
+  const nextSprint = await prisma.sprint.findFirst({
+    where: { startDate: { gt: refDate } },
+    orderBy: { startDate: "asc" },
+  });
+
+  if (!nextSprint) {
+    throw new Error("Sprint selanjutnya belum dibuat di sistem. Silakan hubungi Admin untuk generate/buat sprint berikutnya.");
+  }
+
+  const updated = await prisma.initiative.update({
+    where: { id: initiativeId },
+    data: {
+      sprintId: nextSprint.id,
+      sprintMonth: nextSprint.name,
+    },
+    include: {
+      sprint: true,
+    },
+  });
+
+  await prisma.task.updateMany({
+    where: {
+      initiativeId,
+      ...(ini.sprintId ? { sprintId: ini.sprintId } : {}),
+    },
+    data: {
+      sprintId: nextSprint.id,
+      sprintMonth: nextSprint.name,
+    },
+  });
+
+  await logAudit(prisma, {
+    userId,
+    action: "CARRY_OVER_INITIATIVE",
+    entityType: "INITIATIVE",
+    entityId: initiativeId,
+    oldValues: { sprintId: ini.sprintId, sprintMonth: ini.sprintMonth },
+    newValues: { sprintId: nextSprint.id, sprintMonth: nextSprint.name },
+    req,
+  });
+
+  return { initiative: updated, nextSprint };
+}
+
+export async function carryOverTaskService(
+  taskId: string,
+  userId?: string,
+  req?: any
+) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { sprint: true, initiative: { include: { sprint: true } } },
+  });
+  if (!task) throw new Error("Task tidak ditemukan");
+
+  let refDate: Date = new Date();
+  if (task.sprint?.startDate) {
+    refDate = task.sprint.startDate;
+  } else if (task.initiative?.sprint?.startDate) {
+    refDate = task.initiative.sprint.startDate;
+  } else if (task.startDate) {
+    refDate = new Date(task.startDate);
+  } else {
+    const active = await prisma.sprint.findFirst({ where: { status: "ACTIVE" } });
+    if (active?.startDate) refDate = active.startDate;
+  }
+
+  const nextSprint = await prisma.sprint.findFirst({
+    where: { startDate: { gt: refDate } },
+    orderBy: { startDate: "asc" },
+  });
+
+  if (!nextSprint) {
+    throw new Error("Sprint selanjutnya belum dibuat di sistem. Silakan hubungi Admin untuk generate/buat sprint berikutnya.");
+  }
+
+  const updated = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      sprintId: nextSprint.id,
+      sprintMonth: nextSprint.name,
+      baselineValue: task.currentValue || 0,
+    },
+    include: { sprint: true },
+  });
+
+  await logAudit(prisma, {
+    userId,
+    action: "CARRY_OVER_TASK",
+    entityType: "TASK",
+    entityId: taskId,
+    oldValues: { sprintId: task.sprintId, sprintMonth: task.sprintMonth },
+    newValues: { sprintId: nextSprint.id, sprintMonth: nextSprint.name, baselineValue: task.currentValue || 0 },
+    req,
+  });
+
+  return { task: updated, nextSprint };
+}
+
 

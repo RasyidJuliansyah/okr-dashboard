@@ -160,15 +160,21 @@
                 <div class="initiatives-section">
                   <h4>
                     Inisiatif yang sudah dibuat ({{
-                      assign.keyResult.initiatives?.length || 0
+                      getFilteredInitiatives(assign.keyResult.initiatives).length
                     }}):
                   </h4>
+                  <div
+                    v-if="assign.keyResult.initiatives?.length > 0 && getFilteredInitiatives(assign.keyResult.initiatives).length === 0"
+                    style="font-size: 13px; color: #64748b; font-style: italic; padding: 6px 0;"
+                  >
+                    Tidak ada inisiatif pada sprint terpilih.
+                  </div>
                   <ul
-                    v-if="assign.keyResult.initiatives?.length > 0"
+                    v-else-if="getFilteredInitiatives(assign.keyResult.initiatives).length > 0"
                     class="ini-list-items"
                   >
                     <li
-                      v-for="ini in assign.keyResult.initiatives"
+                      v-for="ini in getFilteredInitiatives(assign.keyResult.initiatives)"
                       :key="ini.id"
                       class="ini-item-row"
                     >
@@ -196,6 +202,24 @@
                           </div>
                         </div>
                         <div class="ini-actions">
+                          <button
+                            v-if="ini.kanbanStatus === 'IN_PROGRESS'"
+                            class="action-btn"
+                            style="
+                              font-size: 11px;
+                              padding: 2px 6px;
+                              background: #e0e7ff;
+                              color: #3730a3;
+                              border: 1px solid #c7d2fe;
+                              border-radius: 4px;
+                              cursor: pointer;
+                              font-weight: 600;
+                            "
+                            @click.stop="handleCarryOverInitiative(ini)"
+                            title="Carry Over Inisiatif ke Sprint Selanjutnya"
+                          >
+                            ⏩ Carry Over
+                          </button>
                           <button
                             class="icon-btn"
                             @click="startEditInitiative(ini, assign.keyResult)"
@@ -312,7 +336,7 @@
                           </button>
                         </div>
                         <div
-                          v-for="task in ini.tasks"
+                          v-for="task in getFilteredTasks(ini.tasks, ini.sprintMonth)"
                           :key="task.id"
                           class="task-nested-row"
                         >
@@ -397,6 +421,25 @@
                               :class="getStatusClass(task.status)"
                               >{{ task.status }}</span
                             >
+                            <button
+                              v-if="task.kanbanStatus === 'IN_PROGRESS'"
+                              class="action-btn"
+                              style="
+                                font-size: 10px;
+                                padding: 1px 5px;
+                                background: #e0e7ff;
+                                color: #3730a3;
+                                border: 1px solid #c7d2fe;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                margin-left: 4px;
+                              "
+                              @click.stop="handleCarryOverTask(task)"
+                              title="Carry Over Task ke Sprint Selanjutnya"
+                            >
+                              ⏩ Carry Over
+                            </button>
                             <button
                               v-if="
                                 authStore.user?.role === 'LEADER' ||
@@ -847,6 +890,9 @@ const selectedSprint = ref("");
 
 const availableSprints = computed(() => {
   const sprints = new Set();
+  systemSprints.value?.forEach((s) => {
+    if (s.name) sprints.add(s.name);
+  });
   krs.value.forEach((assign) => {
     assign.keyResult.initiatives?.forEach((ini) => {
       if (ini.sprintMonth) sprints.add(ini.sprintMonth);
@@ -857,6 +903,29 @@ const availableSprints = computed(() => {
   });
   return Array.from(sprints).sort().reverse();
 });
+
+function getFilteredInitiatives(initiatives) {
+  if (!initiatives) return [];
+  if (!selectedSprint.value) return initiatives;
+  return initiatives.filter((ini) => {
+    const matchIni =
+      ini.sprintMonth === selectedSprint.value ||
+      ini.sprint?.name === selectedSprint.value;
+    const matchTask = ini.tasks?.some(
+      (t) => (t.sprintMonth || ini.sprintMonth) === selectedSprint.value,
+    );
+    return matchIni || matchTask;
+  });
+}
+
+function getFilteredTasks(tasks, parentSprintMonth) {
+  if (!tasks) return [];
+  if (!selectedSprint.value) return tasks;
+  return tasks.filter((t) => {
+    const sm = t.sprintMonth || parentSprintMonth;
+    return sm === selectedSprint.value;
+  });
+}
 
 const availableEmployees = computed(() => {
   if (
@@ -1004,6 +1073,36 @@ function getResolvedSprintMonth(val) {
     return found.name;
   }
   return val;
+}
+
+async function handleCarryOverInitiative(ini) {
+  const ok = await confirmDialog(`Carry over inisiatif "${ini.title}" ke sprint berikutnya?`);
+  if (!ok) return;
+  try {
+    const res = await $fetch(`${API}/initiatives/${ini.id}/carry-over`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    await alertDialog(res.message || "Inisiatif berhasil dipindahkan ke sprint berikutnya.");
+    await fetchData();
+  } catch (err) {
+    await alertDialog(err?.data?.message || err.message || "Gagal melakukan carry over inisiatif");
+  }
+}
+
+async function handleCarryOverTask(task) {
+  const ok = await confirmDialog(`Carry over task "${task.title}" ke sprint berikutnya?`);
+  if (!ok) return;
+  try {
+    const res = await $fetch(`${API}/tasks/${task.id}/carry-over`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    await alertDialog(res.message || "Task berhasil dipindahkan ke sprint berikutnya.");
+    await fetchData();
+  } catch (err) {
+    await alertDialog(err?.data?.message || err.message || "Gagal melakukan carry over task");
+  }
 }
 
 const sprintOptions = computed(() => {
@@ -1157,7 +1256,7 @@ watch(
 
 const config = useRuntimeConfig();
 const API = config.public.apiBase || "http://localhost:3001/api";
-const { confirm: confirmDialog } = useConfirm();
+const { confirm: confirmDialog, alert: alertDialog } = useConfirm();
 
 function getHeaders() {
   const token =
@@ -1224,6 +1323,9 @@ async function fetchSprints() {
       const data = await res.json();
       systemSprints.value = data.sprints || [];
       activeSprint.value = data.activeSprint || null;
+      if (activeSprint.value && !selectedSprint.value) {
+        selectedSprint.value = activeSprint.value.name;
+      }
     }
   } catch (err) {
     console.error("Error fetch sprints:", err);

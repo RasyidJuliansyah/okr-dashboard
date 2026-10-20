@@ -69,16 +69,30 @@ export async function toggleLock(req: AuthRequest, res: Response) {
 export async function closeSprint(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { rolloverUnfinishedTasks } = req.body;
+    const { rolloverUnfinishedTasks, carryOverInitiativeIds, carryOverTaskIds } = req.body;
     const result = await sprintService.closeAndRolloverSprint(
       id,
       req.user?.id,
       req,
-      { rolloverUnfinishedTasks: Boolean(rolloverUnfinishedTasks) }
+      {
+        rolloverUnfinishedTasks: Boolean(rolloverUnfinishedTasks),
+        carryOverInitiativeIds: Array.isArray(carryOverInitiativeIds) ? carryOverInitiativeIds : undefined,
+        carryOverTaskIds: Array.isArray(carryOverTaskIds) ? carryOverTaskIds : undefined,
+      }
     );
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Failed to close sprint" });
+  }
+}
+
+export async function getPendingSprintItems(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const data = await sprintService.getPendingSprintItemsService(id);
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to fetch pending sprint items" });
   }
 }
 
@@ -88,7 +102,8 @@ export async function getSprintReport(req: AuthRequest, res: Response) {
     const { department } = req.query;
     const report = await sprintService.getSprintReportData(
       sprintId,
-      department as string | undefined
+      department as string | undefined,
+      req.user
     );
     res.json(report);
   } catch (error: any) {

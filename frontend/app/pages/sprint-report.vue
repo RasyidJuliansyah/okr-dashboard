@@ -124,7 +124,7 @@
             <div class="stat-value text-primary">
               {{ reportData.avgSprintAchievementPct }}%
             </div>
-            <div class="stat-sub">Reset 0% setiap siklus baru</div>
+            <div class="stat-sub">Rata-rata capaian sprint KR periode ini</div>
           </div>
 
           <div class="stat-card">
@@ -521,7 +521,12 @@ const isCLevel = computed(
 const isManager = computed(
   () => auth.user?.role === "MANAGER" || auth.user?.originalRole === "MANAGER",
 );
-const isAllowed = computed(() => isAdmin.value || isCLevel.value || isManager.value);
+const isLeader = computed(
+  () => auth.user?.role === "LEADER" || auth.user?.originalRole === "LEADER",
+);
+const isAllowed = computed(
+  () => isAdmin.value || isCLevel.value || isManager.value || isLeader.value,
+);
 
 const loading = ref(true);
 const errorMessage = ref("");
@@ -543,7 +548,8 @@ const departmentsList = ref<DepartmentItem[]>([]);
 
 async function fetchDepartments() {
   try {
-    const res = await $fetch<any[]>(`${API}/departments?all=true`, {
+    const url = (isAdmin.value || isCLevel.value) ? `${API}/departments?all=true` : `${API}/departments`;
+    const res = await $fetch<any[]>(url, {
       headers: getHeaders(),
     });
     departmentsList.value = (res || []).filter((d: any) => d.isActive !== false);

@@ -1,7 +1,12 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { resolveSprint, getActiveSprint } from "../services/sprint.service";
+import {
+  resolveSprint,
+  getActiveSprint,
+  carryOverInitiativeService,
+  carryOverTaskService,
+} from "../services/sprint.service";
 import { cascadeMonthlyKrToAnnual } from "./keyresult.controller";
 import { logAudit } from "../utils/auditLogger";
 import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
@@ -5195,5 +5200,42 @@ export async function rejectInitiativeUpdate(req: AuthRequest, res: Response) {
   } catch (error) {
     console.error("Reject Initiative update error:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
+
+// POST /api/initiatives/:id/carry-over
+export async function carryOverInitiativeHandler(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const result = await carryOverInitiativeService(id, req.user?.id, req);
+    return res.status(200).json({
+      message: `Inisiatif berhasil dipindahkan ke sprint ${result.nextSprint.name}`,
+      ...result,
+    });
+  } catch (error: any) {
+    console.error("Carry over initiative error:", error);
+    return res.status(error.message?.includes("tidak ditemukan") ? 404 : 400).json({
+      message: error.message || "Gagal melakukan carry over inisiatif",
+    });
+  }
+}
+
+// POST /api/tasks/:id/carry-over
+export async function carryOverTaskHandler(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const cleanId = id && id.startsWith("task-") ? id.replace(/^task-/, "") : id;
+    const result = await carryOverTaskService(cleanId, req.user?.id, req);
+    return res.status(200).json({
+      message: `Task berhasil dipindahkan ke sprint ${result.nextSprint.name}`,
+      ...result,
+    });
+  } catch (error: any) {
+    console.error("Carry over task error:", error);
+    return res.status(error.message?.includes("tidak ditemukan") ? 404 : 400).json({
+      message: error.message || "Gagal melakukan carry over task",
+    });
   }
 }

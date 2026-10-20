@@ -28,6 +28,8 @@ import {
   approveInitiativeUpdate,
   rejectInitiativeUpdate,
   reassignInitiative,
+  carryOverInitiativeHandler,
+  carryOverTaskHandler,
 } from "../controllers/initiative.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
@@ -84,6 +86,12 @@ router.delete(
   authMiddleware,
   roleGuard(["ADMIN", "C_LEVEL", "MANAGER", "LEADER", "TEAM"]),
   deleteTask,
+);
+router.post(
+  "/tasks/:id/carry-over",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  carryOverTaskHandler,
 );
 router.post(
   "/tasks/:id/assign",
@@ -202,6 +210,12 @@ router.patch(
   authMiddleware,
   roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   updateInitiativeKanbanStatus,
+);
+router.post(
+  "/:id/carry-over",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  carryOverInitiativeHandler,
 );
 router.delete(
   "/:id",

@@ -239,6 +239,26 @@
                       <option value="DONE">DONE</option>
                       <option value="DROP">DROP</option>
                     </select>
+                    <!-- Carry Over button if IN_PROGRESS -->
+                    <button
+                      v-if="ini.kanbanStatus === 'IN_PROGRESS'"
+                      class="secondary-btn small"
+                      style="
+                        font-size: 11px;
+                        padding: 2px 6px;
+                        background: #e0e7ff;
+                        color: #3730a3;
+                        border: 1px solid #c7d2fe;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        white-space: nowrap;
+                      "
+                      @click.stop="handleCarryOverInitiative(ini)"
+                      title="Carry Over Inisiatif ke Sprint Selanjutnya"
+                    >
+                      ⏩ Carry Over
+                    </button>
                     <!-- CTA Edit & Delete Inisiatif -->
                     <button
                       v-if="canEditInitiative(ini)"
@@ -763,6 +783,26 @@
                 <option value="DONE">DONE</option>
                 <option value="DROP">DROP</option>
               </select>
+              <!-- Carry Over button if IN_PROGRESS -->
+              <button
+                v-if="assign.task.kanbanStatus === 'IN_PROGRESS'"
+                class="secondary-btn small"
+                style="
+                  font-size: 12px;
+                  padding: 8px 10px;
+                  background: #e0e7ff;
+                  color: #3730a3;
+                  border: 1px solid #c7d2fe;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  font-weight: 600;
+                  white-space: nowrap;
+                "
+                @click.stop="handleCarryOverTask(assign.task)"
+                title="Carry Over Task ke Sprint Selanjutnya"
+              >
+                ⏩ Carry Over
+              </button>
               <button
                 v-if="canEditTask(assign.task)"
                 class="action-btn"
@@ -1184,6 +1224,26 @@
                           <option value="DONE">DONE</option>
                           <option value="DROP">DROP</option>
                         </select>
+                        <!-- Carry Over button if IN_PROGRESS -->
+                        <button
+                          v-if="ini.kanbanStatus === 'IN_PROGRESS'"
+                          class="secondary-btn small"
+                          style="
+                            font-size: 11px;
+                            padding: 2px 6px;
+                            background: #e0e7ff;
+                            color: #3730a3;
+                            border: 1px solid #c7d2fe;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            white-space: nowrap;
+                          "
+                          @click.stop="handleCarryOverInitiative(ini)"
+                          title="Carry Over Inisiatif ke Sprint Selanjutnya"
+                        >
+                          ⏩ Carry Over
+                        </button>
                         <!-- Delete button for ADMIN only -->
                         <button
                           v-if="canEditInitiative(ini)"
@@ -1596,6 +1656,26 @@
                       <option value="DONE">DONE</option>
                       <option value="DROP">DROP</option>
                     </select>
+                    <!-- Carry Over button if IN_PROGRESS -->
+                    <button
+                      v-if="assign.task.kanbanStatus === 'IN_PROGRESS'"
+                      class="secondary-btn small"
+                      style="
+                        font-size: 11px;
+                        padding: 4px 8px;
+                        background: #e0e7ff;
+                        color: #3730a3;
+                        border: 1px solid #c7d2fe;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        white-space: nowrap;
+                      "
+                      @click.stop="handleCarryOverTask(assign.task)"
+                      title="Carry Over Task ke Sprint Selanjutnya"
+                    >
+                      ⏩ Carry Over
+                    </button>
                     <button
                       v-if="canEditTask(assign.task)"
                       class="action-btn"
@@ -2945,6 +3025,52 @@ async function deleteTask(id) {
     await alertDialog({
       title: "Gagal",
       message: errorMsg.value,
+      danger: true,
+      confirmText: "Tutup",
+    });
+  }
+}
+
+async function handleCarryOverInitiative(ini) {
+  const ok = await confirmDialog(`Carry over inisiatif "${ini.title}" ke sprint berikutnya?`);
+  if (!ok) return;
+  try {
+    const res = await $fetch(`${API}/initiatives/${ini.id}/carry-over`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    await alertDialog({
+      title: "Sukses",
+      message: res.message || "Inisiatif berhasil dipindahkan ke sprint berikutnya.",
+    });
+    await fetchMyWork();
+  } catch (err) {
+    await alertDialog({
+      title: "Gagal",
+      message: err?.data?.message || err.message || "Gagal melakukan carry over inisiatif",
+      danger: true,
+      confirmText: "Tutup",
+    });
+  }
+}
+
+async function handleCarryOverTask(task) {
+  const ok = await confirmDialog(`Carry over task "${task.title}" ke sprint berikutnya?`);
+  if (!ok) return;
+  try {
+    const res = await $fetch(`${API}/tasks/${task.id}/carry-over`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    await alertDialog({
+      title: "Sukses",
+      message: res.message || "Task berhasil dipindahkan ke sprint berikutnya.",
+    });
+    await fetchMyWork();
+  } catch (err) {
+    await alertDialog({
+      title: "Gagal",
+      message: err?.data?.message || err.message || "Gagal melakukan carry over task",
       danger: true,
       confirmText: "Tutup",
     });

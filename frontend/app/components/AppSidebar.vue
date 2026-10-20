@@ -254,7 +254,7 @@
           <span v-if="isOpen">Capaian Task Member</span>
         </NuxtLink>
         <NuxtLink
-          v-if="isAdmin || isCLevel || isManager"
+          v-if="isAdmin || isCLevel || isManager || isLeader"
           to="/sprint-report"
           title="Laporan Capaian Sprint"
           :style="navItemStyle('/sprint-report')"

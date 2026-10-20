@@ -15,6 +15,7 @@ import {
 import {
   deleteTask,
   updateTask,
+  carryOverTaskHandler,
 } from "../controllers/initiative.controller";
 
 
@@ -78,6 +79,14 @@ router.put(
   authMiddleware,
   roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
   updateTask,
+);
+
+// Carry-over task
+router.post(
+  "/:id/carry-over",
+  authMiddleware,
+  roleGuard(["ADMIN", "MANAGER", "LEADER", "TEAM"]),
+  carryOverTaskHandler,
 );
 
 // Delete task
