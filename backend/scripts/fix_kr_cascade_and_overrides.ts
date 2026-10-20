@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { cascadeInitiativeToMonthlyKr } from "../src/controllers/initiative.controller";
+import { calculateProgressPercent, calculateAutoStatus } from "../src/utils/progress";
 
 const prisma = new PrismaClient();
 
@@ -60,6 +61,29 @@ async function main() {
     console.log(`  Inisiatif (${kr.initiatives.length}):`);
     for (const ini of kr.initiatives) {
       console.log(`    - ${ini.title} (Val: ${ini.currentValue}/${ini.targetValue})`);
+    }
+  }
+
+  // 3. Periksa KeyResult tanpa inisiatif yang tidak manual override
+  const krsWithoutInits = await prisma.keyResult.findMany({
+    where: {
+      isActive: true,
+      isManualOverride: false,
+      initiatives: {
+        none: { isActive: true },
+      },
+    },
+  });
+
+  for (const kr of krsWithoutInits) {
+    const pct = calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType);
+    const autoStatus = calculateAutoStatus(pct);
+    if (kr.status !== autoStatus) {
+      console.log(`Fixing status KR tanpa inisiatif: ${kr.title} -> ${kr.status} to ${autoStatus}`);
+      await prisma.keyResult.update({
+        where: { id: kr.id },
+        data: { status: autoStatus },
+      });
     }
   }
 

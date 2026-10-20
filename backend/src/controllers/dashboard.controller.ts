@@ -48,10 +48,7 @@ function computeSingleInitiativeProgress(init: {
     : 0;
 }
 
-/**
- * Helper: Hitung progress riil Key Result berdasarkan inisiatif & task aktif di dalamnya.
- * Jika tidak ada inisiatif, fallback ke currentValue / targetValue milik KR itu sendiri.
- */
+// ponytail: read kr.currentValue directly from DB; cascade maintains truth
 function computeKrProgress(kr: {
   currentValue: number;
   targetValue: number;
@@ -69,15 +66,6 @@ function computeKrProgress(kr: {
     }>;
   }>;
 }): number {
-  if (kr.initiatives && kr.initiatives.length > 0) {
-    const initProgressList = kr.initiatives.map((init) =>
-      computeSingleInitiativeProgress(init),
-    );
-    const avg =
-      initProgressList.reduce((s, p) => s + p, 0) / initProgressList.length;
-    return Math.round(avg * 10) / 10;
-  }
-
   return kr.targetValue > 0
     ? calculateProgressPercent(kr.currentValue, kr.targetValue, kr.targetType || undefined)
     : 0;

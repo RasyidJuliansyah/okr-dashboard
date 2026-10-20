@@ -3699,6 +3699,16 @@ export async function assignUsersToTask(req: AuthRequest, res: Response) {
   }
 }
 
+function isCurrencyUnit(u?: string | null): boolean {
+  const norm = (u || "").toLowerCase().replace(/[^a-z]/g, "");
+  return norm === "rp" || norm === "rupiah" || norm === "idr";
+}
+
+function isMatchingUnit(u1?: string | null, u2?: string | null): boolean {
+  if (isCurrencyUnit(u1) && isCurrencyUnit(u2)) return true;
+  return (u1 || "").trim().toLowerCase() === (u2 || "").trim().toLowerCase();
+}
+
 // BARU: Cascade dari Initiative ke Monthly Key Result
 // Dibuat dari scratch untuk menangani case isManualOverride
 export async function cascadeInitiativeToMonthlyKr(
@@ -3726,50 +3736,65 @@ export async function cascadeInitiativeToMonthlyKr(
 
   const isPercentUnit = !kr.unit || kr.unit.trim() === "%";
 
+  // ponytail: simple average across initiatives; weighted average when initiative weight customization active
+  const avgPercent =
+    allInitiatives.reduce((sum, init) => {
+      let initProgress = 0;
+      const activeTasks = init.tasks || [];
+      if (activeTasks.length > 0) {
+        const sumTaskPct = activeTasks.reduce((tSum, t) => {
+          const tTgt = t.targetValue || 0;
+          const pct =
+            tTgt > 0
+              ? calculateProgressPercent(t.currentValue, tTgt, t.targetType, t.baselineValue || 0)
+              : 0;
+          return tSum + pct;
+        }, 0);
+        initProgress = (sumTaskPct / activeTasks.length) / 100;
+      } else {
+        const val =
+          init.achievedValue !== null && init.achievedValue !== undefined
+            ? init.achievedValue
+            : (init.currentValue || 0);
+        if (init.targetValue > 0) {
+          initProgress = calculateProgressPercent(val, init.targetValue, init.targetType) / 100;
+        }
+      }
+      return sum + initProgress;
+    }, 0) / allInitiatives.length;
+
   let newKrValue = 0;
 
-  if (isPercentUnit) {
-    // Untuk KR berbasis persentase ('%'), gunakan simple average percentage inisiatif
-    // Jika inisiatif memiliki task, gunakan simple average progress task; jika tidak, gunakan progress inisiatif itu sendiri
-    const avgPercent =
-      allInitiatives.reduce((sum, init) => {
-        let initProgress = 0;
-        const activeTasks = init.tasks || [];
-        if (activeTasks.length > 0) {
-          const sumTaskPct = activeTasks.reduce((tSum, t) => {
-            const tTgt = t.targetValue || 0;
-            const pct =
-              tTgt > 0
-                ? calculateProgressPercent(t.currentValue, tTgt, t.targetType, t.baselineValue || 0)
-                : 0;
-            return tSum + pct;
-          }, 0);
-          initProgress = (sumTaskPct / activeTasks.length) / 100;
-        } else {
-          const val =
-            init.achievedValue !== null && init.achievedValue !== undefined
-              ? init.achievedValue
-              : (init.currentValue || 0);
-          if (init.targetValue > 0) {
-            initProgress = calculateProgressPercent(val, init.targetValue, init.targetType) / 100;
-          }
-        }
-        return sum + initProgress;
-      }, 0) / allInitiatives.length;
-
+  if (kr.targetType === "AT_MOST") {
+    const matching = allInitiatives.filter(
+      (i) => isMatchingUnit(i.unit, kr.unit) && (i.unit || "").trim() !== "%",
+    );
+    if (matching.length > 0) {
+      newKrValue = matching.reduce((sum, init) => {
+        const val =
+          init.achievedValue !== null && init.achievedValue !== undefined
+            ? init.achievedValue
+            : init.currentValue || 0;
+        return sum + val;
+      }, 0);
+    } else {
+      newKrValue = Math.round((1 - avgPercent) * kr.targetValue * 100) / 100;
+    }
+  } else if (isPercentUnit) {
     newKrValue = Math.round(avgPercent * kr.targetValue * 100) / 100;
   } else {
-    // Untuk KR berbasis nominal (IDR, Qty, Jam, Unit, dll):
-    // Agregasikan (sum) realisasi nilai riil dari seluruh Inisiatif di bawah KR ini
-    const sumInitiativeValues = allInitiatives.reduce((sum, init) => {
-      let initVal = init.currentValue || 0;
-      if (init.achievedValue !== null && init.achievedValue !== undefined) {
-        initVal = init.achievedValue;
-      }
-      return sum + initVal;
-    }, 0);
-
-    newKrValue = Math.round(sumInitiativeValues * 100) / 100;
+    const matching = allInitiatives.filter((i) => isMatchingUnit(i.unit, kr.unit));
+    if (matching.length > 0) {
+      newKrValue = matching.reduce((sum, init) => {
+        const val =
+          init.achievedValue !== null && init.achievedValue !== undefined
+            ? init.achievedValue
+            : init.currentValue || 0;
+        return sum + val;
+      }, 0);
+    } else {
+      newKrValue = Math.round(avgPercent * kr.targetValue * 100) / 100;
+    }
   }
 
   const krProgress = calculateProgressPercent(newKrValue, kr.targetValue, kr.targetType);
