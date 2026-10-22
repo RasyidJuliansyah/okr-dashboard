@@ -1,4 +1,4 @@
-# ARCHITECTURE & TECH STACK - SKOLLA BSC & OKR SUITE
+n# ARCHITECTURE & TECH STACK - SKOLLA BSC & OKR SUITE
 
 Dokumen acuan arsitektur sistem, konvensi teknis, dan standar implementasi untuk pengembangan dan vibecoding agen AI selanjutnya.
 
@@ -44,20 +44,20 @@ Dokumen acuan arsitektur sistem, konvensi teknis, dan standar implementasi untuk
 
 ## 2. Tech Stack Matrix
 
-| Layer | Komponen / Library | Versi | Peruntukan / Alasan Penggunaan |
-|---|---|---|---|
-| **Frontend Framework** | Nuxt | `^4.4.8` | SSR framework berbasis Vue 3, Nitro engine, file-based routing |
-| **Frontend Core** | Vue.js | `^3.5.38` | Reactive UI framework (Composition API, `<script setup>`) |
-| **State Management** | Pinia + `@pinia/nuxt`| `^3.0.4` / `^0.11.3` | Global state (auth, initiative, theme, navigation) |
-| **Grafik & Visualisasi** | Chart.js & Vue-ChartJS | `^4.5.1` / `^5.3.4` | Visualisasi performa BSC, progres kuartal, target vs aktual |
-| **Diagram Causal / Graph**| `@vue-flow/core` | `^1.48.2` | Strategy Map & Causal Link hierarki antar-KR |
-| **Timeline / Gantt** | Frappe Gantt | `^1.2.2` | Timeline jadwal task & sprint execution |
-| **Backend Framework** | Express.js | `^4.18.3` | REST API micro-framework cepat & minimalis |
-| **Language & Runtime** | Node.js / TypeScript | `20-alpine` / `^5.3.3` | Type safety end-to-end, compile via `tsc` |
-| **ORM / Data Access** | Prisma Client & CLI | `^5.10.2` | Type-safe query builder, migration, relation schema |
-| **Security & Auth** | `jsonwebtoken` + `bcrypt` | `^9.0.2` / `^5.1.1` | Stateless JWT Bearer Auth + salted password hashing |
-| **Database** | MySQL | `8.0+` | Relational storage ACID, InnoDB engine, foreign keys |
-| **Container Engine** | Docker & Docker Compose | `3.8 spec` | Multi-stage build isolation dev & production |
+| Layer                      | Komponen / Library        | Versi                  | Peruntukan / Alasan Penggunaan                                 |
+| -------------------------- | ------------------------- | ---------------------- | -------------------------------------------------------------- |
+| **Frontend Framework**     | Nuxt                      | `^4.4.8`               | SSR framework berbasis Vue 3, Nitro engine, file-based routing |
+| **Frontend Core**          | Vue.js                    | `^3.5.38`              | Reactive UI framework (Composition API, `<script setup>`)      |
+| **State Management**       | Pinia + `@pinia/nuxt`     | `^3.0.4` / `^0.11.3`   | Global state (auth, initiative, theme, navigation)             |
+| **Grafik & Visualisasi**   | Chart.js & Vue-ChartJS    | `^4.5.1` / `^5.3.4`    | Visualisasi performa BSC, progres kuartal, target vs aktual    |
+| **Diagram Causal / Graph** | `@vue-flow/core`          | `^1.48.2`              | Strategy Map & Causal Link hierarki antar-KR                   |
+| **Timeline / Gantt**       | Frappe Gantt              | `^1.2.2`               | Timeline jadwal task & sprint execution                        |
+| **Backend Framework**      | Express.js                | `^4.18.3`              | REST API micro-framework cepat & minimalis                     |
+| **Language & Runtime**     | Node.js / TypeScript      | `20-alpine` / `^5.3.3` | Type safety end-to-end, compile via `tsc`                      |
+| **ORM / Data Access**      | Prisma Client & CLI       | `^5.10.2`              | Type-safe query builder, migration, relation schema            |
+| **Security & Auth**        | `jsonwebtoken` + `bcrypt` | `^9.0.2` / `^5.1.1`    | Stateless JWT Bearer Auth + salted password hashing            |
+| **Database**               | MySQL                     | `8.0+`                 | Relational storage ACID, InnoDB engine, foreign keys           |
+| **Container Engine**       | Docker & Docker Compose   | `3.8 spec`             | Multi-stage build isolation dev & production                   |
 
 ---
 
@@ -100,6 +100,7 @@ okr-dashboard2_dev/
 ## 4. Pola Arsitektur Inti (Core Patterns)
 
 ### 4.1 Hierarki Cascading OKR
+
 1. **Corporate Objective**: Strategi payung tahunan (`year = '2026'`).
 2. **Key Result (KR)**: Metrik kuantitatif 4 perspektif BSC (`FINANCIAL`, `CUSTOMER`, `INTERNAL_PROCESS`, `LEARNING_GROWTH`). Total target: 42 KR aktif.
 3. **Decoupled KR & Sprint**: KR bersifat tahunan/siklus panjang, sedangkan Initiative & Task diikat pada Sprint aktif (`sprint_id`, `sprint_month`). Filter Sprint tidak memotong jumlah 42 KR di dashboard C-Level/Strategy Map.
@@ -107,6 +108,7 @@ okr-dashboard2_dev/
 5. **Task**: Pekerjaan harian yang assigned ke Team Member, mendukung inisiatif atau lintas departemen (cross-dept).
 
 ### 4.2 Formula Progres (Rollup Engine)
+
 - Target Type: `AT_LEAST` (naik lebih baik) vs `AT_MOST` (turun lebih baik/efisiensi).
 - Baseline formula:
   $$\text{Progress \%} = \frac{\text{Current} - \text{Baseline}}{\text{Target} - \text{Baseline}} \times 100$$
@@ -117,6 +119,7 @@ okr-dashboard2_dev/
 - Capaian Task secara otomatis mengagregasi progress Initiative jika unit berbasis persentase (`%`).
 
 ### 4.3 RBAC & RACI Matrix
+
 - **Roles**: `ADMIN`, `C_LEVEL`, `MANAGER`, `LEADER`, `TEAM`.
 - **RACI Matrix pada KR**:
   - `ACCOUNTABLE`: Minimal 1 penanggung jawab utama.
@@ -159,4 +162,3 @@ Saat agen AI membuat fitur baru atau mengedit codebase ini:
   1. Selalu backup folder kode sebelum upload: `cp -r bsc bsc_backup_$(date +%Y%m%d_%H%M)`
   2. Dump database via DBeaver sebelum deploy.
   3. Jika gagal: stop docker, restore folder backup, lalu `docker compose up --build -d`.
-

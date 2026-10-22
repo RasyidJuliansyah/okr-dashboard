@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import * as bcrypt from "bcrypt";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { logAudit } from "../utils/auditLogger";
 import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
@@ -853,25 +854,67 @@ export async function getMyAssignedKrs(req: AuthRequest, res: Response) {
       }
     }
 
-    const whereClause = { userId, keyResult: { isActive: true } };
-
-    const assignments = await prisma.krAssignment.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            department: true,
-            position: true,
-            role: true,
-          },
-        },
-        keyResult: {
-          include: keyResultInclude,
-        },
+    // Non-Admin: Ambil KR yang di-assign langsung OR KR milik departemen user / departemen yang dikelola
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        department: true,
+        position: true,
+        role: true,
+        teamId: true,
       },
+    });
+
+    const managedDepts = await prisma.department.findMany({
+      where: { managerId: userId },
+      select: { value: true },
+    });
+    const deptValues: string[] = managedDepts.map((d) => d.value);
+    if (dbUser?.department && !deptValues.includes(dbUser.department)) {
+      deptValues.push(dbUser.department);
+    }
+
+    const orConditions: any[] = [{ assignments: { some: { userId } } }];
+    if (deptValues.length > 0) {
+      orConditions.push({
+        departments: { some: { department: { in: deptValues } } },
+      });
+    }
+    if (dbUser?.teamId) {
+      orConditions.push({ initiatives: { some: { teamId: dbUser.teamId } } });
+    }
+
+    const krs = await prisma.keyResult.findMany({
+      where: {
+        isActive: true,
+        OR: orConditions,
+      },
+      include: keyResultInclude,
+    });
+
+    const assignments = krs.map((kr: any) => {
+      const existing = kr.assignments?.find((a: any) => a.userId === userId);
+      if (existing) {
+        return {
+          id: existing.id,
+          keyResultId: kr.id,
+          userId: existing.userId,
+          raciRole: existing.raciRole,
+          user: existing.user,
+          keyResult: kr,
+        };
+      }
+      return {
+        id: `dept-${kr.id}-${userId}`,
+        keyResultId: kr.id,
+        userId,
+        raciRole: "ACCOUNTABLE",
+        user: dbUser,
+        keyResult: kr,
+      };
     });
 
     return res.status(200).json(assignments);
@@ -1139,6 +1182,172 @@ export async function delegateKeyResult(req: AuthRequest, res: Response) {
     });
   } catch (error) {
     console.error("Delegate Key Result error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// POST /api/key-results/admin/override-progress
+// Body: { password: string, updates: Array<{ keyResultId: string, newValue: number, note?: string }> }
+export async function adminOverrideKeyResultsProgress(
+  req: AuthRequest,
+  res: Response,
+) {
+  try {
+    const { password, updates } = req.body;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId || userRole !== "ADMIN") {
+      return res.status(403).json({
+        message: "Hanya Admin yang berhak melakukan override capaian KR.",
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        message: "Password otorisasi Admin wajib diisi.",
+      });
+    }
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({
+        message: "Daftar pembaruan KR (updates) tidak boleh kosong.",
+      });
+    }
+
+    // 1. Verifikasi Password Admin
+    const adminUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!adminUser || !adminUser.password) {
+      return res.status(401).json({
+        message: "Akun admin tidak ditemukan atau tidak valid.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, adminUser.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        message: "Password Admin tidak valid. Otorisasi override ditolak.",
+      });
+    }
+
+    // 2. Validasi Tiap Item Update
+    const validatedUpdates: Array<{
+      keyResultId: string;
+      newValue: number;
+      note?: string;
+    }> = [];
+
+    for (const item of updates) {
+      if (!item.keyResultId) {
+        return res.status(400).json({
+          message: "keyResultId wajib diisi pada setiap item update.",
+        });
+      }
+      const val = parseFloat(item.newValue);
+      if (isNaN(val)) {
+        return res.status(400).json({
+          message: `Nilai baru untuk KR ${item.keyResultId} tidak valid.`,
+        });
+      }
+      validatedUpdates.push({
+        keyResultId: item.keyResultId,
+        newValue: val,
+        note: item.note ? String(item.note).trim() : undefined,
+      });
+    }
+
+    // 3. Ambil data KR existing
+    const krIds = validatedUpdates.map((u) => u.keyResultId);
+    const existingKrs = await prisma.keyResult.findMany({
+      where: { id: { in: krIds } },
+    });
+    const krMap = new Map(existingKrs.map((k) => [k.id, k]));
+
+    for (const item of validatedUpdates) {
+      if (!krMap.has(item.keyResultId)) {
+        return res.status(404).json({
+          message: `Key Result ID ${item.keyResultId} tidak ditemukan.`,
+        });
+      }
+    }
+
+    // 4. Update data dalam transaction (Bypass check initiativeCount)
+    const updatedKrs: any[] = [];
+    const affectedAnnualKrIds = new Set<string>();
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of validatedUpdates) {
+        const kr = krMap.get(item.keyResultId)!;
+        const oldValue = kr.currentValue;
+        const progressPct = calculateProgressPercent(
+          item.newValue,
+          kr.targetValue,
+          kr.targetType,
+        );
+        const newStatus = calculateAutoStatus(progressPct);
+
+        const updated = await tx.keyResult.update({
+          where: { id: kr.id },
+          data: {
+            currentValue: item.newValue,
+            status: newStatus,
+            isManualOverride: true,
+          },
+        });
+        updatedKrs.push(updated);
+
+        if (kr.annualKeyResultId) {
+          affectedAnnualKrIds.add(kr.annualKeyResultId);
+        }
+
+        const noteText = item.note
+          ? `[ADMIN OVERRIDE] ${item.note}`
+          : "[ADMIN OVERRIDE] Penyesuaian capaian langsung oleh Admin";
+
+        await tx.krUpdate.create({
+          data: {
+            keyResultId: kr.id,
+            oldValue,
+            newValue: item.newValue,
+            note: noteText,
+            updatedBy: adminUser.name || adminUser.email || "System Admin",
+          },
+        });
+
+        await logAudit(tx as any, {
+          userId,
+          action: "ADMIN_OVERRIDE",
+          entityType: "KEY_RESULT",
+          entityId: kr.id,
+          oldValues: {
+            currentValue: oldValue,
+            status: kr.status,
+          },
+          newValues: {
+            currentValue: item.newValue,
+            status: newStatus,
+            note: noteText,
+            isManualOverride: true,
+          },
+          req,
+        });
+      }
+    });
+
+    // 5. Cascade affected Annual KRs
+    for (const annualKrId of affectedAnnualKrIds) {
+      await cascadeMonthlyKrToAnnual(annualKrId);
+    }
+
+    return res.status(200).json({
+      message: `Berhasil memperbarui ${updatedKrs.length} Key Result melalui Admin Override.`,
+      count: updatedKrs.length,
+      updatedKrs,
+    });
+  } catch (error) {
+    console.error("Admin override Key Result error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

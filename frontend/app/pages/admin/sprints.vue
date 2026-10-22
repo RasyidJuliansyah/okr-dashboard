@@ -81,6 +81,12 @@
 
         <div v-if="loading" class="loading-state">Memuat data sprint...</div>
 
+        <div v-else-if="errorMsg" class="empty-state" style="color: #ef4444;">
+          <p style="font-weight: 600; margin-bottom: 8px;">Gagal memuat data sprint</p>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">{{ errorMsg }}</p>
+          <button class="secondary-btn" @click="fetchSprints">Coba Lagi</button>
+        </div>
+
         <div v-else-if="sprints.length === 0" class="empty-state">
           Belum ada sprint yang dibuat. Klik tombol "+ Generate 12-Bulan Sprint"
           di atas.
@@ -325,9 +331,14 @@ const API = config.public.apiBase || "http://localhost:3001/api";
 const { confirm: confirmDialog } = useConfirm();
 
 function getHeaders() {
+  const token =
+    auth.token ||
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${auth.token}`,
+    Authorization: `Bearer ${token}`,
   };
 }
 
@@ -408,8 +419,12 @@ async function fetchSprints() {
     sprints.value = res.sprints || [];
     activeSprint.value = res.activeSprint || null;
   } catch (err: any) {
-    errorMsg.value =
-      err?.data?.error || err.message || "Gagal memuat data sprint";
+    if (err?.status === 401 || err?.statusCode === 401 || err?.response?.status === 401) {
+      errorMsg.value = "Sesi login kedaluwarsa atau tidak valid (401 Unauthorized). Silakan logout dan login kembali.";
+    } else {
+      errorMsg.value =
+        err?.data?.error || err.message || "Gagal memuat data sprint";
+    }
   } finally {
     loading.value = false;
   }

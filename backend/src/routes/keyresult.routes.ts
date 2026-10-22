@@ -12,6 +12,7 @@ import {
   bulkDeleteKeyResults,
   delegateKeyResult,
   recalculateKeyResultProgress,
+  adminOverrideKeyResultsProgress,
 } from "../controllers/keyresult.controller";
 import { authMiddleware, roleGuard } from "../middleware/auth.middleware";
 
@@ -31,6 +32,12 @@ router.post(
   authMiddleware,
   roleGuard(["ADMIN"]),
   bulkDeleteKeyResults,
+);
+router.post(
+  "/admin/override-progress",
+  authMiddleware,
+  roleGuard(["ADMIN"]),
+  adminOverrideKeyResultsProgress,
 );
 router.put("/:id", authMiddleware, roleGuard(["ADMIN"]), updateKeyResult);
 router.delete("/:id", authMiddleware, roleGuard(["ADMIN"]), deleteKeyResult);

@@ -100,21 +100,37 @@ export async function getAllSprints() {
   });
 }
 
-export async function getActiveSprint() {
+export async function getActiveSprint(year?: string | number) {
+  const activeWhere: any = { status: "ACTIVE" };
+  if (year) {
+    activeWhere.year = String(year);
+  }
   const active = await prisma.sprint.findFirst({
-    where: { status: "ACTIVE" },
+    where: activeWhere,
   });
   if (active) return active;
 
   const now = new Date();
+  const dateWhere: any = {
+    startDate: { lte: now },
+    endDate: { gte: now },
+  };
+  if (year) {
+    dateWhere.year = String(year);
+  }
   const byDate = await prisma.sprint.findFirst({
-    where: {
-      startDate: { lte: now },
-      endDate: { gte: now },
-    },
+    where: dateWhere,
     orderBy: { startDate: "desc" },
   });
-  return byDate || null;
+  if (byDate) return byDate;
+
+  if (year) {
+    return prisma.sprint.findFirst({
+      where: { status: "ACTIVE" },
+    });
+  }
+
+  return null;
 }
 
 /**

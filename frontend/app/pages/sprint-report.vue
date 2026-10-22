@@ -563,9 +563,14 @@ const selectedSprint = computed(() => {
 });
 
 function getHeaders() {
+  const token =
+    auth.token ||
+    (typeof localStorage !== "undefined"
+      ? localStorage.getItem("auth_token") || localStorage.getItem("token")
+      : "");
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${auth.token}`,
+    Authorization: `Bearer ${token}`,
   };
 }
 

@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { getDepartmentLeaderInfo, getLeaderTeamIds } from "./initiative.controller";
 import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
+import * as sprintService from "../services/sprint.service";
 
 const prisma = new PrismaClient();
 
@@ -71,6 +72,60 @@ function computeKrProgress(kr: {
     : 0;
 }
 
+function computeKrProgressAndStatus(kr: any, sprintId?: string | null) {
+  const st = kr.sprintTargets?.[0];
+  let pct = 0;
+  let currentVal = kr.currentValue;
+  let targetVal = kr.targetValue;
+  let status = kr.status;
+
+  if (st && st.targetValue > 0) {
+    currentVal = st.currentValue;
+    targetVal = st.targetValue;
+    pct = calculateProgressPercent(
+      st.currentValue,
+      st.targetValue,
+      kr.targetType || undefined,
+      st.baselineValue || 0,
+    );
+    status = kr.isManualOverride ? kr.status : calculateAutoStatus(pct);
+  } else if (sprintId) {
+    const sprintInis = kr.initiatives || [];
+    if (sprintInis.length > 0) {
+      const sumProg = sprintInis.reduce((s: number, ini: any) => {
+        return s + computeSingleInitiativeProgress(ini);
+      }, 0);
+      const avgPercent = (sumProg / sprintInis.length) / 100;
+      if (kr.targetType === "AT_MOST") {
+        currentVal = Math.round((1 - avgPercent) * kr.targetValue * 100) / 100;
+      } else {
+        currentVal = Math.round(avgPercent * kr.targetValue * 100) / 100;
+      }
+      targetVal = kr.targetValue;
+      pct = kr.targetValue > 0 ? calculateProgressPercent(currentVal, targetVal, kr.targetType || undefined) : 0;
+      status = kr.isManualOverride ? kr.status : (pct === 0 ? "NOT_STARTED" : calculateAutoStatus(pct));
+    } else {
+      pct = 0;
+      currentVal = 0;
+      targetVal = kr.targetValue;
+      status = "NOT_STARTED";
+    }
+  } else {
+    pct = computeKrProgress(kr);
+    status = kr.isManualOverride ? kr.status : calculateAutoStatus(pct);
+  }
+
+  return {
+    progress: pct,
+    status,
+    currentValue: currentVal,
+    targetValue: targetVal,
+    annualCurrentValue: kr.currentValue,
+    annualTargetValue: kr.targetValue,
+    sprintTarget: st || null,
+  };
+}
+
 export async function getDashboardSummary(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {
@@ -78,6 +133,95 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
     }
 
     const { id: userId, role } = req.user;
+
+    const monthParam = (
+      (req.query.sprintId as string | undefined) ||
+      (req.query.month as string | undefined)
+    )?.trim();
+    const yearParam = (req.query.year as string | undefined)?.trim();
+
+    let resolvedSprint: any = null;
+    if (monthParam) {
+      resolvedSprint = await sprintService.resolveSprint({
+        sprintId: monthParam,
+        sprintMonth: monthParam,
+        fallbackToActive: false,
+      });
+      if (!resolvedSprint) {
+        resolvedSprint = await prisma.sprint.findFirst({
+          where: {
+            OR: [
+              { id: monthParam },
+              { name: monthParam },
+              { name: { contains: monthParam } },
+            ],
+          },
+        });
+      }
+    }
+
+    if (!resolvedSprint) {
+      const currentYear = yearParam || new Date().getFullYear();
+      resolvedSprint = await sprintService.getActiveSprint(currentYear);
+      if (!resolvedSprint) {
+        resolvedSprint = await sprintService.getActiveSprint();
+      }
+    }
+
+    const resolvedSprintId = resolvedSprint?.id || null;
+    const resolvedMonth = resolvedSprint?.name || monthParam || null;
+    const sprintMeta = resolvedSprint
+      ? {
+          id: resolvedSprint.id,
+          name: resolvedSprint.name,
+          startDate: resolvedSprint.startDate,
+          endDate: resolvedSprint.endDate,
+          status: resolvedSprint.status,
+          year: resolvedSprint.year,
+        }
+      : null;
+
+    const sprintFilter = resolvedSprintId
+      ? {
+          OR: [
+            { sprintId: resolvedSprintId },
+            { sprintMonth: resolvedSprintId },
+            ...(resolvedMonth ? [{ sprintMonth: resolvedMonth }] : []),
+            {
+              tasks: {
+                some: {
+                  isActive: true,
+                  OR: [
+                    { sprintId: resolvedSprintId },
+                    { sprintMonth: resolvedSprintId },
+                    ...(resolvedMonth ? [{ sprintMonth: resolvedMonth }] : []),
+                  ],
+                },
+              },
+            },
+          ],
+        }
+      : null;
+
+    const taskSprintFilter = resolvedSprintId
+      ? {
+          OR: [
+            { sprintId: resolvedSprintId },
+            { sprintMonth: resolvedSprintId },
+            ...(resolvedMonth ? [{ sprintMonth: resolvedMonth }] : []),
+            ...(resolvedSprint?.startDate && resolvedSprint?.endDate
+              ? [
+                  {
+                    finishDate: {
+                      gte: new Date(resolvedSprint.startDate),
+                      lte: new Date(resolvedSprint.endDate),
+                    },
+                  },
+                ]
+              : []),
+          ],
+        }
+      : null;
 
     // --- Ambil data user dari DB ---
     const dbUser = await prisma.user.findUnique({
@@ -89,7 +233,11 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
     if (role === "TEAM") {
       const initiatives = dbUser?.teamId
         ? await prisma.initiative.findMany({
-            where: { teamId: dbUser.teamId, isActive: true },
+            where: {
+              teamId: dbUser.teamId,
+              isActive: true,
+              ...(sprintFilter ? { AND: [sprintFilter] } : {}),
+            },
             include: {
               keyResult: {
                 select: {
@@ -104,7 +252,10 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
                 },
               },
               tasks: {
-                where: { isActive: true },
+                where: {
+                  isActive: true,
+                  ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
+                },
                 include: {
                   assignments: { where: { userId }, select: { userId: true } },
                 },
@@ -120,6 +271,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
             { assignedTeamMemberId: userId },
             { assignments: { some: { userId } } },
           ],
+          ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
         },
         include: {
           initiative: {
@@ -188,9 +340,22 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
               where: { id: { in: scopedKrIds }, isActive: true },
               include: {
                 initiatives: {
-                  where: { isActive: true },
-                  include: { tasks: { where: { isActive: true } } },
+                  where: {
+                    isActive: true,
+                    ...(sprintFilter ? { AND: [sprintFilter] } : {}),
+                  },
+                  include: {
+                    tasks: {
+                      where: {
+                        isActive: true,
+                        ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
+                      },
+                    },
+                  },
                 },
+                ...(resolvedSprintId
+                  ? { sprintTargets: { where: { sprintId: resolvedSprintId } } }
+                  : {}),
               },
             })
           : [];
@@ -199,22 +364,28 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         sumProgress = 0,
         onTrackCount = 0,
         atRiskCount = 0,
-        offTrackCount = 0;
+        offTrackCount = 0,
+        behindCount = 0,
+        notStartedCount = 0;
 
       // Metrik TEAM dihitung dari agregat KR yang diampu jika ada, fallback ke Task / Initiative
       let mappedScopedKrs: any[] = [];
       if (scopedKrDetails.length > 0) {
         totalCount = scopedKrDetails.length;
         mappedScopedKrs = scopedKrDetails.map((kr: any) => {
-          const pct = computeKrProgress(kr);
-          sumProgress += pct;
-          const status = kr.isManualOverride
-            ? kr.status
-            : calculateAutoStatus(pct);
-          if (status === "ON_TRACK") onTrackCount++;
-          else if (status === "AT_RISK") atRiskCount++;
-          else if (status === "OFF_TRACK") offTrackCount++;
-          return { ...kr, progress: pct, status };
+          const computed = computeKrProgressAndStatus(kr, resolvedSprintId);
+          sumProgress += computed.progress;
+          const s = String(computed.status || "").toUpperCase();
+          if (s === "ON_TRACK") onTrackCount++;
+          else if (s === "AT_RISK") atRiskCount++;
+          else if (s === "OFF_TRACK" || s === "BEHIND") {
+            offTrackCount++;
+            behindCount++;
+          }
+          if (computed.progress === 0 || s === "NOT_STARTED") {
+            notStartedCount++;
+          }
+          return { ...kr, ...computed };
         });
       } else if (myTasks.length > 0) {
         totalCount = myTasks.length;
@@ -231,9 +402,16 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
               : 0;
           sumProgress += pct;
           const status = calculateAutoStatus(pct);
-          if (status === "ON_TRACK") onTrackCount++;
-          else if (status === "AT_RISK") atRiskCount++;
-          else if (status === "OFF_TRACK") offTrackCount++;
+          const s = String(status || "").toUpperCase();
+          if (s === "ON_TRACK") onTrackCount++;
+          else if (s === "AT_RISK") atRiskCount++;
+          else if (s === "OFF_TRACK" || s === "BEHIND") {
+            offTrackCount++;
+            behindCount++;
+          }
+          if (pct === 0 || s === "NOT_STARTED") {
+            notStartedCount++;
+          }
         });
       } else if (initiatives.length > 0) {
         totalCount = initiatives.length;
@@ -241,15 +419,25 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           const initProgress = computeSingleInitiativeProgress(ini);
           sumProgress += initProgress;
           const status = calculateAutoStatus(initProgress);
-          if (status === "ON_TRACK") onTrackCount++;
-          else if (status === "AT_RISK") atRiskCount++;
-          else if (status === "OFF_TRACK") offTrackCount++;
+          const s = String(status || "").toUpperCase();
+          if (s === "ON_TRACK") onTrackCount++;
+          else if (s === "AT_RISK") atRiskCount++;
+          else if (s === "OFF_TRACK" || s === "BEHIND") {
+            offTrackCount++;
+            behindCount++;
+          }
+          if (initProgress === 0 || s === "NOT_STARTED") {
+            notStartedCount++;
+          }
         });
       }
 
       return res.status(200).json({
         role,
         scope: "team",
+        month: resolvedMonth,
+        sprint: sprintMeta,
+        resolvedSprint: sprintMeta,
         metrics: {
           totalObjectives: initiatives.length,
           totalKeyResults: totalCount,
@@ -259,6 +447,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           onTrackCount,
           atRiskCount,
           offTrackCount,
+          behindCount,
+          notStartedCount,
         },
         initiatives,
         myTasks,
@@ -287,6 +477,7 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
             { ownerId: userId },
             { assignedLeaderId: userId },
           ],
+          ...(sprintFilter ? { AND: [sprintFilter] } : {}),
         },
         include: {
           keyResult: {
@@ -302,7 +493,12 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
             },
           },
           team: { select: { id: true, name: true } },
-          tasks: { where: { isActive: true } },
+          tasks: {
+            where: {
+              isActive: true,
+              ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
+            },
+          },
         },
       });
 
@@ -340,9 +536,22 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
               where: { id: { in: leaderKrIds }, isActive: true },
               include: {
                 initiatives: {
-                  where: { isActive: true },
-                  include: { tasks: { where: { isActive: true } } },
+                  where: {
+                    isActive: true,
+                    ...(sprintFilter ? { AND: [sprintFilter] } : {}),
+                  },
+                  include: {
+                    tasks: {
+                      where: {
+                        isActive: true,
+                        ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
+                      },
+                    },
+                  },
                 },
+                ...(resolvedSprintId
+                  ? { sprintTargets: { where: { sprintId: resolvedSprintId } } }
+                  : {}),
               },
             })
           : [];
@@ -351,22 +560,28 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         sumProgress = 0,
         onTrackCount = 0,
         atRiskCount = 0,
-        offTrackCount = 0;
+        offTrackCount = 0,
+        behindCount = 0,
+        notStartedCount = 0;
 
       // Metrik LEADER dihitung dari agregat KR yang diampu jika ada, fallback ke Inisiatif tim
       let mappedLeaderKrs: any[] = [];
       if (leaderKrDetails.length > 0) {
         totalCount = leaderKrDetails.length;
         mappedLeaderKrs = leaderKrDetails.map((kr: any) => {
-          const pct = computeKrProgress(kr);
-          sumProgress += pct;
-          const status = kr.isManualOverride
-            ? kr.status
-            : calculateAutoStatus(pct);
-          if (status === "ON_TRACK") onTrackCount++;
-          else if (status === "AT_RISK") atRiskCount++;
-          else if (status === "OFF_TRACK") offTrackCount++;
-          return { ...kr, progress: pct, status };
+          const computed = computeKrProgressAndStatus(kr, resolvedSprintId);
+          sumProgress += computed.progress;
+          const s = String(computed.status || "").toUpperCase();
+          if (s === "ON_TRACK") onTrackCount++;
+          else if (s === "AT_RISK") atRiskCount++;
+          else if (s === "OFF_TRACK" || s === "BEHIND") {
+            offTrackCount++;
+            behindCount++;
+          }
+          if (computed.progress === 0 || s === "NOT_STARTED") {
+            notStartedCount++;
+          }
+          return { ...kr, ...computed };
         });
       } else if (initiatives.length > 0) {
         totalCount = initiatives.length;
@@ -374,9 +589,16 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           const initProgress = computeSingleInitiativeProgress(ini);
           sumProgress += initProgress;
           const status = calculateAutoStatus(initProgress);
-          if (status === "ON_TRACK") onTrackCount++;
-          else if (status === "AT_RISK") atRiskCount++;
-          else if (status === "OFF_TRACK") offTrackCount++;
+          const s = String(status || "").toUpperCase();
+          if (s === "ON_TRACK") onTrackCount++;
+          else if (s === "AT_RISK") atRiskCount++;
+          else if (s === "OFF_TRACK" || s === "BEHIND") {
+            offTrackCount++;
+            behindCount++;
+          }
+          if (initProgress === 0 || s === "NOT_STARTED") {
+            notStartedCount++;
+          }
         });
       }
 
@@ -534,6 +756,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       return res.status(200).json({
         role,
         scope: "leader",
+        month: resolvedMonth,
+        sprint: sprintMeta,
+        resolvedSprint: sprintMeta,
         metrics: {
           totalObjectives: initiatives.length,
           totalKeyResults: totalCount,
@@ -543,6 +768,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           onTrackCount,
           atRiskCount,
           offTrackCount,
+          behindCount,
+          notStartedCount,
         },
         leadingTeams,
         initiatives,
@@ -600,11 +827,22 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
                 },
                 departments: true,
                 initiatives: {
-                  where: { isActive: true },
+                  where: {
+                    isActive: true,
+                    ...(sprintFilter ? { AND: [sprintFilter] } : {}),
+                  },
                   include: {
-                    tasks: { where: { isActive: true } },
+                    tasks: {
+                      where: {
+                        isActive: true,
+                        ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
+                      },
+                    },
                   },
                 },
+                ...(resolvedSprintId
+                  ? { sprintTargets: { where: { sprintId: resolvedSprintId } } }
+                  : {}),
               },
             },
           },
@@ -795,7 +1033,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         sumProgress = 0,
         onTrackCount = 0,
         atRiskCount = 0,
-        offTrackCount = 0;
+        offTrackCount = 0,
+        behindCount = 0,
+        notStartedCount = 0;
       const allInitiatives: any[] = [];
       const detailedObjectives = objectives.map((obj) => {
         const keyResultsWithProgress = obj.keyResults.map((kr: any) => {
@@ -803,15 +1043,19 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           if (kr.initiatives && kr.initiatives.length > 0) {
             allInitiatives.push(...kr.initiatives);
           }
-          const progressPercent = computeKrProgress(kr);
-          sumProgress += progressPercent;
-          const status = kr.isManualOverride
-            ? kr.status
-            : calculateAutoStatus(progressPercent);
-          if (status === "ON_TRACK") onTrackCount++;
-          else if (status === "AT_RISK") atRiskCount++;
-          else if (status === "OFF_TRACK") offTrackCount++;
-          return { ...kr, progress: progressPercent, status };
+          const computed = computeKrProgressAndStatus(kr, resolvedSprintId);
+          sumProgress += computed.progress;
+          const s = String(computed.status || "").toUpperCase();
+          if (s === "ON_TRACK") onTrackCount++;
+          else if (s === "AT_RISK") atRiskCount++;
+          else if (s === "OFF_TRACK" || s === "BEHIND") {
+            offTrackCount++;
+            behindCount++;
+          }
+          if (computed.progress === 0 || s === "NOT_STARTED") {
+            notStartedCount++;
+          }
+          return { ...kr, ...computed };
         });
         const avgObjProgress =
           keyResultsWithProgress.length > 0
@@ -839,6 +1083,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         role,
         scope: "department",
         department: managerDept,
+        month: resolvedMonth,
+        sprint: sprintMeta,
+        resolvedSprint: sprintMeta,
         metrics: {
           totalObjectives: objectives.length,
           totalKeyResults: totalKRs,
@@ -847,6 +1094,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
           onTrackCount,
           atRiskCount,
           offTrackCount,
+          behindCount,
+          notStartedCount,
         },
         objectives: detailedObjectives,
         pendingApprovals,
@@ -875,11 +1124,22 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
             },
             departments: true,
             initiatives: {
-              where: { isActive: true },
+              where: {
+                isActive: true,
+                ...(sprintFilter ? { AND: [sprintFilter] } : {}),
+              },
               include: {
-                tasks: { where: { isActive: true } },
+                tasks: {
+                  where: {
+                    isActive: true,
+                    ...(taskSprintFilter ? { AND: [taskSprintFilter] } : {}),
+                  },
+                },
               },
             },
+            ...(resolvedSprintId
+              ? { sprintTargets: { where: { sprintId: resolvedSprintId } } }
+              : {}),
           },
         },
       },
@@ -891,7 +1151,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
       sumProgress = 0,
       onTrackCount = 0,
       atRiskCount = 0,
-      offTrackCount = 0;
+      offTrackCount = 0,
+      behindCount = 0,
+      notStartedCount = 0;
     const allInitiatives: any[] = [];
     const detailedObjectives = objectives.map((obj) => {
       const keyResultsWithProgress = obj.keyResults.map((kr: any) => {
@@ -899,15 +1161,19 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         if (kr.initiatives && kr.initiatives.length > 0) {
           allInitiatives.push(...kr.initiatives);
         }
-        const progressPercent = computeKrProgress(kr);
-        sumProgress += progressPercent;
-        const status = kr.isManualOverride
-          ? kr.status
-          : calculateAutoStatus(progressPercent);
-        if (status === "ON_TRACK") onTrackCount++;
-        else if (status === "AT_RISK") atRiskCount++;
-        else if (status === "OFF_TRACK") offTrackCount++;
-        return { ...kr, progress: progressPercent, status };
+        const computed = computeKrProgressAndStatus(kr, resolvedSprintId);
+        sumProgress += computed.progress;
+        const s = String(computed.status || "").toUpperCase();
+        if (s === "ON_TRACK") onTrackCount++;
+        else if (s === "AT_RISK") atRiskCount++;
+        else if (s === "OFF_TRACK" || s === "BEHIND") {
+          offTrackCount++;
+          behindCount++;
+        }
+        if (computed.progress === 0 || s === "NOT_STARTED") {
+          notStartedCount++;
+        }
+        return { ...kr, ...computed };
       });
       const avgObjProgress =
         keyResultsWithProgress.length > 0
@@ -931,6 +1197,9 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
     return res.status(200).json({
       role,
       scope: "company",
+      month: resolvedMonth,
+      sprint: sprintMeta,
+      resolvedSprint: sprintMeta,
       metrics: {
         totalObjectives: objectives.length,
         totalKeyResults: totalKRs,
@@ -939,6 +1208,8 @@ export async function getDashboardSummary(req: AuthRequest, res: Response) {
         onTrackCount,
         atRiskCount,
         offTrackCount,
+        behindCount,
+        notStartedCount,
       },
       objectives: detailedObjectives,
     });

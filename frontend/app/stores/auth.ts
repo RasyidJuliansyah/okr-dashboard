@@ -23,16 +23,39 @@ export interface User {
 
 export const useAuthStore = defineStore("auth", {
   state: () => {
-    const tokenCookie = useCookie<string | null>("auth_token", {
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    const userCookie = useCookie<User | null>("auth_user", {
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    let token: string | null = null;
+    let user: User | null = null;
+
+    try {
+      const tokenCookie = useCookie<string | null>("auth_token", {
+        maxAge: 60 * 60 * 24 * 7,
+      });
+      const userCookie = useCookie<User | null>("auth_user", {
+        maxAge: 60 * 60 * 24 * 7,
+      });
+      token = tokenCookie.value || null;
+      user = userCookie.value || null;
+    } catch (e) {}
+
+    if (!token && typeof window !== "undefined") {
+      token =
+        localStorage.getItem("auth_token") ||
+        localStorage.getItem("token") ||
+        null;
+    }
+    if (!user && typeof window !== "undefined") {
+      const stored =
+        localStorage.getItem("auth_user") || localStorage.getItem("user");
+      if (stored) {
+        try {
+          user = JSON.parse(stored);
+        } catch (e) {}
+      }
+    }
 
     return {
-      token: tokenCookie.value || null,
-      user: userCookie.value || null,
+      token,
+      user,
     };
   },
   getters: {

@@ -179,11 +179,32 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       };
     });
 
-    // 3. Department progress aggregation
+    // 3. Department progress aggregation: pre-populate all active departments
+    const activeDepartments = await prisma.department.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+    });
+
     const deptMap: Record<
       string,
-      { name: string; totalProgress: number; count: number }
+      {
+        code: string;
+        name: string;
+        totalProgress: number;
+        count: number;
+        keyResults: any[];
+      }
     > = {};
+
+    activeDepartments.forEach((d) => {
+      deptMap[d.value] = {
+        code: d.value,
+        name: d.name,
+        totalProgress: 0,
+        count: 0,
+        keyResults: [],
+      };
+    });
 
     // 4. Critical KRs
     const criticalKrs: any[] = [];
@@ -283,17 +304,46 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         initiatives: mappedInitiatives,
       });
 
-      // Department aggregation
-      kr.departments.forEach((d) => {
-        if (!deptMap[d.department]) {
-          deptMap[d.department] = {
-            name: d.department,
+      // Department aggregation - associate KR with all its departments (KrDepartment + assigned users)
+      const krDeptCodes = new Set<string>();
+      kr.departments.forEach((d) => krDeptCodes.add(d.department));
+      kr.assignments.forEach((a) => {
+        if (a.user?.department) krDeptCodes.add(a.user.department);
+      });
+
+      if (krDeptCodes.size === 0) {
+        if (kr.objective.title.includes("B2B")) krDeptCodes.add("B2B_CORPORATE");
+        else if (kr.objective.title.includes("B2C")) krDeptCodes.add("B2C");
+        else if (kr.objective.title.includes("B2S")) krDeptCodes.add("B2S");
+      }
+
+      krDeptCodes.forEach((deptCode) => {
+        if (!deptMap[deptCode]) {
+          deptMap[deptCode] = {
+            code: deptCode,
+            name: deptCode,
             totalProgress: 0,
             count: 0,
+            keyResults: [],
           };
         }
-        deptMap[d.department].totalProgress += progressRounded;
-        deptMap[d.department].count++;
+        deptMap[deptCode].totalProgress += progressRounded;
+        deptMap[deptCode].count++;
+        deptMap[deptCode].keyResults.push({
+          id: kr.id,
+          title: kr.title,
+          progress: progressRounded,
+          status: kr.status,
+          currentValue: kr.currentValue,
+          targetValue: kr.targetValue,
+          targetType: kr.targetType,
+          unit: kr.unit,
+          bscPerspective: kr.bscPerspective,
+          objectiveTitle: kr.objective.title,
+          responsible,
+          accountables,
+          assignments,
+        });
       });
 
       // Critical KRs (AT_RISK or OFF_TRACK)
@@ -354,15 +404,22 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       );
     });
 
-    // Department averages, sorted by progress desc
+    // Department averages, sorted by progress desc (departments with KRs first, then 0 KR)
     const byDepartment = Object.values(deptMap)
       .map((d) => ({
         department: d.name,
+        departmentCode: d.code,
+        departmentName: d.name,
         averageProgress:
           d.count > 0 ? Math.round((d.totalProgress / d.count) * 10) / 10 : 0,
         krCount: d.count,
+        keyResults: d.keyResults.sort((a, b) => b.progress - a.progress),
       }))
-      .sort((a, b) => b.averageProgress - a.averageProgress);
+      .sort((a, b) => {
+        if (b.krCount === 0 && a.krCount > 0) return -1;
+        if (a.krCount === 0 && b.krCount > 0) return 1;
+        return b.averageProgress - a.averageProgress;
+      });
 
     // Overall health score = mean of non-empty perspectives
     const nonEmpty = PERSPECTIVES.filter(

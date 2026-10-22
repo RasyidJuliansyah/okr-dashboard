@@ -703,6 +703,35 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
     const { role, id: userId } = req.user!;
     let where: any = { isActive: true };
 
+    const sprintParam = (
+      (req.query.sprintId as string | undefined) ||
+      (req.query.sprintMonth as string | undefined) ||
+      (req.query.month as string | undefined)
+    )?.trim();
+
+    let targetSprint: any = null;
+    if (sprintParam && sprintParam !== "ALL") {
+      targetSprint = await resolveSprint({
+        sprintId: sprintParam,
+        sprintMonth: sprintParam,
+        fallbackToActive: false,
+      });
+      if (!targetSprint) {
+        targetSprint = await prisma.sprint.findFirst({
+          where: {
+            OR: [
+              { id: sprintParam },
+              { name: sprintParam },
+              { name: { contains: sprintParam } },
+            ],
+          },
+        });
+      }
+    }
+
+    const sprintId = targetSprint?.id || sprintParam;
+    const sprintName = targetSprint?.name || sprintParam;
+
     // LEADER: hanya tim yang dipimpin
     if (role === "LEADER") {
       const leaderTeamIds = await getLeaderTeamIds(userId);
@@ -723,6 +752,31 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
       }
     }
     // ADMIN & C_LEVEL: semua (no filter)
+
+    if (sprintParam && sprintParam !== "ALL") {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { sprintId },
+            { sprintMonth: sprintId },
+            ...(sprintName ? [{ sprintMonth: sprintName }] : []),
+            {
+              tasks: {
+                some: {
+                  isActive: true,
+                  OR: [
+                    { sprintId },
+                    { sprintMonth: sprintId },
+                    ...(sprintName ? [{ sprintMonth: sprintName }] : []),
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ];
+    }
 
     const initiatives = await prisma.initiative.findMany({
       where,
@@ -749,7 +803,28 @@ export async function getInitiativeProgress(req: AuthRequest, res: Response) {
         owner: { select: { id: true, name: true, position: true } },
         sprint: { select: { id: true, name: true, status: true } },
         tasks: {
-          where: { isActive: true },
+          where: {
+            isActive: true,
+            ...(sprintParam && sprintParam !== "ALL"
+              ? {
+                  OR: [
+                    { sprintId },
+                    { sprintMonth: sprintId },
+                    ...(sprintName ? [{ sprintMonth: sprintName }] : []),
+                    ...(targetSprint?.startDate && targetSprint?.endDate
+                      ? [
+                          {
+                            finishDate: {
+                              gte: new Date(targetSprint.startDate),
+                              lte: new Date(targetSprint.endDate),
+                            },
+                          },
+                        ]
+                      : []),
+                  ],
+                }
+              : {}),
+          },
           include: {
             sprint: { select: { id: true, name: true, status: true } },
             assignments: {

@@ -12,35 +12,58 @@
         <div class="controls-content">
           <h2>Ringkasan Progres OKR</h2>
 
-          <!-- Scope Selector (Visible to Admin, C-Level, Manager) -->
-          <div v-if="showScopeSelector" class="scope-selector">
-            <span class="scope-label">Lingkup (Scope):</span>
-            <div class="scope-buttons">
-              <button
-                @click="changeScope('self')"
-                :class="{ active: currentScope === 'self' }"
-                class="scope-btn"
+          <div class="controls-actions">
+            <!-- Sprint Filter (Aligned Right) -->
+            <div class="sprint-filter-inline">
+              <label for="dashboard-sprint-select" class="sprint-filter-label"
+                >Sprint / Bulan:</label
               >
-                Pribadi (Self)
-              </button>
-              <button
-                v-if="auth.user?.role !== 'EMPLOYEE'"
-                @click="changeScope('team')"
-                :class="{ active: currentScope === 'team' }"
-                class="scope-btn"
+              <select
+                id="dashboard-sprint-select"
+                v-model="selectedSprint"
+                @change="onSprintChange"
+                class="sprint-filter-select"
               >
-                Tim (Team)
-              </button>
-              <button
-                v-if="
-                  auth.user?.role === 'C_LEVEL' || auth.user?.role === 'ADMIN'
-                "
-                @click="changeScope('company')"
-                :class="{ active: currentScope === 'company' }"
-                class="scope-btn"
-              >
-                Perusahaan (Company)
-              </button>
+                <option
+                  v-for="sp in availableSprints"
+                  :key="sp.id"
+                  :value="sp.id"
+                >
+                  {{ sp.name }}{{ sp.status === 'ACTIVE' ? ' (Saat Ini)' : sp.status === 'CLOSED' ? ' (Sebelumnya)' : '' }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Scope Selector (Visible to Admin, C-Level, Manager) -->
+            <div v-if="showScopeSelector" class="scope-selector">
+              <span class="scope-label">Lingkup (Scope):</span>
+              <div class="scope-buttons">
+                <button
+                  @click="changeScope('self')"
+                  :class="{ active: currentScope === 'self' }"
+                  class="scope-btn"
+                >
+                  Pribadi (Self)
+                </button>
+                <button
+                  v-if="auth.user?.role !== 'EMPLOYEE'"
+                  @click="changeScope('team')"
+                  :class="{ active: currentScope === 'team' }"
+                  class="scope-btn"
+                >
+                  Tim (Team)
+                </button>
+                <button
+                  v-if="
+                    auth.user?.role === 'C_LEVEL' || auth.user?.role === 'ADMIN'
+                  "
+                  @click="changeScope('company')"
+                  :class="{ active: currentScope === 'company' }"
+                  class="scope-btn"
+                >
+                  Perusahaan (Company)
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -458,7 +481,9 @@
                   v-if="getResponsible(group.keyResult)"
                   class="raci-chip responsible-chip"
                 >
-                  <span class="pic-name">{{ getResponsible(group.keyResult).name }}</span>
+                  <span class="pic-name">{{
+                    getResponsible(group.keyResult).name
+                  }}</span>
                   <span
                     v-if="getResponsible(group.keyResult).department"
                     class="chip-dept"
@@ -477,9 +502,7 @@
                 <span class="raci-section-title">KR Accountability</span>
               </div>
               <div class="raci-section-body">
-                <template
-                  v-if="getAccountables(group.keyResult).length"
-                >
+                <template v-if="getAccountables(group.keyResult).length">
                   <span
                     v-for="acc in getAccountables(group.keyResult)"
                     :key="acc.id"
@@ -501,7 +524,9 @@
             v-for="init in group.initiatives"
             :key="init.id"
             class="init-progress-row"
-            :class="{ 'is-expanded': isInitExpanded(init.id) || isAutoExpanded(init) }"
+            :class="{
+              'is-expanded': isInitExpanded(init.id) || isAutoExpanded(init),
+            }"
           >
             <div
               class="init-row-header"
@@ -518,7 +543,10 @@
                 <span
                   v-if="init.sprint?.name || init.sprintMonth"
                   class="cadence-mini-badge"
-                  :title="'Cadence: ' + (init.sprint?.name || formatSprintLabel(init.sprintMonth))"
+                  :title="
+                    'Cadence: ' +
+                    (init.sprint?.name || formatSprintLabel(init.sprintMonth))
+                  "
                 >
                   <svg
                     width="10"
@@ -530,7 +558,14 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
@@ -558,7 +593,9 @@
                   type="button"
                   class="task-count-mini is-toggleable"
                   @click.stop="toggleInitTasks(init.id)"
-                  :aria-expanded="isInitExpanded(init.id) || isAutoExpanded(init)"
+                  :aria-expanded="
+                    isInitExpanded(init.id) || isAutoExpanded(init)
+                  "
                   :title="
                     isInitExpanded(init.id) || isAutoExpanded(init)
                       ? 'Tutup rincian task'
@@ -570,7 +607,10 @@
                   >
                   <svg
                     class="init-expand-icon"
-                    :class="{ 'is-expanded': isInitExpanded(init.id) || isAutoExpanded(init) }"
+                    :class="{
+                      'is-expanded':
+                        isInitExpanded(init.id) || isAutoExpanded(init),
+                    }"
                     width="13"
                     height="13"
                     viewBox="0 0 24 24"
@@ -598,7 +638,10 @@
 
             <!-- Task detail rows -->
             <div
-              v-if="init.tasks?.length && (isInitExpanded(init.id) || isAutoExpanded(init))"
+              v-if="
+                init.tasks?.length &&
+                (isInitExpanded(init.id) || isAutoExpanded(init))
+              "
               class="task-detail-grid"
             >
               <div
@@ -612,7 +655,10 @@
                     <span
                       v-if="task.isCrossDept"
                       class="task-cross-badge"
-                      :title="(task.creatorDept || '') + (task.targetDept ? ' → ' + task.targetDept : '')"
+                      :title="
+                        (task.creatorDept || '') +
+                        (task.targetDept ? ' → ' + task.targetDept : '')
+                      "
                     >
                       Cross-Dept
                     </span>
@@ -628,15 +674,26 @@
                         stroke="currentColor"
                         stroke-width="2"
                       >
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <rect
+                          x="3"
+                          y="4"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        ></rect>
                         <line x1="16" y1="2" x2="16" y2="6"></line>
                         <line x1="8" y1="2" x2="8" y2="6"></line>
                       </svg>
-                      {{ task.sprint?.name || formatSprintLabel(task.sprintMonth) }}
+                      {{
+                        task.sprint?.name || formatSprintLabel(task.sprintMonth)
+                      }}
                     </span>
                     <span
                       class="status-mini-badge"
-                      :class="getStatusBadgeClass(task.kanbanStatus || task.status)"
+                      :class="
+                        getStatusBadgeClass(task.kanbanStatus || task.status)
+                      "
                     >
                       {{ formatStatusLabel(task.kanbanStatus || task.status) }}
                     </span>
@@ -671,17 +728,22 @@
           v-if="filteredByKeyResult.length === 0 && isAnyInitFilterActive"
           class="empty-state"
         >
-          <p>Tidak ada Initiative atau Task yang sesuai dengan kriteria filter.</p>
+          <p>
+            Tidak ada Initiative atau Task yang sesuai dengan kriteria filter.
+          </p>
           <button
             type="button"
             class="filter-reset-btn"
-            style="margin-top: 10px;"
+            style="margin-top: 10px"
             @click="resetInitFilters"
           >
             Reset Filter
           </button>
         </div>
-        <div v-else-if="!initProgressData.byKeyResult?.length" class="empty-state">
+        <div
+          v-else-if="!initProgressData.byKeyResult?.length"
+          class="empty-state"
+        >
           Belum ada Initiative yang terdaftar pada lingkup ini.
         </div>
       </section>
@@ -1735,8 +1797,18 @@ function formatSprintLabel(sprint) {
   if (/^\d{4}-\d{2}$/.test(sprint)) {
     const [year, month] = sprint.split("-");
     const monthNames = [
-      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-      "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
     ];
     const mIdx = parseInt(month, 10) - 1;
     if (mIdx >= 0 && mIdx < 12) {
@@ -1870,7 +1942,7 @@ const filteredByKeyResult = computed(() => {
 
         const taskTitle = (task.title || "").toLowerCase();
         const assigneeMatches = (task.assignments || []).some((a) =>
-          (a.user?.name || "").toLowerCase().includes(q)
+          (a.user?.name || "").toLowerCase().includes(q),
         );
         const taskMatchesName =
           !q ||
@@ -1903,7 +1975,10 @@ const filteredByKeyResult = computed(() => {
             matchingTasks.length > 0
               ? matchingTasks
               : allTasks.filter((t) => t.isCrossDept);
-          if ((initMatchesName && initMatchesStatus) || matchingTasks.length > 0) {
+          if (
+            (initMatchesName && initMatchesStatus) ||
+            matchingTasks.length > 0
+          ) {
             matchingInitiatives.push({
               ...init,
               tasks: crossTasks,
@@ -1952,7 +2027,7 @@ const filteredSummary = computed(() => {
       const tasks = Array.isArray(init.tasks) ? init.tasks : [];
       totalTasks += tasks.length;
       completedTasks += tasks.filter(
-        (t) => (t.progressPercent || 0) >= 100 || isTaskDone(t)
+        (t) => (t.progressPercent || 0) >= 100 || isTaskDone(t),
       ).length;
       const s = String(init.kanbanStatus || init.status || "").toUpperCase();
       if (
@@ -2037,7 +2112,8 @@ function isTaskDone(task) {
 }
 
 function getProgressPercent(task) {
-  if (!task || task.targetValue === null || task.targetValue === undefined) return 0;
+  if (!task || task.targetValue === null || task.targetValue === undefined)
+    return 0;
   const val =
     task.achievedValue !== null && task.achievedValue !== undefined
       ? task.achievedValue
@@ -2052,8 +2128,13 @@ function getProgressPercent(task) {
 
 async function fetchInitiativeProgress() {
   try {
-    const res = await $fetch(`${config.public.apiBase}/initiatives/progress`, {
-      headers: { Authorization: `Bearer ${auth.token}` },
+    let url = `${config.public.apiBase}/initiatives/progress`;
+    if (selectedSprint.value) {
+      url += `?sprintId=${encodeURIComponent(selectedSprint.value)}&month=${encodeURIComponent(selectedSprint.value)}`;
+    }
+    const token = auth.token || (process.client ? localStorage.getItem("auth_token") : "");
+    const res = await $fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     initProgressData.value = res || {
       initiatives: [],
@@ -2092,6 +2173,8 @@ function getAccountables(kr) {
 const summaryData = ref({});
 const currentScope = ref("self");
 const loading = ref(false);
+const selectedSprint = ref("");
+const availableSprints = ref([]);
 
 const compareFrom = ref("");
 const compareTo = ref("");
@@ -2245,18 +2328,40 @@ async function changeScope(scope) {
   await fetchDashboardData();
 }
 
+async function onSprintChange() {
+  await fetchDashboardData();
+  if (showInitiativeProgress.value) {
+    await fetchInitiativeProgress();
+  }
+}
+
+async function fetchSummary(month) {
+  if (month !== undefined) {
+    selectedSprint.value = month;
+  }
+  return onSprintChange();
+}
+
 async function fetchDashboardData() {
   loading.value = true;
   try {
     let url = `${config.public.apiBase}/dashboard/summary?scope=${currentScope.value}`;
+    if (selectedSprint.value) {
+      url += `&sprintId=${encodeURIComponent(selectedSprint.value)}&month=${encodeURIComponent(selectedSprint.value)}`;
+    }
     if (compareFrom.value && compareTo.value) {
       url += `&compareFrom=${compareFrom.value}&compareTo=${compareTo.value}`;
     }
+    const token = auth.token || (process.client ? localStorage.getItem("auth_token") : "");
     const response = await $fetch(url, {
       headers: {
-        Authorization: `Bearer ${auth.token}`,
+        Authorization: `Bearer ${token}`,
       },
     });
+
+    if (response?.sprint?.id && !selectedSprint.value) {
+      selectedSprint.value = response.sprint.id;
+    }
 
     if (userRole.value === "TEAM") {
       myTasks.value = response.myTasks || [];
@@ -2280,14 +2385,41 @@ async function fetchDashboardData() {
   }
 }
 
+async function fetchSprints() {
+  try {
+    const token = auth.token || (process.client ? localStorage.getItem("auth_token") : "");
+    const res = await $fetch(`${config.public.apiBase}/sprints`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res?.sprints) {
+      const currentAndPast = res.sprints.filter(
+        (s) => s.status === "ACTIVE" || s.status === "CLOSED",
+      );
+      availableSprints.value =
+        currentAndPast.length > 0 ? currentAndPast : res.sprints;
+    }
+    if (res?.activeSprint && !selectedSprint.value) {
+      selectedSprint.value = res.activeSprint.id;
+    } else if (availableSprints.value.length > 0 && !selectedSprint.value) {
+      const active = availableSprints.value.find((s) => s.status === "ACTIVE");
+      selectedSprint.value = active
+        ? active.id
+        : availableSprints.value[availableSprints.value.length - 1].id;
+    }
+  } catch (err) {
+    console.error("Error fetching sprints:", err);
+  }
+}
+
 async function fetchPendingApprovals() {
   if (!["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(userRole.value))
     return;
   try {
+    const token = auth.token || (process.client ? localStorage.getItem("auth_token") : "");
     const res = await $fetch(
       `${config.public.apiBase}/initiatives/initiative-updates/pending`,
       {
-        headers: { Authorization: `Bearer ${auth.token}` },
+        headers: { Authorization: `Bearer ${token}` },
       },
     );
     pendingApprovals.value = res || [];
@@ -2296,7 +2428,7 @@ async function fetchPendingApprovals() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Default scope based on role: ADMIN/C_LEVEL -> company, MANAGER/LEADER -> team, others -> self
   if (auth.user?.role === "ADMIN" || auth.user?.role === "C_LEVEL") {
     currentScope.value = "company";
@@ -2305,7 +2437,8 @@ onMounted(() => {
   } else {
     currentScope.value = "self";
   }
-  fetchDashboardData();
+  await fetchSprints();
+  await fetchDashboardData();
   if (showInitiativeProgress.value) {
     fetchInitiativeProgress();
   }
@@ -2687,6 +2820,44 @@ async function handleReject() {
   font-size: 21px;
   font-weight: 600;
   margin: 0;
+}
+
+.controls-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.sprint-filter-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sprint-filter-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.sprint-filter-select {
+  height: 34px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sprint-filter-select:focus {
+  outline: none;
+  border-color: #0e97d6;
 }
 
 .scope-selector {

@@ -143,7 +143,8 @@
           <div>
             <h2>BSC Scorecard — 4 Perspektif</h2>
             <p class="section-sub">
-              Progress agregat per perspektif Balanced Scorecard. Klik kartu untuk melihat capaian Key Results.
+              Progress agregat per perspektif Balanced Scorecard. Klik kartu
+              untuk melihat capaian Key Results.
             </p>
           </div>
           <button
@@ -171,7 +172,9 @@
               @keydown.enter.space.prevent="togglePerspective(pkey)"
             >
               <div class="scorecard-left">
-                <span class="perspective-icon">{{ perspectiveIcon(pkey) }}</span>
+                <span class="perspective-icon">{{
+                  perspectiveIcon(pkey)
+                }}</span>
                 <div>
                   <p class="perspective-name">{{ perspectiveLabel(pkey) }}</p>
                   <p class="perspective-sub">
@@ -194,13 +197,27 @@
                   <span class="pill ontrack"
                     >{{ pdata.onTrackCount }} On Track</span
                   >
-                  <span class="pill atrisk">{{ pdata.atRiskCount }} At Risk</span>
+                  <span class="pill atrisk"
+                    >{{ pdata.atRiskCount }} At Risk</span
+                  >
                   <span class="pill offtrack"
                     >{{ pdata.offTrackCount }} Off Track</span
                   >
                 </div>
-                <div class="chevron-icon" :class="{ rotated: isExpanded(pkey) }">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <div
+                  class="chevron-icon"
+                  :class="{ rotated: isExpanded(pkey) }"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </div>
@@ -238,18 +255,41 @@
                           class="meta-chip obj-chip"
                           :title="kr.objectiveTitle"
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                            />
                           </svg>
-                          {{ kr.objectiveTitle }} {{ kr.year ? `(${kr.year})` : '' }}
+                          {{ kr.objectiveTitle }}
+                          {{ kr.year ? `(${kr.year})` : "" }}
                         </span>
                         <span
                           v-if="kr.assignments && kr.assignments.length > 0"
                           class="meta-chip raci-meta-chip"
                           title="PIC & Penanggung Jawab"
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                            />
                             <circle cx="12" cy="7" r="4" />
                           </svg>
                           <span
@@ -257,8 +297,15 @@
                             :key="idx"
                             class="raci-chip-inner"
                           >
-                            <span class="raci-badge-micro" :class="a.raciRole === 'RESPONSIBLE' ? 'r-badge' : 'a-badge'">
-                              {{ a.raciRole === 'RESPONSIBLE' ? 'R' : 'A' }}
+                            <span
+                              class="raci-badge-micro"
+                              :class="
+                                a.raciRole === 'RESPONSIBLE'
+                                  ? 'r-badge'
+                                  : 'a-badge'
+                              "
+                            >
+                              {{ a.raciRole === "RESPONSIBLE" ? "R" : "A" }}
                             </span>
                             {{ a.user?.name }}
                           </span>
@@ -268,8 +315,19 @@
                           class="meta-chip"
                           title="PIC Responsible"
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                            />
                             <circle cx="12" cy="7" r="4" />
                           </svg>
                           PIC: {{ kr.responsible.name }}
@@ -294,7 +352,11 @@
                     <div class="kr-progress-box">
                       <div class="kr-metric-nums">
                         <span class="kr-cur-tgt">
-                          <strong>{{ kr.currentValue?.toLocaleString('id-ID') }}</strong> / {{ kr.targetValue?.toLocaleString('id-ID') }} {{ kr.unit || '' }}
+                          <strong>{{
+                            kr.currentValue?.toLocaleString("id-ID")
+                          }}</strong>
+                          / {{ kr.targetValue?.toLocaleString("id-ID") }}
+                          {{ kr.unit || "" }}
                         </span>
                         <span
                           class="kr-pct-badge"
@@ -307,7 +369,10 @@
                         <div
                           class="kr-mini-fill"
                           :class="progressClass(kr.progress)"
-                          :style="{ width: Math.min(100, Math.max(0, kr.progress)) + '%' }"
+                          :style="{
+                            width:
+                              Math.min(100, Math.max(0, kr.progress)) + '%',
+                          }"
                         ></div>
                       </div>
                     </div>
@@ -401,37 +466,137 @@
 
         <!-- Department Progress -->
         <section class="dept-card card">
-          <h2>Progress per Departemen</h2>
-          <p class="section-sub">
-            Rata-rata progres KR berdasarkan departemen yang terlibat
-          </p>
-          <div v-if="data.byDepartment.length === 0" class="empty-state">
+          <div class="dept-card-header">
+            <div>
+              <h2>Progress per Departemen</h2>
+              <p class="section-sub">
+                Seluruh departemen aktif dan Key Result yang di-assign
+              </p>
+            </div>
+            <button
+              v-if="data.byDepartment && data.byDepartment.length > 0"
+              type="button"
+              class="toggle-all-btn"
+              @click="toggleAllDepts"
+            >
+              {{ allDeptsExpanded ? "Tutup" : "Detail" }}
+            </button>
+          </div>
+
+          <div
+            v-if="!data.byDepartment || data.byDepartment.length === 0"
+            class="empty-state"
+          >
             Belum ada data departemen yang terdaftar pada KR.
           </div>
           <div class="dept-list" v-else>
             <div
               v-for="dept in data.byDepartment"
-              :key="dept.department"
-              class="dept-row"
+              :key="dept.departmentCode || dept.department"
+              class="dept-item"
+              :class="{
+                'is-expanded': isDeptExpanded(
+                  dept.departmentCode || dept.department,
+                ),
+              }"
             >
-              <div class="dept-info">
-                <span class="dept-name">{{ dept.department }}</span>
-                <span class="dept-kr-count">{{ dept.krCount }} KR</span>
-              </div>
-              <div class="dept-bar-row">
-                <div class="dept-bar-track">
-                  <div
-                    class="dept-bar-fill"
-                    :class="progressClass(dept.averageProgress)"
-                    :style="{ width: dept.averageProgress + '%' }"
-                  ></div>
+              <div
+                class="dept-row-clickable"
+                role="button"
+                tabindex="0"
+                :aria-expanded="
+                  isDeptExpanded(dept.departmentCode || dept.department)
+                "
+                @click="toggleDept(dept.departmentCode || dept.department)"
+                @keydown.enter.space.prevent="
+                  toggleDept(dept.departmentCode || dept.department)
+                "
+              >
+                <div class="dept-info">
+                  <div class="dept-name-wrap">
+                    <svg
+                      class="dept-chevron"
+                      :class="{
+                        open: isDeptExpanded(
+                          dept.departmentCode || dept.department,
+                        ),
+                      }"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span class="dept-name">{{
+                      dept.departmentName || dept.department
+                    }}</span>
+                  </div>
+                  <span class="dept-kr-count">{{ dept.krCount }} KR</span>
                 </div>
-                <span
-                  class="dept-pct"
-                  :class="progressClass(dept.averageProgress)"
+                <div class="dept-bar-row">
+                  <div class="dept-bar-track">
+                    <div
+                      class="dept-bar-fill"
+                      :class="progressClass(dept.averageProgress)"
+                      :style="{ width: dept.averageProgress + '%' }"
+                    ></div>
+                  </div>
+                  <span
+                    class="dept-pct"
+                    :class="progressClass(dept.averageProgress)"
+                  >
+                    {{ dept.averageProgress }}%
+                  </span>
+                </div>
+              </div>
+
+              <!-- Dept KR List (Expanded) -->
+              <div
+                v-show="isDeptExpanded(dept.departmentCode || dept.department)"
+                class="dept-detail"
+              >
+                <div
+                  v-if="!dept.keyResults || dept.keyResults.length === 0"
+                  class="dept-empty-krs"
                 >
-                  {{ dept.averageProgress }}%
-                </span>
+                  Belum ada Key Result yang di-assign ke departemen ini.
+                </div>
+                <div v-else class="dept-kr-list">
+                  <div
+                    v-for="kr in dept.keyResults"
+                    :key="kr.id"
+                    class="dept-kr-card"
+                  >
+                    <div class="dept-kr-main">
+                      <div class="dept-kr-title-row">
+                        <span class="dept-kr-title">{{ kr.title }}</span>
+                        <span
+                          class="status-badge"
+                          :class="statusBadgeClass(kr.status)"
+                        >
+                          {{ statusLabel(kr.status) }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="dept-kr-bar-row">
+                      <div class="dept-kr-track">
+                        <div
+                          class="dept-kr-fill"
+                          :class="progressClass(kr.progress)"
+                          :style="{ width: kr.progress + '%' }"
+                        ></div>
+                      </div>
+                      <span
+                        class="dept-kr-pct"
+                        :class="progressClass(kr.progress)"
+                        >{{ kr.progress }}%</span
+                      >
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -522,7 +687,10 @@
                   <span class="year-chip">{{ kr.year }}</span>
                 </td>
                 <td>
-                  <div v-if="kr.assignments && kr.assignments.length > 0" class="pic-stack">
+                  <div
+                    v-if="kr.assignments && kr.assignments.length > 0"
+                    class="pic-stack"
+                  >
                     <div
                       v-for="(a, idx) in kr.assignments"
                       :key="idx"
@@ -530,11 +698,13 @@
                     >
                       <span
                         class="raci-badge-micro"
-                        :class="a.raciRole === 'RESPONSIBLE' ? 'r-badge' : 'a-badge'"
+                        :class="
+                          a.raciRole === 'RESPONSIBLE' ? 'r-badge' : 'a-badge'
+                        "
                       >
-                        {{ a.raciRole === 'RESPONSIBLE' ? 'R' : 'A' }}
+                        {{ a.raciRole === "RESPONSIBLE" ? "R" : "A" }}
                       </span>
-                      <span class="pic-name">{{ a.user?.name || '—' }}</span>
+                      <span class="pic-name">{{ a.user?.name || "—" }}</span>
                     </div>
                   </div>
                   <span v-else-if="kr.responsible" class="pic-name">
@@ -743,6 +913,35 @@ function toggleAllPerspectives() {
   expandedPerspectives.value = next;
 }
 
+const expandedDepts = ref({});
+
+function toggleDept(deptKey) {
+  expandedDepts.value[deptKey] = !expandedDepts.value[deptKey];
+}
+
+function isDeptExpanded(deptKey) {
+  return !!expandedDepts.value[deptKey];
+}
+
+const allDeptsExpanded = computed(() => {
+  if (!data.value?.byDepartment) return false;
+  const list = data.value.byDepartment;
+  return (
+    list.length > 0 &&
+    list.every((d) => expandedDepts.value[d.departmentCode || d.department])
+  );
+});
+
+function toggleAllDepts() {
+  const target = !allDeptsExpanded.value;
+  if (!data.value?.byDepartment) return;
+  const next = {};
+  data.value.byDepartment.forEach((d) => {
+    next[d.departmentCode || d.department] = target;
+  });
+  expandedDepts.value = next;
+}
+
 function statusBadgeClass(status) {
   if (status === "ON_TRACK") return "ontrack";
   if (status === "AT_RISK") return "atrisk";
@@ -842,13 +1041,15 @@ function exportCsv() {
         const picName = kr.responsible?.name || "-";
         const accountableNames =
           Array.isArray(kr.accountables) && kr.accountables.length > 0
-            ? kr.accountables.map((u) => u.name).filter(Boolean).join(", ")
+            ? kr.accountables
+                .map((u) => u.name)
+                .filter(Boolean)
+                .join(", ")
             : "-";
         const initsCount = Array.isArray(kr.initiatives)
           ? kr.initiatives.length
           : 0;
-        const activeVal =
-          kr.isActive !== undefined ? (kr.isActive ? 1 : 0) : 1;
+        const activeVal = kr.isActive !== undefined ? (kr.isActive ? 1 : 0) : 1;
 
         rows.push([
           escapeCell(aspectName),
@@ -1142,7 +1343,9 @@ onMounted(fetchData);
   border: 1px solid var(--card-border, #e4e4e4);
   background: var(--card-bg, #ffffff);
   overflow: hidden;
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
 
 .scorecard-item:hover {
@@ -1268,7 +1471,10 @@ onMounted(fetchData);
   border-radius: 6px;
   color: #8897ae;
   background: rgba(0, 0, 0, 0.04);
-  transition: transform 0.25s ease, background 0.15s, color 0.15s;
+  transition:
+    transform 0.25s ease,
+    background 0.15s,
+    color 0.15s;
 }
 
 .scorecard-row:hover .chevron-icon {
@@ -1584,34 +1790,100 @@ onMounted(fetchData);
 }
 
 /* ─── Department Progress ───────────────────────────────────────────────── */
+.dept-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
 .dept-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 18px;
 }
 
-.dept-row {
+.dept-item {
+  border: 1px solid #edf2f7;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.dept-item:hover {
+  border-color: #cbd5e1;
+}
+
+.dept-item.is-expanded {
+  border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.dept-row-clickable {
+  padding: 10px 14px;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.dept-row-clickable:hover {
+  background: #f8fafc;
 }
 
 .dept-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+}
+
+.dept-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dept-chevron {
+  color: #64748b;
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.dept-chevron.open {
+  transform: rotate(180deg);
 }
 
 .dept-name {
   font-size: 14px;
   font-weight: 600;
   color: #1a2335;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dept-code-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
 }
 
 .dept-kr-count {
   font-size: 12px;
-  color: #8897ae;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 .dept-bar-row {
@@ -1658,6 +1930,134 @@ onMounted(fetchData);
   color: #b45309;
 }
 .dept-pct.offtrack {
+  color: #dc2626;
+}
+
+/* ─── Department KR List (Expanded) ─────────────────────────────────────── */
+.dept-detail {
+  padding: 8px 14px 14px;
+  background: #f8fafc;
+  border-top: 1px solid #edf2f7;
+}
+
+.dept-empty-krs {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+.dept-kr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dept-kr-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.dept-kr-card:hover {
+  border-color: #cbd5e1;
+}
+
+.dept-kr-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dept-kr-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dept-kr-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.dept-kr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.dept-kr-obj {
+  color: #0284c7;
+  font-weight: 500;
+}
+
+.dept-kr-pic {
+  color: #475569;
+  font-weight: 500;
+}
+
+.dept-kr-target {
+  color: #8897ae;
+}
+
+.dept-kr-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.dept-kr-track {
+  flex: 1;
+  height: 6px;
+  background: #e5eaf3;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dept-kr-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dept-kr-fill.ontrack {
+  background: #22c55e;
+}
+.dept-kr-fill.atrisk {
+  background: #f2af17;
+}
+.dept-kr-fill.offtrack {
+  background: #f97066;
+}
+
+.dept-kr-pct {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 34px;
+  text-align: right;
+}
+
+.dept-kr-pct.ontrack {
+  color: #16a34a;
+}
+.dept-kr-pct.atrisk {
+  color: #b45309;
+}
+.dept-kr-pct.offtrack {
   color: #dc2626;
 }
 
@@ -2034,5 +2434,42 @@ onMounted(fetchData);
 .dark-theme .toggle-all-btn:hover {
   background: #0e97d6;
   color: #ffffff;
+}
+
+/* Dark Theme Overrides for Department Progress */
+.dark-theme .dept-item {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+.dark-theme .dept-item:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.dark-theme .dept-item.is-expanded {
+  border-color: rgba(14, 151, 214, 0.4);
+}
+.dark-theme .dept-row-clickable:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.dark-theme .dept-name {
+  color: #f1f5f9;
+}
+.dark-theme .dept-code-tag {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+.dark-theme .dept-detail {
+  background: rgba(0, 0, 0, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+.dark-theme .dept-kr-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.dark-theme .dept-kr-title {
+  color: #f1f5f9;
+}
+.dark-theme .dept-kr-bar-row .dept-kr-track,
+.dark-theme .dept-bar-track {
+  background: rgba(255, 255, 255, 0.08);
 }
 </style>

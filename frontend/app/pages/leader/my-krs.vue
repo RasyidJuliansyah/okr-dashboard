@@ -66,7 +66,7 @@
           </select>
         </div>
 
-        <div v-if="filteredKrs.length === 0" class="empty-state card">
+        <div v-if="filteredKrs.length === 0 || Object.keys(getGroupedAssignedKrs(filteredKrs)).length === 0" class="empty-state card">
           Tidak ada KR yang sesuai dengan filter.
         </div>
 
@@ -164,13 +164,13 @@
                     }}):
                   </h4>
                   <div
-                    v-if="assign.keyResult.initiatives?.length > 0 && getFilteredInitiatives(assign.keyResult.initiatives).length === 0"
+                    v-if="!assign.keyResult.initiatives || assign.keyResult.initiatives.length === 0 || getFilteredInitiatives(assign.keyResult.initiatives).length === 0"
                     style="font-size: 13px; color: #64748b; font-style: italic; padding: 6px 0;"
                   >
                     Tidak ada inisiatif pada sprint terpilih.
                   </div>
                   <ul
-                    v-else-if="getFilteredInitiatives(assign.keyResult.initiatives).length > 0"
+                    v-else
                     class="ini-list-items"
                   >
                     <li
@@ -318,7 +318,7 @@
 
                       <!-- Show Tasks List under Manager's Initiative -->
                       <div
-                        v-if="ini.tasks && ini.tasks.length > 0"
+                        v-if="getFilteredTasks(ini.tasks, ini.sprintMonth).length > 0"
                         class="task-nested-list"
                       >
                         <div class="task-nested-header">
@@ -522,7 +522,6 @@
                       </div>
                     </li>
                   </ul>
-                  <p v-else class="text-gray text-sm">Belum ada Inisiatif</p>
                   <button
                     class="primary-btn mt-2"
                     @click="openInitiativeModal(assign.keyResult)"
@@ -889,30 +888,46 @@ const selectedEmployee = ref("");
 const selectedSprint = ref("");
 
 const availableSprints = computed(() => {
-  const sprints = new Set();
+  const result = [];
+  const seen = new Set();
   systemSprints.value?.forEach((s) => {
-    if (s.name) sprints.add(s.name);
+    if (s.name && !seen.has(s.name)) {
+      seen.add(s.name);
+      result.push(s.name);
+    }
   });
   krs.value.forEach((assign) => {
-    assign.keyResult.initiatives?.forEach((ini) => {
-      if (ini.sprintMonth) sprints.add(ini.sprintMonth);
+    assign.keyResult?.initiatives?.forEach((ini) => {
+      if (ini.sprintMonth && !seen.has(ini.sprintMonth)) {
+        seen.add(ini.sprintMonth);
+        result.push(ini.sprintMonth);
+      }
       ini.tasks?.forEach((t) => {
-        if (t.sprintMonth) sprints.add(t.sprintMonth);
+        if (t.sprintMonth && !seen.has(t.sprintMonth)) {
+          seen.add(t.sprintMonth);
+          result.push(t.sprintMonth);
+        }
       });
     });
   });
-  return Array.from(sprints).sort().reverse();
+  return result;
 });
+
+function normalizeSprint(val) {
+  if (!val) return "";
+  return String(val).trim().toLowerCase().replace(/^sprint\s+/, "");
+}
 
 function getFilteredInitiatives(initiatives) {
   if (!initiatives) return [];
   if (!selectedSprint.value) return initiatives;
+  const target = normalizeSprint(selectedSprint.value);
   return initiatives.filter((ini) => {
     const matchIni =
-      ini.sprintMonth === selectedSprint.value ||
-      ini.sprint?.name === selectedSprint.value;
+      normalizeSprint(ini.sprintMonth) === target ||
+      normalizeSprint(ini.sprint?.name) === target;
     const matchTask = ini.tasks?.some(
-      (t) => (t.sprintMonth || ini.sprintMonth) === selectedSprint.value,
+      (t) => normalizeSprint(t.sprintMonth || ini.sprintMonth) === target,
     );
     return matchIni || matchTask;
   });
@@ -921,9 +936,10 @@ function getFilteredInitiatives(initiatives) {
 function getFilteredTasks(tasks, parentSprintMonth) {
   if (!tasks) return [];
   if (!selectedSprint.value) return tasks;
+  const target = normalizeSprint(selectedSprint.value);
   return tasks.filter((t) => {
     const sm = t.sprintMonth || parentSprintMonth;
-    return sm === selectedSprint.value;
+    return normalizeSprint(sm) === target;
   });
 }
 
@@ -1017,15 +1033,9 @@ const filteredKrs = computed(() => {
     });
   }
 
-  if (selectedSprint.value) {
-    result = result.filter((assign) => {
-      return assign.keyResult.initiatives?.some(
-        (ini) =>
-          ini.sprintMonth === selectedSprint.value ||
-          ini.tasks?.some((t) => t.sprintMonth === selectedSprint.value),
-      );
-    });
-  }
+  // NOTE: selectedSprint intentionally does NOT filter out KRs.
+  // All KRs must remain visible so users can view them and create initiatives for new/upcoming sprints.
+  // selectedSprint only filters initiatives and tasks inside each KR.
 
   return result;
 });
@@ -1496,7 +1506,7 @@ function openInitiativeModal(kr) {
     unit: "%",
     targetType: "AT_LEAST",
     keyResultId: kr?.id || "",
-    sprintMonth: getCurrentRunningSprintMonth(),
+    sprintMonth: selectedSprint.value || getCurrentRunningSprintMonth(),
     kpis: [],
   };
   modalError.value = "";
@@ -1520,7 +1530,7 @@ function openCreateTaskModal(ini, kr) {
     ownerId: "",
     ownerIds: [],
     assigneeIds: [],
-    sprintMonth: getResolvedSprintMonth(ini.sprintMonth),
+    sprintMonth: getResolvedSprintMonth(ini.sprintMonth) || selectedSprint.value || getCurrentRunningSprintMonth(),
     targetValue: 100,
     unit: "%",
     targetType: "AT_LEAST",
@@ -1920,7 +1930,7 @@ function getGroupedAssignedKrs(assignments) {
       if (!groups[dept]) {
         groups[dept] = [];
       }
-      if (!groups[dept].some((item) => item.id === assign.id)) {
+      if (!groups[dept].some((item) => (item.keyResult?.id || item.keyResultId) === (assign.keyResult?.id || assign.keyResultId))) {
         groups[dept].push(assign);
       }
     });
