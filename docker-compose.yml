@@ -25,6 +25,8 @@ services:
     environment:
       - PORT=3000
       - NUXT_PUBLIC_API_BASE=https://bsc.proc.skolla.online/api
+      - NUXT_PUBLIC_POSTHOG_KEY=${NUXT_PUBLIC_POSTHOG_KEY:-}
+      - NUXT_PUBLIC_POSTHOG_HOST=${NUXT_PUBLIC_POSTHOG_HOST:-https://us.i.posthog.com}
     ports:
       - "3000:3000"
     depends_on:

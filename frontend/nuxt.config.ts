@@ -17,6 +17,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3001/api",
+      posthogPublicKey: process.env.NUXT_PUBLIC_POSTHOG_KEY || "",
+      posthogHost: process.env.NUXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
     },
   },
   // AppSidebar/AppHeader hanya render lewat v-if setelah auth-state client-side
