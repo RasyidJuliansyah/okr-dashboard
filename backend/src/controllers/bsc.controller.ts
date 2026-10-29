@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { calculateProgressPercent } from "../utils/progress";
+import { calculateProgressPercent, calculateAutoStatus } from "../utils/progress";
 import { resolveSprint } from "../services/sprint.service";
 
 const prisma = new PrismaClient();
@@ -101,6 +101,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
     // ponytail: Decouple KRs from sprint cycles. All active KRs remain visible (42 base count),
     // while monthly parameter scopes the linked initiatives.
     let matchedSprintId: string | null = null;
+    let resolvedSprintObj: any = null;
     if (month && month !== "ALL") {
       const sp = await resolveSprint({
         sprintId: String(month),
@@ -108,6 +109,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         fallbackToActive: false,
       });
       matchedSprintId = sp?.id || String(month);
+      resolvedSprintObj = sp;
     }
 
     const where: any = {
@@ -133,6 +135,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
           orderBy: { updatedAt: "asc" },
           select: { newValue: true, updatedAt: true },
         },
+        sprintTargets: true,
         initiatives: {
           where: {
             isActive: true,
@@ -142,6 +145,7 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
                     { sprintId: matchedSprintId },
                     { sprintMonth: matchedSprintId },
                     { sprintMonth: String(month) },
+                    ...(resolvedSprintObj ? [{ sprintMonth: resolvedSprintObj.name }] : []),
                   ],
                 }
               : {}),
@@ -233,19 +237,6 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       const p = kr.bscPerspective;
       if (!perspectiveMap[p]) return;
 
-      const progressRounded = calculateProgressPercent(
-        kr.currentValue,
-        kr.targetValue,
-        kr.targetType,
-      );
-
-      perspectiveMap[p].totalCount++;
-      perspectiveMap[p].totalProgress += progressRounded;
-
-      if (kr.status === "ON_TRACK") perspectiveMap[p].onTrackCount++;
-      else if (kr.status === "AT_RISK") perspectiveMap[p].atRiskCount++;
-      else if (kr.status === "OFF_TRACK") perspectiveMap[p].offTrackCount++;
-
       const mappedInitiatives = (kr.initiatives || []).map((init: any) => {
         let initProg = calculateProgressPercent(
           init.currentValue,
@@ -271,6 +262,77 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         };
       });
 
+      const st = matchedSprintId
+        ? kr.sprintTargets?.find((t: any) => t.sprintId === matchedSprintId)
+        : null;
+
+      const isSprintActive =
+        !matchedSprintId ||
+        (resolvedSprintObj
+          ? resolvedSprintObj.status === "ACTIVE"
+          : true);
+
+      let progressRounded = 0;
+      let krStatus = kr.status;
+      let displayCurrentValue = kr.currentValue;
+      let displayTargetValue = kr.targetValue;
+
+      if (matchedSprintId) {
+        if (st && st.targetValue > 0) {
+          progressRounded = calculateProgressPercent(
+            st.currentValue,
+            st.targetValue,
+            kr.targetType,
+            st.baselineValue || 0,
+          );
+          krStatus = kr.isManualOverride
+            ? kr.status
+            : (st.currentValue === (st.baselineValue || 0) && progressRounded === 0)
+            ? "NOT_STARTED"
+            : calculateAutoStatus(progressRounded);
+          displayCurrentValue = st.currentValue;
+          displayTargetValue = st.targetValue;
+        } else if (mappedInitiatives.length > 0) {
+          const sumProg = mappedInitiatives.reduce(
+            (s: number, ini: any) => s + ini.progress,
+            0,
+          );
+          progressRounded =
+            Math.round((sumProg / mappedInitiatives.length) * 10) / 10;
+          krStatus = kr.isManualOverride
+            ? kr.status
+            : progressRounded === 0
+            ? "NOT_STARTED"
+            : calculateAutoStatus(progressRounded);
+        } else if (isSprintActive) {
+          progressRounded = calculateProgressPercent(
+            kr.currentValue,
+            kr.targetValue,
+            kr.targetType,
+          );
+          krStatus = kr.status;
+        } else {
+          // Sprint UPCOMING or CLOSED without targets/initiatives for this KR
+          progressRounded = 0;
+          krStatus = "NOT_STARTED";
+          displayCurrentValue = 0;
+        }
+      } else {
+        progressRounded = calculateProgressPercent(
+          kr.currentValue,
+          kr.targetValue,
+          kr.targetType,
+        );
+        krStatus = kr.status;
+      }
+
+      perspectiveMap[p].totalCount++;
+      perspectiveMap[p].totalProgress += progressRounded;
+
+      if (krStatus === "ON_TRACK") perspectiveMap[p].onTrackCount++;
+      else if (krStatus === "AT_RISK") perspectiveMap[p].atRiskCount++;
+      else if (krStatus === "OFF_TRACK") perspectiveMap[p].offTrackCount++;
+
       const responsibleAssignment = kr.assignments.find((a: any) => a.raciRole === "RESPONSIBLE");
       const responsible = responsibleAssignment?.user ?? kr.assignments[0]?.user ?? null;
       const accountables = kr.assignments
@@ -287,10 +349,10 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         id: kr.id,
         title: kr.title,
         bscPerspective: kr.bscPerspective,
-        status: kr.status,
+        status: krStatus,
         progress: progressRounded,
-        currentValue: kr.currentValue,
-        targetValue: kr.targetValue,
+        currentValue: displayCurrentValue,
+        targetValue: displayTargetValue,
         targetType: kr.targetType,
         unit: kr.unit,
         objectiveTitle: kr.objective.title,
@@ -333,9 +395,9 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
           id: kr.id,
           title: kr.title,
           progress: progressRounded,
-          status: kr.status,
-          currentValue: kr.currentValue,
-          targetValue: kr.targetValue,
+          status: krStatus,
+          currentValue: displayCurrentValue,
+          targetValue: displayTargetValue,
           targetType: kr.targetType,
           unit: kr.unit,
           bscPerspective: kr.bscPerspective,
@@ -347,15 +409,15 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
       });
 
       // Critical KRs (AT_RISK or OFF_TRACK)
-      if (kr.status === "AT_RISK" || kr.status === "OFF_TRACK") {
+      if (krStatus === "AT_RISK" || krStatus === "OFF_TRACK") {
         criticalKrs.push({
           id: kr.id,
           title: kr.title,
           bscPerspective: kr.bscPerspective,
-          status: kr.status,
+          status: krStatus,
           progress: progressRounded,
-          currentValue: kr.currentValue,
-          targetValue: kr.targetValue,
+          currentValue: displayCurrentValue,
+          targetValue: displayTargetValue,
           unit: kr.unit,
           objectiveTitle: kr.objective.title,
           year: kr.objective.year,
@@ -438,79 +500,183 @@ export async function getCLevelBscDashboard(req: AuthRequest, res: Response) {
         : 0;
 
     const totalKRs = keyResults.length;
-    const totalOnTrack = keyResults.filter(
-      (k) => k.status === "ON_TRACK",
-    ).length;
-    const totalAtRisk = keyResults.filter((k) => k.status === "AT_RISK").length;
-    const totalOffTrack = keyResults.filter(
-      (k) => k.status === "OFF_TRACK",
-    ).length;
+    let totalOnTrack = 0;
+    let totalAtRisk = 0;
+    let totalOffTrack = 0;
+    PERSPECTIVES.forEach((p) => {
+      totalOnTrack += perspectiveMap[p].onTrackCount;
+      totalAtRisk += perspectiveMap[p].atRiskCount;
+      totalOffTrack += perspectiveMap[p].offTrackCount;
+    });
 
     // Calculate monthly health scores across all 12 sprint months for the year
     const targetYear = req.query.year
       ? parseInt(String(req.query.year))
-      : month
+      : month && month !== "ALL" && /^\d{4}/.test(String(month))
       ? parseInt(String(month).split("-")[0])
       : 2026;
 
-    const allYearKrs = await prisma.keyResult.findMany({
+    const allSprints = await prisma.sprint.findMany({
       where: {
-        isActive: true,
         OR: [
-          { month: { startsWith: `${targetYear}-` } },
-          { objective: { year: `${targetYear}` } },
-          { objective: { year: `Q1-${targetYear}` } },
-          { objective: { year: `Q2-${targetYear}` } },
-          { objective: { year: `Q3-${targetYear}` } },
-          { objective: { year: `Q4-${targetYear}` } },
+          { year: String(targetYear) },
+          { name: { contains: String(targetYear) } },
         ],
       },
-      select: {
-        month: true,
-        bscPerspective: true,
-        currentValue: true,
-        targetValue: true,
-        targetType: true,
-      },
+      orderBy: { startDate: "asc" },
     });
 
-    const calcPerspectiveHealth = (
-      krs: { bscPerspective: string; currentValue: number; targetValue: number; targetType?: string }[],
-    ) => {
-      const pMap: Record<string, { count: number; totalProgress: number }> = {};
-      PERSPECTIVES.forEach((p) => {
-        pMap[p] = { count: 0, totalProgress: 0 };
-      });
-      krs.forEach((kr) => {
-        const p = kr.bscPerspective;
-        if (!pMap[p]) return;
-        const progress = calculateProgressPercent(
-          kr.currentValue,
-          kr.targetValue,
-          kr.targetType,
-        );
-        pMap[p].count++;
-        pMap[p].totalProgress += progress;
-      });
-      const validPerspectives = PERSPECTIVES.filter((p) => pMap[p].count > 0);
-      if (validPerspectives.length === 0) return null;
-      const avgSum = validPerspectives.reduce((sum, p) => {
-        return sum + Math.round((pMap[p].totalProgress / pMap[p].count) * 10) / 10;
-      }, 0);
-      return Math.round((avgSum / validPerspectives.length) * 10) / 10;
-    };
+    const MONTH_NAMES_ID = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+    ];
 
     const monthlyHealthScores: Record<string, number | null> = {};
     for (let m = 1; m <= 12; m++) {
       const mStr = `${targetYear}-${String(m).padStart(2, "0")}`;
-      const monthKrs = allYearKrs.filter((k) => k.month === mStr);
-      monthlyHealthScores[mStr] = calcPerspectiveHealth(monthKrs);
+      const mName = MONTH_NAMES_ID[m - 1];
+      const sp = allSprints.find(
+        (s) => s.name.includes(mName) && s.name.includes(String(targetYear)),
+      );
+
+      const monthKrs = keyResults.filter(
+        (k) => k.month === mStr || (sp && k.month === sp.id),
+      );
+      const spInis = sp
+        ? await prisma.initiative.findMany({
+            where: {
+              isActive: true,
+              OR: [{ sprintId: sp.id }, { sprintMonth: sp.name }],
+            },
+            select: {
+              id: true,
+              keyResultId: true,
+              currentValue: true,
+              targetValue: true,
+              targetType: true,
+              kanbanStatus: true,
+            },
+          })
+        : [];
+      const spTargets = sp
+        ? await prisma.krSprintTarget.findMany({
+            where: { sprintId: sp.id },
+          })
+        : [];
+      const hasAchievements =
+        monthKrs.length > 0 ||
+        spInis.length > 0 ||
+        spTargets.length > 0 ||
+        (sp && sp.status === "ACTIVE");
+
+      if (!hasAchievements) {
+        monthlyHealthScores[mStr] = null;
+        continue;
+      }
+
+      const pSums: Record<string, { sum: number; count: number }> = {};
+      PERSPECTIVES.forEach((p) => {
+        pSums[p] = { sum: 0, count: 0 };
+      });
+
+      keyResults.forEach((kr) => {
+        const p = kr.bscPerspective;
+        if (!pSums[p]) return;
+        const st = sp
+          ? spTargets.find((t: any) => t.keyResultId === kr.id)
+          : null;
+        const krInis = sp
+          ? spInis.filter((i: any) => i.keyResultId === kr.id)
+          : [];
+
+        let prog = 0;
+        if (st && st.targetValue > 0) {
+          prog = calculateProgressPercent(
+            st.currentValue,
+            st.targetValue,
+            kr.targetType,
+            st.baselineValue || 0,
+          );
+        } else if (krInis.length > 0) {
+          const sumIni = krInis.reduce((acc: number, ini: any) => {
+            let ip = calculateProgressPercent(
+              ini.currentValue,
+              ini.targetValue,
+              ini.targetType,
+            );
+            if (ini.kanbanStatus === "DONE" && ip < 100) ip = 100;
+            return acc + ip;
+          }, 0);
+          prog = Math.round((sumIni / krInis.length) * 10) / 10;
+        } else if (sp && (kr.month === sp.id || kr.month === mStr)) {
+          prog = calculateProgressPercent(
+            kr.currentValue,
+            kr.targetValue,
+            kr.targetType,
+          );
+        } else if (sp && sp.status === "ACTIVE") {
+          prog = calculateProgressPercent(
+            kr.currentValue,
+            kr.targetValue,
+            kr.targetType,
+          );
+        }
+
+        pSums[p].sum += prog;
+        pSums[p].count++;
+      });
+
+      const validPs = PERSPECTIVES.filter((p) => pSums[p].count > 0);
+      if (validPs.length === 0) {
+        monthlyHealthScores[mStr] = null;
+      } else {
+        const avgP =
+          validPs.reduce((acc, p) => acc + pSums[p].sum / pSums[p].count, 0) /
+          validPs.length;
+        monthlyHealthScores[mStr] = Math.round(avgP * 10) / 10;
+      }
     }
 
-    const ytdHealthScore = calcPerspectiveHealth(allYearKrs) ?? 0;
+    // YTD Health Score: aggregate of all months that have monthly achievements
+    const validScores = Object.values(monthlyHealthScores).filter(
+      (s): s is number => s !== null && s !== undefined,
+    );
+    const ytdHealthScore =
+      validScores.length > 0
+        ? Math.round(
+            (validScores.reduce((sum, s) => sum + s, 0) / validScores.length) *
+              10,
+          ) / 10
+        : overallHealthScore;
+
+    const isSprintActive =
+      !matchedSprintId ||
+      (resolvedSprintObj
+        ? resolvedSprintObj.status === "ACTIVE"
+        : true);
+
+    const sprintHasAchievements =
+      isSprintActive ||
+      keyResults.some((kr: any) => {
+        const st = matchedSprintId
+          ? kr.sprintTargets?.find((t: any) => t.sprintId === matchedSprintId)
+          : null;
+        if (st && st.currentValue > 0) return true;
+        const inis = kr.initiatives || [];
+        return inis.some(
+          (i: any) => (i.currentValue || 0) > 0 || i.kanbanStatus === "DONE",
+        );
+      });
+
+    const finalOverallHealthScore =
+      !month || month === "ALL"
+        ? ytdHealthScore
+        : sprintHasAchievements
+        ? overallHealthScore
+        : null;
 
     return res.status(200).json({
-      overallHealthScore,
+      overallHealthScore: finalOverallHealthScore,
       ytdHealthScore,
       monthlyHealthScores,
       totalKRs,

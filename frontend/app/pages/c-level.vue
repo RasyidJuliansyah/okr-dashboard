@@ -20,7 +20,11 @@
           class="month-select"
         >
           <option value="">Semua Bulan (YTD)</option>
-          <option v-for="m in availableMonths" :key="m.value" :value="m.value">
+          <option
+            v-for="m in availableSprintOptions"
+            :key="m.value"
+            :value="m.value"
+          >
             {{ m.label }}
           </option>
         </select>
@@ -73,7 +77,7 @@
                 :stroke="healthColor"
                 stroke-width="12"
                 stroke-linecap="round"
-                :stroke-dasharray="`${gaugeLength * (data.overallHealthScore / 100)} ${gaugeLength}`"
+                :stroke-dasharray="`${data.overallHealthScore !== null && data.overallHealthScore !== undefined ? gaugeLength * (data.overallHealthScore / 100) : 0} ${gaugeLength}`"
               />
               <!-- Center text -->
               <text
@@ -83,7 +87,7 @@
                 class="gauge-number"
                 :fill="healthColor"
               >
-                {{ data.overallHealthScore }}%
+                {{ data.overallHealthScore !== null && data.overallHealthScore !== undefined ? `${data.overallHealthScore}%` : '-' }}
               </text>
             </svg>
           </div>
@@ -763,6 +767,7 @@ const loading = ref(true);
 const data = ref(null);
 
 const selectedMonth = ref("");
+const activeSprint = ref(null);
 const availableMonths = [
   { value: "2026-01", label: "Januari 2026" },
   { value: "2026-02", label: "Februari 2026" },
@@ -777,6 +782,62 @@ const availableMonths = [
   { value: "2026-11", label: "November 2026" },
   { value: "2026-12", label: "Desember 2026" },
 ];
+const availableSprintOptions = ref(availableMonths);
+
+async function fetchSprintsList() {
+  try {
+    const token = auth.token || (process.client ? localStorage.getItem("auth_token") : "");
+    const res = await $fetch(`${config.public.apiBase}/sprints`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res?.sprints && res.sprints.length > 0) {
+      const sprintMap = new Map();
+      res.sprints.forEach((s) => {
+        let mVal = "";
+        if (s.startDate && s.endDate) {
+          const d = new Date(s.endDate || s.startDate);
+          const y = d.getUTCFullYear();
+          const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+          mVal = `${y}-${m}`;
+        }
+        if (mVal) sprintMap.set(mVal, s);
+      });
+
+      const options = availableMonths.map((mItem) => {
+        const sp = sprintMap.get(mItem.value);
+        if (sp) {
+          let label = sp.name;
+          if (sp.status === "ACTIVE") {
+            label += " (Sprint Berjalan)";
+          } else if (sp.status === "CLOSED") {
+            label += " (Selesai)";
+          }
+          return {
+            value: mItem.value,
+            label,
+            status: sp.status,
+          };
+        }
+        return mItem;
+      });
+
+      availableSprintOptions.value = options;
+    }
+
+    if (res?.activeSprint) {
+      activeSprint.value = res.activeSprint;
+      const d = new Date(res.activeSprint.endDate || res.activeSprint.startDate);
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      selectedMonth.value = `${y}-${m}`;
+    } else if (availableSprintOptions.value.length > 0) {
+      const active = availableSprintOptions.value.find((s) => s.status === "ACTIVE");
+      if (active) selectedMonth.value = active.value;
+    }
+  } catch (err) {
+    console.error("Gagal memuat daftar sprint:", err);
+  }
+}
 const annualKeyResults = ref([]);
 
 async function fetchAnnualKeyResults() {
@@ -821,21 +882,24 @@ async function fetchAnnualKeyResults() {
 const gaugeLength = 157; // approximate arc length for semicircle r=50
 
 const healthColor = computed(() => {
-  const s = data.value?.overallHealthScore ?? 0;
+  const s = data.value?.overallHealthScore;
+  if (s === null || s === undefined) return "#9ca3af";
   if (s >= 70) return "#22c55e";
   if (s >= 40) return "#f2af17";
   return "#f97066";
 });
 
 const healthClass = computed(() => {
-  const s = data.value?.overallHealthScore ?? 0;
+  const s = data.value?.overallHealthScore;
+  if (s === null || s === undefined) return "empty";
   if (s >= 70) return "green";
   if (s >= 40) return "yellow";
   return "red";
 });
 
 const healthLabel = computed(() => {
-  const s = data.value?.overallHealthScore ?? 0;
+  const s = data.value?.overallHealthScore;
+  if (s === null || s === undefined) return "Sprint Belum Berjalan";
   if (s >= 70) return "Sehat (Healthy)";
   if (s >= 40) return "Perlu Perhatian";
   return "Kritis";
@@ -946,6 +1010,7 @@ function statusBadgeClass(status) {
   if (status === "ON_TRACK") return "ontrack";
   if (status === "AT_RISK") return "atrisk";
   if (status === "OFF_TRACK") return "offtrack";
+  if (status === "NOT_STARTED") return "notstarted";
   return "";
 }
 
@@ -953,6 +1018,7 @@ function statusLabel(status) {
   if (status === "ON_TRACK") return "On Track";
   if (status === "AT_RISK") return "At Risk";
   if (status === "OFF_TRACK") return "Off Track";
+  if (status === "NOT_STARTED") return "Belum Mulai";
   return status || "-";
 }
 
@@ -1084,7 +1150,10 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-onMounted(fetchData);
+onMounted(async () => {
+  await fetchSprintsList();
+  await fetchData();
+});
 </script>
 
 <style scoped>
@@ -1225,6 +1294,10 @@ onMounted(fetchData);
 .health-label.red {
   background: #fee2e2;
   color: #dc2626;
+}
+.health-label.empty {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 /* Summary Cards */
@@ -2290,6 +2363,10 @@ onMounted(fetchData);
   background: #fee2e2;
   color: #dc2626;
 }
+.status-badge.notstarted {
+  background: #f1f5f9;
+  color: #64748b;
+}
 
 /* ─── No Critical / Empty / Error / Loading ─────────────────────────────── */
 .no-critical {
@@ -2423,6 +2500,10 @@ onMounted(fetchData);
 .dark-theme .status-badge.offtrack {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
+}
+.dark-theme .status-badge.notstarted {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
 }
 
 .dark-theme .toggle-all-btn {

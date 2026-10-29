@@ -59,7 +59,14 @@ const monthHeaders = [
 function isMonthHighlighted(idx: number): boolean {
   if (!props.highlightMonth) return false;
   const monthStr = String(idx + 1).padStart(2, "0");
-  return props.highlightMonth.endsWith(monthStr);
+  const monthName = monthHeaders[idx]?.toLowerCase();
+  const hl = String(props.highlightMonth).toLowerCase();
+  return (
+    hl.endsWith(`-${monthStr}`) ||
+    hl === monthStr ||
+    hl === String(idx + 1) ||
+    Boolean(monthName && hl.includes(monthName))
+  );
 }
 
 function formatScore(score: number | null | undefined): string {
@@ -140,6 +147,16 @@ const computedMonthlyHealthScores = computed(() => {
 const computedYtdHealthScore = computed(() => {
   if (props.ytdHealthScore !== undefined && props.ytdHealthScore !== null) {
     return props.ytdHealthScore;
+  }
+  const validScores = (computedMonthlyHealthScores.value || []).filter(
+    (s): s is number => s !== null && s !== undefined,
+  );
+  if (validScores.length > 0) {
+    return (
+      Math.round(
+        (validScores.reduce((acc, s) => acc + s, 0) / validScores.length) * 10,
+      ) / 10
+    );
   }
   if (
     props.overallHealthScore !== undefined &&
