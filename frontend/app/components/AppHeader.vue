@@ -286,6 +286,8 @@ function getMenuTitleByPath(path) {
   if (path.startsWith("/initiatives")) return "Inisiatif & Task";
   if (path.startsWith("/sprint-report")) return "Laporan Capaian Sprint";
   if (path.startsWith("/member-achievement")) return "Capaian Task Member";
+  if (path.startsWith("/product-roadmap") || path.startsWith("/roadmap"))
+    return "Roadmap Produk";
   if (path.startsWith("/departments") || path.startsWith("/admin/departments"))
     return "Struktur Departemen";
   if (path.startsWith("/admin/objectives")) return "OKR Builder";

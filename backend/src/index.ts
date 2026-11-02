@@ -17,6 +17,7 @@ import kpiRoutes from "./routes/kpi.routes";
 import auditLogRoutes from "./routes/auditLog.routes";
 import taskRoutes from "./routes/task.routes";
 import sprintRoutes from "./routes/sprint.routes";
+import roadmapRoutes from "./routes/roadmap.routes";
 import { checkAndAutoRollover } from "./services/sprint.service";
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use("/api/kpis", kpiRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/sprints", sprintRoutes);
+app.use("/api/roadmap", roadmapRoutes);
 
 // Base route for sanity check
 app.get("/", (req, res) => {

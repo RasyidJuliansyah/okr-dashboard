@@ -1,0 +1,593 @@
+<!doctype html>
+<meta charset="utf-8"><style data-dc-design-system-vars>@layer{:root{--rich-electric-blue:#0e97d6;--neon-dark-blue:#010571;--golden-corn:#f2ca17;--sky-100:#e1f4fc;--sky-200:#b2e3f7;--white:#ffffff;--mist:#eef4ff;--ink:#000117;--font-sans:Rubik, system-ui, sans-serif;--font-alt:Sora, system-ui, sans-serif;--text-headline-1:700 56px/1 var(--font-sans);--text-headline-2:700 40px/1.1 var(--font-sans);--text-subheadline:700 36px/1.1 var(--font-sans);--text-body:400 30px/1.2 var(--font-sans);--text-cta:600 24px/1.2 var(--font-sans);--text-slide-headline:700 30px/1.4 var(--font-sans);--text-slide-subheadline:500 13px/1.4 var(--font-sans);}}</style>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Roadmap Produk Skolla Q4 2026</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#e1f4fc}
+a{color:#010571}a:hover{color:#0e97d6}
+</style>
+</helmet>
+<div style="font-family: Rubik, system-ui, sans-serif; background: #e1f4fc; color: #000117; min-height: 100vh">
+
+<header style="background: #010571; color: #ffffff">
+  <div style="max-width: 1200px; margin: 0 auto; padding: 24px 24px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+    <div style="font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Skolla</div>
+    <nav aria-label="Navigasi halaman" style="display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 15px">
+      <a href="#rilis" style="color: #eef4ff; text-decoration: none; padding: 12px 0">Tanggal aktif</a>
+      <a href="#cara-baca" style="color: #eef4ff; text-decoration: none; padding: 12px 0">Cara membaca</a>
+      <a href="#timeline" style="color: #eef4ff; text-decoration: none; padding: 12px 0">Jadwal per fitur</a>
+      <a href="#tim" style="color: #eef4ff; text-decoration: none; padding: 12px 0">Untuk tim kamu</a>
+      <a href="#istilah" style="color: #eef4ff; text-decoration: none; padding: 12px 0">Arti istilah</a>
+    </nav>
+  </div>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 16px 24px 0">
+    <div role="note" style="background: #f2ca17; color: #010571; border-radius: 12px; padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font-size: 16px; line-height: 1.45">
+      <strong style="font-weight: 700; letter-spacing: 0.04em">CAKUPAN ROADMAP</strong>
+      <span style="flex: 1 1 520px">Roadmap ini mencakup Q4 2026 dan Q1 2027. Rencana setelah itu, termasuk Admission dan Pembayaran v1, masih bisa berubah dan akan diperbarui berkala di halaman ini.</span>
+    </div>
+  </div>
+  <div style="max-width: 1200px; margin: 0 auto; padding: 48px 24px 72px; display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-end">
+    <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <div style="font-size: 14px; font-weight: 600; letter-spacing: 0.08em; color: #f2ca17">RENCANA FITUR · Q4 2026 DAN Q1 2027</div>
+      <h1 style="margin: 0; font-size: clamp(36px, 5vw, 56px); line-height: 1; letter-spacing: -0.02em; font-weight: 700; color: #ffffff">Fitur apa yang aktif, kapan, dan apa artinya buat tim kamu</h1>
+      <p style="margin: 0; font-size: 19px; line-height: 1.45; color: #eef4ff; max-width: 640px">Halaman ini merangkum rencana fitur Skolla dari akhir Oktober 2026 sampai Maret 2027 untuk tim Sales, Operation, After Sales, Finance, dan HR. Jadwalnya masih usulan dan bisa bergeser sampai disetujui tim Engineering.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+        <a href="#rilis" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 24px; border-radius: 6px; background: #f2ca17; color: #010571; font-weight: 600; font-size: 16px; text-decoration: none; text-transform: uppercase">Lihat tanggal aktif</a>
+        <span style="font-size: 14px; color: #eef4ff">Diperbarui 22 Oktober 2026 · Status: usulan, menunggu persetujuan</span>
+      </div>
+    </div>
+    <div style="flex: 1 1 320px; background: #ffffff; color: #010571; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em">TIGA HAL PALING PENTING</div>
+      <div style="display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.4">
+        <div><strong>30 Okt sampai 5 Nov:</strong> Live Teaching dan Project - Tugas mulai aktif.</div>
+        <div><strong>30 Nov sampai 4 Des:</strong> Absen QR Code dan Anbuso v1 aktif, sebelum ujian akhir semester.</div>
+        <div><strong>Rapor v2 masuk rencana pengembangan 2027.</strong> Dibuat di Sprint Januari 2027, dengan target aktif awal Februari 2027.</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main style="max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; display: flex; flex-direction: column; gap: 88px">
+
+  <section id="cara-baca" style="padding-top: 72px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+      <h2 style="margin: 0; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: #010571">Cara membaca halaman ini</h2>
+      <p style="margin: 0; font-size: 18px; line-height: 1.45">Setiap fitur melewati lima tahap sebelum bisa dipakai sekolah. Warna di bawah dipakai juga di jadwal per fitur.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+      <sc-for list="{{howSteps}}" as="h" hint-placeholder-count="5">
+        <div style="background: #ffffff; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; color: #010571">
+          <div style="{{h.swatch}}"></div>
+          <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em">{{h.num}}</div>
+          <div style="font-size: 19px; font-weight: 700; line-height: 1.2">{{h.title}}</div>
+          <div style="font-size: 15px; line-height: 1.45; color: #000117">{{h.body}}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background: #010571; color: #ffffff; border-radius: 12px; padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 12px 40px; font-size: 16px; line-height: 1.45">
+      <div style="flex: 1 1 320px"><strong style="color: #f2ca17">Sprint</strong> tim Engineering dihitung dari tanggal 21 sampai tanggal 20 bulan berikutnya. Sprint November 2026 berjalan 21 Okt sampai 20 Nov.</div>
+      <div style="flex: 1 1 320px"><strong style="color: #f2ca17">Fitur baru hanya aktif</strong> antara tanggal 30 sampai tanggal 5 bulan berikutnya, setelah lolos cek kualitas. Tanggal merah di rentang itu dilewati.</div>
+    </div>
+  </section>
+
+  <section id="rilis" style=" display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+      <h2 style="margin: 0; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: #010571">Kapan fitur mulai aktif</h2>
+      <p style="margin: 0; font-size: 18px; line-height: 1.45">Fitur baru hanya diaktifkan antara tanggal 30 sampai tanggal 5 bulan berikutnya, setelah selesai dibuat dan dicek. Kalau jadwal bergeser, halaman ini yang diperbarui lebih dulu.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px">
+      <sc-for list="{{milestones}}" as="m" hint-placeholder-count="6">
+        <article style="{{m.cardStyle}}">
+          <div style="font-size: 14px; font-weight: 600; letter-spacing: 0.04em">{{m.date}}</div>
+          <h3 style="margin: 0; font-size: 22px; line-height: 1.2">{{m.title}}</h3>
+          <p style="margin: 0; font-size: 16px; line-height: 1.45">{{m.body}}</p>
+          <div style="font-size: 14px; font-weight: 500">{{m.who}}</div>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="background: #ffffff; border-radius: 16px; padding: 40px; display: flex; flex-wrap: wrap; gap: 40px">
+    <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 32px; line-height: 1.1; letter-spacing: -0.02em; color: #010571">Kenapa tidak ada fitur baru selama ujian dan rapor</h2>
+      <p style="margin: 0; font-size: 17px; line-height: 1.5">Setelah 4 Des, fitur baru berikutnya baru aktif 30 Des. Sekolah tidak perlu menyesuaikan diri dengan perubahan saat guru sibuk ujian dan mengisi rapor.</p>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #010571">Tanggal sekolah berbeda per daerah. Contoh diambil dari kalender pendidikan 2026/2027 beberapa daerah (Jawa Barat, Kepulauan Riau, Gowa, Barru). Tanggal merah dari SKB 3 Menteri 2026 dan 2027.</p>
+    </div>
+    <div style="flex: 2 1 520px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+      <sc-for list="{{schoolDates}}" as="s" hint-placeholder-count="4">
+        <div style="background: #e1f4fc; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 6px; color: #010571">
+          <div style="font-size: 14px; font-weight: 500">{{s.label}}</div>
+          <div style="font-size: 22px; font-weight: 700; line-height: 1.2">{{s.date}}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="timeline" style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 780px">
+      <h2 style="margin: 0; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: #010571">Jadwal per fitur</h2>
+      <p style="margin: 0; font-size: 18px; line-height: 1.45">Setiap fitur punya lima baris tahap, dari rancang kebutuhan sampai aktif di sekolah. Baca dari kiri ke kanan untuk melihat kapan tiap tahap berjalan. Kolom berjudul kuning berarti ada fitur yang aktif di periode itu. Klik nama tahap untuk menyorot satu tahap saja, klik lagi untuk kembali.</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 14px; align-items: center">
+      <span style="font-weight: 600; color: #010571">Sorot tahap:</span>
+      <sc-for list="{{legend}}" as="lg" hint-placeholder-count="7">
+        <button type="button" onClick="{{lg.pick}}" aria-pressed="{{lg.pressed}}" style="{{lg.btnStyle}}"><span style="{{lg.swatch}}"></span>{{lg.label}}</button>
+      </sc-for>
+    </div>
+    <div style="overflow-x: auto; background: #ffffff; border-radius: 16px">
+      <div style="min-width: 1260px; padding: 12px">
+        <div style="display: grid; grid-template-columns: 180px 130px repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px">
+          <div style="grid-column: span 2; padding: 10px 12px; font-size: 13px; font-weight: 600; color: #010571">SPRINT TIM ENGINEERING</div>
+          <sc-for list="{{cycles}}" as="cy" hint-placeholder-count="4">
+            <div style="{{cy.style}}">
+              <div style="font-size: 13px; font-weight: 700; letter-spacing: 0.04em">{{cy.label}}</div>
+              <div style="font-size: 13px">{{cy.dates}}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 180px 130px repeat(7, minmax(0, 1fr)); gap: 6px">
+          <div style="grid-column: span 2; padding: 14px 12px; font-size: 13px; font-weight: 600; color: #010571">PERIODE 2 MINGGU TIM PRODUCT, DESIGN, DATA</div>
+          <sc-for list="{{sprints}}" as="sp" hint-placeholder-count="7">
+            <div style="{{sp.headStyle}}">
+              <div style="font-size: 15px; font-weight: 700">{{sp.code}}</div>
+              <div style="font-size: 13px">{{sp.dates}}</div>
+              <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em">{{sp.flag}}</div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-for list="{{groups}}" as="gr" hint-placeholder-count="2">
+          <div style="margin-top: 20px; padding: 0 12px 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; color: #010571; border-bottom: 2px solid #b2e3f7">{{gr.title}}</div>
+          <sc-for list="{{gr.rows}}" as="r" hint-placeholder-count="5">
+            <div style="{{r.gridStyle}}">
+              <div style="{{r.labelStyle}}">
+                <div style="font-size: 15px; font-weight: 700; color: #010571">{{r.name}}</div>
+                <div style="font-size: 12px; line-height: 1.35; color: #010571">{{r.note}}</div>
+              </div>
+              <sc-for list="{{r.lanes}}" as="ln" hint-placeholder-count="5">
+                <button type="button" onClick="{{ln.pick}}" aria-pressed="{{ln.pressed}}" style="{{ln.style}}">{{ln.label}}</button>
+              </sc-for>
+              <sc-for list="{{r.bg}}" as="b" hint-placeholder-count="7">
+                <div style="{{b.style}}"></div>
+              </sc-for>
+              <sc-for list="{{r.bars}}" as="bar" hint-placeholder-count="3">
+                <div style="{{bar.style}}">
+                  <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.05em">{{bar.phaseLabel}}</span>
+                  <sc-if value="{{bar.hasLabel}}" hint-placeholder-val="{{ true }}">
+                    <span>{{bar.label}}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </sc-for>
+      </div>
+    </div>
+    <button type="button" aria-pressed="{{internalPressed}}" onClick="{{toggleInternal}}" style="align-self: flex-start; min-height: 48px; padding: 0 24px; border-radius: 6px; border: 2px solid #010571; background: #ffffff; color: #010571; font-family: Rubik, system-ui, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer">{{internalLabel}}</button>
+  </section>
+
+  <section id="tim" style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+      <h2 style="margin: 0; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: #010571">Untuk tim kamu</h2>
+      <p style="margin: 0; font-size: 18px; line-height: 1.45">Pilih tim untuk melihat apa yang perlu disiapkan dan kapan.</p>
+    </div>
+    <div role="tablist" aria-label="Pilih tim" style="display: flex; flex-wrap: wrap; gap: 8px">
+      <sc-for list="{{roles}}" as="ro" hint-placeholder-count="3">
+        <button type="button" role="tab" aria-selected="{{ro.selected}}" onClick="{{ro.pick}}" style="{{ro.btnStyle}}">{{ro.label}}</button>
+      </sc-for>
+    </div>
+    <div role="tabpanel" style="background: #ffffff; border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 24px">
+      <p style="margin: 0; font-size: 19px; line-height: 1.45; color: #010571; font-weight: 500">{{active.intro}}</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px">
+        <sc-for list="{{active.steps}}" as="st" hint-placeholder-count="4">
+          <div style="background: #e1f4fc; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 8px">
+            <div style="font-size: 14px; font-weight: 600; color: #010571">{{st.when}}</div>
+            <div style="font-size: 18px; font-weight: 700; line-height: 1.25; color: #010571">{{st.title}}</div>
+            <div style="font-size: 15px; line-height: 1.5">{{st.body}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="istilah" style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+      <h2 style="margin: 0; font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; color: #010571">Arti istilah</h2>
+      <p style="margin: 0; font-size: 18px; line-height: 1.45">Nama fitur dan istilah kerja yang dipakai di halaman ini. Yang bertanda [konfirmasi] belum kami pastikan dan perlu diisi oleh pemilik fitur.</p>
+    </div>
+    <div style="overflow-x: auto; background: #ffffff; border-radius: 16px">
+      <div style="min-width: 760px">
+        <div style="display: grid; grid-template-columns: 200px minmax(0, 2fr) minmax(0, 1fr) 150px; gap: 0; padding: 14px 20px; font-size: 13px; font-weight: 600; color: #010571; letter-spacing: 0.04em; border-bottom: 1px solid #b2e3f7">
+          <div>ISTILAH</div><div>ARTINYA</div><div>DIPAKAI OLEH</div><div>AKTIF</div>
+        </div>
+        <sc-for list="{{glossary}}" as="g" hint-placeholder-count="10">
+          <div style="display: grid; grid-template-columns: 200px minmax(0, 2fr) minmax(0, 1fr) 150px; gap: 0 16px; padding: 14px 20px; font-size: 15px; line-height: 1.45; border-bottom: 1px solid #e1f4fc">
+            <div style="font-weight: 700; color: #010571">{{g.name}}</div>
+            <div>{{g.desc}}</div>
+            <div>{{g.user}}</div>
+            <div style="font-weight: 500; color: #010571">{{g.when}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-wrap: wrap; gap: 16px">
+    <div style="flex: 1 1 300px; background: #0e97d6; color: #ffffff; border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 16px; justify-content: space-between">
+      <h2 style="margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700">Ada pertanyaan soal roadmap?</h2>
+      <p style="margin: 0; font-size: 19px; font-weight: 700; line-height: 1.4">Hubungi tim Product Environment.</p>
+      <a href="#rilis" style="display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 24px; border-radius: 6px; background: #f2ca17; color: #010571; font-weight: 600; font-size: 16px; text-decoration: none; text-transform: uppercase; align-self: flex-start">Kembali ke tanggal aktif</a>
+    </div>
+  </section>
+
+</main>
+
+<footer style="background: #010571; color: #eef4ff">
+  <div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 14px">
+    <span>Skolla Education · Dokumen internal</span>
+    <span>Roadmap Q4 2026 · revisi 13 (istilah Sprint), 22 Okt 2026</span>
+  </div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":7600}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { role: 'sales', showInternal: false, stage: '' };
+  }
+  renderVals() {
+    var navy = '#010571';
+    var self = this;
+    var COLS = 'grid-template-columns: 180px 130px repeat(7, minmax(0, 1fr));';
+
+    var cycles = [
+      { label: 'SPRINT NOVEMBER 2026', dates: '21 Okt-20 Nov', span: 2 },
+      { label: 'SPRINT DESEMBER 2026', dates: '21 Nov-20 Des', span: 2 },
+      { label: 'SPRINT JANUARI 2027', dates: '21 Des-20 Jan', span: 2 },
+      { label: 'SESUDAHNYA', dates: '21 Jan-5 Agu 2027', span: 1 }
+    ].map(function (c) {
+      c.style = 'grid-column: span ' + c.span + '; padding: 10px 12px; border-radius: 8px; border: 2px solid ' + navy + '; color: ' + navy + '; display: flex; flex-direction: column; gap: 2px;';
+      return c;
+    });
+
+    var sprintDefs = [
+      { code: 'Periode 1', dates: '21 Okt-3 Nov', flag: 'ADA FITUR AKTIF 30 OKT-5 NOV', kind: 'window' },
+      { code: 'Periode 2', dates: '4-17 Nov', flag: '', kind: '' },
+      { code: 'Periode 1', dates: '23 Nov-4 Des', flag: 'ADA FITUR AKTIF 30 NOV-4 DES', kind: 'window' },
+      { code: 'Periode 2', dates: '7-18 Des', flag: 'TIDAK ADA FITUR BARU · UJIAN DAN RAPOR', kind: 'freeze' },
+      { code: 'Periode 1', dates: '21 Des-7 Jan', flag: 'ADA FITUR AKTIF 30-31 DES DAN 4 JAN', kind: 'window' },
+      { code: 'Periode 2', dates: '8-20 Jan', flag: '', kind: '' },
+      { code: 'Sesudahnya', dates: '21 Jan-5 Agu 2027', flag: 'ADA FITUR AKTIF 1-4 FEB, 1-5 MAR, 30 JUL-5 AGU', kind: 'window' }
+    ];
+    var headBg = { '': '#e1f4fc', window: '#f2ca17', freeze: navy };
+    var sprints = sprintDefs.map(function (s) {
+      return {
+        code: s.code, dates: s.dates, flag: s.flag || ' ',
+        headStyle: 'padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 2px; color: ' + (s.kind === 'freeze' ? '#ffffff' : navy) + '; background: ' + headBg[s.kind] + ';'
+      };
+    });
+
+    var css = {
+      spek: 'background: #ffffff; color: ' + navy + '; border: 2px dashed #0e97d6;',
+      design: 'background: #b2e3f7; color: ' + navy + ';',
+      dev: 'background: ' + navy + '; color: #ffffff;',
+      audit: 'background: #0e97d6; color: ' + navy + '; font-weight: 600;',
+      rilis: 'background: #f2ca17; color: ' + navy + '; font-weight: 600;',
+      none: 'background: transparent; color: ' + navy + '; font-style: italic; font-size: 12px;',
+      kerja: 'background: #e1f4fc; color: ' + navy + '; border: 1px solid #b2e3f7;'
+    };
+    var stage = this.state.stage || '';
+    function op(k) { return ' transition: opacity 0.2s; opacity: ' + (!stage || stage === k ? 1 : 0.4) + ';'; }
+    function pickStage(k) { return function () { self.setState({ stage: self.state.stage === k ? '' : k }); }; }
+    var barBase = 'position: relative; z-index: 1; padding: 7px 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.3; font-weight: 500; box-sizing: border-box; ';
+    function bgCells(lanes) {
+      var bg = [];
+      for (var c = 0; c < 7; c++) {
+        bg.push({ style: 'grid-column: ' + (c + 3) + '; grid-row: 1 / span ' + lanes + '; border-radius: 8px; background: ' + (c === 3 ? '#eef4ff' : 'transparent') + ';' });
+      }
+      return bg;
+    }
+    var laneDefs = [['spek', 'RANCANG KEBUTUHAN'], ['design', 'DESAIN TAMPILAN'], ['dev', 'PEMBUATAN'], ['audit', 'CEK KUALITAS'], ['rilis', 'AKTIF DI SEKOLAH']];
+    function F(name, note, d) {
+      var bars = [];
+      var lanes = laneDefs.map(function (ld, i) {
+        var items = d[ld[0]] || [];
+        if (items.length === 0) {
+          bars.push({ phaseLabel: '', label: d.emptyText || 'Belum ada jadwal di rencana ini', hasLabel: true, style: barBase + 'grid-column: 3 / span 7; grid-row: ' + (i + 1) + '; ' + css.none + op(ld[0]) });
+        }
+        items.forEach(function (it) {
+          bars.push({ phaseLabel: '', label: it[0], hasLabel: true, style: barBase + 'grid-column: ' + (it[1] + 2) + ' / span ' + it[2] + '; grid-row: ' + (i + 1) + '; ' + css[ld[0]] + op(ld[0]) });
+        });
+        var sel = stage === ld[0];
+        return { label: ld[1], pressed: sel ? 'true' : 'false', pick: pickStage(ld[0]), style: 'grid-column: 2; grid-row: ' + (i + 1) + '; font-family: Rubik, system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: ' + navy + '; padding: 6px 4px; display: flex; align-items: center; text-align: left; background: transparent; border: none; border-radius: 6px; cursor: pointer; min-height: 32px;' + (sel ? ' text-decoration: underline; text-underline-offset: 3px;' : '') + op(ld[0]) };
+      });
+      return {
+        name: name, note: note, lanes: lanes, bg: bgCells(5), bars: bars,
+        gridStyle: 'display: grid; ' + COLS + ' grid-template-rows: repeat(5, auto); gap: 4px 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #b2e3f7;',
+        labelStyle: 'grid-column: 1; grid-row: 1 / span 5; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; justify-content: center;'
+      };
+    }
+    function R(name, note, bars) {
+      return {
+        name: name, note: note, lanes: [], bg: bgCells(1),
+        gridStyle: 'display: grid; ' + COLS + ' grid-template-rows: auto; gap: 6px; margin-top: 8px;',
+        labelStyle: 'grid-column: 1 / span 2; grid-row: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; justify-content: center;',
+        bars: bars.map(function (b) {
+          return { phaseLabel: b[3], label: b[0], hasLabel: b[0] !== '', style: barBase + 'grid-column: ' + (b[1] + 2) + ' / span ' + b[2] + '; grid-row: 1; ' + css.kerja + op('kerja') };
+        })
+      };
+    }
+
+    var done = 'Sudah selesai sebelumnya (perkiraan: Sprint Oktober 2026)';
+    var schoolRows = [
+      F('Live Teaching', '[konfirmasi: fungsi singkat]', { emptyText: done, audit: [['21-29 Okt', 1, 1]], rilis: [['30 Okt-5 Nov', 1, 1]] }),
+      F('Project - Tugas', '[konfirmasi: fungsi singkat]', { emptyText: done, audit: [['21-29 Okt', 1, 1]], rilis: [['30 Okt-5 Nov', 1, 1]] }),
+      F('Absen QR Code', 'Siswa absen harian dengan scan kode QR. Rancangan dan desain sudah selesai sebelumnya (perkiraan).', {
+        dev: [['Sprint November 2026', 1, 2]], audit: [['23-27 Nov', 3, 1]], rilis: [['30 Nov-4 Des', 3, 1]] }),
+      F('Anbuso v1 (Sekolah)', 'Guru melihat kualitas tiap soal ujian. Rancangan dan desain sudah selesai sebelumnya (perkiraan).', {
+        dev: [['Sprint November 2026', 1, 2]], audit: [['23-27 Nov', 3, 1]], rilis: [['30 Nov-4 Des', 3, 1]] }),
+      F('SNBP Improvement', 'Predikat nilai TKA dan kuota jurusan perguruan tinggi', {
+        spek: [['4-17 Nov', 2, 1]], dev: [['Sprint Desember 2026', 3, 2]], audit: [['21-29 Des, data TKA dimasukkan 28-29 Des', 5, 1]], rilis: [['30-31 Des', 5, 1]] }),
+      F('Rebuild TO', 'Try Out (simulasi ujian) versi baru', {
+        design: [['21 Okt-3 Nov', 1, 1]], dev: [['Sprint November dan Desember 2026', 1, 4]], audit: [['21-29 Des', 5, 1], ['Uji coba sekolah percontohan 11-29 Jan', 6, 2]], rilis: [['Sekolah percontohan 4 Jan', 5, 1], ['Semua sekolah 1-4 Feb', 7, 1]] }),
+      F('Anbuso v2 (Siswa)', 'Siswa melihat analisis jawabannya sendiri', {
+        spek: [['21 Okt-3 Nov', 1, 1]], design: [['4-17 Nov', 2, 1]], dev: [['Sprint Desember 2026', 3, 2]], audit: [['21-29 Des', 5, 1]], rilis: [['4 Jan', 5, 1]] }),
+      F('Absen Mapel', 'Absen per mata pelajaran', {
+        spek: [['23 Nov-4 Des', 3, 1]], design: [['7-18 Des', 4, 1]], dev: [['Sprint Januari 2027', 5, 2]], audit: [['21-29 Jan', 7, 1]], rilis: [['1-4 Feb', 7, 1]] }),
+      F('Rapor v2', 'Sistem rapor versi baru', {
+        spek: [['4-17 Nov', 2, 1]], design: [['23 Nov-4 Des', 3, 1]], dev: [['Sprint Januari 2027', 5, 2]], audit: [['21-29 Jan', 7, 1]], rilis: [['1-4 Feb', 7, 1]] }),
+      F('Admission', 'Penerimaan siswa baru dalam tiga fase: pra tes, tes, pasca tes. Pembayarannya memakai fitur Pembayaran v1.', {
+        spek: [['JTBD dan workflow', 1, 1]], design: [['Prototype tim Product 29 Okt-20 Nov. Perkiraan sekitar 70% desain terealisasi saat development', 1, 2]], dev: [['Sprint Maret sampai Juli 2027 (21 Feb-20 Jul)', 7, 1]], audit: [['21-29 Jul 2027', 7, 1]], rilis: [['30 Jul-5 Agu 2027', 7, 1]] }),
+      F('Pembayaran v1', 'Fitur terpisah yang terhubung dengan Admission. Dipakai untuk biaya pendaftaran dan registrasi ulang, dan bisa dipakai sendiri untuk SPP bulanan.', {
+        spek: [['JTBD dan workflow', 1, 1]], design: [['Prototype tim Product 29 Okt-20 Nov. Perkiraan sekitar 70% desain terealisasi saat development', 1, 2]], dev: [['Sprint Maret sampai Juli 2027 (21 Feb-20 Jul)', 7, 1]], audit: [['21-29 Jul 2027', 7, 1]], rilis: [['30 Jul-5 Agu 2027', 7, 1]] }),
+      F('IFP', '[konfirmasi: fungsi singkat]', {
+        spek: [['7-18 Des', 4, 1]], design: [['21 Des-7 Jan', 5, 1]], dev: [['Sprint Februari 2027', 7, 1]], audit: [['22-26 Feb', 7, 1]], rilis: [['1-5 Mar', 7, 1]] })
+    ];
+    var prepRows = [
+      R('Materi untuk tim lapangan', 'Demo, tanya jawab, dan panduan', [['Siap 27 Okt', 1, 1, 'PRODUCT'], ['Siap 25 Nov', 3, 1, 'PRODUCT'], ['Siap 23 Des', 5, 1, 'PRODUCT'], ['Siap 27 Jan dan 24 Feb', 7, 1, 'PRODUCT']]),
+      R('Sekolah percontohan Rebuild TO', 'Uji coba mulai 4 Jan', [['Pilih sekolah', 4, 1, 'SALES'], ['Latih dan dampingi sekolah', 6, 1, 'OPERATION']]),
+      R('Kampanye semester genap', 'Anbuso v2 aktif 4 Jan', [['', 5, 2, 'SALES']]),
+      R('Siaga sekolah', 'Musim ujian dan rapor', [['Tidak ada fitur baru', 4, 1, 'AFTER SALES']])
+    ];
+    var internalRows = [
+      R('Edu Playground', 'Tim Engineering senior', [['Sprint November dan Desember 2026', 1, 4, 'SENIOR ENGINEER']]),
+      R('Super Admin LMS', 'Panel admin internal', [['Sprint Januari 2027', 5, 2, 'SENIOR ENGINEER']]),
+      R('Data Anbuso', 'Tim Data', [['Versi 1', 1, 1, 'DATA'], ['Versi 2', 2, 2, 'DATA']]),
+      R('Master Kurikulum', 'Data induk mata pelajaran', [['', 2, 2, 'DATA']]),
+      R('Formulasi dan Otomasi SNBT', 'Rumus nilai Try Out SNBT', [['', 1, 1, 'DATA']]),
+      R('Data SNBP', 'Predikat TKA dan kuota jurusan', [['Siapkan struktur data', 4, 1, 'DATA'], ['Masukkan hasil TKA 28-29 Des', 5, 1, 'DATA']]),
+      R('Transform Report TO dan Ambis Test', 'Laporan hasil Try Out', [['', 4, 1, 'DATA']]),
+      R('Laporan pemakaian fitur', 'Tim Data', [['', 5, 1, 'DATA']]),
+      R('Deals Sales dan Sales Visit', 'Tim Product', [['Deals Sales', 1, 2, 'PRODUCT'], ['Sales Visit', 4, 1, 'PRODUCT']]),
+      R('Perencanaan', 'Tim Product', [['Rencana peluncuran semester genap', 5, 1, 'PRODUCT'], ['Evaluasi kuartal dan rencana berikutnya', 6, 1, 'PRODUCT']]),
+      R('Uji kemudahan pakai', 'Tim Design', [['Absen QR dan Anbuso v1', 6, 1, 'DESIGN']])
+    ];
+    var showInternal = this.state.showInternal;
+    var groups = [
+      { title: 'FITUR UNTUK SEKOLAH', rows: schoolRows },
+      { title: 'PERSIAPAN TIM LAPANGAN', rows: prepRows }
+    ];
+    if (showInternal) groups.push({ title: 'PEKERJAAN INTERNAL', rows: internalRows });
+    var sw = 'width: 22px; height: 16px; border-radius: 4px; box-sizing: border-box; display: inline-block; ';
+    var legend = [
+      { k: '', label: 'Semua tahap', swatch: 'display: none;' },
+      { k: 'spek', label: 'Rancang kebutuhan (Product)', swatch: sw + css.spek },
+      { k: 'design', label: 'Desain tampilan (Design)', swatch: sw + css.design },
+      { k: 'dev', label: 'Pembuatan (Engineering)', swatch: sw + css.dev },
+      { k: 'audit', label: 'Cek kualitas (QA)', swatch: sw + css.audit },
+      { k: 'rilis', label: 'Aktif di sekolah', swatch: sw + css.rilis },
+      { k: 'kerja', label: 'Persiapan dan pekerjaan internal', swatch: sw + css.kerja }
+    ].map(function (l) {
+      var sel = stage === l.k;
+      l.pressed = sel ? 'true' : 'false';
+      l.pick = l.k ? pickStage(l.k) : function () { self.setState({ stage: '' }); };
+      if (sel && l.k) l.swatch += ' outline: 2px solid #ffffff;';
+      l.btnStyle = 'display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; font-family: Rubik, system-ui, sans-serif; font-size: 14px; font-weight: ' + (sel ? 700 : 500) + '; cursor: pointer; color: ' + (sel ? '#ffffff' : navy) + '; background: ' + (sel ? navy : '#ffffff') + '; border: 2px solid ' + (sel ? navy : '#b2e3f7') + ';';
+      return l;
+    });
+
+    var hsw = 'width: 100%; height: 10px; border-radius: 4px; box-sizing: border-box; ';
+    var howSteps = [
+      { num: 'TAHAP 1 · TIM PRODUCT', title: 'Rancang kebutuhan', body: 'Merumuskan masalah sekolah yang mau diselesaikan dan apa saja yang harus bisa dilakukan fitur.', swatch: hsw + css.spek },
+      { num: 'TAHAP 2 · TIM DESIGN', title: 'Desain tampilan', body: 'Membuat rancangan layar yang nanti dilihat guru dan siswa.', swatch: hsw + css.design },
+      { num: 'TAHAP 3 · TIM ENGINEERING', title: 'Pembuatan', body: 'Membangun fitur sesuai rancangan. Biasanya butuh satu sprint.', swatch: hsw + css.dev },
+      { num: 'TAHAP 4 · TIM QA', title: 'Cek kualitas', body: 'Menguji fitur dan mencari kendala sebelum sampai ke sekolah. Berjalan tanggal 21 sampai 29.', swatch: hsw + css.audit },
+      { num: 'TAHAP 5', title: 'Aktif di sekolah', body: 'Fitur mulai bisa dipakai antara tanggal 30 sampai 5. Tim lapangan sudah menerima materinya tiga hari kerja sebelumnya.', swatch: hsw + css.rilis }
+    ];
+
+    var cardDefault = 'background: #ffffff; color: ' + navy + '; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 10px;';
+    var cardFreeze = 'background: ' + navy + '; color: #ffffff; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 10px;';
+    var milestones = [
+      { date: '30 OKT SAMPAI 5 NOV 2026', title: 'Live Teaching dan Project - Tugas', body: 'Dua fitur pertama yang aktif kuartal ini. Materi untuk tim lapangan siap 27 Okt. [konfirmasi: fungsi singkat kedua fitur]', who: 'Untuk: guru dan siswa', f: false },
+      { date: '30 NOV SAMPAI 4 DES 2026', title: 'Absen QR Code dan Anbuso v1 (Sekolah)', body: 'Siswa absen harian dengan scan kode QR. Guru bisa melihat soal mana yang terlalu mudah, terlalu sulit, atau membingungkan, tepat sebelum ujian akhir semester.', who: 'Untuk: semua sekolah klien', f: false },
+      { date: '29 OKT SAMPAI 20 NOV 2026', title: 'Prototype Admission dan Pembayaran v1 (internal)', body: 'Tim Product membuat prototype mengikuti dokumen JTBD dan workflow admission. Prototype ini menjadi acuan desain, dengan perkiraan sekitar 70% desainnya terealisasi saat development. Belum bisa dipakai sekolah, jadi TechDev dan Tech Audit belum terlibat.', who: 'Untuk: tim internal Skolla', f: false },
+      { date: '7 SAMPAI 29 DES 2026', title: 'Tidak ada fitur baru', body: 'Musim ujian akhir semester dan pembagian rapor. Tim teknis tetap bekerja dan siap memperbaiki kendala.', who: 'Berlaku untuk: semua fitur', f: true },
+      { date: '30 SAMPAI 31 DES 2026', title: 'SNBP Improvement', body: 'Sekolah mendapat predikat nilai TKA dan kuota jurusan perguruan tinggi terbaru, menjelang pendaftaran SNBP. Hasil TKA resmi baru diumumkan pemerintah 23 Des, jadi waktunya mepet.', who: 'Untuk: siswa kelas 12 dan guru BK', f: false },
+      { date: 'SENIN, 4 JAN 2027', title: 'Anbuso v2 (Siswa) dan Rebuild TO untuk sekolah percontohan', body: 'Siswa bisa melihat analisis jawaban ujiannya sendiri. Try Out versi baru dicoba dulu oleh beberapa sekolah percontohan. 1 dan 5 Jan tanggal merah.', who: 'Untuk: siswa dan sekolah percontohan', f: false },
+      { date: '1 SAMPAI 4 FEB 2027', title: 'Absen Mapel, Rapor v2, dan Rebuild TO untuk semua sekolah', body: 'Absen per mata pelajaran, rapor versi baru, dan Try Out versi baru untuk semua sekolah. 5 Feb cuti bersama Imlek.', who: 'Untuk: guru, wali kelas, semua sekolah', f: false },
+      { date: '1 SAMPAI 5 MAR 2027 (PERKIRAAN)', title: 'IFP', body: 'Dibuat di Sprint Februari 2027. Februari tidak punya tanggal 30, jadi fitur aktif di awal Maret.', who: 'Status: belum ada tanggal pasti', f: false },
+      { date: '30 JUL SAMPAI 5 AGU 2027 (PERKIRAAN)', title: 'Admission dan Pembayaran v1', body: 'Dibuat TechDev selama lima sprint, Maret sampai Juli (21 Feb-20 Jul 2027), lalu dicek 21-29 Jul. Admission mencakup pendaftaran, tes seleksi, sampai registrasi ulang. Pembayaran v1 adalah fitur terpisah yang terhubung dengan Admission, dan bisa dipakai sendiri untuk SPP bulanan. Versi pertama hanya dipakai admin sekolah. Pengingat bayar SPP ke orang tua kemungkinan dikirim lewat email.', who: 'Untuk: admin sekolah', f: false }
+    ].map(function (m) { m.cardStyle = m.f ? cardFreeze : cardDefault; return m; });
+
+    var schoolDates = [
+      { label: 'Ujian akhir semester ganjil', date: 'sekitar 7-12 Des' },
+      { label: 'Pembagian rapor', date: 'sekitar 18-23 Des' },
+      { label: 'Pengumuman hasil TKA SMA', date: '23 Des' },
+      { label: 'Libur semester', date: '21 Des-8 Jan' },
+      { label: 'Masuk semester genap', date: '4 atau 11 Jan' },
+      { label: 'Tanggal merah dan cuti bersama', date: '24-25 Des, 1 Jan, 5 Jan, 5 Feb' }
+    ];
+
+    var changes = [
+      { title: 'Live Teaching dan Project - Tugas ditambahkan', before: 'Belum ada di rencana.', after: 'Dicek 21-29 Okt, aktif 30 Okt-5 Nov.', why: 'Kedua fitur sudah selesai dibuat bulan lalu dan siap dipakai sekolah.' },
+      { title: 'Jadwal mengikuti bulan kerja 21 sampai 20', before: 'Jadwal hanya ditulis per minggu, tanpa tanggal.', after: 'Sprint November 2026 dimulai 21 Okt. Tim Engineering bekerja per bulan, tim Product, Design, dan Data per dua minggu.', why: 'Supaya sama dengan kalender kerja tim.' },
+      { title: 'Fitur baru hanya aktif tanggal 30 sampai 5', before: 'Fitur langsung aktif di akhir periode kerja, tanpa waktu untuk pengecekan.', after: 'Setelah dibuat, fitur dicek dulu tanggal 21 sampai 29, lalu aktif antara tanggal 30 sampai 5.', why: 'Masukan Tech Lead: tim QA butuh waktu mengecek. Tanggal yang tetap juga lebih mudah diingat tim lain.' },
+      { title: 'Admission dan Pembayaran v1 ditambahkan', before: 'Belum ada di rencana.', after: 'Prototype dibuat tim Product 4-17 Nov. Pembuatan oleh tim Engineering di Sprint Februari 2027 (21 Jan-20 Feb), aktif 1-5 Mar.', why: 'Prototype dipakai untuk menguji alur sebelum dibangun. Alurnya mengikuti dokumen JTBD dan workflow admission.' },
+      { title: 'SNBP Improvement ditambahkan', before: 'Belum ada di rencana.', after: 'Kebutuhan dirumuskan 4-17 Nov, dibuat di Sprint Desember 2026, aktif 30-31 Des.', why: 'Sekolah butuh predikat nilai TKA dan kuota jurusan terbaru sebelum mendaftarkan siswa ke SNBP.' },
+      { title: 'Rapor v2 tidak diubah saat musim rapor', before: 'Dibuat di bulan Desember, tanpa jadwal desain.', after: 'Didesain 23 Nov-4 Des, dibuat di Sprint Januari 2027, aktif 1-4 Feb.', why: 'Desember adalah masa guru mengisi dan membagikan rapor. Mengganti sistem rapor di waktu yang sama berisiko besar.' },
+      { title: 'Urutan kerja Absen Mapel diperbaiki', before: 'Desain dikerjakan sebelum kebutuhannya dirumuskan.', after: 'Kebutuhan dirumuskan 23 Nov-4 Des, desain 7-18 Des, dibuat di Sprint Januari 2027, aktif 1-4 Feb.', why: 'Tim desain perlu tahu kebutuhannya dulu supaya tidak bolak-balik.' },
+      { title: 'Anbuso v2 dapat satu sprint penuh', before: 'Hanya setengah bulan untuk pembuatan.', after: 'Dibuat di Sprint Desember 2026, aktif 4 Jan.', why: 'Versi pertamanya butuh satu bulan. Setengahnya terlalu optimis.' },
+      { title: 'IFP dibuat di Sprint Februari 2027', before: 'Dibuat di awal Januari.', after: 'Kebutuhan dirumuskan 7-18 Des, desain 21 Des-7 Jan, dibuat di Sprint Februari 2027, aktif 1-5 Mar.', why: 'Sprint Januari 2027 dipakai untuk Absen Mapel dan Rapor v2.' },
+      { title: 'Ada jadwal persiapan tim lapangan', before: 'Tidak ada. Rencana hanya berisi pekerjaan tim produk.', after: 'Tim lapangan menerima demo, daftar tanya jawab, dan panduan paling lambat tiga hari kerja sebelum fitur aktif.', why: 'Sales, Operation, dan After Sales perlu tahu kapan harus siap, bukan hanya kapan fitur selesai.' }
+    ];
+
+    var roleData = {
+      sales: {
+        label: 'Sales',
+        intro: 'Fitur apa yang sudah bisa ditawarkan, kapan aktif, dan mana yang sebaiknya belum dijanjikan.',
+        steps: [
+          { when: 'Mulai 30 Okt', title: 'Tawarkan Live Teaching dan Project - Tugas', body: 'Dua fitur pertama yang aktif kuartal ini. Materi demo siap 27 Okt.' },
+          { when: 'Mulai 30 Nov', title: 'Tawarkan Absen QR Code dan Anbuso v1', body: 'Anbuso v1 paling pas dibahas dengan kepala sekolah dan wakasek kurikulum sebelum ujian akhir semester, karena hasil ujian bisa langsung dianalisis.' },
+          { when: 'Desember sampai Juli', title: 'Kumpulkan sekolah yang tertarik Admission dan Pembayaran', body: 'Kedua fitur aktif 30 Jul-5 Agu 2027. Pembayaran v1 juga bisa ditawarkan ke sekolah yang hanya butuh pembayaran SPP bulanan. Prototype bisa dipakai untuk demo terbatas setelah 20 Nov [konfirmasi ke tim Product].' },
+          { when: 'Sebelum 18 Des', title: 'Tentukan sekolah percontohan Rebuild TO', body: 'Sekolah dengan kelas 12 paling cocok. Uji coba mulai 4 Jan.' },
+          { when: 'Mulai 30 Des', title: 'Tawarkan SNBP Improvement ke guru BK', body: 'Predikat nilai TKA dan kuota jurusan terbaru membantu guru BK memilih siswa dan jurusan sebelum pendaftaran SNBP, yang tahun lalu dibuka awal Februari.' },
+          { when: 'Januari', title: 'Kampanye semester genap', body: 'Anbuso v2 aktif 4 Jan. Absen Mapel, Rapor v2, dan Rebuild TO untuk semua sekolah aktif 1-4 Feb, menjelang musim Try Out masuk perguruan tinggi yang biasanya ramai di awal tahun.' }
+        ],
+        dont: [
+          { t: 'Menjanjikan Rapor v2 untuk rapor Desember 2026. Rapor v2 baru aktif 1-4 Feb 2027.' },
+          { t: 'Menjanjikan Admission dan Pembayaran aktif sebelum Agustus 2027, termasuk untuk penerimaan siswa baru tahun ajaran 2027/2028. Yang ada di November hanya prototype internal.' },
+          { t: 'Menjanjikan IFP sebelum Maret 2027.' },
+          { t: 'Menyebut satu tanggal pasti ke sekolah. Sebut rentangnya, misalnya “awal Desember”.' }
+        ]
+      },
+      ops: {
+        label: 'Operation',
+        intro: 'Apa yang perlu disiapkan untuk pendampingan dan penerapan fitur di sekolah.',
+        steps: [
+          { when: 'Sebelum 27 Okt', title: 'Siapkan pendampingan Live Teaching dan Project - Tugas', body: 'Fitur aktif mulai 30 Okt. Waktunya mepet, jadi mulai dari sekolah yang sudah meminta fitur ini.' },
+          { when: 'Sebelum 25 Nov', title: 'Siapkan pendampingan Absen QR dan Anbuso v1', body: 'Panduan pemasangan QR di kelas, panduan guru, dan daftar sekolah yang diaktifkan lebih dulu. Fitur aktif mulai 30 Nov.' },
+          { when: 'Sebelum 27 Jul 2027', title: 'Siapkan pendampingan Admission dan Pembayaran', body: 'Fitur aktif 30 Jul-5 Agu 2027. Sekolah yang memakai sistem keuangan sendiri perlu panduan khusus, karena admin sekolah harus mengonfirmasi setiap pembayaran secara manual.' },
+          { when: '7-29 Des', title: 'Tidak ada fitur baru diaktifkan', body: 'Fokus mendampingi sekolah selama ujian dan pengisian rapor.' },
+          { when: '4-29 Jan', title: 'Latih dan dampingi sekolah percontohan Rebuild TO', body: 'Uji coba mulai 4 Jan. Kumpulkan masukan sekolah untuk tim QA sebelum fitur dibuka ke semua sekolah 1-4 Feb.' },
+          { when: 'Sebelum 27 Jan', title: 'Cek data mata pelajaran dan jadwal tiap sekolah', body: 'Absen Mapel butuh daftar mata pelajaran dan jadwal pelajaran yang benar.' }
+        ],
+        dont: [
+          { t: 'Mengaktifkan fitur di sekolah sebelum menerima materi pelatihan dan daftar tanya jawab dari tim Product.' },
+          { t: 'Memindahkan sekolah ke Rebuild TO sebelum 1 Feb, kecuali sekolah percontohan.' }
+        ]
+      },
+      cs: {
+        label: 'After Sales',
+        intro: 'Kapan pertanyaan dan keluhan sekolah kemungkinan naik, dan apa yang harus sudah ada di tangan sebelum itu.',
+        steps: [
+          { when: '27 Okt, 25 Nov, 23 Des, 27 Jan, 24 Feb', title: 'Terima catatan fitur baru, daftar tanya jawab, dan panduan', body: 'Tim Product mengirim tiga hari kerja sebelum fitur aktif, lengkap dengan alur penanganan kendala.' },
+          { when: '30 Okt-5 Nov', title: 'Pertanyaan Live Teaching dan Project - Tugas', body: 'Pertanyaan pertama soal cara memakai dua fitur ini. Siapkan template jawaban.' },
+          { when: '30 Nov-4 Des', title: 'Pertanyaan Absen QR dan Anbuso v1', body: 'Soal pemasangan QR dan cara membaca hasil analisis soal, tepat sebelum ujian akhir semester.' },
+          { when: '7-29 Des', title: 'Siaga ujian dan rapor', body: 'Tidak ada fitur baru. Pertanyaan soal rapor kemungkinan naik, tim teknis siap memperbaiki kendala.' },
+          { when: '30 Des-4 Jan', title: 'SNBP, Anbuso v2, uji coba Rebuild TO', body: 'Pertanyaan soal predikat TKA dan kuota jurusan, lalu analisis jawaban siswa. Gelombang berikutnya 1-4 Feb.' },
+          { when: '30 Jul-5 Agu 2027', title: 'Pertanyaan Admission dan Pembayaran', body: 'Soal pendaftaran siswa baru, registrasi ulang, dan pembayaran SPP. Pertanyaan soal uang perlu jalur eskalasi ke Finance.' }
+        ],
+        dont: [
+          { t: 'Menjanjikan fitur baru sebagai solusi keluhan selama 7-29 Des.' },
+          { t: 'Menjawab pertanyaan Rapor v2 dengan tanggal lain. Jawab: aktif 1-4 Februari 2027.' }
+        ]
+      },
+      fin: {
+        label: 'Finance',
+        intro: 'Kapan fitur mulai bisa dipakai sekolah, sebagai acuan untuk penawaran, tagihan, dan perkiraan pendapatan.',
+        steps: [
+          { when: '30 Okt, 30 Nov, 30 Des, 4 Jan, 1 Feb, 1 Mar', title: 'Tanggal fitur mulai aktif', body: 'Fitur baru bisa dipakai sekolah mulai tanggal ini. Kalau fitur dijual terpisah, ini tanggal paling awal untuk mulai menagih [konfirmasi model harga tiap fitur].' },
+          { when: 'Sebelum 30 Jul 2027', title: 'Siapkan proses Pembayaran v1', body: 'Pembayaran v1 aktif 30 Jul-5 Agu 2027, untuk biaya pendaftaran dan registrasi ulang di Admission serta SPP bulanan. Finance perlu ikut menyiapkan cara mengecek dan mencocokkan transaksi sebelum fitur aktif [konfirmasi: rekening tujuan dan biaya layanan].' },
+          { when: 'Desember', title: 'Tidak ada fitur baru selama ujian dan rapor', body: 'Penawaran di bulan ini hanya bisa memakai fitur yang sudah aktif: Live Teaching, Project - Tugas, Absen QR Code, dan Anbuso v1.' },
+          { when: '1-4 Feb', title: 'Fitur semester genap lengkap', body: 'Absen Mapel, Rapor v2, dan Rebuild TO untuk semua sekolah aktif. Kontrak semester genap yang menjanjikan fitur ini sebaiknya berlaku setelah tanggal tersebut.' },
+          { when: '21-31 Des', title: 'Kerja di masa cuti bersama', body: 'Tim QA dan Engineering mengecek tiga fitur di sela cuti bersama dan Natal. Kalau ada kebijakan lembur, anggarannya perlu disiapkan [konfirmasi].' }
+        ],
+        dont: [
+          { t: 'Mencantumkan fitur di penawaran atau tagihan sebelum tanggal aktifnya.' },
+          { t: 'Menganggap tanggal di halaman ini final sebelum statusnya berubah jadi “disetujui”.' }
+        ]
+      },
+      hr: {
+        label: 'HR',
+        intro: 'Kapan beban kerja tim naik, dan apa yang perlu diatur dari sisi jadwal, pelatihan, dan cuti.',
+        steps: [
+          { when: '27 Okt, 25 Nov, 23 Des, 27 Jan, 24 Feb', title: 'Pelatihan internal sebelum fitur aktif', body: 'Sales, Operation, dan After Sales perlu waktu mempelajari fitur baru sekitar tiga hari kerja sebelum fitur aktif. Jadwalkan bersama atasan tiap tim.' },
+          { when: '21-31 Des', title: 'Atur jadwal cuti akhir tahun', body: 'Tim QA dan Engineering mengecek SNBP Improvement, Anbuso v2, dan Rebuild TO di periode ini. Cuti panjang di tim ini perlu dikoordinasikan dengan Tech Lead.' },
+          { when: '7-29 Des', title: 'After Sales lebih sibuk', body: 'Musim ujian dan rapor. Pertanyaan dari sekolah kemungkinan naik, jadi pertimbangkan jadwal piket.' },
+          { when: 'Januari', title: 'Operation lebih sibuk', body: 'Ada uji coba Rebuild TO bersama sekolah percontohan dan persiapan tiga fitur yang aktif awal Februari.' }
+        ],
+        dont: [
+          { t: 'Menyetujui cuti panjang tim QA dan Engineering di 21-31 Des tanpa koordinasi dengan Tech Lead.' }
+        ]
+      }
+    };
+    var current = this.state.role;
+    var roles = ['sales', 'ops', 'cs', 'fin', 'hr'].map(function (id) {
+      var on = id === current;
+      return {
+        label: roleData[id].label,
+        selected: on ? 'true' : 'false',
+        pick: function () { self.setState({ role: id }); },
+        btnStyle: 'min-height: 48px; padding: 0 24px; border-radius: 999px; font-family: Rubik, system-ui, sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; border: 2px solid ' + navy + '; background: ' + (on ? navy : '#ffffff') + '; color: ' + (on ? '#ffffff' : navy) + ';'
+      };
+    });
+
+    var glossary = [
+      { name: 'Sprint', desc: 'Periode kerja tim Engineering selama satu bulan, dari tanggal 21 sampai tanggal 20 bulan berikutnya. Sprint November 2026 berjalan 21 Okt sampai 20 Nov.', user: 'Tim Engineering', when: '-' },
+      { name: 'Periode 2 minggu', desc: 'Tim Product, Design, dan Data membagi satu sprint menjadi dua periode, masing-masing 10 hari kerja.', user: 'Tim Product, Design, Data', when: '-' },
+      { name: 'Cek kualitas (QA)', desc: 'Pengujian oleh tim QA setelah fitur selesai dibuat, sebelum fitur diaktifkan untuk sekolah.', user: 'Tim QA', when: 'Tanggal 21-29' },
+      { name: 'Sekolah percontohan', desc: 'Beberapa sekolah yang mencoba fitur lebih dulu sebelum fitur dibuka untuk semua sekolah.', user: 'Sekolah terpilih', when: '-' },
+      { name: 'SNBP', desc: 'Seleksi Nasional Berdasarkan Prestasi: jalur masuk perguruan tinggi negeri lewat nilai rapor dan prestasi.', user: 'Siswa kelas 12', when: '-' },
+      { name: 'TKA', desc: 'Tes Kemampuan Akademik dari Kemendikdasmen. Nilainya menjadi syarat ikut SNBP.', user: 'Siswa kelas 12', when: '-' },
+      { name: 'Live Teaching', desc: '[konfirmasi: fungsi Live Teaching dalam satu kalimat]', user: '[konfirmasi]', when: '30 Okt-5 Nov' },
+      { name: 'Project - Tugas', desc: '[konfirmasi: fungsi Project - Tugas dalam satu kalimat]', user: '[konfirmasi]', when: '30 Okt-5 Nov' },
+      { name: 'Absen QR Code', desc: 'Absen harian siswa dengan scan kode QR.', user: 'Siswa, wali kelas', when: '30 Nov-4 Des' },
+      { name: 'Anbuso v1 (Sekolah)', desc: 'Analisis butir soal [konfirmasi kepanjangan]: guru bisa melihat kualitas tiap soal ujian.', user: 'Guru, wakasek kurikulum', when: '30 Nov-4 Des' },
+      { name: 'Prototype', desc: 'Contoh alur dan tampilan fitur yang dibuat tim Product untuk diuji dan didiskusikan. Untuk Admission, perkiraan sekitar 70% desain prototype terealisasi saat development. Belum bisa dipakai sekolah.', user: 'Tim internal', when: '-' },
+      { name: 'JTBD', desc: 'Jobs To Be Done: cara merumuskan kebutuhan dengan melihat tugas apa yang ingin diselesaikan pengguna.', user: 'Tim Product', when: '-' },
+      { name: 'Admission', desc: 'Penerimaan siswa baru di LMS Skolla: pendaftaran dan berkas, tes seleksi, lalu registrasi ulang sampai calon jadi siswa baru. Pembayarannya memakai Pembayaran v1.', user: 'Admin sekolah (versi pertama)', when: 'Prototype 29 Okt-20 Nov, aktif 30 Jul-5 Agu 2027' },
+      { name: 'Pembayaran v1', desc: 'Fitur pembayaran yang terpisah dari Admission tapi saling terhubung. Dipakai untuk biaya pendaftaran dan registrasi ulang, dan bisa dipakai sendiri untuk SPP bulanan. Pengingat bayar SPP ke orang tua kemungkinan lewat email.', user: 'Admin sekolah (versi pertama)', when: 'Aktif 30 Jul-5 Agu 2027' },
+      { name: 'SNBP Improvement', desc: 'Pembaruan predikat nilai TKA dan kuota jurusan perguruan tinggi, untuk membantu sekolah menyiapkan siswa ikut SNBP.', user: 'Siswa kelas 12, guru BK', when: '30-31 Des' },
+      { name: 'Rebuild TO', desc: 'Try Out (simulasi ujian) yang dibangun ulang dengan sistem baru.', user: 'Siswa, sekolah', when: 'Percontohan 4 Jan, semua 1-4 Feb' },
+      { name: 'Anbuso v2 (Siswa)', desc: 'Siswa bisa melihat analisis jawaban ujiannya sendiri.', user: 'Siswa', when: '4 Jan' },
+      { name: 'Absen Mapel', desc: 'Absen per mata pelajaran, bukan hanya absen harian.', user: 'Guru mata pelajaran', when: '1-4 Feb' },
+      { name: 'Rapor v2', desc: 'Sistem rapor versi baru.', user: 'Wali kelas, sekolah', when: '1-4 Feb' },
+      { name: 'IFP', desc: '[konfirmasi: kepanjangan dan fungsi IFP dalam satu kalimat]', user: '[konfirmasi]', when: 'Perkiraan 1-5 Mar' },
+      { name: 'Edu Playground', desc: '[konfirmasi: fungsi Edu Playground dalam satu kalimat]', user: '[konfirmasi]', when: '[konfirmasi]' },
+      { name: 'Super Admin LMS', desc: 'Panel admin untuk tim internal Skolla mengelola platform belajar (LMS).', user: 'Tim internal', when: 'Internal, Sprint Januari 2027' },
+      { name: 'Master Kurikulum', desc: 'Data induk kurikulum dan mata pelajaran. Dipakai Absen Mapel dan Rapor v2.', user: 'Tim internal, Operation', when: 'Selesai 4 Des' },
+      { name: 'Formulasi dan Otomasi SNBT', desc: 'Rumus dan hitungan nilai otomatis untuk Try Out SNBT, jalur masuk perguruan tinggi negeri lewat tes.', user: 'Tim Data', when: '21 Okt-3 Nov' },
+      { name: 'Transform Report TO dan Ambis Test', desc: 'Laporan hasil Try Out dan Ambis Test [konfirmasi apa itu Ambis Test].', user: 'Siswa, sekolah', when: '7-18 Des' },
+      { name: 'Deals Sales, Sales Visit', desc: '[konfirmasi: alat atau proses internal untuk tim Sales?]', user: 'Tim Sales', when: 'Okt sampai Des' }
+    ];
+
+    var openQs = [
+      { t: 'Live Teaching dan Project - Tugas dicek 21-29 Okt, bersamaan dengan awal Sprint November 2026. Materi untuk tim lapangan harus siap 27 Okt. Perlu dipastikan tim QA sanggup mengerjakan keduanya.' },
+      { t: 'Desain Rebuild TO dikerjakan bersamaan dengan pembuatannya, dan rencana ini belum memuat rumusan kebutuhan Rebuild TO.' },
+      { t: 'Sekitar 30% desain prototype Admission dan Pembayaran diperkirakan tidak terealisasi saat development. Perlu disepakati bagian mana yang ditunda.' },
+      { t: 'Dokumen workflow admission masih punya pertanyaan terbuka, misalnya batas waktu bayar registrasi ulang dan urutan waiting list. Jawabannya perlu ada sebelum 21 Feb.' },
+      { t: 'Admission baru aktif awal Agustus 2027, setelah tahun ajaran 2027/2028 dimulai (biasanya pertengahan Juli). Penerimaan siswa baru umumnya berjalan sebelum itu, jadi sekolah belum bisa memakai Admission untuk tahun ajaran 2027/2028. Pertimbangkan apakah sebagian bisa aktif lebih awal, misalnya bertahap per fase, atau Pembayaran SPP lebih dulu.' },
+      { t: 'Pembayaran menyangkut uang sekolah atau orang tua. Perlu dipastikan apakah cek kualitasnya butuh pengujian keamanan tambahan [konfirmasi ke Tech Lead].' },
+      { t: 'Tim QA hanya punya 5 hari kerja (23-27 Nov) untuk mengecek Absen QR dan Anbuso v1. Kalau kurang, tanggal aktif bisa mundur ke 3-4 Des, masih sebelum ujian.' },
+      { t: 'Tim Engineering mengerjakan tiga fitur sekaligus di Sprint November 2026 (Absen QR, Anbuso v1, Rebuild TO) dan Desember (Rebuild TO, Anbuso v2, SNBP Improvement).' },
+      { t: 'SNBP Improvement menunggu pengumuman hasil TKA dari pemerintah pada 23 Des. Setelah libur Natal hanya tersisa 28-29 Des untuk memasukkan dan mengecek data. Kalau pengumuman mundur, fitur ini baru aktif 4 Jan.' },
+      { t: 'Sumber dan tanggal data kuota jurusan perguruan tinggi belum dipastikan [konfirmasi]. Tahun lalu kuota sekolah untuk SNBP diumumkan 29 Des.' },
+      { t: 'Cek kualitas akhir Desember memuat tiga fitur dengan sekitar 5 hari kerja, karena cuti bersama dan Natal.' },
+      { t: 'Belum ada target keberhasilan per fitur. Usulan: tetapkan [target jumlah sekolah aktif] untuk Absen QR dan Anbuso v1 di akhir Januari.' }
+    ];
+
+    return {
+      cycles: cycles, sprints: sprints, groups: groups, legend: legend, howSteps: howSteps,
+      internalLabel: showInternal ? 'Sembunyikan pekerjaan internal' : 'Tampilkan pekerjaan internal',
+      internalPressed: showInternal ? 'true' : 'false',
+      toggleInternal: function () { self.setState({ showInternal: !self.state.showInternal }); },
+      milestones: milestones, schoolDates: schoolDates,
+      roles: roles, active: roleData[current], glossary: glossary, openQs: openQs
+    };
+  }
+}
+</script>
+</body>
+</html>

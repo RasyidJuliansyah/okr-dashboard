@@ -3,6 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "sync:roadmap": "node ./scripts/sync-roadmap.mjs",
+    "prebuild": "node ./scripts/sync-roadmap.mjs",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
