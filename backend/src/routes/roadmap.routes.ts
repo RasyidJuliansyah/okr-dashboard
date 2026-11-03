@@ -13,7 +13,10 @@ const CANDIDATE_SOURCES = [
   path.resolve(__dirname, "../../../../Landing page roadmap Q4 2026-html (3)"),
 ].filter(Boolean) as string[];
 
-const targetDir = path.resolve(__dirname, "../../frontend/public/roadmap");
+const targetDir = [
+  path.resolve(__dirname, "../../../frontend/public/roadmap"),
+  path.resolve(__dirname, "../../frontend/public/roadmap"),
+].find(p => fs.existsSync(p)) || path.resolve(__dirname, "../../../frontend/public/roadmap");
 
 function resolveSourceDir(): string | null {
   for (const src of CANDIDATE_SOURCES) {

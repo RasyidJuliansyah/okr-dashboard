@@ -85,7 +85,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useAuthStore } from "../stores/auth";
+import { useAuthStore } from "~/stores/auth";
 
 // ponytail: embedded iframe viewer; upgrade path: server-rendered micro-frontend when DC tool exports native Vue.
 const auth = useAuthStore();

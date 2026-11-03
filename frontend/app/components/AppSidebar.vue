@@ -3,6 +3,9 @@
     class="app-sidebar"
     :class="{ 'is-open': isOpen, 'is-collapsed': !isOpen }"
     :style="sidebarContainerStyle"
+    @mouseover="handleSidebarMouseOver"
+    @mouseleave="handleSidebarMouseLeave"
+    @scroll.passive="handleSidebarScroll"
   >
     <!-- Logo Section (Expanded) -->
     <div
@@ -78,33 +81,9 @@
 
     <!-- Navigation -->
     <nav :style="navContainerStyle">
+      <!-- Group 1: MONITORING & KINERJA -->
       <div :style="navGroupStyle">
-        <p :style="navGroupLabelStyle">MENU UTAMA</p>
-        <!-- C-Level menu -->
-        <div v-if="isCLevel || isAdmin" :style="navGroupStyle">
-          <NuxtLink
-            to="/c-level"
-            title="Executive Dashboard"
-            :style="navItemStyle('/c-level')"
-            @click="emit('close')"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.667"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 20V10" />
-              <path d="M12 20V4" />
-              <path d="M6 20v-6" />
-            </svg>
-            <span v-if="isOpen">Executive Dashboard</span>
-          </NuxtLink>
-        </div>
+        <p :style="navGroupLabelStyle">MONITORING & KINERJA</p>
 
         <NuxtLink
           to="/dashboard"
@@ -130,11 +109,34 @@
           <span v-if="isOpen">Dashboard</span>
         </NuxtLink>
 
-        <!-- <NuxtLink
-          v-if="isCLevel || isAdmin"
-          to="/bsc-view"
-          title="Strategic Mapping"
-          :style="navItemStyle('/bsc-view')"
+        <NuxtLink
+          v-if="isManager || isAdmin || isCLevel"
+          to="/manager/overview"
+          title="OKR Overview"
+          :style="navItemStyle('/manager/overview')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          <span v-if="isOpen">OKR Overview</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isLeader || isManager || isAdmin || isCLevel"
+          to="/leader/my-krs"
+          title="KR Saya"
+          :style="navItemStyle('/leader/my-krs')"
           @click="emit('close')"
         >
           <svg
@@ -148,18 +150,16 @@
             stroke-linejoin="round"
           >
             <circle cx="12" cy="12" r="10" />
-            <polygon
-              points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
-            />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="2" />
           </svg>
-          <span v-if="isOpen">Strategic Mapping</span>
-        </NuxtLink> -->
+          <span v-if="isOpen">KR Saya</span>
+        </NuxtLink>
 
-        <!-- <NuxtLink
-          v-if="isCLevel || isAdmin"
-          to="/strategy-map"
-          title="Strategy Map"
-          :style="navItemStyle('/strategy-map')"
+        <NuxtLink
+          to="/member-achievement"
+          title="Capaian Task Member"
+          :style="navItemStyle('/member-achievement')"
           @click="emit('close')"
         >
           <svg
@@ -172,15 +172,198 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <rect x="16" y="16" width="6" height="6" rx="1" />
-            <rect x="2" y="16" width="6" height="6" rx="1" />
-            <rect x="9" y="2" width="6" height="6" rx="1" />
-            <line x1="12" y1="12" x2="12" y2="8" />
-            <line x1="12" y1="12" x2="5" y2="12" />
-            <line x1="12" y1="12" x2="19" y2="12" />
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <polyline points="16 11 18 13 22 9" />
           </svg>
-          <span v-if="isOpen">Strategy Map</span>
-        </NuxtLink> -->
+          <span v-if="isOpen">Capaian Task Member</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isAdmin || isCLevel || isManager || isLeader"
+          to="/sprint-report"
+          title="Laporan Capaian Sprint"
+          :style="navItemStyle('/sprint-report')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          <span v-if="isOpen">Laporan Capaian Sprint</span>
+        </NuxtLink>
+      </div>
+
+      <!-- Divider when collapsed -->
+      <div
+        v-if="!isOpen"
+        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
+      ></div>
+
+      <!-- Group 2: EKSEKUSI TAKTIS & SPRINT -->
+      <div :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">EKSEKUSI & SPRINT</p>
+
+        <NuxtLink
+          to="/initiatives"
+          title="Inisiatif & Task"
+          :style="navItemStyle('/initiatives')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="5" height="18" rx="1" />
+            <rect x="10" y="3" width="5" height="11" rx="1" />
+            <rect x="17" y="3" width="5" height="15" rx="1" />
+          </svg>
+          <span v-if="isOpen">Inisiatif & Task</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isTeam || isLeader || isManager || isAdmin || isCLevel"
+          to="/team/my-work"
+          title="Pekerjaan Saya"
+          :style="navItemStyle('/team/my-work')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span v-if="isOpen">Pekerjaan Saya</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isAdmin || isCLevel || isManager || isLeader"
+          to="/approvals"
+          title="Persetujuan Task"
+          :style="navItemStyle('/approvals')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <span v-if="isOpen">Persetujuan Task</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isAdmin"
+          to="/admin/sprints"
+          title="Siklus Sprint"
+          :style="navItemStyle('/admin/sprints')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span v-if="isOpen">Siklus Sprint</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isAdmin"
+          to="/admin/update-progress"
+          title="Update Progress"
+          :style="navItemStyle('/admin/update-progress')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          <span v-if="isOpen">Update Progress</span>
+        </NuxtLink>
+      </div>
+
+      <!-- Divider when collapsed -->
+      <div
+        v-if="!isOpen"
+        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
+      ></div>
+
+      <!-- Group 3: STRATEGI & OKR -->
+      <div :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">STRATEGI & OKR</p>
+
+        <NuxtLink
+          v-if="isCLevel || isAdmin"
+          to="/c-level"
+          title="Executive Dashboard"
+          :style="navItemStyle('/c-level')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 20V10" />
+            <path d="M12 20V4" />
+            <path d="M6 20v-6" />
+          </svg>
+          <span v-if="isOpen">Executive Dashboard</span>
+        </NuxtLink>
 
         <NuxtLink
           v-if="isAdmin || isCLevel || isManager || isLeader"
@@ -209,77 +392,6 @@
         </NuxtLink>
 
         <NuxtLink
-          to="/initiatives"
-          title="Inisiatif (Kanban)"
-          :style="navItemStyle('/initiatives')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="3" width="5" height="18" rx="1" />
-            <rect x="10" y="3" width="5" height="11" rx="1" />
-            <rect x="17" y="3" width="5" height="15" rx="1" />
-          </svg>
-          <span v-if="isOpen">Inisiatif & Task</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/member-achievement"
-          title="Capaian Task Member"
-          :style="navItemStyle('/member-achievement')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <polyline points="16 11 18 13 22 9" />
-          </svg>
-          <span v-if="isOpen">Capaian Task Member</span>
-        </NuxtLink>
-        <NuxtLink
-          v-if="isAdmin || isCLevel || isManager || isLeader"
-          to="/sprint-report"
-          title="Laporan Capaian Sprint"
-          :style="navItemStyle('/sprint-report')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-          <span v-if="isOpen">Laporan Capaian Sprint</span>
-        </NuxtLink>
-
-        <NuxtLink
           to="/product-roadmap"
           title="Roadmap Produk"
           :style="navItemStyle('/product-roadmap')"
@@ -302,41 +414,8 @@
           <span v-if="isOpen">Roadmap Produk</span>
         </NuxtLink>
 
-
         <NuxtLink
-          to="/departments"
-          title="Struktur Departemen"
-          :style="navItemStyle('/departments')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="2" y="7" width="6" height="14" rx="1" />
-            <rect x="9" y="2" width="6" height="19" rx="1" />
-            <rect x="16" y="11" width="6" height="10" rx="1" />
-          </svg>
-          <span v-if="isOpen">Struktur Departemen</span>
-        </NuxtLink>
-      </div>
-
-      <!-- Admin divider when collapsed -->
-      <div
-        v-if="!isOpen && isAdmin"
-        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
-      ></div>
-
-      <!-- Admin menu - hanya muncul setelah login sebagai admin -->
-      <div v-if="isAdmin" :style="navGroupStyle">
-        <p :style="navGroupLabelStyle">ADMIN</p>
-        <NuxtLink
+          v-if="isAdmin"
           to="/admin/objectives"
           title="OKR Builder"
           :style="navItemStyle('/admin/objectives')"
@@ -362,73 +441,7 @@
         </NuxtLink>
 
         <NuxtLink
-          to="/initiatives"
-          title="Inisiatif (Kanban)"
-          :style="navItemStyle('/initiatives')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="3" width="5" height="18" rx="1" />
-            <rect x="10" y="3" width="5" height="11" rx="1" />
-            <rect x="17" y="3" width="5" height="15" rx="1" />
-          </svg>
-          <span v-if="isOpen">Inisiatif & Task</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/admin/update-progress"
-          title="Update Progress"
-          :style="navItemStyle('/admin/update-progress')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-          </svg>
-          <span v-if="isOpen">Update Progress</span>
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/employees"
-          title="Data Pegawai"
-          :style="navItemStyle('/admin/employees')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          <span v-if="isOpen">Data Pegawai</span>
-        </NuxtLink>
-        <NuxtLink
+          v-if="isAdmin"
           to="/admin/kpis"
           title="Master KPI"
           :style="navItemStyle('/admin/kpis')"
@@ -448,6 +461,18 @@
           </svg>
           <span v-if="isOpen">Master KPI</span>
         </NuxtLink>
+      </div>
+
+      <!-- Divider when collapsed -->
+      <div
+        v-if="!isOpen"
+        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
+      ></div>
+
+      <!-- Group 4: TATA KELOLA & ORGANISASI -->
+      <div :style="navGroupStyle">
+        <p :style="navGroupLabelStyle">ORGANISASI</p>
+
         <NuxtLink
           to="/departments"
           title="Struktur Departemen"
@@ -470,7 +495,34 @@
           </svg>
           <span v-if="isOpen">Struktur Departemen</span>
         </NuxtLink>
+
         <NuxtLink
+          v-if="isAdmin"
+          to="/admin/employees"
+          title="Data Pegawai"
+          :style="navItemStyle('/admin/employees')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span v-if="isOpen">Data Pegawai</span>
+        </NuxtLink>
+
+        <NuxtLink
+          v-if="isAdmin"
           to="/admin/audit-logs"
           title="Audit Logs"
           :style="navItemStyle('/admin/audit-logs')"
@@ -495,169 +547,6 @@
             <polyline points="10 9 9 9 8 9" />
           </svg>
           <span v-if="isOpen">Audit Logs</span>
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/sprints"
-          title="Siklus Sprint"
-          :style="navItemStyle('/admin/sprints')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          <span v-if="isOpen">Siklus Sprint</span>
-        </NuxtLink>
-      </div>
-
-      <!-- Manager divider when collapsed -->
-      <div
-        v-if="!isOpen && (isManager || isAdmin || isCLevel)"
-        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
-      ></div>
-
-      <!-- Manager menu -->
-      <div v-if="isManager || isAdmin || isCLevel" :style="navGroupStyle">
-        <p :style="navGroupLabelStyle">MANAGER</p>
-        <NuxtLink
-          to="/manager/overview"
-          title="OKR Overview"
-          :style="navItemStyle('/manager/overview')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-          </svg>
-          <span v-if="isOpen">OKR Overview</span>
-        </NuxtLink>
-        <NuxtLink
-          to="/leader/my-krs"
-          title="KR Saya"
-          :style="navItemStyle('/leader/my-krs')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="6" />
-            <circle cx="12" cy="12" r="2" />
-          </svg>
-          <span v-if="isOpen">KR Saya</span>
-        </NuxtLink>
-      </div>
-
-      <!-- Leader menu -->
-      <div
-        v-if="isLeader && !isManager && !isAdmin && !isCLevel"
-        :style="navGroupStyle"
-      >
-        <p :style="navGroupLabelStyle">LEADER</p>
-        <NuxtLink
-          to="/leader/my-krs"
-          title="KR Saya"
-          :style="navItemStyle('/leader/my-krs')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="6" />
-            <circle cx="12" cy="12" r="2" />
-          </svg>
-          <span v-if="isOpen">KR Saya</span>
-        </NuxtLink>
-      </div>
-
-      <!-- Team divider when collapsed -->
-      <div
-        v-if="
-          !isOpen && (isTeam || isLeader || isManager || isAdmin || isCLevel)
-        "
-        style="width: 24px; height: 1px; background: #e2e8f0; margin: 4px auto"
-      ></div>
-
-      <!-- Team menu -->
-      <div
-        v-if="isTeam || isLeader || isManager || isAdmin || isCLevel"
-        :style="navGroupStyle"
-      >
-        <p :style="navGroupLabelStyle">PEKERJAAN</p>
-        <NuxtLink
-          to="/team/my-work"
-          title="Pekerjaan Saya"
-          :style="navItemStyle('/team/my-work')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          <span v-if="isOpen">Pekerjaan Saya</span>
-        </NuxtLink>
-        <NuxtLink
-          v-if="isAdmin || isCLevel || isManager || isLeader"
-          to="/approvals"
-          title="Persetujuan Task"
-          :style="navItemStyle('/approvals')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-          <span v-if="isOpen">Persetujuan Task</span>
         </NuxtLink>
       </div>
     </nav>
@@ -711,11 +600,24 @@
         <span v-if="isOpen">Login</span>
       </NuxtLink>
     </div>
+
+    <!-- Teleport floating tooltip for collapsed mode -->
+    <Teleport to="body" v-if="isMounted && !isOpen && hoveredTooltip">
+      <div
+        class="sidebar-floating-tooltip"
+        :style="{
+          top: `${hoveredTooltip.top}px`,
+          left: `${hoveredTooltip.left}px`,
+        }"
+      >
+        {{ hoveredTooltip.text }}
+      </div>
+    </Teleport>
   </aside>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { useNotificationStore } from "../stores/notification";
@@ -727,6 +629,13 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(["close", "toggle"]);
+
+const isMounted = ref(false);
+const hoveredTooltip = ref(null);
+
+onMounted(() => {
+  isMounted.value = true;
+});
 
 const sidebarContainerStyle = computed(() => {
   const open = props.isOpen;
@@ -894,6 +803,64 @@ function handleLogout() {
   auth.logout();
   emit("close");
 }
+
+function handleSidebarMouseOver(e) {
+  if (props.isOpen) {
+    hoveredTooltip.value = null;
+    return;
+  }
+  const target = e.target?.closest?.("a, button");
+  if (!target || !target.closest(".app-sidebar")) {
+    hoveredTooltip.value = null;
+    return;
+  }
+
+  const text = target.getAttribute("data-tooltip") || target.getAttribute("title");
+  if (!text) {
+    hoveredTooltip.value = null;
+    return;
+  }
+
+  // Prevent duplicate native browser tooltip while collapsed
+  if (target.hasAttribute("title")) {
+    target.setAttribute("data-tooltip", text);
+    target.removeAttribute("title");
+  }
+
+  if (hoveredTooltip.value && hoveredTooltip.value.el === target) {
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  hoveredTooltip.value = {
+    text,
+    top: rect.top + rect.height / 2,
+    left: rect.right + 10,
+    el: target,
+  };
+}
+
+function handleSidebarMouseLeave() {
+  hoveredTooltip.value = null;
+}
+
+function handleSidebarScroll() {
+  hoveredTooltip.value = null;
+}
+
+watch(
+  () => props.isOpen,
+  (open) => {
+    hoveredTooltip.value = null;
+    if (open && typeof document !== "undefined") {
+      const items = document.querySelectorAll(".app-sidebar [data-tooltip]");
+      items.forEach((el) => {
+        const val = el.getAttribute("data-tooltip");
+        if (val) el.setAttribute("title", val);
+      });
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -927,6 +894,46 @@ function handleLogout() {
 .collapsed-brand-btn:hover {
   background-color: #f1f5f9 !important;
   transform: scale(1.08);
+}
+
+:global(.sidebar-floating-tooltip) {
+  position: fixed;
+  transform: translateY(-50%);
+  background-color: #1e293b;
+  color: #ffffff;
+  font-family: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999999;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: tooltipFadeIn 0.12s ease-out;
+}
+
+:global(.sidebar-floating-tooltip::before) {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent #1e293b transparent transparent;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 @media (max-width: 1024px) {
