@@ -30,6 +30,7 @@ Buka **FileZilla**, masuk ke folder server **/mnt/vdb/dashssc/bsc/**, lalu ungga
    * Unggah file **`package.json`**, **`package-lock.json`**, dan **`tsconfig.json`** ke dalam folder `backend/` di server.
 2. **Folder `frontend`**:
    * Unggah folder lokal **`frontend/app/`** untuk menimpa folder `frontend/app/` di server.
+   * Unggah folder lokal **`frontend/public/`** (khususnya subfolder **`frontend/public/roadmap/`**) ke dalam folder `frontend/public/` di server.
    * Unggah file **`nuxt.config.ts`**, **`package.json`**, **`package-lock.json`**, dan **`tsconfig.json`** ke dalam folder `frontend/` di server.
 
 > [!WARNING]
