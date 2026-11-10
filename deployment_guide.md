@@ -57,6 +57,16 @@ Setelah berkas selesai diunggah lewat FileZilla, buka terminal **Termius** Anda 
    ```
    > [!NOTE]
    > Langkah ini **opsional**. Biasanya `docker compose down` sudah cukup untuk membersihkan kontainer. Jalankan perintah ini hanya jika Anda melihat pesan error merah berupa `Conflict. The container name "/okr-backend" is already in use...` saat melakukan langkah berikutnya.
+### Langkah Khusus Rilis: Interactive Product Roadmap Gantt Chart (November 2026)
+Jika Anda merilis fitur Roadmap Interaktif 3-Level (Domain -> Epic -> Feature):
+1. **Jalankan SQL Migration di DBeaver**:
+   - Buka DBeaver dan sambungkan ke database produksi `skolla_okr`.
+   - Buka file `deploy_roadmap_tables.sql` yang ada di root proyek.
+   - Eksekusi script SQL (`Alt + X` atau Execute SQL Script) untuk membuat tabel `roadmap_domain`, `roadmap_epic`, dan `roadmap_feature`.
+   - Script ini bersifat **idempotent & aman** (`CREATE TABLE IF NOT EXISTS`).
+2. Setelah kontainer menyala, masuk ke halaman **Product Roadmap** di dashboard untuk melihat data atau klik **"Muat Data Standar Skolla"** untuk memuat inisial roadmap.
+
+
 
 4. **Bangun ulang kontainer dengan kode baru dan nyalakan (Wajib)**:
    ```bash

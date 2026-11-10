@@ -1,37 +1,62 @@
 <template>
   <div class="roadmap-page-root" :class="{ 'is-fullscreen': isFullscreen }">
+    <!-- Top Page Header -->
     <div class="roadmap-header card">
       <div class="header-left">
         <div class="title-row">
-          <div class="badge-tag">ROADMAP PRODUK</div>
-          <h1 class="page-title">Rencana Rilis & Timeline Fitur Q4 2026 – Q1 2027</h1>
+          <div class="badge-tag">PRODUCT ROADMAP</div>
+          <h1 class="page-title">Peta Jalan Produk Skolla (Q4 2026 – 2027)</h1>
         </div>
         <p class="section-desc">
-          Peta jalan pengembangan produk Skolla untuk tim Sales, Operation, After Sales, Finance, dan HR.
-          Konten terhubung langsung dengan dokumen rencana produk berkala.
+          Perencanaan fitur produk 3 tingkat (Domain, Epic, Feature) dengan linimasa interaktif,
+          pelacakan progres, dan sinkronisasi lintas tim.
         </p>
 
-        <div class="status-row">
-          <span class="status-badge" :class="sourceStatusClass">
-            <span class="status-indicator"></span>
-            <span>{{ sourceStatusText }}</span>
-          </span>
-          <span v-if="lastSyncedText" class="meta-item">
-            Diperbarui: <strong>{{ lastSyncedText }}</strong>
-          </span>
-          <span v-if="syncMessage" class="sync-msg" :class="{ 'is-error': isSyncError }">
-            {{ syncMessage }}
-          </span>
+        <!-- Navigation Tabs -->
+        <div class="view-tabs">
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: activeTab === 'GANTT' }"
+            @click="activeTab = 'GANTT'"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+              <line x1="8" y1="14" x2="14" y2="14"></line>
+              <line x1="8" y1="18" x2="18" y2="18"></line>
+            </svg>
+            <span>Gantt Chart Interaktif</span>
+          </button>
+
+          <button
+            type="button"
+            class="tab-btn"
+            :class="{ active: activeTab === 'STATIC' }"
+            @click="activeTab = 'STATIC'"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Dokumen Rilis & Catatan (Arsip)</span>
+          </button>
         </div>
       </div>
 
-      <div class="header-actions">
+      <!-- Header actions for static tab -->
+      <div v-if="activeTab === 'STATIC'" class="header-actions">
         <button
           type="button"
           class="btn-sync"
           :disabled="syncing"
           @click="syncContent"
-          title="Sinkronkan konten terbaru dari direktori dokumen lokal"
+          title="Sinkronkan konten dokumen terbaru"
         >
           <svg class="action-icon" :class="{ spin: syncing }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
@@ -39,7 +64,7 @@
           <span>{{ syncing ? "Menyinkronkan..." : "Sinkronkan Konten" }}</span>
         </button>
 
-        <button type="button" class="btn-secondary" @click="reloadIframe" title="Muat ulang tampilan roadmap">
+        <button type="button" class="btn-secondary" @click="reloadIframe" title="Muat ulang dokumen">
           <svg class="action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10" />
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
@@ -61,81 +86,90 @@
             <polyline points="15 3 21 3 21 9" />
             <line x1="10" y1="14" x2="21" y2="3" />
           </svg>
-          <span>Tab Baru</span>
+          <span>Buka Dokumen</span>
         </a>
       </div>
     </div>
 
-    <div class="roadmap-viewer-wrapper" :class="{ 'fullscreen-wrapper': isFullscreen }">
-      <div v-if="loadingFrame" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Memuat tampilan roadmap produk...</p>
-      </div>
+    <!-- TAB 1: INTERACTIVE GANTT CHART -->
+    <div v-show="activeTab === 'GANTT'" class="tab-content">
+      <ProductRoadmapGantt />
+    </div>
 
-      <iframe
-        ref="roadmapFrame"
-        :src="iframeUrl"
-        class="roadmap-iframe"
-        title="Dokumen Roadmap Produk"
-        @load="onIframeLoad"
-      ></iframe>
+    <!-- TAB 2: STATIC DOCUMENT VIEWER -->
+    <div v-show="activeTab === 'STATIC'" class="tab-content">
+      <div class="roadmap-viewer-wrapper" :class="{ 'fullscreen-wrapper': isFullscreen }">
+        <div v-if="loadingFrame" class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Memuat tampilan roadmap produk...</p>
+        </div>
+
+        <iframe
+          ref="roadmapFrame"
+          src="/roadmap/index.html"
+          class="roadmap-iframe"
+          title="Roadmap Produk Skolla"
+          @load="onFrameLoad"
+        />
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from "vue";
-import { useAuthStore } from "~/stores/auth";
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from "vue";
+import { useAuthStore } from "../stores/auth";
+import ProductRoadmapGantt from "../components/ProductRoadmapGantt.vue";
 
-// ponytail: embedded iframe viewer; upgrade path: server-rendered micro-frontend when DC tool exports native Vue.
 const auth = useAuthStore();
 const config = useRuntimeConfig();
 
-const syncing = ref(false);
-const loadingFrame = ref(true);
-const isFullscreen = ref(false);
-const cacheKey = ref(Date.now());
-const roadmapFrame = ref(null);
-
-const sourceExists = ref(false);
-const sourceDir = ref("");
-const lastModified = ref("");
-const syncMessage = ref("");
-const isSyncError = ref(false);
-
-const iframeUrl = computed(() => `/roadmap/index.html?t=${cacheKey.value}`);
-
-const sourceStatusClass = computed(() => (sourceExists.value ? "is-connected" : "is-bundled"));
-
-const sourceStatusText = computed(() =>
-  sourceExists.value ? "Folder Sumber Lokal Terhubung" : "Menggunakan Arsip Bundel"
-);
-
-const lastSyncedText = computed(() => {
-  if (!lastModified.value) return "";
-  try {
-    const d = new Date(lastModified.value);
-    return d.toLocaleString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return lastModified.value;
+const rawApiBase = config.public.apiBase || "http://localhost:3001/api";
+const API_BASE = computed(() => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return rawApiBase.replace("127.0.0.1", "localhost");
   }
+  return rawApiBase;
 });
 
-function onIframeLoad() {
+function getAuthToken(): string {
+  if (auth.token) return auth.token;
+  if (typeof window !== "undefined") {
+    return (
+      localStorage.getItem("auth_token") ||
+      localStorage.getItem("token") ||
+      ""
+    );
+  }
+  return "";
+}
+
+const activeTab = ref<"GANTT" | "STATIC">("GANTT");
+const roadmapFrame = ref<HTMLIFrameElement | null>(null);
+const loadingFrame = ref(true);
+const syncing = ref(false);
+const isFullscreen = ref(false);
+
+function onFrameLoad() {
   loadingFrame.value = false;
 }
 
+watch(activeTab, (tab) => {
+  if (tab === "STATIC" && loadingFrame.value) {
+    setTimeout(() => {
+      loadingFrame.value = false;
+    }, 1500);
+  }
+});
+
 function reloadIframe() {
-  loadingFrame.value = true;
-  cacheKey.value = Date.now();
   if (roadmapFrame.value) {
-    roadmapFrame.value.src = iframeUrl.value;
+    loadingFrame.value = true;
+    const currentSrc = roadmapFrame.value.src.split("?")[0];
+    roadmapFrame.value.src = `${currentSrc}?t=${Date.now()}`;
+    setTimeout(() => {
+      loadingFrame.value = false;
+    }, 4000);
   }
 }
 
@@ -143,63 +177,33 @@ function toggleFullscreen() {
   isFullscreen.value = !isFullscreen.value;
 }
 
-async function fetchStatus() {
-  const API = config.public?.apiBase || "http://localhost:3001/api";
-  try {
-    const res = await fetch(`${API}/roadmap/status`, {
-      headers: { Authorization: `Bearer ${auth.token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      sourceExists.value = Boolean(data.sourceExists);
-      sourceDir.value = data.sourceDir || "";
-      lastModified.value = data.sourceLastModified || data.targetLastModified || "";
-    }
-  } catch {
-    sourceExists.value = false;
-  }
-}
-
 async function syncContent() {
-  if (syncing.value) return;
   syncing.value = true;
-  syncMessage.value = "Menyinkronkan dokumen...";
-  isSyncError.value = false;
-
-  const API = config.public?.apiBase || "http://localhost:3001/api";
   try {
-    const res = await fetch(`${API}/roadmap/sync`, {
+    const token = getAuthToken();
+    const result = await $fetch<{ success: boolean }>(`${API_BASE.value}/roadmap/sync`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${auth.token}`,
-      },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      timeout: 15000,
     });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      lastModified.value = data.lastModified;
-      sourceExists.value = true;
-      syncMessage.value = "Berhasil disinkronkan!";
-      isSyncError.value = false;
+    if (result && result.success) {
       reloadIframe();
-      setTimeout(() => {
-        syncMessage.value = "";
-      }, 4000);
-    } else {
-      syncMessage.value = data.message || "Folder sumber tidak ditemukan di server lokal.";
-      isSyncError.value = true;
     }
-  } catch {
-    syncMessage.value = "Gagal memanggil endpoint sinkronisasi.";
-    isSyncError.value = true;
+  } catch (err: any) {
+    console.error("Sync error:", err);
   } finally {
     syncing.value = false;
   }
 }
 
 onMounted(() => {
-  fetchStatus();
+  // Check if hash matches
+  if (typeof window !== "undefined" && window.location.hash === "#arsip") {
+    activeTab.value = "STATIC";
+  }
+  setTimeout(() => {
+    loadingFrame.value = false;
+  }, 4000);
 });
 </script>
 
@@ -212,119 +216,90 @@ onMounted(() => {
 }
 
 .roadmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 24px;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 12px;
-  padding: 20px 24px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .header-left {
-  flex: 1 1 520px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  flex: 1 1 540px;
 }
 
 .title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .badge-tag {
   background: #010571;
-  color: #f2ca17;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   padding: 4px 10px;
   border-radius: 6px;
-  display: inline-block;
 }
 
 .page-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-main, #0f172a);
+  font-size: 22px;
+  font-weight: 800;
+  color: #010571;
   letter-spacing: -0.01em;
 }
 
 .section-desc {
   margin: 0;
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.5;
-  color: var(--text-muted, #64748b);
-  max-width: 820px;
+  color: var(--text-muted, #475569);
+  max-width: 740px;
 }
 
-.status-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+.view-tabs {
+  display: inline-flex;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
   margin-top: 4px;
-  font-size: 13px;
 }
 
-.status-badge {
+.tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-weight: 500;
-  font-size: 12px;
-}
-
-.status-badge.is-connected {
-  background: #e6f9ed;
-  color: #15803d;
-}
-
-.status-badge.is-connected .status-indicator {
-  background: #22c55e;
-}
-
-.status-badge.is-bundled {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.status-badge.is-bundled .status-indicator {
-  background: #3b82f6;
-}
-
-.status-indicator {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.meta-item {
-  color: var(--text-muted, #64748b);
-}
-
-.meta-item strong {
-  color: var(--text-main, #0f172a);
-}
-
-.sync-msg {
-  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
   font-weight: 600;
-  color: #16a34a;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.sync-msg.is-error {
-  color: #dc2626;
+.tab-btn:hover {
+  color: #010571;
+}
+
+.tab-btn.active {
+  background: #ffffff;
+  color: #010571;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .header-actions {
@@ -392,7 +367,6 @@ onMounted(() => {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .btn-tab:hover {
@@ -408,19 +382,19 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tab-content {
+  width: 100%;
 }
 
 .roadmap-viewer-wrapper {
   position: relative;
   width: 100%;
-  height: calc(100vh - 220px);
-  min-height: 820px;
+  height: calc(100vh - 240px);
+  min-height: 800px;
   background: #ffffff;
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 12px;

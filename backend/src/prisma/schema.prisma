@@ -506,3 +506,54 @@ model MemberSprintProgress {
   @@index([userId], map: "MemberSprintProgress_userId_idx")
   @@map("member_sprint_progress")
 }
+
+model RoadmapDomain {
+  id        String        @id @default(uuid())
+  name      String
+  code      String        @unique(map: "RoadmapDomain_code_key")
+  color     String        @default("#0e97d6")
+  sortOrder Int           @default(0) @map("sort_order")
+  epics     RoadmapEpic[]
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@map("roadmap_domain")
+}
+
+model RoadmapEpic {
+  id          String           @id @default(uuid())
+  domainId    String           @map("domain_id")
+  domain      RoadmapDomain    @relation(fields: [domainId], references: [id], onDelete: Cascade, map: "RoadmapEpic_domainId_fkey")
+  title       String
+  description String?          @db.Text
+  startDate   DateTime?        @map("start_date")
+  endDate     DateTime?        @map("end_date")
+  status      String           @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, DELAYED
+  sortOrder   Int              @default(0) @map("sort_order")
+  features    RoadmapFeature[]
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([domainId], map: "RoadmapEpic_domainId_idx")
+  @@map("roadmap_epic")
+}
+
+model RoadmapFeature {
+  id              String      @id @default(uuid())
+  epicId          String      @map("epic_id")
+  epic            RoadmapEpic @relation(fields: [epicId], references: [id], onDelete: Cascade, map: "RoadmapFeature_epicId_fkey")
+  title           String
+  description     String?     @db.Text
+  startDate       DateTime?   @map("start_date")
+  endDate         DateTime?   @map("end_date")
+  progressPercent Int         @default(0) @map("progress_percent")
+  status          String      @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, DELAYED
+  picName         String?     @map("pic_name")
+  sortOrder       Int         @default(0) @map("sort_order")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@index([epicId], map: "RoadmapFeature_epicId_idx")
+  @@map("roadmap_feature")
+}
+

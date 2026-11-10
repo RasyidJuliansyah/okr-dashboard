@@ -1,11 +1,59 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
-import { authMiddleware } from "../middleware/auth.middleware";
+import * as jwt from "jsonwebtoken";
+import { authMiddleware, roleGuard, AuthRequest } from "../middleware/auth.middleware";
+import {
+  getRoadmapTree,
+  createDomain,
+  updateDomain,
+  deleteDomain,
+  createEpic,
+  updateEpic,
+  deleteEpic,
+  createFeature,
+  updateFeature,
+  patchFeatureDates,
+  deleteFeature,
+  seedRoadmap,
+} from "../controllers/roadmap.controller";
 
-// ponytail: local directory sync endpoint; upgrade path: webhook receiver for automated CMS/Figma sync.
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-okr-bsc-dashboard-2026";
+
+function optionalAuth(req: AuthRequest, res: any, next: any) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.user = decoded;
+  } catch {}
+  next();
+}
+
 const router = Router();
+const canEdit = [authMiddleware, roleGuard(["ADMIN", "MANAGER"])];
 
+// Interactive 3-Level Roadmap Endpoints
+router.get("/domains", optionalAuth, getRoadmapTree);
+router.post("/domains", ...canEdit, createDomain);
+router.put("/domains/:id", ...canEdit, updateDomain);
+router.delete("/domains/:id", ...canEdit, deleteDomain);
+
+router.post("/epics", ...canEdit, createEpic);
+router.put("/epics/:id", ...canEdit, updateEpic);
+router.delete("/epics/:id", ...canEdit, deleteEpic);
+
+router.post("/features", ...canEdit, createFeature);
+router.put("/features/:id", ...canEdit, updateFeature);
+router.patch("/features/:id/dates", ...canEdit, patchFeatureDates);
+router.delete("/features/:id", ...canEdit, deleteFeature);
+
+router.post("/seed", ...canEdit, seedRoadmap);
+
+// Legacy static sync endpoints (retained for backward compatibility)
 const CANDIDATE_SOURCES = [
   process.env.ROADMAP_SOURCE_DIR,
   "/Users/rasyidjuliansyah/Development/okr-dashboard2/Landing page roadmap Q4 2026-html (3)",
@@ -16,7 +64,7 @@ const CANDIDATE_SOURCES = [
 const targetDir = [
   path.resolve(__dirname, "../../../frontend/public/roadmap"),
   path.resolve(__dirname, "../../frontend/public/roadmap"),
-].find(p => fs.existsSync(p)) || path.resolve(__dirname, "../../../frontend/public/roadmap");
+].find((p) => fs.existsSync(p)) || path.resolve(__dirname, "../../../frontend/public/roadmap");
 
 function resolveSourceDir(): string | null {
   for (const src of CANDIDATE_SOURCES) {
@@ -98,3 +146,4 @@ router.post("/sync", authMiddleware, (req, res) => {
 });
 
 export default router;
+
