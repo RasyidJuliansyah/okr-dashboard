@@ -283,6 +283,29 @@
           </svg>
           <span v-if="isOpen">Persetujuan Task</span>
         </NuxtLink>
+        <NuxtLink
+          to="/retro"
+          title="Sprint Retrospective"
+          :style="navItemStyle('/retro')"
+          @click="emit('close')"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.667"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-4-.96L3 20l1.46-5.5A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3a8.38 8.38 0 0 1 8.5 8.5z" />
+            <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" stroke-width="2.4" />
+          </svg>
+          <span v-if="isOpen">Sprint Retro</span>
+        </NuxtLink>
+
+
 
         <NuxtLink
           v-if="isAdmin"
@@ -391,28 +414,7 @@
           <span v-if="isOpen">OKR Cascading</span>
         </NuxtLink>
 
-        <NuxtLink
-          to="/product-roadmap"
-          title="Roadmap Produk"
-          :style="navItemStyle('/product-roadmap')"
-          @click="emit('close')"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.667"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-            <line x1="9" y1="3" x2="9" y2="18" />
-            <line x1="15" y1="6" x2="15" y2="21" />
-          </svg>
-          <span v-if="isOpen">Roadmap Produk</span>
-        </NuxtLink>
+        <!-- Roadmap Produk disembunyikan sementara dari semua role sebelum deploy -->
 
         <NuxtLink
           v-if="isAdmin"

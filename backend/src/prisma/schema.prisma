@@ -33,6 +33,10 @@ model User {
   taskComments        TaskComment[]
   auditLogs           AuditLog[]       @relation("UserAuditLogs")
   sprintProgress      MemberSprintProgress[]
+  retroCards          RetroCard[]
+  retroMoods          RetroMood[]
+  retroReactions      RetroReaction[]
+  retroMentions       RetroCardMention[]
   createdAt           DateTime         @default(now()) @map("created_at")
 
   @@index([teamId], map: "User_teamId_idx")
@@ -335,6 +339,7 @@ model Department {
   cLevel    User?    @relation("DepartmentCLevel", fields: [cLevelId], references: [id], map: "Department_cLevelId_fkey")
   teams     Team[]   @relation("TeamDepartment")
   users     User[]   @relation("UserDepartment")
+  retroBoards RetroBoard[]
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([managerId], map: "Department_managerId_fkey")
@@ -463,6 +468,7 @@ model Sprint {
   tasks         Task[]
   krTargets     KrSprintTarget[]
   memberScores  MemberSprintProgress[]
+  retroBoards   RetroBoard[]
   createdAt     DateTime               @default(now()) @map("created_at")
   updatedAt     DateTime               @updatedAt @map("updated_at")
 
@@ -555,5 +561,80 @@ model RoadmapFeature {
 
   @@index([epicId], map: "RoadmapFeature_epicId_idx")
   @@map("roadmap_feature")
+}
+
+model RetroBoard {
+  id           String      @id @default(uuid())
+  sprintId     String      @map("sprint_id")
+  sprint       Sprint      @relation(fields: [sprintId], references: [id], onDelete: Cascade, map: "RetroBoard_sprintId_fkey")
+  departmentId String      @map("department_id")
+  department   Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade, map: "RetroBoard_departmentId_fkey")
+  status       String      @default("OPEN") // OPEN, CLOSED
+  openedById   String      @map("opened_by_id")
+  closedAt     DateTime?   @map("closed_at")
+  cards        RetroCard[]
+  moods        RetroMood[]
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@unique([sprintId, departmentId], map: "RetroBoard_sprintId_departmentId_key")
+  @@index([departmentId], map: "RetroBoard_departmentId_idx")
+  @@map("retro_board")
+}
+
+model RetroCard {
+  id        String          @id @default(uuid())
+  boardId   String          @map("board_id")
+  board     RetroBoard      @relation(fields: [boardId], references: [id], onDelete: Cascade, map: "RetroCard_boardId_fkey")
+  userId    String          @map("user_id")
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "RetroCard_userId_fkey")
+  column    String          @db.VarChar(20) // STOP, START, CONTINUE
+  content   String          @db.VarChar(500)
+  reactions RetroReaction[]
+  mentions  RetroCardMention[]
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  @@index([boardId], map: "RetroCard_boardId_idx")
+  @@index([userId], map: "RetroCard_userId_idx")
+  @@map("retro_card")
+}
+
+model RetroMood {
+  id      String     @id @default(uuid())
+  boardId String     @map("board_id")
+  board   RetroBoard @relation(fields: [boardId], references: [id], onDelete: Cascade, map: "RetroMood_boardId_fkey")
+  userId  String     @map("user_id")
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade, map: "RetroMood_userId_fkey")
+  emoji   String     @db.VarChar(16)
+
+  @@unique([boardId, userId], map: "RetroMood_boardId_userId_key")
+  @@index([userId], map: "RetroMood_userId_idx")
+  @@map("retro_mood")
+}
+
+model RetroReaction {
+  id     String    @id @default(uuid())
+  cardId String    @map("card_id")
+  card   RetroCard @relation(fields: [cardId], references: [id], onDelete: Cascade, map: "RetroReaction_cardId_fkey")
+  userId String    @map("user_id")
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "RetroReaction_userId_fkey")
+  emoji  String    @db.VarChar(16)
+
+  @@unique([cardId, userId, emoji], map: "RetroReaction_cardId_userId_emoji_key")
+  @@index([userId], map: "RetroReaction_userId_idx")
+  @@map("retro_reaction")
+}
+
+model RetroCardMention {
+  id              String    @id @default(uuid())
+  cardId          String    @map("card_id")
+  card            RetroCard @relation(fields: [cardId], references: [id], onDelete: Cascade, map: "RetroCardMention_cardId_fkey")
+  mentionedUserId String    @map("mentioned_user_id")
+  mentionedUser   User      @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade, map: "RetroCardMention_mentionedUserId_fkey")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@unique([cardId, mentionedUserId], map: "RetroCardMention_cardId_mentionedUserId_key")
+  @@index([mentionedUserId], map: "RetroCardMention_mentionedUserId_idx")
+  @@map("retro_card_mention")
 }
 

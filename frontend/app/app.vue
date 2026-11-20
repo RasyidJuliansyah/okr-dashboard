@@ -185,6 +185,7 @@ const pageTitle = computed(() => {
   if (path.startsWith("/admin/kpis")) return "Master KPI";
   if (path.startsWith("/admin/audit-logs")) return "Audit Logs";
   if (path.startsWith("/admin/sprints")) return "Siklus Sprint";
+  if (path.startsWith("/retro")) return "Retrospective Board";
   if (path.startsWith("/admin/annual-bsc")) return "Annual BSC";
   if (path.startsWith("/manager/overview")) return "OKR Overview";
   if (path.startsWith("/leader/my-krs")) return "KR Saya";

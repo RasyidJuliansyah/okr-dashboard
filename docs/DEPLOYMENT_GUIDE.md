@@ -125,6 +125,22 @@ Buka **FileZilla**, hubungkan ke server production via SFTP, lalu upload/overwri
 
 ---
 
+### 📍 Fase 5: Dokumentasi Release Notes (Wajib, Setiap Deploy)
+
+> [!IMPORTANT]
+> Setiap selesai deploy ke production — baik rilis fitur baru maupun sekadar improvement/bugfix kecil — **wajib** dibuatkan Release Notes. Ini bukan opsional, lakukan sebagai langkah penutup rutin setiap siklus deploy.
+
+1. Buat file baru di root repo dengan format nama `RELEASE_NOTES_YYYY-MM-DD.md` (tanggal deploy, bukan tanggal commit).
+2. Ikuti struktur file release notes sebelumnya (lihat `RELEASE_NOTES_2026-10-20.md` atau `RELEASE_NOTES_2026-11-17.md` sebagai contoh):
+   - Header: Versi, Tanggal, Fokus rilis (1 baris ringkas).
+   - Satu section per fitur/perbaikan. Jelaskan **masalah/latar belakang**, **apa yang berubah**, dan **file/endpoint terkait** (biar bisa ditelusuri ke kode).
+   - Kalau ada perubahan skema database, tulis eksplisit tabel/kolom apa yang berubah dan file SQL migrasi-nya, tandai jelas urutan (DB dulu baru backend).
+   - Tutup dengan **Checklist Deploy** (checkbox) supaya bisa dipakai ulang saat verifikasi.
+3. Kalau rilis ini hanya bugfix/improvement kecil tanpa fitur baru, tetap buat Release Notes-nya — cukup lebih ringkas, tidak perlu section PRD sepanjang fitur besar, minimal: apa yang diperbaiki, kenapa, dan file yang berubah.
+4. Simpan file di root repo (sejajar dengan `RELEASE_NOTES_2026-10-20.md`), commit bersama kode rilis tersebut.
+
+---
+
 ## 🛠️ Troubleshooting & Re-sync
 
 | Masalah                                          | Solusi                                                                                                                                 |

@@ -35,6 +35,7 @@
               <option value="KEY_RESULT">Key Result</option>
               <option value="INITIATIVE">Inisiatif</option>
               <option value="TASK">Task</option>
+              <option value="RETRO_BOARD">Sprint Retro</option>
             </select>
           </div>
 
