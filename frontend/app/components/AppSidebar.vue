@@ -133,7 +133,7 @@
         </NuxtLink>
 
         <NuxtLink
-          v-if="isLeader || isManager || isAdmin || isCLevel"
+          v-if="isLeader || isManager || isAdmin || isCLevel || isTeam"
           to="/leader/my-krs"
           title="KR Saya"
           :style="navItemStyle('/leader/my-krs')"

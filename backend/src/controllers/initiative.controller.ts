@@ -1519,7 +1519,8 @@ export async function createInitiative(req: AuthRequest, res: Response) {
     }
 
     let targetOwnerIds: (string | null)[] = rawOwnerIds;
-    if (role === "TEAM" && targetOwnerIds.length === 0) {
+    if (role === "TEAM") {
+      // Defense in depth: TEAM selalu jadi PIC dirinya sendiri, abaikan ownerId/ownerIds dari body.
       targetOwnerIds = [userId];
     } else if (targetOwnerIds.length === 0) {
       targetOwnerIds = [null];

@@ -527,9 +527,11 @@
                     @click="openInitiativeModal(assign.keyResult)"
                   >
                     {{
-                      authStore.user?.role === "LEADER"
-                        ? "+ Buat Inisiatif Baru"
-                        : "+ Buat Inisiatif dari KR ini"
+                      authStore.user?.role === "TEAM"
+                        ? "+ Buat Inisiatif Saya"
+                        : authStore.user?.role === "LEADER"
+                          ? "+ Buat Inisiatif Baru"
+                          : "+ Buat Inisiatif dari KR ini"
                     }}
                   </button>
                 </div>
@@ -776,8 +778,11 @@
               </select>
             </div>
 
-            <label>PIC Pegawai / Leader (Penanggung Jawab)</label>
-            <div class="searchable-field">
+            <label v-if="authStore.user?.role !== 'TEAM'">PIC Pegawai / Leader (Penanggung Jawab)</label>
+            <div v-if="authStore.user?.role === 'TEAM'" class="alert alert-info" style="margin: 8px 0">
+              PIC: Anda sendiri ({{ authStore.user?.name }})
+            </div>
+            <div v-else class="searchable-field">
               <input
                 v-model="leaderUserSearch"
                 type="text"
@@ -1283,7 +1288,7 @@ function getHeaders() {
 onMounted(async () => {
   if (
     !authStore.isAuthenticated ||
-    !["LEADER", "MANAGER", "ADMIN", "C_LEVEL"].includes(authStore.user?.role)
+    !["LEADER", "MANAGER", "ADMIN", "C_LEVEL", "TEAM"].includes(authStore.user?.role)
   ) {
     router.push("/login");
     return;
@@ -1495,12 +1500,15 @@ function openInitiativeModal(kr) {
   leaderTeamSearch.value = "";
   leaderUserSearch.value = "";
   selectedInitiativeId.value = "";
+  const isTeamRole = authStore.user?.role === "TEAM";
   form.value = {
     title: "",
     description: "",
-    teamId: myTeams.value[0]?.id || "",
-    ownerId: "",
-    ownerIds: [],
+    teamId: isTeamRole
+      ? authStore.user?.teamId || myTeams.value[0]?.id || ""
+      : myTeams.value[0]?.id || "",
+    ownerId: isTeamRole ? authStore.user?.id || "" : "",
+    ownerIds: isTeamRole ? [authStore.user?.id].filter(Boolean) : [],
     assigneeIds: [],
     targetValue: 100,
     unit: "%",
